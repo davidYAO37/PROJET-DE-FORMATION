@@ -1,0 +1,83 @@
+'use client';
+
+import { Medecin } from '@/types/medecin';
+import React, { useState, useEffect } from 'react';
+import { Modal, Button, Form } from 'react-bootstrap';
+
+interface ModifierMedecinProps {
+  show: boolean;
+  onHide: () => void;
+  medecin: Medecin | null;
+  onSave: (updatedMedecin: Medecin) => void;
+}
+
+
+
+export default function ModifierMedecin({ show, onHide, medecin, onSave }: ModifierMedecinProps) {
+  const [nom, setNom] = useState('');
+  const [prenoms, setPrenoms] = useState('');
+  const [specialite, setSpecialite] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (medecin) {
+      setNom(medecin?.nom!);
+      setPrenoms(medecin?.prenoms!);
+      setSpecialite(medecin?.specialite!);
+    }
+  }, [medecin]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!medecin) return;
+
+    setLoading(true);
+    try {
+      const response = await fetch(`/api/medecins/${medecin._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom, prenoms, specialite }),
+      });
+
+      if (response.ok) {
+        const updated = await response.json();
+        onSave(updated);
+        onHide();
+      }
+    } catch (error) {
+      console.error('Erreur modification médecin', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Modal show={show} onHide={onHide} centered>
+      <Modal.Header closeButton>
+        <Modal.Title>Modifier Médecin</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <Form onSubmit={handleSubmit}>
+          <Form.Group className="mb-3">
+            <Form.Label>Nom</Form.Label>
+            <Form.Control value={nom} onChange={(e) => setNom(e.target.value)} required />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Prénoms</Form.Label>
+            <Form.Control value={prenoms} onChange={(e) => setPrenoms(e.target.value)} required />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Spécialité</Form.Label>
+            <Form.Control value={specialite} onChange={(e) => setSpecialite(e.target.value)} required />
+          </Form.Group>
+          <div className="text-end">
+            <Button variant="secondary" onClick={onHide} className="me-2">Annuler</Button>
+            <Button variant="primary" type="submit" disabled={loading}>
+              {loading ? 'Mise à jour...' : 'Enregistrer'}
+            </Button>
+          </div>
+        </Form>
+      </Modal.Body>
+    </Modal>
+  );
+}
