@@ -56,7 +56,7 @@ export default function ActesPage() {
 
     return (
         <div className="container py-4">
-            <h2 className="mb-3">Liste des Actes Cliniques</h2>
+            <h2 className="mb-3">Liste et Tarifs actes Cliniques</h2>
 
             {error && <Alert variant="danger">{error}</Alert>}
 

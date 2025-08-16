@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Button, Container, Row, Col, Navbar, Nav, Form, Alert } from 'react-bootstrap';
+import { FaUserMd, FaHospitalAlt, FaEnvelope, FaUser, FaRegEnvelope, FaCommentDots, FaRegBell, FaHeartbeat } from 'react-icons/fa';
 
 export default function Home() {
   // --- Gestion du formulaire de contact ---
@@ -51,10 +52,25 @@ export default function Home() {
     }
   };
 
+  // Animation fade-in sur scroll pour chaque section
+  useEffect(() => {
+    const handleScroll = () => {
+      document.querySelectorAll('.js-fade').forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        if (rect.top < window.innerHeight - 80) {
+          el.classList.add('fade-in');
+        }
+      });
+    };
+    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc' }}>
+    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #f8fafc 0%, #e0f2fe 100%)' }}>
       {/* --- Barre de navigation principale --- */}
-      <Navbar bg="white" expand="lg" className="shadow-sm fixed-top">
+      <Navbar bg="white" expand="lg" className="shadow-sm fixed-top js-fade">
         <Container>
           <Navbar.Brand style={{ fontWeight: 700, color: '#0d6efd' }}>
             EasyMedical
@@ -62,54 +78,74 @@ export default function Home() {
           <Navbar.Toggle aria-controls="main-navbar" />
           <Navbar.Collapse id="main-navbar">
             <Nav className="ms-auto">
-              <Nav.Link onClick={() => scrollToSection('apropos')}>A propos</Nav.Link>
+              <Nav.Link onClick={() => scrollToSection('apropos')}>A propos de nous</Nav.Link>
               <Nav.Link onClick={() => scrollToSection('partenaires')}>Nos partenaires</Nav.Link>
               <Nav.Link onClick={() => scrollToSection('contact')}>Contactez-nous</Nav.Link>
               <Link href="/connexion" style={{ textDecoration: 'none' }}>
-                <Button variant="success" size="sm">Espace</Button>
+                <Button variant="success" size="sm">Mon espace</Button>
               </Link>
             </Nav>
           </Navbar.Collapse>
         </Container>
       </Navbar>
 
-      {/* --- Section d'accueil (Hero) --- */}
-      <section className="hero-section-medical">
-        {/* Illustration vectorielle décorative en fond */}
-        <svg className="hero-bg-medical" width="420" height="420" viewBox="0 0 420 420" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <circle cx="210" cy="210" r="210" fill="#38bdf8" />
-          <circle cx="320" cy="120" r="80" fill="#0d6efd" />
+      <section
+        className="hero-section-sante position-relative overflow-hidden d-flex align-items-center"
+        style={{ minHeight: 500, background: "linear-gradient(135deg, #e0f7fa 0%, #ffffff 100%)" }}
+      >
+        {/* --- Arrière-plan SVG moderne --- */}
+        <svg
+          className="hero-bg position-absolute top-0 start-0"
+          width="560"
+          height="560"
+          viewBox="0 0 560 560"
+          fill="none"
+          style={{ zIndex: 0, opacity: 0.2 }}
+        >
+          <circle cx="280" cy="280" r="260" fill="#0dcaf0" fillOpacity="0.12" />
+          <circle cx="420" cy="140" r="90" fill="#198754" fillOpacity="0.18" />
+          <rect x="240" y="100" width="80" height="360" rx="40" fill="#0d6efd" fillOpacity="0.08" />
         </svg>
-        <Container className="hero-container-medical d-flex flex-column justify-content-center align-items-center text-center">
+
+        <Container
+          className="hero-container text-center position-relative"
+          style={{ zIndex: 1 }}
+        >
           <Row className="justify-content-center">
-            <Col md={8} lg={6}>
-              {/* Icône croix médicale stylisée */}
-              {/*  <div className="medical-cross-icon">
-                <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-                  <rect x="20" y="8" width="8" height="32" rx="4" fill="#fff" />
-                  <rect x="8" y="20" width="32" height="8" rx="4" fill="#fff" />
-                  <rect x="22" y="10" width="4" height="28" rx="2" fill="#38bdf8" />
-                  <rect x="10" y="22" width="28" height="4" rx="2" fill="#38bdf8" />
-                </svg>
-              </div> */}
-              <div className="hero-card-medical">
-                <h1 className="display-5 fw-bold mb-3 text-primary hero-title-medical">
-                  GESTION SANTÉ EFFICACE
-                </h1>
-                <p className="lead mb-4 hero-lead-medical">
-                  Simplifiez la gestion de vos dossiers médicaux et suivez vos patients en toute sécurité.
+            <Col md={10} lg={7}>
+
+              {/* --- Bloc principal --- */}
+              <div className="hero-card bg-white shadow-lg rounded-4 p-5 animate__animated animate__fadeInUp mt-5 mb-2">
+                <h5 className="display-5 fw-bold mb-3 text-success">
+                  <FaUserMd className="me-2 text-primary" />
+                  GESTION MODERNE DE SANTÉ
+                </h5>
+                <p className="lead mb-4 text-muted">
+                  Centralisez vos dossiers médicaux, améliorez le suivi patient et optimisez vos services de santé grâce à une plateforme sécurisée et intuitive.
                 </p>
-                {/* Badges attractifs */}
-                <div className="hero-badges-medical d-flex flex-wrap justify-content-center gap-2 mb-4">
-                  <span className="badge-medical badge-blue">Dossiers numériques sécurisés</span>
-                  <span className="badge-medical badge-indigo">Suivi patient intelligent</span>
-                  <span className="badge-medical badge-yellow">Alertes & rappels santé</span>
+
+                {/* --- Badges clés --- */}
+                <div className="d-flex flex-wrap justify-content-center gap-2 mb-4">
+                  <span className="badge bg-primary-subtle text-primary">
+                    <FaHospitalAlt className="me-1" /> Dossiers numériques
+                  </span>
+                  <span className="badge bg-success-subtle text-success">
+                    <FaUser className="me-1" /> Suivi intelligent
+                  </span>
+                  <span className="badge bg-warning-subtle text-warning">
+                    <FaRegBell className="me-1" /> Alertes & rappels
+                  </span>
+                  <span className="badge bg-danger-subtle text-danger">
+                    <FaHeartbeat className="me-1" /> Santé préventive
+                  </span>
                 </div>
-                <Link href="/connexion" className="hero-link-medical">
+
+                {/* --- Bouton d’accès --- */}
+                <Link href="/connexion" className="text-decoration-none">
                   <Button
-                    variant="primary"
+                    variant="success"
                     size="lg"
-                    className="hero-btn-medical"
+                    className="shadow-lg px-4 py-2 fw-bold"
                   >
                     Accéder à mon espace
                   </Button>
@@ -121,12 +157,17 @@ export default function Home() {
       </section>
 
       {/* --- Section A propos --- */}
-      <section id="apropos" className="py-5 bg-white">
+      <section id="apropos" className="py-5 bg-white js-fade">
         <Container>
           <Row className="justify-content-center">
             <Col md={8} className="text-center">
-              <h2 className="fw-bold mb-3 text-primary">A propos</h2>
-              <p className="lead">
+              <h2 className="fw-bold mb-3 text-primary">A propos de EasyMedical</h2>
+              <p className="lead text-muted">
+                <u className="text-danger fw-bold">EasyMedical</u> est une solution intégrée qui vise à moderniser la gestion des services de santé. Notre mission est de soutenir les
+                structures médicales dans leur transformation digitale en mettant à leur disposition des outils fiables, sécurisés et conformes
+                aux standards internationaux.
+              </p>
+              <p className="lead text-muted">
                 EasyMedical est une plateforme moderne dédiée à la gestion efficace des dossiers médicaux, au suivi des patients et à la simplification des processus pour les professionnels de santé.
               </p>
             </Col>
@@ -135,16 +176,21 @@ export default function Home() {
       </section>
 
       {/* --- Section Nos partenaires --- */}
-      <section id="partenaires" className="py-5 bg-light">
+      <section id="partenaires" className="py-5 bg-light js-fade position-relative">
         <Container>
           <Row className="justify-content-center">
             <Col md={8} className="text-center">
               <h2 className="fw-bold mb-3 text-primary">Nos partenaires</h2>
-              <div className="d-flex flex-wrap justify-content-center gap-4 mt-4">
+              <p className="text-muted mb-4">
+                Nous collaborons avec des institutions et acteurs de santé de
+                premier plan afin de garantir une qualité de service optimale et
+                une innovation continue.
+              </p>
+              <div className="d-flex flex-wrap justify-content-center gap-4 mt-4 partenaires-logos-medical">
                 {/* Logos des partenaires (exemple) */}
-                <img src="/images/auth.jpg" alt="Partenaire 1" style={{ width: 120, borderRadius: 8, boxShadow: '0 2px 8px #0001' }} />
-                <img src="/images/auth1.jpg" alt="Partenaire 2" style={{ width: 120, borderRadius: 8, boxShadow: '0 2px 8px #0001' }} />
-                <img src="/images/inscription.jpeg" alt="Partenaire 3" style={{ width: 120, borderRadius: 8, boxShadow: '0 2px 8px #0001' }} />
+                <img src="/images/auth.jpg" alt="Partenaire 1" className="partenaire-logo-medical js-hover" />
+                <img src="/images/auth1.jpg" alt="Partenaire 2" className="partenaire-logo-medical js-hover" />
+                <img src="/images/inscription.jpeg" alt="Partenaire 3" className="partenaire-logo-medical js-hover" />
               </div>
             </Col>
           </Row>
@@ -152,32 +198,36 @@ export default function Home() {
       </section>
 
       {/* --- Section Contactez-nous --- */}
-      <section id="contact" className="py-5 bg-white">
+      <section id="contact" className="py-5 bg-white js-fade position-relative">
         <Container>
           <Row className="justify-content-center">
             <Col md={8} lg={6}>
-              <h2 className="fw-bold mb-3 text-primary text-center">Contactez-nous</h2>
+              <h2 className="fw-bold mb-3 text-primary text-center animate__animated animate__fadeInDown"><FaEnvelope className="me-2 text-info" />Contactez-nous</h2>
               <p className="text-center mb-4">Une question, une demande ? Envoyez-nous un message !</p>
+              <p className="text-center mb-4 text-muted">
+                Vous souhaitez obtenir plus d’informations ou entrer en relation
+                avec notre équipe ? Merci de remplir le formulaire ci-dessous.
+              </p>
               {/* Message de succès */}
               {sent && <Alert variant="success">Votre message a bien été envoyé !</Alert>}
               {/* Message d'erreur */}
               {error && <Alert variant="danger">{error}</Alert>}
               {/* Formulaire de contact */}
-              <Form ref={formRef} onSubmit={handleSubmit}>
-                <Form.Group className="mb-3" controlId="formNom">
-                  <Form.Label>Nom</Form.Label>
-                  <Form.Control type="text" name="nom" placeholder="Votre nom" required disabled={sending} />
+              <Form ref={formRef} onSubmit={handleSubmit} className="modern-contact-form-medical p-4 rounded-4 shadow-sm bg-light animate__animated animate__fadeInUp">
+                <Form.Group className="mb-3 position-relative" controlId="formNom">
+                  <Form.Label><FaUser className="me-2 text-primary" />Nom</Form.Label>
+                  <Form.Control type="text" name="nom" placeholder="Votre nom complet" required disabled={sending} autoComplete="name" />
                 </Form.Group>
-                <Form.Group className="mb-3" controlId="formEmail">
-                  <Form.Label>Email</Form.Label>
-                  <Form.Control type="email" name="email" placeholder="Votre email" required disabled={sending} />
+                <Form.Group className="mb-3 position-relative" controlId="formEmail">
+                  <Form.Label><FaRegEnvelope className="me-2 text-primary" />Email</Form.Label>
+                  <Form.Control type="email" name="email" placeholder="Votre email" required disabled={sending} autoComplete="email" />
                 </Form.Group>
-                <Form.Group className="mb-3" controlId="formMessage">
-                  <Form.Label>Message</Form.Label>
+                <Form.Group className="mb-3 position-relative" controlId="formMessage">
+                  <Form.Label><FaCommentDots className="me-2 text-primary" />Message</Form.Label>
                   <Form.Control as="textarea" name="message" rows={4} placeholder="Votre message" required disabled={sending} />
                 </Form.Group>
                 <div className="d-grid">
-                  <Button type="submit" variant="primary" size="lg" disabled={sending}>
+                  <Button type="submit" variant="primary" size="lg" disabled={sending} className="shadow hero-btn-animated">
                     {sending ? 'Envoi en cours...' : 'Envoyer'}
                   </Button>
                 </div>
@@ -188,7 +238,7 @@ export default function Home() {
       </section>
 
       {/* --- Pied de page --- */}
-      <footer className="py-4 bg-light text-center mt-auto">
+      <footer className="py-4 bg-light text-center mt-auto js-fade">
         <Container>
           <span className="text-muted">&copy; {new Date().getFullYear()} EasyMedical. Tous droits réservés.</span>
         </Container>

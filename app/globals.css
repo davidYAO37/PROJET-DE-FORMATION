@@ -1,4 +1,57 @@
 /* =============================
+   Effets JavaScript modernes
+   ============================= */
+.js-fade {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1);
+}
+.fade-in {
+  opacity: 1 !important;
+  transform: none !important;
+}
+
+/* Effet hover animé sur les logos partenaires */
+.partenaire-logo-medical {
+  width: 160px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px #0001;
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
+  cursor: pointer;
+}
+.partenaire-logo-medical:hover, .partenaire-logo-medical:focus {
+  transform: scale(1.08) rotate(-2deg);
+  box-shadow: 0 8px 32px #38bdf855;
+  z-index: 2;
+}
+
+/* Animation bouton principal */
+.hero-btn-animated {
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow 0.2s, background 0.2s;
+}
+.hero-btn-animated::after {
+  content: '';
+  position: absolute;
+  left: -60%;
+  top: 0;
+  width: 220%;
+  height: 100%;
+  background: linear-gradient(120deg, #38bdf8 0%, #0d6efd 100%);
+  opacity: 0.08;
+  transform: skewX(-20deg);
+  transition: left 0.4s cubic-bezier(.4,0,.2,1);
+  z-index: 0;
+}
+.hero-btn-animated:hover::after {
+  left: 0;
+  opacity: 0.18;
+}
+.hero-btn-animated:active {
+  box-shadow: 0 2px 16px #0d6efd33;
+}
+/* =============================
    Sidebar Responsive
    ============================= */
 
@@ -76,6 +129,8 @@
 .sidebar-medical {
   background: linear-gradient(135deg, #e0e7ff 0%, #38bdf8 100%);
   min-height: 100vh;
+  height: 100vh;
+  max-height: 100vh;
   width: 240px;
   padding: 32px 0 0 0;
   border-top-right-radius: 32px;
@@ -84,6 +139,7 @@
   display: flex;
   flex-direction: column;
   align-items: center;
+  overflow-y: auto;
 }
 
 /* Logo et titre */
