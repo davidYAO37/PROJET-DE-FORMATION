@@ -9,28 +9,31 @@ import { auth } from '@/firebase/configConnect';
 export default function ConnexionPage() {
   const [email, setEmail] = useState('');
   const [motDePasse, setMotDePasse] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleConnexion = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setLoading(true);
     try {
       // Connexion avec Firebase Auth
-      const data= await signInWithEmailAndPassword(auth, email, motDePasse);
+      const data = await signInWithEmailAndPassword(auth, email, motDePasse);
       if (!data.user) {
         alert('Identifiants invalides');
+        setLoading(false);
         return;
       }
-// Récupération du profil mongodb
+      // Récupération du profil mongodb
       const res = await axios.post('/api/login', {
         uid: data.user.uid,
-      })
+      });
       if (!res.data || !res.data.profilUtilisateur) {
         alert('Erreur lors de la récupération des données utilisateur');
+        setLoading(false);
         return;
       }
-// Stockage du profil utilisateur dans le localStorage
-      const profil =  res.data.profilUtilisateur    
+      // Stockage du profil utilisateur dans le localStorage
+      const profil = res.data.profilUtilisateur;
 
       if (profil) {
         localStorage.setItem('profil', JSON.stringify(profil));
@@ -45,6 +48,8 @@ export default function ConnexionPage() {
     } catch (error) {
       console.error(error);
       alert('Erreur de connexion');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,8 +79,13 @@ export default function ConnexionPage() {
                     required
                   />
                 </Form.Group>
-                <Button variant="success" type="submit" className="w-100">
-                  Se connecter
+                <Button variant="success" type="submit" className="w-100" disabled={loading}>
+                  {loading ? (
+                    <>
+                      <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                      Connexion...
+                    </>
+                  ) : 'Se connecter'}
                 </Button>
               </Form>
             </Card.Body>

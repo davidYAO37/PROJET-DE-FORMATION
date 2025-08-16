@@ -73,7 +73,12 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
           <div className="text-end">
             <Button variant="secondary" onClick={onHide} className="me-2">Annuler</Button>
             <Button variant="primary" type="submit" disabled={loading}>
-              {loading ? 'Mise à jour...' : 'Enregistrer'}
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Mise à jour...
+                </>
+              ) : 'Enregistrer'}
             </Button>
           </div>
         </Form>

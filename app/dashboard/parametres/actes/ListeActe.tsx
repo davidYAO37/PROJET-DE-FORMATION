@@ -2,7 +2,7 @@
 import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import axios from "axios";
-import { Button, Table, Pagination, Dropdown, Form } from "react-bootstrap";
+import { Button, Table, Pagination, Dropdown, Form, Spinner } from "react-bootstrap";
 import { ActesClinique } from "@/types/acte";
 import { FaEdit, FaSync, FaTrash } from "react-icons/fa";
 
@@ -37,6 +37,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
     // Import Excel
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [importLoading, setImportLoading] = useState(false);
+    const [actionLoading, setActionLoading] = useState<string | null>(null); // Pour loader sur suppression/édition
     const [importError, setImportError] = useState("");
 
     const handleImportClick = () => fileInputRef.current?.click();
@@ -46,7 +47,6 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
         if (!file) return;
         setImportLoading(true);
         setImportError("");
-
         try {
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data);
@@ -62,6 +62,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
     };
 
     const handleActualiserPrix = async () => {
+        setActionLoading('actualiser');
         try {
             await axios.post("/api/actes/ModifieParLettreCle", {
                 lettreCle: lettreCleSel,
@@ -74,6 +75,8 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
             window.location.reload();
         } catch (err) {
             alert("Erreur lors de la mise à jour");
+        } finally {
+            setActionLoading(null);
         }
     };
 
@@ -110,6 +113,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
 
                 <div className="col-auto">
                     <Button variant="outline-success" size="sm" onClick={handleImportClick} disabled={importLoading}>
+                        {importLoading && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />}
                         Importer Excel
                     </Button>
                     <input
@@ -162,7 +166,9 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                         variant="primary"
                         className="w-100 d-flex align-items-center justify-content-center gap-1"
                         onClick={handleActualiserPrix}
+                        disabled={actionLoading === 'actualiser'}
                     >
+                        {actionLoading === 'actualiser' && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />}
                         <FaSync /> Actualiser
                     </Button>
                 </div>
@@ -196,19 +202,24 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                                 <td>{a.prixMutuel}</td>
                                 <td>{a.prixPreferenciel}</td>
                                 <td className="text-center">
-                                    <Button size="sm" variant="outline-primary" onClick={() => onEdit(a)} className="me-2">
+                                    <Button size="sm" variant="outline-primary" onClick={() => { setActionLoading('edit-' + a._id); onEdit(a); }} className="me-2" disabled={actionLoading === 'edit-' + a._id}>
+                                        {actionLoading === 'edit-' + a._id && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-1" />}
                                         <FaEdit />
                                     </Button>
                                     {a._id && (
                                         <Button
                                             size="sm"
                                             variant="outline-danger"
-                                            onClick={() => {
+                                            disabled={actionLoading === 'delete-' + a._id}
+                                            onClick={async () => {
                                                 if (window.confirm(`Supprimer "${a.designationacte}" ?`)) {
-                                                    onDelete(a._id);
+                                                    setActionLoading('delete-' + a._id);
+                                                    await onDelete(a._id);
+                                                    setActionLoading(null);
                                                 }
                                             }}
                                         >
+                                            {actionLoading === 'delete-' + a._id && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-1" />}
                                             <FaTrash />
                                         </Button>
                                     )}

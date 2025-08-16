@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
-import { Button, Container, Row, Col, Navbar, Nav, Form, Alert } from 'react-bootstrap';
+import { Button, Container, Row, Col, Navbar, Nav, Form, Alert, Spinner } from 'react-bootstrap';
 import { FaUserMd, FaHospitalAlt, FaEnvelope, FaUser, FaRegEnvelope, FaCommentDots, FaRegBell, FaHeartbeat } from 'react-icons/fa';
 
 export default function Home() {
@@ -82,7 +82,10 @@ export default function Home() {
               <Nav.Link onClick={() => scrollToSection('partenaires')}>Nos partenaires</Nav.Link>
               <Nav.Link onClick={() => scrollToSection('contact')}>Contactez-nous</Nav.Link>
               <Link href="/connexion" style={{ textDecoration: 'none' }}>
-                <Button variant="success" size="sm">Mon espace</Button>
+                <Button variant="success" size="sm" disabled={sending}>
+                  {sending && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />}
+                  Mon espace
+                </Button>
               </Link>
             </Nav>
           </Navbar.Collapse>
@@ -146,7 +149,9 @@ export default function Home() {
                     variant="success"
                     size="lg"
                     className="shadow-lg px-4 py-2 fw-bold"
+                    disabled={sending}
                   >
+                    {sending && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />}
                     Accéder à mon espace
                   </Button>
                 </Link>
@@ -228,6 +233,7 @@ export default function Home() {
                 </Form.Group>
                 <div className="d-grid">
                   <Button type="submit" variant="primary" size="lg" disabled={sending} className="shadow hero-btn-animated">
+                    {sending && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />}
                     {sending ? 'Envoi en cours...' : 'Envoyer'}
                   </Button>
                 </div>

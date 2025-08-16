@@ -83,7 +83,12 @@ export default function ModifierAssurance({ show, onHide, assurance, onSave }: P
                 <Modal.Footer>
                     <Button variant="secondary" onClick={onHide} disabled={loading}>Annuler</Button>
                     <Button type="submit" variant="primary" disabled={loading}>
-                        {loading ? "Modification..." : "Enregistrer"}
+                        {loading ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Modification...
+                            </>
+                        ) : "Enregistrer"}
                     </Button>
                 </Modal.Footer>
             </Form>

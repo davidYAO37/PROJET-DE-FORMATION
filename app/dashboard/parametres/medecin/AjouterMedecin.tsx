@@ -66,7 +66,12 @@ export default function AjouterMedecin({ show, onHide, onAdd }: AjouterMedecinPr
           <div className="text-end">
             <Button variant="secondary" onClick={onHide} className="me-2">Annuler</Button>
             <Button variant="success" type="submit" disabled={loading}>
-              {loading ? 'Ajout...' : 'Ajouter'}
+              {loading ? (
+                <>
+                  <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                  Ajout...
+                </>
+              ) : 'Ajouter'}
             </Button>
           </div>
         </Form>

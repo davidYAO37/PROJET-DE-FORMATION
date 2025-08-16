@@ -72,7 +72,12 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
                 <Modal.Footer>
                     <Button variant="secondary" onClick={onHide} disabled={loading}>Annuler</Button>
                     <Button type="submit" variant="success" disabled={loading}>
-                        {loading ? "Ajout..." : "Ajouter"}
+                        {loading ? (
+                            <>
+                                <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                                Ajout...
+                            </>
+                        ) : "Ajouter"}
                     </Button>
                 </Modal.Footer>
             </Form>
