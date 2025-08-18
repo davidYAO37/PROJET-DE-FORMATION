@@ -20,6 +20,12 @@ export interface IPatient extends Document {
   sexe: string;
   contact: string;
   codeDossier: string;
+  typevisiteur: string; // facultatif
+  matriculepatient?: string; // facultatif
+  dateNaissance?: Date; // facultatif
+  tauxassurance?: number; // facultatif
+  assurance?: string; // facultatif, référence à l'assurance
+
 }
 
 const PatientSchema = new Schema<IPatient>(
@@ -29,7 +35,12 @@ const PatientSchema = new Schema<IPatient>(
     age: { type: Number, required: true },
     sexe: { type: String, required: true },
     contact: { type: String, required: true },
+    typevisiteur: { type: String, required: false, default: 'Non Assuré' }, // par défaut 'Patient'
     codeDossier: { type: String, required: true, unique: true },
+    matriculepatient: { type: String, required: false },
+    dateNaissance: { type: Date, required: false },
+    tauxassurance: { type: Number, required: false },
+    assurance: { type: Schema.Types.ObjectId, ref: 'Assurance', required: false },
   },
   { timestamps: true }
 );

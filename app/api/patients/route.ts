@@ -2,9 +2,18 @@ import { db } from "@/db/mongoConnect";
 import { Patient } from "@/models/patient";
 import { NextResponse } from "next/server";
 
-export async function GET() {
+export async function GET(req: Request) {
   await db();
   try {
+    const { searchParams } = new URL(req.url);
+    const codeDossier = searchParams.get("codeDossier");
+
+    if (codeDossier) {
+      // Permet de vérifier existence d’un code
+      const patient = await Patient.findOne({ codeDossier });
+      return NextResponse.json(patient ? [patient] : []);
+    }
+
     const patients = await Patient.find({});
     return NextResponse.json(patients);
   } catch (error) {
@@ -16,39 +25,64 @@ export async function POST(req: Request) {
   await db();
   try {
     const body = await req.json();
+    let { codeDossier } = body;
+
+    // Vérification unicité côté serveur
+    const existing = await Patient.findOne({ codeDossier });
+
+    if (existing) {
+      // 👉 Cas 1 : l’utilisateur a tapé manuellement un code
+      if (!/^P00\d+$/.test(codeDossier)) {
+        return NextResponse.json(
+          { error: "Ce code dossier existe déjà. Veuillez en choisir un autre." },
+          { status: 409 }
+        );
+      }
+
+      // 👉 Cas 2 : code auto (P00xxx) → on génère le suivant disponible
+      let nextNum = 1;
+      const last = await Patient.findOne({ codeDossier: /^P00\d+$/ })
+        .sort({ codeDossier: -1 })
+        .collation({ locale: "en_US", numericOrdering: true }); // bien trier P009 < P010
+
+      if (last) {
+        const match = last.codeDossier.match(/^P00(\d+)$/);
+        if (match) {
+          nextNum = parseInt(match[1], 10) + 1;
+        }
+      }
+
+      // Boucle tant qu’il y a collision (sécurité pour concurrence)
+      let newCode = `P00${nextNum}`;
+      while (await Patient.findOne({ codeDossier: newCode })) {
+        nextNum++;
+        newCode = `P00${nextNum}`;
+      }
+      codeDossier = newCode;
+    }
+
+    body.codeDossier = codeDossier;
+
+    // Nettoyage des champs optionnels
+    if (body.assurance && typeof body.assurance === "string" && body.assurance !== "") {
+      try {
+        const mongoose = (await import("mongoose")).default;
+        body.assurance = new mongoose.Types.ObjectId(body.assurance);
+      } catch { }
+    } else {
+      delete body.assurance;
+    }
+
+    if (body.typevisiteur === "Non Assuré") {
+      delete body.assurance;
+      body.tauxassurance = undefined;
+      body.matriculepatient = "";
+    }
+
     const newPatient = await Patient.create(body);
     return NextResponse.json(newPatient, { status: 201 });
   } catch (error) {
+    console.error("Erreur API /api/patients:", error);
     return NextResponse.json({ error: "Erreur lors de l'ajout" }, { status: 500 });
   }
 }
-
-
-/* import { db } from "@/db/mongoConnect";
-import { Patient } from "@/models/patient";
-import { NextApiRequest, NextApiResponse } from "next";
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  await db();
-
-  if (req.method === "POST") {
-    try {
-      const patient = await Patient.create(req.body);
-      return res.status(201).json(patient);
-    } catch (error) {
-      return res.status(500).json({ error: "Erreur lors de la création" });
-    }
-  }
-
-  if (req.method === "GET") {
-    try {
-      const patients = await Patient.find({});
-      return res.status(200).json(patients);
-    } catch (error) {
-      return res.status(500).json({ error: "Erreur lors de la récupération" });
-    }
-  }
-
-  return res.status(405).json({ error: "Méthode non autorisée" });
-}
- */

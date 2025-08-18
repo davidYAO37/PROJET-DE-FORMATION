@@ -1,17 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import {
-  Button, Table, Container, Form, InputGroup, Row, Col, Pagination,
-  Toast, ToastContainer, Spinner
-} from 'react-bootstrap';
+import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus, FaPlusCircle } from 'react-icons/fa';
 import AjouterPatient from './AjouterPatient';
 import ModifierPatient from './ModifierPatient';
 import { Patient } from '@/types/patient';
 import { BiSolidBookAdd } from 'react-icons/bi';
 import { CgUserList } from 'react-icons/cg';
-
+import { Modal } from 'react-bootstrap';
+import FicheConsultation from '../componant/FicheConsultation';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -71,9 +69,13 @@ export default function Page() {
     setPatients(updatedList);
     showNotification(`📝 Patient "${updatedPatient.nom}" modifié.`, 'info');
   };
+  const [showConsultationModal, setShowConsultationModal] = useState(false);
 
-  // ✅ Supprimer patient
+  // ✅ Supprimer patient avec loader par id
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   const handleDeletePatient = async (id?: string) => {
+    if (!id) return;
+    setDeleteLoadingId(id);
     try {
       const response = await fetch(`/api/patients/${id}`, { method: 'DELETE' });
       if (response.ok) {
@@ -82,16 +84,18 @@ export default function Page() {
       }
     } catch {
       showNotification('Erreur suppression', 'danger');
+    } finally {
+      setDeleteLoadingId(null);
     }
   };
 
   // ✅ Filtrage + Pagination
   const filteredPatients = patients.filter((p) =>
-    p.nom.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.prenoms.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.sexe.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.contact.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.codeDossier.toLowerCase().includes(searchTerm.toLowerCase())
+    p.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.prenoms?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.sexe?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.codeDossier?.toLowerCase().includes(searchTerm.toLowerCase())
 
   );
 
@@ -185,10 +189,14 @@ export default function Page() {
                         title="Nouvelle Consultation ou visite"
                         size="sm"
                         className="me-4"
-                        onClick={() => handleEditClick(patient)}
+                        onClick={() => {
+                          setSelectedPatient(patient);
+                          setShowConsultationModal(true);
+                        }}
                       >
                         <BiSolidBookAdd />
                       </Button>
+
                       <Button
                         variant="outline-success"
                         title="Liste des consultations ou visites du patient"
@@ -214,8 +222,13 @@ export default function Page() {
                         title="Supprimer le patient"
                         size="sm"
                         onClick={() => handleDeletePatient(patient._id)}
+                        disabled={deleteLoadingId === patient._id}
                       >
-                        <FaTrash />
+                        {deleteLoadingId === patient._id ? (
+                          <Spinner as="span" animation="border" size="sm" />
+                        ) : (
+                          <FaTrash />
+                        )}
                       </Button>
                     </td>
 
@@ -271,10 +284,31 @@ export default function Page() {
 
       <ModifierPatient
         show={showEditModal}
-        onHide={() => setShowEditModal(false)}
+        handleClose={() => setShowEditModal(false)}
         patient={selectedPatient}
-        onSave={handleSavePatient}
+        onUpdate={handleSavePatient}
       />
+
+
+
+      <Modal
+        show={showConsultationModal}
+        onHide={() => setShowConsultationModal(false)}
+        size="xl"
+        centered
+        scrollable
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>
+            Nouvelle Consultation - {selectedPatient?.nom} {selectedPatient?.prenoms}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <FicheConsultation patient={selectedPatient} />
+        </Modal.Body>
+      </Modal>
+
     </Container>
+
   );
 }

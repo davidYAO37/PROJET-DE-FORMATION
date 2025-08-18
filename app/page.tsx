@@ -78,7 +78,7 @@ export default function Home() {
           <Navbar.Toggle aria-controls="main-navbar" />
           <Navbar.Collapse id="main-navbar">
             <Nav className="ms-auto">
-              <Nav.Link onClick={() => scrollToSection('apropos')}>A propos de nous</Nav.Link>
+              <Nav.Link onClick={() => scrollToSection('apropos')}>A propos de EasyMedical</Nav.Link>
               <Nav.Link onClick={() => scrollToSection('partenaires')}>Nos partenaires</Nav.Link>
               <Nav.Link onClick={() => scrollToSection('contact')}>Contactez-nous</Nav.Link>
               <Link href="/connexion" style={{ textDecoration: 'none' }}>
