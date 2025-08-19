@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface ITarifAssurance extends Document {
-  acteAssurance: string;
+  acte: string;
   lettreCle?: string;
   coefficient?: number;
   prixmutuel: number;
@@ -11,9 +11,9 @@ export interface ITarifAssurance extends Document {
 
 const TarifAssuranceSchema = new Schema<ITarifAssurance>(
   {
-    acteAssurance: { type: String, required: true },
+    acte: { type: String, required: true },
     prixmutuel: { type: Number, required: true },
-    lettreCle: { type: String, required: true, unique: true },
+    lettreCle: { type: String, required: true },
     coefficient: { type: Number, required: true },
     prixpreferenciel: { type: Number, required: true },
     assurance: { type: Schema.Types.ObjectId, ref: "Assurance", required: true },

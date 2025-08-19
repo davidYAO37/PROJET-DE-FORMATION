@@ -30,7 +30,8 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch("/api/actes", {
+            // Utilise le endpoint sync pour garantir la cohérence acte/tarif
+            const res = await fetch("/api/actes/acte-tarif-sync", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(form),

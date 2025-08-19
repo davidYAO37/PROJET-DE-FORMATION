@@ -28,6 +28,7 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
         setLoading(true);
         setError("");
         try {
+            // Ajout de l'assurance
             const res = await fetch("/api/assurances", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
@@ -35,6 +36,25 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
             });
             if (!res.ok) throw new Error("Erreur lors de l'ajout");
             const data = await res.json();
+            // Après ajout, créer les tarifs pour tous les actes existants
+            const actesRes = await fetch("/api/actes");
+            const actes = await actesRes.json();
+            if (Array.isArray(actes)) {
+                await fetch(`/api/tarifs/${data._id}`, {
+                    method: "PUT",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(
+                        actes.map((a: any) => ({
+                            acte: a.designationacte,
+                            lettreCle: a.lettreCle,
+                            coefficient: a.coefficient,
+                            prixmutuel: a.prixMutuel,
+                            prixpreferenciel: a.prixPreferenciel,
+                            assurance: data._id,
+                        }))
+                    ),
+                });
+            }
             onAdd(data);
             setForm({ desiganationassurance: "", codeassurance: "", telephone: "", email: "" });
         } catch (err: any) {
