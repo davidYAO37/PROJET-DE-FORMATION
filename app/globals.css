@@ -106,10 +106,15 @@
     z-index: 1202;
     transform: translateX(-110%);
     box-shadow: none;
+    pointer-events: none;
   }
   .sidebar-medical.open {
     transform: translateX(0);
     box-shadow: 2px 0 24px #0d6efd33;
+    pointer-events: auto;
+  }
+  .sidebar-overlay-medical {
+    pointer-events: none;
   }
 }
 @media (min-width: 992px) {

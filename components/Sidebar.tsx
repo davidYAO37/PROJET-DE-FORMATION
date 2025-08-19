@@ -23,7 +23,19 @@ export default function Sidebar() {
         </Button>
       </div>
       {/* Sidebar moderne */}
-      <aside className={`sidebar-medical sidebar-menu ${showMenu ? 'd-block' : 'd-none'} d-md-block`}>
+      {/* Overlay mobile */}
+      {showMenu && (
+        <div className="sidebar-overlay-medical" onClick={() => setShowMenu(false)}></div>
+      )}
+      <aside
+        className={`sidebar-medical sidebar-menu${showMenu ? ' open' : ''}`}
+        onClick={e => {
+          // N'empêche la propagation que si on clique sur le aside lui-même (pas sur les enfants)
+          if (e.target === e.currentTarget) {
+            e.stopPropagation();
+          }
+        }}
+      >
         {/* Logo médical moderne */}
         <div className="sidebar-logo-medical mb-4">
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none">

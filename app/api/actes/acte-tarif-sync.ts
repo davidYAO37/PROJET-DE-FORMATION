@@ -30,12 +30,12 @@ export async function POST(req: NextRequest) {
 }
 
 // Lorsqu'on modifie un acte, on met à jour la désignation et la lettre clé dans tous les tarifs assurances
-export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
     await db();
     const body = await req.json();
     try {
         // Mettre à jour l'acte
-        const acte = await ActeClinique.findByIdAndUpdate(params, body, { new: true });
+        const acte = await ActeClinique.findByIdAndUpdate(params.id, body, { new: true });
         // Mettre à jour tous les tarifs correspondants (par ancienne désignation ou lettreCle)
         await TarifAssurance.updateMany(
             { lettreCle: body.lettreCle },

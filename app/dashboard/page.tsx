@@ -1,10 +1,6 @@
 'use client';
-
-import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Row, Col, Card, Button } from 'react-bootstrap';
-import Sidebar from '../../components/Sidebar';
-import Medecins from './parametres/medecin/page';
 
 export default function DashboardPage() {
   const router = useRouter();

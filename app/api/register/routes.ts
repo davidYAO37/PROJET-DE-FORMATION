@@ -1,5 +1,4 @@
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { db } from '@/db/mongoConnect';
 import { UserCollection } from '@/models/users.model';
 
@@ -8,7 +7,7 @@ export async function POST(req: Request) {
     await db();
     const { nom, prenom, email, type, uid, } = await req.json();
 
-   
+
 
     const newUser = await UserCollection.create({
       nom,
