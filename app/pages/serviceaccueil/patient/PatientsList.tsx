@@ -6,7 +6,7 @@ import { BsEye } from 'react-icons/bs';
 import { IoTrophySharp } from 'react-icons/io5';
 
 type Patient = {
-  id: number;
+  _id: string; // identifiant MongoDB
   nom: string;
   prenoms: string;
   age: number;
@@ -17,8 +17,8 @@ type Patient = {
 
 type Props = {
   patients: Patient[];
-  onEdit: (id: number) => void;
-  onDelete: (id: number) => void;
+  onEdit: (id: string) => void;
+  onDelete: (id: string) => void;
 };
 
 export default function PatientsList({ patients, onEdit, onDelete }: Props) {
@@ -45,7 +45,7 @@ export default function PatientsList({ patients, onEdit, onDelete }: Props) {
             </tr>
           ) : (
             patients.map((patient) => (
-              <tr key={patient.id}>
+              <tr key={patient._id}>
                 <td>{patient.nom}</td>
                 <td>{patient.prenoms}</td>
                 <td>{patient.age}</td>
@@ -55,14 +55,14 @@ export default function PatientsList({ patients, onEdit, onDelete }: Props) {
                 <td>
                   <button
                     className="btn btn-sm btn-warning me-2 mb-1"
-                    onClick={() => onEdit(patient.id)}
+                    onClick={() => onEdit(patient._id)}
                     title="Modifier le patient"
                   >
                     <BiEdit />
                   </button>
                   <button
                     className="btn btn-sm btn-danger me-2 mb-1"
-                    onClick={() => onDelete(patient.id)}
+                    onClick={() => onDelete(patient._id)}
                     title="Supprimer le patient"                  >
                     <IoTrophySharp />
                   </button>

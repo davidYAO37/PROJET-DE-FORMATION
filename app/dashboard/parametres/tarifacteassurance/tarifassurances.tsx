@@ -87,8 +87,15 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
         currentPage * itemsPerPage
     );
 
+    // Réinitialise le filtre à la fermeture du modal
+    const handleHide = () => {
+        setSearchTerm("");
+        setCurrentPage(1);
+        onHide();
+    };
+
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered>
+        <Modal show={show} onHide={handleHide} size="lg" centered>
             <Modal.Header closeButton>
                 <Modal.Title>
                     Tarif Assurance – {assurance?.desiganationassurance}

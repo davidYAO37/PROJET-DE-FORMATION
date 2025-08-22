@@ -1,167 +1,212 @@
-'use client';
-
-import { useState } from "react";
-import { Form, Row, Col, Button, Card } from "react-bootstrap";
+"use client";
+import { useState, useEffect } from "react";
+import { Button, Card } from "react-bootstrap";
 import { Patient } from "@/types/patient";
+import { Assurance } from "@/types/assurance";
+import { Medecin } from "@/types/medecin";
+import InfosPatient from "./InfosPatient";
+import BlocActe from "./BlocActe";
+import BlocAssurance from "./BlocAssurance";
+import ResumeMontants from "./ResumeMontants";
 
 type FicheConsultationProps = {
     patient: Patient | null;
+    onClose?: () => void; // callback pour fermer le modal
 };
 
-export default function FicheConsultation({ patient }: FicheConsultationProps) {
+export default function FicheConsultation({ patient, onClose }: FicheConsultationProps) {
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState("");
+    const [success, setSuccess] = useState("");
+    const [saved, setSaved] = useState(false); // ✅ nouvel état
+
     const [assure, setAssure] = useState("non");
+    const [actes, setActes] = useState<any[]>([]);
+    const [selectedActe, setSelectedActe] = useState("");
+    const [assurances, setAssurances] = useState<Assurance[]>([]);
+    const [selectedAssurance, setSelectedAssurance] = useState<string>("");
+    const [matricule, setMatricule] = useState("");
+    const [taux, setTaux] = useState<number | string>("");
+    const [medecinPrescripteur, setMedecinPrescripteur] = useState<Medecin[]>([]);
+    const [selectedMedecin, setSelectedMedecin] = useState<string>("");
+
+    const [montantClinique, setMontantClinique] = useState<number>(0);
+    const [montantAssurance, setMontantAssurance] = useState<number>(0);
+
+    const [surplus, setSurplus] = useState<number>(0);
+    const [partAssurance, setPartAssurance] = useState<number>(0);
+    const [partPatient, setPartPatient] = useState<number>(0);
+    const [totalPatient, setTotalPatient] = useState<number>(0);
+
+    const [numBon, setNumBon] = useState("");
+    const [recuPar, setRecuPar] = useState("");
+
+    useEffect(() => {
+        const nom = localStorage.getItem("nom_utilisateur");
+        if (nom) setRecuPar(nom);
+
+        fetch("/api/actes")
+            .then((res) => res.json())
+            .then((data) => setActes(Array.isArray(data) ? data : []));
+
+        fetch("/api/assurances")
+            .then((res) => res.json())
+            .then((data) => setAssurances(Array.isArray(data) ? data : []));
+
+        fetch("/api/medecins")
+            .then((res) => res.json())
+            .then((data) => setMedecinPrescripteur(Array.isArray(data) ? data : []));
+    }, []);
+
+    useEffect(() => {
+        if (!patient) return;
+        if (patient.typevisiteur === "Non Assuré") setAssure("non");
+        else if (patient.typevisiteur === "Mutualiste") setAssure("mutualiste");
+        else setAssure("assure");
+
+        setSelectedAssurance(patient.assurance || "");
+        setMatricule(patient.matriculepatient || "");
+        setTaux(patient.tauxassurance ?? "");
+    }, [patient]);
+
+    useEffect(() => {
+        if (!selectedActe) return;
+        const acte = actes.find((a) => a._id === selectedActe);
+        if (!acte) return;
+
+        setMontantClinique(acte.prixClinique ?? 0);
+        if (assure === "mutualiste") setMontantAssurance(acte.prixMutuel ?? acte.prixClinique ?? 0);
+        else if (assure === "assure") setMontantAssurance(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+        else setMontantAssurance(acte.prixClinique ?? 0);
+    }, [selectedActe, assure, actes]);
+
+    useEffect(() => {
+        const tauxNum = Number(taux) || 0;
+        const surplusCalc = Math.max(0, montantClinique - montantAssurance);
+        const partAssur = (tauxNum * montantAssurance) / 100;
+        const partPat = montantAssurance - partAssur;
+
+        setSurplus(surplusCalc);
+        setPartAssurance(partAssur);
+        setPartPatient(partPat);
+        setTotalPatient(partPat + surplusCalc);
+    }, [montantClinique, montantAssurance, taux]);
+
+    const handleSave = async () => {
+        setError("");
+        setSuccess("");
+        setLoading(true);
+        try {
+            if (!recuPar) throw new Error("Utilisateur non reconnu.");
+            if (!patient?.codeDossier) throw new Error("Patient invalide (code dossier manquant).");
+
+            const selectedActeDesignation =
+                actes.find((a) => a._id === selectedActe)?.designationacte || "";
+
+            const res = await fetch("/api/consultation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    selectedActe,
+                    selectedMedecin,
+                    assure,
+                    taux,
+                    matricule,
+                    selectedAssurance,
+                    montantClinique,
+                    montantAssurance,
+                    Code_dossier: patient.codeDossier,
+                    NumBon: numBon,
+                    Recupar: recuPar,
+                    IDPARTIENT: patient._id || "",
+                    selectedActeDesignation,
+                }),
+            });
+
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Erreur enregistrement");
+
+            const codePrestation = data.consultation?.Code_Prestation;
+            setSuccess(
+                codePrestation
+                    ? `Consultation enregistrée avec succès ✅\nCode Prestation : ${codePrestation}`
+                    : "Consultation enregistrée avec succès ✅"
+            );
+            setSaved(true); // ✅ consultation validée
+        } catch (e: any) {
+            setError(e.message || "Erreur inconnue");
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <Card className="p-3 shadow-lg">
-            <h3 className="text-center text-white p-2 mb-3" style={{ background: "#00AEEF" }}>
-                FICHE CONSULTATION
+            <h3
+                className="text-center text-white p-2 mb-3"
+                style={{ background: "#00AEEF" }}
+            >
+                NOUVELLE FICHE CONSULTATION
             </h3>
 
-            {/* Informations patient */}
-            <Card className="p-3 mb-3">
-                <h5>Informations patient</h5>
-                <Row className="mb-2">
-                    <Col md={4}>
-                        <Form.Label className="text-danger fw-bold">Code dossier</Form.Label>
-                        <Form.Control type="text" placeholder="Code dossier" defaultValue={patient?.codeDossier || ''} />
-                    </Col>
-                    <Col md={4}>
-                        <Form.Label>Nom</Form.Label>
-                        <Form.Control type="text" defaultValue={patient?.nom || ''} />
-                    </Col>
-                    <Col md={4}>
-                        <Form.Label>Sexe</Form.Label>
-                        <Form.Select defaultValue={patient?.sexe || 'H'}>
-                            <option>H</option>
-                            <option>F</option>
-                        </Form.Select>
-                    </Col>
-                </Row>
+            <InfosPatient assure={assure} setAssure={setAssure} />
 
-                <Row className="mb-2">
-                    <Col md={2}>
-                        <Form.Label>Âge</Form.Label>
-                        <Form.Control type="number" defaultValue={patient?.age || ''} />
-                    </Col>
-                    <Col md={2}>
-                        <Form.Label>Né le</Form.Label>
-                        <Form.Control type="date" />
-                    </Col>
-                    <Col md={4}>
-                        <Form.Label>Contact</Form.Label>
-                        <Form.Control type="text" defaultValue={patient?.contact || ''} />
-                    </Col>
-                    <Col md={4}>
-                        <Form.Label>Groupe sanguin</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                </Row>
+            <BlocActe
+                actes={actes}
+                selectedActe={selectedActe}
+                setSelectedActe={setSelectedActe}
+                montantClinique={montantClinique}
+                setMontantClinique={setMontantClinique}
+                montantAssurance={montantAssurance}
+                setMontantAssurance={setMontantAssurance}
+                medecinPrescripteur={medecinPrescripteur}
+                selectedMedecin={selectedMedecin}
+                setSelectedMedecin={setSelectedMedecin}
+            />
 
-                <Row>
-                    <Col md={12}>
-                        <Form.Label>Habite</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                </Row>
-            </Card>
+            <BlocAssurance
+                assure={assure}
+                assurances={assurances}
+                selectedAssurance={selectedAssurance}
+                setSelectedAssurance={setSelectedAssurance}
+                matricule={matricule}
+                taux={taux}
+                numBon={numBon}
+                setNumBon={setNumBon}
+            />
 
-            {/* Assuré */}
-            <Card className="p-3 mb-3 bg-warning">
-                <h5>Assuré ?</h5>
-                <Form.Check
-                    inline
-                    label="Non Assuré"
-                    type="radio"
-                    checked={assure === "non"}
-                    onChange={() => setAssure("non")}
-                />
-                <Form.Check
-                    inline
-                    label="Tarif Mutualiste"
-                    type="radio"
-                    checked={assure === "mutualiste"}
-                    onChange={() => setAssure("mutualiste")}
-                />
-                <Form.Check
-                    inline
-                    label="Tarif Assuré"
-                    type="radio"
-                    checked={assure === "assure"}
-                    onChange={() => setAssure("assure")}
-                />
-            </Card>
+            <ResumeMontants
+                surplus={surplus}
+                partAssurance={partAssurance}
+                partPatient={partPatient}
+                totalPatient={totalPatient}
+            />
 
-            {/* Prestation & Assurance */}
-            <Card className="p-3 mb-3">
-                <Row>
-                    <Col md={6}>
-                        <Form.Label>Choisir la prestation</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                    <Col md={6}>
-                        <Form.Label>Montant Clinique</Form.Label>
-                        <Form.Control type="text" value="0 F CFA" disabled />
-                    </Col>
-                </Row>
+            {error && <div className="text-danger mb-2">{error}</div>}
+            {success && <div className="text-success mb-2">{success}</div>}
 
-                <Row className="mt-2">
-                    <Col md={6}>
-                        <Form.Label>Assurance</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                    <Col md={6}>
-                        <Form.Label>Société Patient</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                </Row>
-
-                <Row className="mt-2">
-                    <Col md={6}>
-                        <Form.Label>Souscripteur ou Adhérent principal</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                    <Col md={6}>
-                        <Form.Label>Matricule</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                </Row>
-
-                <Row className="mt-2">
-                    <Col md={3}>
-                        <Form.Label>Taux (%)</Form.Label>
-                        <Form.Control type="number" />
-                    </Col>
-                    <Col md={3}>
-                        <Form.Label>N° Bon</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                    <Col md={3}>
-                        <Form.Label>Médecin Prescripteur</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                    <Col md={3}>
-                        <Form.Label>Apporteur</Form.Label>
-                        <Form.Control type="text" />
-                    </Col>
-                </Row>
-            </Card>
-
-            {/* Résumé */}
-            <Card className="p-3 mb-3">
-                <Row>
-                    <Col>
-                        <p>Part Assurance: <strong>0</strong></p>
-                        <p>Part Assuré: <strong>0</strong></p>
-                    </Col>
-                    <Col>
-                        <p>Montant Assurance: <strong>10 000 000 000</strong></p>
-                        <p className="text-danger">Surplus: <strong>0</strong></p>
-                    </Col>
-                </Row>
-                <Button variant="primary" size="lg" className="w-100 fw-bold">
-                    Va à la caisse
+            <div className="d-flex gap-2">
+                <Button
+                    variant="primary"
+                    size="lg"
+                    className="w-100 fw-bold"
+                    disabled={loading || saved} // ✅ désactiver si déjà sauvegardé
+                    onClick={handleSave}
+                >
+                    {loading ? "Enregistrement..." : "Va à la caisse"}
                 </Button>
-            </Card>
+
+                {saved && onClose && (
+                    <Button
+                        variant="secondary"
+                        size="lg"
+                        className="fw-bold"
+                        onClick={onClose}
+                    >
+                        Fermer
+                    </Button>
+                )}
+            </div>
         </Card>
     );
 }

@@ -3,7 +3,6 @@
 import React, { useState } from "react";
 import { Button, Table } from "react-bootstrap";
 import { Assurance } from "@/types/assurance";
-import { TarifAssurance } from "@/models/tarifassurance";
 import TarifAssuranceModal from "../tarifacteassurance/tarifassurances";
 
 type Props = {
@@ -100,8 +99,14 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
                                         size="sm"
                                         variant="outline-success"
                                         title="Voir le tarif assurance"
-                                        onClick={() => {
+                                        onClick={async () => {
                                             setSelectedAssurance(a);
+                                            // Synchroniser les actes cliniques dans les tarifs de cette assurance
+                                            await fetch("/api/tarifassurance/sync-actes", {
+                                                method: "POST",
+                                                headers: { "Content-Type": "application/json" },
+                                                body: JSON.stringify({ assuranceId: a._id }),
+                                            });
                                             setShowTarifs(true);
                                         }}
                                     >

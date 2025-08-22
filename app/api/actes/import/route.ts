@@ -2,22 +2,53 @@ import { NextRequest, NextResponse } from "next/server";
 import { ActeClinique } from "@/models/acteclinique";
 import { db } from "@/db/mongoConnect";
 
+// Fonction utilitaire de nettoyage
+function cleanNumber(value: any): number {
+    if (value === null || value === undefined) return 0;
+
+    // Conversion en string pour uniformiser
+    let str = String(value).trim();
+
+    // Remplacement des virgules par des points
+    str = str.replace(",", ".");
+
+    // Valeurs considérées comme nulles → 0
+    if (["", "N/A", "NA", "--", "-", "null", "undefined"].includes(str.toUpperCase())) {
+        return 0;
+    }
+
+    // Conversion en nombre
+    const num = Number(str);
+    return isNaN(num) ? 0 : num;
+}
+
 export async function POST(req: NextRequest) {
     await db();
     const { rows } = await req.json();
+
     if (!Array.isArray(rows)) {
-        return NextResponse.json({ error: "Format de données invalide : le champ 'rows' doit être un tableau." }, { status: 400 });
+        return NextResponse.json(
+            { error: "Format de données invalide : le champ 'rows' doit être un tableau." },
+            { status: 400 }
+        );
     }
+
     try {
-        // Validation détaillée ligne par ligne
-        const errors: { index: number, message: string }[] = [];
+        const errors: { index: number; message: string }[] = [];
+
         const actes = rows.map((row: any, i: number) => {
-            const designationacte = row.designationacte || row["Désignation"] || row["designationacte"];
-            const lettreCle = row.lettreCle || row["Lettre Clé"] || row["lettreCle"];
-            const coefficient = Number(row.coefficient || row["Coefficient"] || row["coefficient"]);
-            const prixClinique = Number(row.prixClinique || row["Prix Clinique"] || row["prixClinique"]);
-            const prixMutuel = Number(row.prixMutuel || row["Prix Mutuel"] || row["prixMutuel"]);
-            const prixPreferenciel = Number(row.prixPreferenciel || row["Prix Préférentiel"] || row["prixPreferenciel"]);
+            // On accepte plusieurs variantes de noms de colonnes
+            const designationacte =
+                (row.designationacte || row["Désignation"] || row["designationacte"] || "").trim();
+            const lettreCle =
+                (row.lettreCle || row["Lettre Clé"] || row["lettreCle"] || "").trim();
+
+            const coefficient = cleanNumber(row.coefficient || row["Coefficient"] || row["coefficient"]);
+            const prixClinique = cleanNumber(row.prixClinique || row["Prix Clinique"] || row["prixClinique"]);
+            const prixMutuel = cleanNumber(row.prixMutuel || row["Prix Mutuel"] || row["prixMutuel"]);
+            const prixPreferenciel = cleanNumber(
+                row.prixPreferenciel || row["Prix Préférentiel"] || row["prixPreferenciel"]
+            );
 
             let rowError = "";
             if (!designationacte) rowError += "Champ 'designationacte' manquant. ";
@@ -26,7 +57,8 @@ export async function POST(req: NextRequest) {
             if (isNaN(prixClinique)) rowError += "Champ 'prixClinique' invalide. ";
             if (isNaN(prixMutuel)) rowError += "Champ 'prixMutuel' invalide. ";
             if (isNaN(prixPreferenciel)) rowError += "Champ 'prixPreferenciel' invalide. ";
-            if (rowError) errors.push({ index: i + 2, message: rowError.trim() }); // +2 pour Excel (header + 1-based)
+
+            if (rowError) errors.push({ index: i + 2, message: rowError.trim() });
 
             return {
                 designationacte,
@@ -38,21 +70,23 @@ export async function POST(req: NextRequest) {
             };
         });
 
-        // On ne garde que les lignes valides
+        // On garde uniquement les lignes valides
         const validActes = actes.filter((a, i) => !errors.find(e => e.index === i + 2));
 
         if (validActes.length === 0) {
             return NextResponse.json({ error: "Aucune donnée valide à importer.", details: errors }, { status: 400 });
         }
 
-        // Vérification des doublons dans la base (uniquement sur 'designationacte')
+        // Vérification des doublons déjà en base
         const existing = await ActeClinique.find({
-            designationacte: { $in: validActes.map(a => a.designationacte) }
+            designationacte: { $in: validActes.map(a => a.designationacte) },
         }).lean();
+
         const existingDesignations = new Set(existing.map((a: any) => a.designationacte));
+
         const toInsert = validActes.filter(a => !existingDesignations.has(a.designationacte));
 
-        // Ajout d'erreurs pour les doublons détectés (uniquement sur 'designationacte')
+        // Marquer les doublons dans les erreurs
         validActes.forEach((a, i) => {
             if (existingDesignations.has(a.designationacte)) {
                 errors.push({ index: i + 2, message: `Désignation '${a.designationacte}' déjà existante.` });
@@ -64,6 +98,7 @@ export async function POST(req: NextRequest) {
         }
 
         const inserted = await ActeClinique.insertMany(toInsert);
+
         return NextResponse.json({
             success: true,
             count: inserted.length,
@@ -72,7 +107,10 @@ export async function POST(req: NextRequest) {
         });
     } catch (e: any) {
         if (e.code === 11000) {
-            return NextResponse.json({ error: "Doublon détecté dans la base de données.", details: e.keyValue }, { status: 409 });
+            return NextResponse.json(
+                { error: "Doublon détecté dans la base de données.", details: e.keyValue },
+                { status: 409 }
+            );
         }
         return NextResponse.json({ error: e.message }, { status: 400 });
     }

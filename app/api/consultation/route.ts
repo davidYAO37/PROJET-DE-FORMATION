@@ -1,0 +1,157 @@
+import { NextRequest, NextResponse } from "next/server";
+import { Consultation } from "@/models/consultation";
+import { Patient } from "@/models/patient";
+import { Assurance } from "@/models/assurance";
+import { Medecin } from "@/models/medecin";
+import { db } from "@/db/mongoConnect";
+
+export async function POST(req: NextRequest) {
+    await db();
+
+    try {
+        const data = await req.json();
+
+        // ✅ Validation (selon WLangage)
+        if (!data.selectedActe || data.selectedActe === "") {
+            return NextResponse.json({ error: "Merci de préciser l'acte de consultation" }, { status: 400 });
+        }
+        if (!data.selectedMedecin || data.selectedMedecin === "") {
+            return NextResponse.json({ error: "Merci de préciser le médecin prescripteur" }, { status: 400 });
+        }
+
+        if (data.assure !== "non") {
+            if (!data.taux || data.taux === 0) {
+                return NextResponse.json({ error: "Merci de préciser le taux de couverture SVP" }, { status: 400 });
+            }
+            if (!data.matricule || data.matricule === "") {
+                return NextResponse.json({ error: "Merci de préciser le matricule du patient SVP" }, { status: 400 });
+            }
+            if (data.selectedAssurance === "" || !data.selectedAssurance) {
+                return NextResponse.json({ error: "Merci de préciser l'assurance du patient SVP" }, { status: 400 });
+            }
+        }
+
+        // ✅ Préparation de la consultation
+        const patient = await Patient.findById(data.IDPARTIENT);
+        const assurance = data.selectedAssurance ? await Assurance.findById(data.selectedAssurance) : null;
+        const medecin = await Medecin.findById(data.selectedMedecin);
+
+        // Montants et calculs
+        let montantActe = data.montantClinique || 0;
+        let partAssurance = 0;
+        let partPatient = 0;
+        let surplus = 0;
+        let statutC = false;
+        let statutPaiement = "En cours de Paiement";
+
+        const tauxNum = Number(data.taux) || 0;
+
+        // Calcul Part Assurance, Part Patient, Surplus
+        if (data.assure === "mutualiste") {
+            montantActe = data.montantAssurance || montantActe;
+        } else if (data.assure === "assure") {
+            montantActe = data.montantAssurance || montantActe;
+        }
+
+        if (data.montantClinique > montantActe) {
+            surplus = data.montantClinique - montantActe;
+        }
+
+        partAssurance = (tauxNum * montantActe) / 100;
+        partPatient = montantActe - partAssurance;
+        const totalPatient = partPatient + surplus;
+
+        // Correction des champs obligatoires
+        if (!patient || !patient.codeDossier) {
+            return NextResponse.json({ error: "Impossible de trouver le code dossier du patient." }, { status: 400 });
+        }
+        if (!data.Recupar || data.Recupar === "") {
+            return NextResponse.json({ error: "Utilisateur (Recupar) manquant. Veuillez vous reconnecter." }, { status: 400 });
+        }
+
+        const consultation = new Consultation({
+            designationC: data.selectedActeDesignation,
+            assurance: assurance?.desiganationassurance || "NON ASSURE",
+            Assuré: data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE",
+            IDASSURANCE: assurance?._id,
+
+            Prix_Assurance: montantActe,
+            PrixClinique: data.montantClinique || 0,
+            Restapayer: totalPatient,
+            montantapayer: partPatient,
+            ReliquatPatient: surplus,
+
+            Code_dossier: patient.codeDossier, // Toujours le code dossier du patient
+            // Code_Prestation: généré automatiquement par le modèle
+            Date_consulation: data.Date_consulation || new Date(),
+            Heure_Consultation: data.Heure_Consultation || new Date().toLocaleTimeString(),
+
+            StatutC: data.montantClinique === 0 ? true : false,
+            StatutPaiement: data.montantClinique === 0 ? "Pas facturé" : "En cours de Paiement",
+            Toutencaisse: data.montantClinique === 0 ? true : false,
+
+            tauxAssurance: tauxNum,
+            PartAssurance: partAssurance,
+            tiket_moderateur: partPatient,
+            numero_carte: data.matricule,
+            NumBon: data.NumBon,
+
+            Recupar: data.Recupar, // Nom de l'utilisateur connecté
+            IDACTE: data.selectedActe,
+
+            IDPARTIENT: patient?._id,
+            // Souscripteur: patient?.souscripteur,
+            PatientP: patient?.nom,
+            // SOCIETE_PATIENT: patient?.SOCIETE_PATIENT,
+            //IDSOCIETEASSUANCE: patient?.IDSOCIETEASSUANCE,
+
+            Medecin: medecin ? `${medecin.nom} ${medecin.prenoms}` : "",
+            IDMEDECIN: medecin?._id,
+
+            StatuPrescriptionMedecin: 2, // pour afficher l'acte dans la liste des actes prescrits
+        });
+
+        await consultation.save();
+
+        return NextResponse.json({ success: true, consultation });
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+export async function GET(req: NextRequest) {
+    await db();
+    try {
+        const { searchParams } = new URL(req.url);
+        const patientId = searchParams.get("patientId");
+
+        let query: any = {};
+        if (patientId) {
+            query.IDPARTIENT = patientId;
+        }
+
+        const consultations = await Consultation.find(query)
+            .populate("IDASSURANCE", "desiganationassurance")
+            .populate("IDPARTIENT", "nom prenoms")
+            .populate("IDMEDECIN", "nom prenoms");
+
+        return NextResponse.json(consultations);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+/* export async function GET(req: NextRequest) {
+    await db();
+
+    try {
+        const consultations = await Consultation.find()
+            .populate("IDASSURANCE", "desiganationassurance")
+            .populate("IDPARTIENT", "nom prenoms")
+            .populate("IDMEDECIN", "nom prenoms");
+
+        return NextResponse.json(consultations);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+ */

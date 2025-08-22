@@ -37,6 +37,9 @@ export default function ConnexionPage() {
 
       if (profil) {
         localStorage.setItem('profil', JSON.stringify(profil));
+        // Stocke le nom complet pour la fiche consultation
+        const nomComplet = `${profil.nom || ''} ${profil.prenom || ''}`.trim();
+        localStorage.setItem('nom_utilisateur', nomComplet);
 
         // ✅ Redirection selon le rôle
         if (profil?.type === 'admin') router.push('/dashboard');

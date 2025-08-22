@@ -10,6 +10,7 @@ import { BiSolidBookAdd } from 'react-icons/bi';
 import { CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
 import FicheConsultation from '../componant/FicheConsultation';
+import dayjs from 'dayjs';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -70,6 +71,7 @@ export default function Page() {
     showNotification(`📝 Patient "${updatedPatient.nom}" modifié.`, 'info');
   };
   const [showConsultationModal, setShowConsultationModal] = useState(false);
+  const [consultationJour, setConsultationJour] = useState<string | null>(null);
 
   // ✅ Supprimer patient avec loader par id
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
@@ -189,10 +191,31 @@ export default function Page() {
                         title="Nouvelle Consultation ou visite"
                         size="sm"
                         className="me-4"
-                        onClick={() => {
+                        onClick={async () => {
                           setSelectedPatient(patient);
+                          try {
+                            const res = await fetch(`/api/consultation?patientId=${patient._id}`);
+                            if (res.ok) {
+                              const consultations = await res.json();
+                              const today = dayjs().startOf('day');
+                              const found = consultations.find((c: any) => {
+                                const date = dayjs(c.Date_consulation);
+                                return date.isSame(today, 'day');
+                              });
+                              if (found && found.Code_Prestation) {
+                                setConsultationJour(found.Code_Prestation);
+                                setShowConsultationModal(true);
+                                return;
+                              }
+                            }
+                          } catch (e) {
+                            console.error("Erreur vérification consultation", e);
+                          }
+                          // sinon -> pas de consultation aujourd’hui, ouvrir la fiche
+                          setConsultationJour(null);
                           setShowConsultationModal(true);
                         }}
+
                       >
                         <BiSolidBookAdd />
                       </Button>
@@ -288,7 +311,7 @@ export default function Page() {
         patient={selectedPatient}
         onUpdate={handleSavePatient}
       />
-
+      {/* on vérifie si le patient selection a un Code_Prestation pour la journée */}
 
 
       <Modal
@@ -300,14 +323,20 @@ export default function Page() {
       >
         <Modal.Header closeButton>
           <Modal.Title>
-            Nouvelle Consultation - {selectedPatient?.nom} {selectedPatient?.prenoms}
+            Nouvelle Consultation - {selectedPatient?.nom} {selectedPatient?.prenoms} - Age : {selectedPatient?.age} ans
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <FicheConsultation patient={selectedPatient} />
+          {consultationJour ? (
+            <div className="text-center p-4">
+              <h4 className="text-success">Ce patient a déjà une consultation aujourd'hui.</h4>
+              <p>Code Prestation : <b>{consultationJour}</b></p>
+            </div>
+          ) : (
+            <FicheConsultation patient={selectedPatient} />
+          )}
         </Modal.Body>
       </Modal>
-
     </Container>
 
   );

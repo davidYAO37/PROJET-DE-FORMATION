@@ -1,16 +1,3 @@
-/* import mongoose, { Schema, models, model } from "mongoose";
-
-const PatientSchema = new Schema({
-  nom: { type: String, required: true },
-  prenoms: { type: String, required: true },
-  age: { type: Number, required: true },
-  sexe: { type: String, required: true },
-  contact: { type: String, required: true },
-  codeDossier: { type: String, required: true },
-});
-
-export const Patient = models.Patient || model("Patient", PatientSchema);
- */
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IPatient extends Document {
