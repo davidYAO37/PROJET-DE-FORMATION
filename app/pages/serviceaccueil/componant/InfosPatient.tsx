@@ -13,7 +13,7 @@ export default function InfosPatient({ assure, setAssure }: InfosPatientProps) {
             <div className="d-flex justify-content-around mb-1">
                 <Form.Check inline label="Non Assuré" type="radio" checked={assure === "non"} onChange={() => setAssure("non")} />
                 <Form.Check inline label="Mutualiste" type="radio" checked={assure === "mutualiste"} onChange={() => setAssure("mutualiste")} />
-                <Form.Check inline label="Préférentiel" type="radio" checked={assure === "assure"} onChange={() => setAssure("assure")} />
+                <Form.Check inline label="Préférentiel" type="radio" checked={assure === "preferentiel"} onChange={() => setAssure("preferentiel")} />
             </div>
         </Card>
     );

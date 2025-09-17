@@ -33,6 +33,9 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
     const [montantClinique, setMontantClinique] = useState<number>(0);
     const [montantAssurance, setMontantAssurance] = useState<number>(0);
 
+    const [souscripteur, setSouscripteur] = useState("");
+    const [societePatient, setSocietePatient] = useState("");
+
     const [surplus, setSurplus] = useState<number>(0);
     const [partAssurance, setPartAssurance] = useState<number>(0);
     const [partPatient, setPartPatient] = useState<number>(0);
@@ -58,33 +61,91 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
             .then((data) => setMedecinPrescripteur(Array.isArray(data) ? data : []));
     }, []);
 
+
     useEffect(() => {
         if (!patient) return;
-        if (patient.typevisiteur === "Non Assuré") setAssure("non");
-        else if (patient.typevisiteur === "Mutualiste") setAssure("mutualiste");
-        else setAssure("assure");
+        if (patient.TarifPatient === "Non Assuré") setAssure("non");
+        else if (patient.TarifPatient === "Mutualiste") setAssure("mutualiste");
+        else setAssure("preferentiel");
 
         setSelectedAssurance(patient.assurance || "");
-        setMatricule(patient.matriculepatient || "");
-        setTaux(patient.tauxassurance ?? "");
+        setMatricule(patient.Matricule || "");
+        setTaux(patient.Taux ?? "");
+        setSouscripteur(patient.Souscripteur || "");
+        setSocietePatient(patient.SOCIETE_PATIENT || "");
     }, [patient]);
+
+    // Effet pour vider ou afficher les champs selon le type d'assuré
+    useEffect(() => {
+        if (assure === "non") {
+            setSelectedAssurance("");
+            setMatricule("");
+            setTaux("");
+            setNumBon("");
+            // Si vous avez souscripteur et sociétépatient, ajoutez ici :
+            setSouscripteur("");
+            setSocietePatient("");
+        } else {
+            // On peut pré-remplir si patient existe
+            if (patient) {
+                setSelectedAssurance(patient.IDASSURANCE || "");
+                setMatricule(patient.Matricule || "");
+                setTaux(patient.Taux ?? "");
+                setSouscripteur(patient.Souscripteur || "");
+                setSocietePatient(patient.SOCIETE_PATIENT || "");
+            }
+        }
+    }, [assure, patient]);
 
     useEffect(() => {
         if (!selectedActe) return;
         const acte = actes.find((a) => a._id === selectedActe);
         if (!acte) return;
 
-        setMontantClinique(acte.prixClinique ?? 0);
-        if (assure === "mutualiste") setMontantAssurance(acte.prixMutuel ?? acte.prixClinique ?? 0);
-        else if (assure === "assure") setMontantAssurance(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
-        else setMontantAssurance(acte.prixClinique ?? 0);
-    }, [selectedActe, assure, actes]);
+        // Montant clinique selon le type patient
+        let montant = 0;
+        if (assure === "mutualiste") montant = acte.prixMutuel ?? acte.prixClinique ?? 0;
+        else if (assure === "preferentiel") montant = acte.prixPreferentiel ?? acte.prixClinique ?? 0;
+        else montant = acte.prixClinique ?? 0;
+        setMontantClinique(montant);
+
+        // Si patient mutualiste ou préférentiel, on cherche le tarif dans la collection tarifassurance
+        if ((assure === "mutualiste" || assure === "preferentiel") && selectedAssurance) {
+            fetch(`/api/tarifs/${selectedAssurance}`)
+                .then(res => res.json())
+                .then((tarifs) => {
+                    if (!Array.isArray(tarifs)) { setMontantAssurance(0); return; }
+                    const tarif = tarifs.find((t: any) => t.acte === acte.designationacte);
+                    if (tarif) {
+                        if (assure === "mutualiste") setMontantAssurance(tarif.prixmutuel ?? acte.prixMutuel ?? acte.prixClinique ?? 0);
+                        else if (assure === "preferentiel") setMontantAssurance(tarif.prixpreferenciel ?? acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+                    } else {
+                        if (assure === "mutualiste") setMontantAssurance(acte.prixMutuel ?? acte.prixClinique ?? 0);
+                        else if (assure === "preferentiel") setMontantAssurance(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+                    }
+                })
+                .catch(() => {
+                    if (assure === "mutualiste") setMontantAssurance(acte.prixMutuel ?? acte.prixClinique ?? 0);
+                    else if (assure === "preferentiel") setMontantAssurance(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+                });
+        } else {
+            setMontantAssurance(acte.prixClinique ?? 0);
+        }
+    }, [selectedActe, assure, actes, selectedAssurance]);
 
     useEffect(() => {
         const tauxNum = Number(taux) || 0;
-        const surplusCalc = Math.max(0, montantClinique - montantAssurance);
-        const partAssur = (tauxNum * montantAssurance) / 100;
-        const partPat = montantAssurance - partAssur;
+        let montantAssur = montantAssurance;
+        // Si le montant assurance n'est pas paramétré, on prend celui de la clinique
+        if (!montantAssur || montantAssur === 0) montantAssur = montantClinique;
+
+        // Calcul de la part de l'assurance
+        const partAssur = (montantAssur * tauxNum) / 100;
+        const partPat = montantAssur - partAssur;
+
+        // Calcul du surplus
+        let surplusCalc = 0;
+        if (montantClinique > montantAssur) surplusCalc = montantClinique - montantAssur;
 
         setSurplus(surplusCalc);
         setPartAssurance(partAssur);
@@ -98,7 +159,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
         setLoading(true);
         try {
             if (!recuPar) throw new Error("Utilisateur non reconnu.");
-            if (!patient?.codeDossier) throw new Error("Patient invalide (code dossier manquant).");
+            if (!patient?.Code_dossier) throw new Error("Patient invalide (code dossier manquant).");
 
             const selectedActeDesignation =
                 actes.find((a) => a._id === selectedActe)?.designationacte || "";
@@ -115,11 +176,12 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                     selectedAssurance,
                     montantClinique,
                     montantAssurance,
-                    Code_dossier: patient.codeDossier,
+                    Code_dossier: patient.Code_dossier,
                     NumBon: numBon,
                     Recupar: recuPar,
                     IDPARTIENT: patient._id || "",
                     selectedActeDesignation,
+
                 }),
             });
 
@@ -146,7 +208,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                 className="text-center text-white p-2 mb-3"
                 style={{ background: "#00AEEF" }}
             >
-                NOUVELLE FICHE CONSULTATION
+                NOUVELLE FICHE CONSULTATION-VISITE
             </h3>
 
             <InfosPatient assure={assure} setAssure={setAssure} />
@@ -162,6 +224,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                 medecinPrescripteur={medecinPrescripteur}
                 selectedMedecin={selectedMedecin}
                 setSelectedMedecin={setSelectedMedecin}
+                assure={assure}
             />
 
             <BlocAssurance
@@ -173,6 +236,10 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                 taux={taux}
                 numBon={numBon}
                 setNumBon={setNumBon}
+                souscripteur={souscripteur}
+                setSouscripteur={setSouscripteur}
+                societePatient={societePatient}
+                setSocietePatient={setSocietePatient}
             />
 
             <ResumeMontants

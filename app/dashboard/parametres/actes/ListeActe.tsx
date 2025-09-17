@@ -3,12 +3,13 @@ import { useState, useRef } from "react";
 import * as XLSX from "xlsx";
 import axios from "axios";
 import { Button, Table, Pagination, Dropdown, Form, Spinner } from "react-bootstrap";
-import { ActesClinique } from "@/types/acte";
+
 import { FaEdit, FaSync, FaTrash, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { ActeClinique } from "@/types/acteclinique";
 
 type Props = {
-    actes: ActesClinique[];
-    onEdit: (a: ActesClinique) => void;
+    actes: ActeClinique[];
+    onEdit: (a: ActeClinique) => void;
     onDelete: (id: string) => void;
 };
 
@@ -25,9 +26,9 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
     const [prixPref, setPrixPref] = useState<number | "">("");
     const [titre, setTitre] = useState("");
 
-    const [sortConfig, setSortConfig] = useState<{ key: keyof ActesClinique; direction: "asc" | "desc" } | null>(null);
+    const [sortConfig, setSortConfig] = useState<{ key: keyof ActeClinique; direction: "asc" | "desc" } | null>(null);
 
-    const handleSort = (key: keyof ActesClinique) => {
+    const handleSort = (key: keyof ActeClinique) => {
         setSortConfig((prev) => {
             if (prev && prev.key === key) {
                 return { key, direction: prev.direction === "asc" ? "desc" : "asc" };
@@ -36,7 +37,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
         });
     };
 
-    const renderSortIcon = (key: keyof ActesClinique) => {
+    const renderSortIcon = (key: keyof ActeClinique) => {
         if (!sortConfig || sortConfig.key !== key) return <FaSort />;
         return sortConfig.direction === "asc" ? <FaSortUp /> : <FaSortDown />;
     };
@@ -217,7 +218,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                                 <td>{a.prixPreferenciel}</td>
                                 <td className="text-center">
                                     <Button size="sm" variant="outline-primary" className="me-2" onClick={() => { setActionLoading('edit-' + a._id); onEdit(a); }} disabled={actionLoading === 'edit-' + a._id}><FaEdit /></Button>
-                                    {a._id && <Button size="sm" variant="outline-danger" disabled={actionLoading === 'delete-' + a._id} onClick={async () => { if (window.confirm(`Supprimer "${a.designationacte}" ?`)) { setActionLoading('delete-' + a._id); await onDelete(a._id); setActionLoading(null); } }}><FaTrash /></Button>}
+                                    {a._id && <Button size="sm" variant="outline-danger" disabled={actionLoading === 'delete-' + a._id} onClick={async () => { if (window.confirm(`Supprimer "${a.designationacte}" ?`)) { setActionLoading('delete-' + a._id); await onDelete(a._id as string); setActionLoading(null); } }}><FaTrash /></Button>}
                                 </td>
                             </tr>
                         ))

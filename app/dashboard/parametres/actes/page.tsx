@@ -5,20 +5,20 @@ import axios from "axios";
 import ListeActe from "./ListeActe";
 import AjouterActe from "./AjouterActe";
 import ModifierActe from "./ModifierActe";
-import { ActesClinique } from "@/types/acte";
+import { ActeClinique } from "@/types/acteclinique";
 
 export default function ActesPage() {
-    const [actes, setActes] = useState<ActesClinique[]>([]);
+    const [actes, setActes] = useState<ActeClinique[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showAdd, setShowAdd] = useState(false);
     const [showEdit, setShowEdit] = useState(false);
-    const [selected, setSelected] = useState<ActesClinique | null>(null);
+    const [selected, setSelected] = useState<ActeClinique | null>(null);
 
     useEffect(() => {
         const fetchActes = async () => {
             try {
-                const res = await axios.get<ActesClinique[]>("/api/actes");
+                const res = await axios.get<ActeClinique[]>("/api/actes");
                 setActes(res.data);
             } catch (err: any) {
                 setError(err.response?.data?.message || err.message || "Erreur inconnue");
@@ -29,17 +29,17 @@ export default function ActesPage() {
         fetchActes();
     }, []);
 
-    const handleAdd = (a: ActesClinique) => {
+    const handleAdd = (a: ActeClinique) => {
         setActes((prev) => [...prev, a]);
         setShowAdd(false);
     };
 
-    const handleEdit = (a: ActesClinique) => {
+    const handleEdit = (a: ActeClinique) => {
         setActes((prev) => prev.map((x) => (x._id === a._id ? a : x)));
         setShowEdit(false);
     };
 
-    const handleEditClick = (a: ActesClinique) => {
+    const handleEditClick = (a: ActeClinique) => {
         setSelected(a);
         setShowEdit(true);
     };

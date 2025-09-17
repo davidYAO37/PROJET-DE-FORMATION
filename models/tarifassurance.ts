@@ -21,5 +21,4 @@ const TarifAssuranceSchema = new Schema<ITarifAssurance>(
   { timestamps: true }
 );
 
-export const TarifAssurance: Model<ITarifAssurance> =
-  mongoose.models.TarifAssurance || mongoose.model<ITarifAssurance>("TarifAssurance", TarifAssuranceSchema);
+export const TarifAssurance: Model<ITarifAssurance> = mongoose.models.TarifAssurance || mongoose.model<ITarifAssurance>("TarifAssurance", TarifAssuranceSchema);

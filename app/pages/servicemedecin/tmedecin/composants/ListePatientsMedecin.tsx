@@ -10,7 +10,7 @@ interface Patient {
   age: number;
   naissance: string;
   contact: string;
-  codeDossier: string;
+  Code_dossier: string;
 }
 
 export default function ListePatientsMedecin() {
@@ -47,7 +47,7 @@ export default function ListePatientsMedecin() {
             <td>{p.sexe}</td>
             <td>{p.age}</td>
             <td>{p.contact}</td>
-            <td>{p.codeDossier}</td>
+            <td>{p.Code_dossier}</td>
             <td>
               <Button variant="warning" size="sm"><FaPen /> Dossiers Patient</Button>
             </td>

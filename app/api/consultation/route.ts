@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
         const totalPatient = partPatient + surplus;
 
         // Correction des champs obligatoires
-        if (!patient || !patient.codeDossier) {
+        if (!patient || !patient.Code_dossier) {
             return NextResponse.json({ error: "Impossible de trouver le code dossier du patient." }, { status: 400 });
         }
         if (!data.Recupar || data.Recupar === "") {
@@ -78,10 +78,10 @@ export async function POST(req: NextRequest) {
             Prix_Assurance: montantActe,
             PrixClinique: data.montantClinique || 0,
             Restapayer: totalPatient,
-            montantapayer: partPatient,
+            montantapayer: Number(partPatient + surplus),
             ReliquatPatient: surplus,
 
-            Code_dossier: patient.codeDossier, // Toujours le code dossier du patient
+            Code_dossier: patient.Code_dossier, // Toujours le code dossier du patient
             // Code_Prestation: généré automatiquement par le modèle
             Date_consulation: data.Date_consulation || new Date(),
             Heure_Consultation: data.Heure_Consultation || new Date().toLocaleTimeString(),
@@ -100,10 +100,10 @@ export async function POST(req: NextRequest) {
             IDACTE: data.selectedActe,
 
             IDPARTIENT: patient?._id,
-            // Souscripteur: patient?.souscripteur,
-            PatientP: patient?.nom,
-            // SOCIETE_PATIENT: patient?.SOCIETE_PATIENT,
-            //IDSOCIETEASSUANCE: patient?.IDSOCIETEASSUANCE,
+            Souscripteur: patient?.Souscripteur,
+            PatientP: patient?.Nom,
+            SOCIETE_PATIENT: patient?.SOCIETE_PATIENT,
+            IDSOCIETEASSUANCE: patient?.IDSOCIETEASSUANCE,
 
             Medecin: medecin ? `${medecin.nom} ${medecin.prenoms}` : "",
             IDMEDECIN: medecin?._id,
@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
 
         const consultations = await Consultation.find(query)
             .populate("IDASSURANCE", "desiganationassurance")
-            .populate("IDPARTIENT", "nom prenoms")
+            .populate("IDPARTIENT", "Nom Prenoms")
             .populate("IDMEDECIN", "nom prenoms");
 
         return NextResponse.json(consultations);
@@ -139,19 +139,3 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
-
-/* export async function GET(req: NextRequest) {
-    await db();
-
-    try {
-        const consultations = await Consultation.find()
-            .populate("IDASSURANCE", "desiganationassurance")
-            .populate("IDPARTIENT", "nom prenoms")
-            .populate("IDMEDECIN", "nom prenoms");
-
-        return NextResponse.json(consultations);
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-}
- */

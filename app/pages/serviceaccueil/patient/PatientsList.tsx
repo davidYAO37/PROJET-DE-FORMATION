@@ -12,7 +12,7 @@ type Patient = {
   age: number;
   sexe: string;
   contact: string;
-  codeDossier: string;
+  Code_dossier: string;
 };
 
 type Props = {
@@ -51,7 +51,7 @@ export default function PatientsList({ patients, onEdit, onDelete }: Props) {
                 <td>{patient.age}</td>
                 <td>{patient.sexe}</td>
                 <td>{patient.contact}</td>
-                <td>{patient.codeDossier}</td>
+                <td>{patient.Code_dossier}</td>
                 <td>
                   <button
                     className="btn btn-sm btn-warning me-2 mb-1"
@@ -68,7 +68,7 @@ export default function PatientsList({ patients, onEdit, onDelete }: Props) {
                   </button>
                   <button
                     className="btn btn-sm btn-primary mb-1"
-                    onClick={() => alert(`Dossier du patient: ${patient.codeDossier}`)}
+                    onClick={() => alert(`Dossier du patient: ${patient.Code_dossier}`)}
                     title="Voir dossier patient"
                   >
                     Dossier Patient

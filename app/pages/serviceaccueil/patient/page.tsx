@@ -11,6 +11,8 @@ import { CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
 import FicheConsultation from '../componant/FicheConsultation';
 import dayjs from 'dayjs';
+import ListeConsultationsModal from '../componant/ListeConsultationsModal';
+import ExamenHospitalisationModal from '../componant/ExamenHospitModal';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -28,6 +30,9 @@ export default function Page() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastVariant, setToastVariant] = useState<'success' | 'info' | 'danger'>('info');
+  const [showListeConsultModal, setShowListeConsultModal] = useState(false);
+  const [patientIdConsultModal, setPatientIdConsultModal] = useState<string | null>(null);
+  const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
     setToastMessage(message);
@@ -56,7 +61,7 @@ export default function Page() {
   // ✅ Ajouter patient (local + MongoDB)
   const handleAddPatient = (patient: Patient) => {
     setPatients((prev) => [...prev, patient]);
-    showNotification(`✅ Patient "${patient.nom}" ajouté.`, 'success');
+    showNotification(`✅ Patient "${patient.Nom}" ajouté.`, 'success');
   };
 
   // ✅ Modifier patient
@@ -68,7 +73,7 @@ export default function Page() {
   const handleSavePatient = (updatedPatient: Patient) => {
     const updatedList = patients.map((p) => (p._id === updatedPatient._id ? updatedPatient : p));
     setPatients(updatedList);
-    showNotification(`📝 Patient "${updatedPatient.nom}" modifié.`, 'info');
+    showNotification(`📝 Patient "${updatedPatient.Nom}" modifié.`, 'info');
   };
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [consultationJour, setConsultationJour] = useState<string | null>(null);
@@ -93,11 +98,11 @@ export default function Page() {
 
   // ✅ Filtrage + Pagination
   const filteredPatients = patients.filter((p) =>
-    p.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.prenoms?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.Nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.Prenoms?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     p.sexe?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.codeDossier?.toLowerCase().includes(searchTerm.toLowerCase())
+    p.Contact?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.Code_dossier?.toLowerCase().includes(searchTerm.toLowerCase())
 
   );
 
@@ -179,12 +184,12 @@ export default function Page() {
                 paginatedPatients.map((patient, index) => (
                   <tr key={patient._id}>
                     <td>{index + 1 + (currentPage - 1) * ITEMS_PER_PAGE}</td>
-                    <td>{patient.nom}</td>
-                    <td>{patient.prenoms}</td>
-                    <td>{patient.age}</td>
+                    <td>{patient.Nom}</td>
+                    <td>{patient.Prenoms}</td>
+                    <td>{patient.Age_partient}</td>
                     <td>{patient.sexe}</td>
-                    <td>{patient.contact}</td>
-                    <td>{patient.codeDossier}</td>
+                    <td>{patient.Contact}</td>
+                    <td>{patient.Code_dossier}</td>
                     <td className="bg-secondary bg-opacity-10">
                       <Button
                         variant="outline-primary"
@@ -224,12 +229,34 @@ export default function Page() {
                         variant="outline-success"
                         title="Liste des consultations ou visites du patient"
                         size="sm"
-                        onClick={() => handleDeletePatient(patient._id)}
+                        onClick={() => {
+                          setPatientIdConsultModal(patient._id || '');
+                          setShowListeConsultModal(true);
+                        }}
                       >
                         <CgUserList />
                       </Button>
-
+                      {/* Modal liste consultations/visites */}
+                      <ListeConsultationsModal
+                        show={showListeConsultModal}
+                        onHide={() => setShowListeConsultModal(false)}
+                        patientId={patientIdConsultModal || ''}
+                      />
+                      <Button
+                        variant="outline-warning"
+                        title="Ajouter examens ou hospitalisation"
+                        size="sm"
+                        onClick={() => setShowExamenHospitalisationModal(true)}
+                      >
+                        Ajouter examens ou hospitalisation
+                      </Button>
+                      {/* Modal ajouter examens*hospit ... */}
+                      <ExamenHospitalisationModal
+                        show={showExamenHospitalisationModal}
+                        onHide={() => setShowExamenHospitalisationModal(false)}
+                      />
                     </td>
+
                     <td className="bg-primary bg-opacity-10">
                       <Button
                         variant="outline-primary"
@@ -323,7 +350,7 @@ export default function Page() {
       >
         <Modal.Header closeButton>
           <Modal.Title>
-            Nouvelle Consultation - {selectedPatient?.nom} {selectedPatient?.prenoms} - Age : {selectedPatient?.age} ans
+            Nouvelle Consultation - {selectedPatient?.Nom} {selectedPatient?.Prenoms} - Age : {selectedPatient?.Age_partient} ans
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>

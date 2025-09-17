@@ -1,16 +1,18 @@
 // types.ts
 export type Patient = {
   _id?: string; // facultatif lors de la création
-  nom?: string;
-  prenoms?: string;
-  age?: number;
+  Nom?: string;
+  Prenoms?: string;
+  Age_partient?: number;
   sexe?: string;
-  contact?: string;
-  typevisiteur?: string; // facultatif
-  codeDossier?: string;
-  matriculepatient?: string; // facultatif
-  dateNaissance?: Date; // facultatif
-  tauxassurance?: number; // facultatif
+  Contact?: string;
+  Code_dossier?: string;
+  Matricule?: string;
+  Date_naisse?: Date;
+  Taux?: number;
+  IDASSURANCE?: string; // Référence à l'assurance
+  SOCIETE_PATIENT?: string;
+  Souscripteur?: string;
+  TarifPatient?: string;
   assurance?: string; // facultatif, référence à l'assurance
-
 };

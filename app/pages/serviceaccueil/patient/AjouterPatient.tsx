@@ -1,6 +1,8 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
+import SocietePatientModal from '@/components/SocietePatientModal';
 import { Modal, Button, Form, Alert, Spinner, Row, Col } from 'react-bootstrap';
 import { Patient } from '@/types/patient';
 
@@ -19,18 +21,27 @@ type Props = {
 
 export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
   const [formData, setFormData] = useState<any>({
-    nom: '',
-    prenoms: '',
-    age: 0,
+    Nom: '',
+    Prenoms: '',
+    Age_partient: 0,
     sexe: 'Masculin',
-    contact: '',
+    Contact: '',
     typevisiteur: 'Non Assuré',
-    codeDossier: `P00${nextId}`,
-    matriculepatient: '',
-    dateNaissance: '',
-    tauxassurance: '',
-    assurance: '',
+    Code_dossier: `P00${nextId}`,
+    Matricule: '',
+    Date_naisse: '',
+    Taux: '',
+    IDASSURANCE: '',
+    SOCIETE_PATIENT: '',
+    Souscripteur: '',
   });
+
+  // Callback pour sélection société
+  const handleSelectSociete = (societe: { _id: string; societe: string }) => {
+    setFormData((prev: any) => ({ ...prev, societePatient: societe.societe }));
+  };
+  // Modal société patient
+  const [showSocieteModal, setShowSocieteModal] = useState(false);
 
   const [assurances, setAssurances] = useState<Assurance[]>([]);
   const [loading, setLoading] = useState(false);
@@ -57,17 +68,19 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
   useEffect(() => {
     if (show) {
       setFormData({
-        nom: '',
-        prenoms: '',
-        age: 0,
+        Nom: '',
+        Prenoms: '',
+        Age_partient: 0,
         sexe: 'Masculin',
-        contact: '',
+        Contact: '',
         typevisiteur: 'Non Assuré',
-        codeDossier: `P00${nextId}`,
-        matriculepatient: '',
-        dateNaissance: '',
-        tauxassurance: '',
-        assurance: '',
+        Code_dossier: `P00${nextId}`,
+        Matricule: '',
+        Date_naisse: '',
+        Taux: '',
+        IDASSURANCE: '',
+        SOCIETE_PATIENT: '',
+        Souscripteur: '',
       });
       setErrorMsg(null);
       setSuccessMsg(null);
@@ -80,7 +93,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     setFormData((prev: any) => {
       let newData = { ...prev, [name]: value };
 
-      if (name === "dateNaissance" && value) {
+      if (name === "Date_naisse" && value) {
         const today = new Date();
         const birthDate = new Date(value);
         let age = today.getFullYear() - birthDate.getFullYear();
@@ -88,20 +101,26 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
           age--;
         }
-        newData.age = age > 0 ? age : 0;
+        newData.Age_partient = age > 0 ? age : 0;
       }
 
-      if (name === "age" && value > 0) {
+      if (name === "Age_partient" && value > 0) {
         const today = new Date();
         const birthYear = today.getFullYear() - parseInt(value, 10);
         const birthDate = new Date(birthYear, today.getMonth(), today.getDate());
-        newData.dateNaissance = birthDate.toISOString().split('T')[0];
+        newData.Date_naisse = birthDate.toISOString().split('T')[0];
       }
 
       if (name === "typevisiteur" && value === "Non Assuré") {
-        newData.assurance = '';
-        newData.tauxassurance = '';
-        newData.matriculepatient = '';
+        newData.IDASSURANCE = '';
+        newData.Taux = '';
+        newData.Matricule = '';
+        newData.SOCIETE_PATIENT = '';
+      }
+
+      // Ouvre le modal société si on sélectionne une assurance
+      if (name === "IDASSURANCE" && value) {
+        setShowSocieteModal(true);
       }
 
       return newData;
@@ -109,13 +128,13 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
   };
 
   const validateForm = async () => {
-    if (!formData.nom || !formData.prenoms || formData.age <= 0 || !formData.contact) {
+    if (!formData.Nom || !formData.Prenoms || formData.Age_partient <= 0 || !formData.Contact) {
       setErrorMsg('Veuillez remplir tous les champs obligatoires.');
       return false;
     }
-    // Vérification unicité codeDossier côté API
+    // Vérification unicité Code_dossier côté API
     try {
-      const res = await fetch(`/api/patients?codeDossier=${encodeURIComponent(formData.codeDossier)}`);
+      const res = await fetch(`/api/patients?Code_dossier=${encodeURIComponent(formData.Code_dossier)}`);
       if (res.ok) {
         const patients = await res.json();
         if (Array.isArray(patients) && patients.length > 0) {
@@ -126,7 +145,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     } catch { }
     // Vérification des champs pour Mutualiste et Préférentiel
     if ((formData.typevisiteur === "Mutualiste" || formData.typevisiteur === "Préférentiel")) {
-      if (!formData.assurance || !formData.tauxassurance || !formData.matriculepatient) {
+      if (!formData.IDASSURANCE || !formData.Taux || !formData.Matricule) {
         setErrorMsg("Veuillez renseigner l'assurance, le taux et le matricule.");
         return false;
       }
@@ -146,10 +165,23 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
       let payload = { ...formData };
 
       if (payload.typevisiteur === "Non Assuré") {
-        delete payload.assurance;
-        delete payload.tauxassurance;
-        delete payload.matriculepatient;
+        payload.IDASSURANCE = undefined;
+        payload.Taux = undefined;
+        payload.Matricule = '';
+        payload.SOCIETE_PATIENT = '';
+        payload.Souscripteur = '';
       }
+
+      // Nettoyage des champs undefined ou vides
+      Object.keys(payload).forEach((k) => {
+        if (
+          payload[k] === undefined ||
+          payload[k] === null ||
+          (typeof payload[k] === "string" && payload[k].trim() === "")
+        ) {
+          delete payload[k];
+        }
+      });
 
       const response = await fetch('/api/patients', {
         method: 'POST',
@@ -176,116 +208,116 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
   };
 
   return (
-    <Modal show={show} onHide={onHide} backdrop="static" size="lg" centered>
-      <Modal.Header closeButton className="bg-primary text-white">
-        <Modal.Title>➕ Ajouter un Patient</Modal.Title>
-      </Modal.Header>
-      <Modal.Body>
-        {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
-        {successMsg && <Alert variant="success">{successMsg}</Alert>}
-        <Form>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Code Dossier</Form.Label>
-                <Form.Control
-                  name="codeDossier"
-                  value={formData.codeDossier}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Type Visiteur</Form.Label>
-                <Form.Select
-                  name="typevisiteur"
-                  value={formData.typevisiteur}
-                  onChange={handleChange}
-                >
-                  <option value="Non Assuré">Non Assuré</option>
-                  <option value="Mutualiste">Mutualiste</option>
-                  <option value="Préférentiel">Préférentiel</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
-          </Row>
-          <Row>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Nom</Form.Label>
-                <Form.Control
-                  name="nom"
-                  value={formData.nom}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={6}>
-              <Form.Group className="mb-3">
-                <Form.Label>Prénoms</Form.Label>
-                <Form.Control
-                  name="prenoms"
-                  value={formData.prenoms}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-          </Row>
-          <Row>
-            <Col md={4}>
-              <Form.Group className="mb-3">
-                <Form.Label>Âge</Form.Label>
-                <Form.Control
-                  type="number"
-                  name="age"
-                  value={formData.age}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={4}>
-              <Form.Group className="mb-3">
-                <Form.Label>Date de Naissance</Form.Label>
-                <Form.Control
-                  type="date"
-                  name="dateNaissance"
-                  value={formData.dateNaissance}
-                  onChange={handleChange}
-                />
-              </Form.Group>
-            </Col>
-            <Col md={4}>
-              <Form.Group className="mb-3">
-                <Form.Label>Sexe</Form.Label>
-                <Form.Select
-                  name="sexe"
-                  value={formData.sexe}
-                  onChange={handleChange}
-                >
-                  <option value="Masculin">Masculin</option>
-                  <option value="Féminin">Féminin</option>
-                </Form.Select>
-              </Form.Group>
-            </Col>
-          </Row>
-          <Form.Group className="mb-3">
-            <Form.Label>Contact</Form.Label>
-            <Form.Control
-              name="contact"
-              value={formData.contact}
-              onChange={handleChange}
-            />
-          </Form.Group>
-          {formData.typevisiteur !== 'Non Assuré' && (
-            <div className="border p-3 rounded bg-light">
-              <Row>
-                <Col md={6}>
+    <>
+      <Modal show={show} onHide={onHide} backdrop="static" size="lg" centered>
+        <Modal.Header closeButton className="bg-primary text-white">
+          <Modal.Title>➕ Ajouter un Patient</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
+          {successMsg && <Alert variant="success">{successMsg}</Alert>}
+          <Form>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Code Dossier</Form.Label>
+                  <Form.Control
+                    name="Code_dossier"
+                    value={formData.Code_dossier}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Type Visiteur</Form.Label>
+                  <Form.Select
+                    name="typevisiteur"
+                    value={formData.typevisiteur}
+                    onChange={handleChange}
+                  >
+                    <option value="Non Assuré">Non Assuré</option>
+                    <option value="Mutualiste">Mutualiste</option>
+                    <option value="Préférentiel">Préférentiel</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Nom</Form.Label>
+                  <Form.Control
+                    name="Nom"
+                    value={formData.Nom}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Prénoms</Form.Label>
+                  <Form.Control
+                    name="Prenoms"
+                    value={formData.Prenoms}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Âge</Form.Label>
+                  <Form.Control
+                    type="number"
+                    name="Age_partient"
+                    value={formData.Age_partient}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Date de Naissance</Form.Label>
+                  <Form.Control
+                    type="date"
+                    name="Date_naisse"
+                    value={formData.Date_naisse}
+                    onChange={handleChange}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Sexe</Form.Label>
+                  <Form.Select
+                    name="sexe"
+                    value={formData.sexe}
+                    onChange={handleChange}
+                  >
+                    <option value="Masculin">Masculin</option>
+                    <option value="Féminin">Féminin</option>
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+            <Form.Group className="mb-3">
+              <Form.Label>Contact</Form.Label>
+              <Form.Control
+                name="Contact"
+                value={formData.Contact}
+                onChange={handleChange}
+              />
+            </Form.Group>
+            {formData.typevisiteur !== 'Non Assuré' && (
+              <div className="border p-3 rounded bg-light">
+                <Row>
                   <Form.Group className="mb-3">
                     <Form.Label>Assurance</Form.Label>
                     <Form.Select
-                      name="assurance"
-                      value={formData.assurance}
+                      name="IDASSURANCE"
+                      value={formData.IDASSURANCE}
                       onChange={handleChange}
                     >
                       <option value="">-- Sélectionner --</option>
@@ -296,49 +328,91 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                       ))}
                     </Form.Select>
                   </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Matricule Patient</Form.Label>
-                    <Form.Control
-                      name="matriculepatient"
-                      value={formData.matriculepatient}
-                      onChange={handleChange}
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Taux Assurance (%)</Form.Label>
-                    <Form.Control
-                      type="number"
-                      name="tauxassurance"
-                      value={formData.tauxassurance}
-                      onChange={handleChange}
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-            </div>
-          )}
-        </Form>
-      </Modal.Body>
-      <Modal.Footer>
-        <Button variant="secondary" onClick={onHide} disabled={loading}>
-          Annuler
-        </Button>
-        <Button variant="success" onClick={handleSubmit} disabled={loading}>
-          {loading ? (
-            <>
-              <Spinner as="span" animation="border" size="sm" /> Enregistrement...
-            </>
-          ) : (
-            'Ajouter'
-          )}
-        </Button>
-      </Modal.Footer>
-    </Modal>
+                </Row>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Société Patient</Form.Label>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <Form.Control
+                          name="SOCIETE_PATIENT"
+                          value={formData.SOCIETE_PATIENT}
+                          readOnly
+                          placeholder="Sélectionner une société"
+                          onClick={() => formData.IDASSURANCE && setShowSocieteModal(true)}
+                          style={{ cursor: formData.IDASSURANCE ? 'pointer' : 'not-allowed', background: '#f8f9fa' }}
+                        />
+                        <Button
+                          variant="outline-primary"
+                          onClick={() => formData.IDASSURANCE && setShowSocieteModal(true)}
+                          disabled={!formData.IDASSURANCE}
+                          title="Choisir une société"
+                        >
+                          +
+                        </Button>
+                      </div>
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Matricule Patient</Form.Label>
+                      <Form.Control
+                        name="Matricule"
+                        value={formData.Matricule}
+                        onChange={handleChange}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+                <Row>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Taux Assurance (%)</Form.Label>
+                      <Form.Control
+                        type="number"
+                        name="Taux"
+                        value={formData.Taux}
+                        onChange={handleChange}
+                      />
+                    </Form.Group>
+                  </Col>
+                  <Col md={6}>
+                    <Form.Group className="mb-3">
+                      <Form.Label>Souscripteur/ Adherent</Form.Label>
+                      <Form.Control
+                        type="string"
+                        name="Souscripteur"
+                        value={formData.Souscripteur}
+                        onChange={handleChange}
+                      />
+                    </Form.Group>
+                  </Col>
+                </Row>
+              </div>
+            )}
+          </Form>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide} disabled={loading}>
+            Annuler
+          </Button>
+          <Button variant="success" onClick={handleSubmit} disabled={loading}>
+            {loading ? (
+              <>
+                <Spinner as="span" animation="border" size="sm" /> Enregistrement...
+              </>
+            ) : (
+              'Ajouter'
+            )}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+      <SocietePatientModal
+        show={showSocieteModal}
+        onHide={() => setShowSocieteModal(false)}
+        assuranceId={formData.assurance}
+        onSelect={handleSelectSociete}
+      />
+    </>
   );
 }

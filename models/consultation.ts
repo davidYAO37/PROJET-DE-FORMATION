@@ -42,6 +42,7 @@ export interface IConsultation extends Document {
 
   IDAPPORTEUR?: string;
   StatuPrescriptionMedecin: number;
+  Diagnostic?: string;
 }
 
 const ConsultationSchema: Schema<IConsultation> = new Schema(
@@ -85,6 +86,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     IDMEDECIN: { type: Schema.Types.ObjectId, ref: "Medecin" },
     MontantMedecin: { type: Number, default: 0 },
     StatuPrescriptionMedecin: { type: Number, default: 2 },
+    Diagnostic: { type: String },
   },
   { timestamps: true }
 );

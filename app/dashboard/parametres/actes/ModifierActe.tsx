@@ -1,13 +1,14 @@
 "use client";
-import { ActesClinique } from "@/types/acte";
+
+import { ActeClinique } from "@/types/acteclinique";
 import React, { useState, useEffect } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 
 type Props = {
     show: boolean;
     onHide: () => void;
-    acte: ActesClinique | null;
-    onSave: (a: ActesClinique) => void;
+    acte: ActeClinique | null;
+    onSave: (a: ActeClinique) => void;
 };
 
 export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
@@ -76,7 +77,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
 
             if (!res.ok) throw new Error("Erreur lors de la modification");
 
-            const data: ActesClinique = await res.json();
+            const data: ActeClinique = await res.json();
             onSave(data);
             onHide(); // Fermer la modal après succès
         } catch (err: any) {

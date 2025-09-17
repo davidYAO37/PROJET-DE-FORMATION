@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { Button, Table } from "react-bootstrap";
 import { Assurance } from "@/types/assurance";
 import TarifAssuranceModal from "../tarifacteassurance/tarifassurances";
+import SocieteAssuranceModal from "./SocieteAssuranceModal";
 
 type Props = {
     assurances: Assurance[];
@@ -17,6 +18,8 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
+    const [showSocieteModal, setShowSocieteModal] = useState(false);
+    const [selectedSocieteAssurance, setSelectedSocieteAssurance] = useState<Assurance | null>(null);
     const filteredAssurances = assurances.filter((a) =>
         a.desiganationassurance?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -96,6 +99,7 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
                                         Modifier
                                     </Button>
                                     <Button
+                                        className="me-3"
                                         size="sm"
                                         variant="outline-success"
                                         title="Voir le tarif assurance"
@@ -111,6 +115,17 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
                                         }}
                                     >
                                         Tarif Assurance
+                                    </Button>
+                                    <Button
+                                        size="sm"
+                                        variant="outline-secondary"
+                                        title="Voir les sociétés assurance"
+                                        onClick={() => {
+                                            setSelectedSocieteAssurance(a);
+                                            setShowSocieteModal(true);
+                                        }}
+                                    >
+                                        Societe Assurance
                                     </Button>
                                 </td>
                             </tr>
@@ -146,6 +161,11 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
                 show={showTarifs}
                 onHide={() => setShowTarifs(false)}
                 assurance={selectedAssurance}
+            />
+            <SocieteAssuranceModal
+                show={showSocieteModal}
+                onHide={() => setShowSocieteModal(false)}
+                assurance={selectedSocieteAssurance}
             />
         </>
     );

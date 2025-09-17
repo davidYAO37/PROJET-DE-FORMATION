@@ -92,7 +92,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         consultation.Recupar = data.Recupar;
         consultation.IDACTE = data.selectedActe;
-        consultation.PatientP = patient?.nom || "";
+        consultation.PatientP = patient?.Nom || "";
         consultation.Medecin = medecin ? `${medecin.nom} ${medecin.prenoms}` : "";
         consultation.StatuPrescriptionMedecin = 2;
 

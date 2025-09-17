@@ -11,6 +11,10 @@ type BlocAssuranceProps = {
     taux: string | number;
     numBon: string;
     setNumBon: (val: string) => void;
+    souscripteur: string;
+    setSouscripteur: (val: string) => void;
+    societePatient: string;
+    setSocietePatient: (val: string) => void;
 };
 
 export default function BlocAssurance({
@@ -21,7 +25,11 @@ export default function BlocAssurance({
     matricule,
     taux,
     numBon,
-    setNumBon
+    setNumBon,
+    souscripteur,
+    setSouscripteur,
+    societePatient,
+    setSocietePatient
 }: BlocAssuranceProps) {
     return (
         <Card className="p-3 mb-3 bg-info-subtle">
@@ -47,9 +55,26 @@ export default function BlocAssurance({
                 </Row>
 
                 <Row className="mt-2">
-                    <Col md={3}><Form.Label>N° Bon</Form.Label><Form.Control type="text" value={numBon} onChange={e => setNumBon(e.target.value)} /></Col>
-                    <Col md={5}><Form.Label>Souscripteur ou Adhérent principal</Form.Label><Form.Control type="text" /></Col>
-                    <Col md={4}><Form.Label>Société Patient</Form.Label><Form.Control type="text" /></Col>
+                    <Col md={3}>
+                        <Form.Label>N° Bon</Form.Label>
+                        <Form.Control type="text" value={numBon} onChange={e => setNumBon(e.target.value)} />
+                    </Col>
+                    <Col md={5}>
+                        <Form.Label>Souscripteur ou Adhérent principal</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={souscripteur}
+                            onChange={e => setSouscripteur(e.target.value)}
+                        />
+                    </Col>
+                    <Col md={4}>
+                        <Form.Label>Société Patient</Form.Label>
+                        <Form.Control
+                            type="text"
+                            value={societePatient}
+                            onChange={e => setSocietePatient(e.target.value)}
+                        />
+                    </Col>
                 </Row>
             </fieldset>
         </Card>

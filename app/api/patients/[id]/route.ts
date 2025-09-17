@@ -31,7 +31,7 @@ export async function PUT(
     const body = await req.json();
 
     // Gestion robuste du champ assurance
-    if (body.typevisiteur === 'Non Assuré' || !body.assurance) {
+    if (body.TarifPatient === 'Non Assuré' || !body.assurance) {
       delete body.assurance;
     } else if (typeof body.assurance === 'string' && body.assurance !== '') {
       try {
@@ -42,7 +42,7 @@ export async function PUT(
     }
 
     // Nettoyage des champs optionnels si Non Assuré
-    if (body.typevisiteur === 'Non Assuré') {
+    if (body.TarifPatient === 'Non Assuré') {
       body.tauxassurance = undefined;
       body.matriculepatient = '';
     }

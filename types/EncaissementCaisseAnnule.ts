@@ -1,0 +1,34 @@
+export interface EncaissementCaisseAnnule {
+    legacyId?: number;
+    DatePrest?: Date;
+    Patient?: string;
+    ACTE?: string;
+    Taux?: number;
+    Restapayer?: number;
+    Medecin?: string;
+    Utilisateur?: string;
+    DateEncaissement?: Date;
+    Montantencaisse?: number;
+    HeureEncaissement?: string;
+    Modepaiement?: string;
+    NCheque?: string;
+    NumCompteVisa?: string;
+    Facturation?: string;
+    Consultation?: string;
+    restapayerBilan?: string;
+    TotalapayerPatient?: number;
+    PatientRef?: string;
+    AnnulationOrdonneLe?: Date;
+    annulationOrdonnepar?: string;
+    Annulerle?: Date;
+    AnnulerPar?: string;
+    motifAnnulation?: string;
+    DetailActePharm?: string;
+    Hospitalisation?: string;
+    PartientExamActe?: string;
+    QteM?: number;
+    LibeleM?: string;
+    PrixUni?: number;
+    Posologie?: string;
+    PrixTotal?: number;
+}

@@ -1,12 +1,13 @@
 "use client";
-import { ActesClinique } from "@/types/acte";
+
+import { ActeClinique } from "@/types/acteclinique";
 import React, { useState } from "react";
 import { Modal, Button, Form } from "react-bootstrap";
 
 type Props = {
     show: boolean;
     onHide: () => void;
-    onAdd: (a: ActesClinique) => void;
+    onAdd: (a: ActeClinique) => void;
 };
 
 export default function AjouterActe({ show, onHide, onAdd }: Props) {

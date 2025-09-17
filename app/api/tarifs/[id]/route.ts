@@ -24,6 +24,7 @@ export async function GET(
                 prixpreferenciel: acte.prixPreferenciel,
                 assurance: id,
             }));
+            console.log("Nouveaux tarifs à insérer :", nouveauxTarifs);
 
             await TarifAssurance.insertMany(nouveauxTarifs);
             tarifs = await TarifAssurance.find({ assurance: id }).lean();

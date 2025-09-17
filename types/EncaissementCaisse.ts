@@ -1,0 +1,33 @@
+export interface EncaissementCaisse {
+    DatePrest: Date;
+    Patient: string;
+    assurance: string;
+    ACTE: string;
+    Totalacte: number;
+    Taux: number;
+    PartAssurance: number;
+    PartPatient: number;
+    REMISE: number;
+    TotalPaye: number;
+    Restapayer: number;
+    Medecin: string;
+    IDHOSPITALISATION: number;
+    Utilisateur: string;
+    DateEncaissement: Date;
+    Montantencaisse: number;
+    HeureEncaissement: string;
+    Modepaiement: string;
+    BanqueC: string;
+    NumCarteVisa: string;
+    NCheque: string;
+    NumCompteVisa: string;
+    IDFACTURATION: number;
+    IDCONSULTATION: number;
+    restapayerBilan: string;
+    TotalapayerPatient: number;
+    Assuré: string;
+    IDPARTIENT: number;
+    AnnulationOrdonneLe: Date;
+    annulationOrdonnepar: string;
+    Nompatient: string;
+}
