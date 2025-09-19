@@ -21,7 +21,7 @@ export async function GET(
                 lettreCle: acte.lettreCle,
                 coefficient: acte.coefficient,
                 prixmutuel: acte.prixMutuel,
-                prixpreferenciel: acte.prixPreferenciel,
+                prixpreferenciel: acte.prixPreferentiel,
                 assurance: id,
             }));
             console.log("Nouveaux tarifs à insérer :", nouveauxTarifs);

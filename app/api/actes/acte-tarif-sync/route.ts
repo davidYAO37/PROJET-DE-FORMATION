@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
             lettreCle: acte.lettreCle,
             coefficient: acte.coefficient,
             prixmutuel: acte.prixMutuel,
-            prixpreferenciel: acte.prixPreferenciel,
+            prixpreferenciel: acte.prixPreferentiel,
             assurance: a._id,
         }));
         await TarifAssurance.insertMany(tarifs);

@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
             lettreCle: a.lettreCle,
             coefficient: a.coefficient,
             prixmutuel: a.prixMutuel,
-            prixpreferenciel: a.prixPreferenciel,
+            prixpreferenciel: a.prixPreferentiel,
             assurance: assuranceId,
         }));
         if (nouveauxTarifs.length > 0) {

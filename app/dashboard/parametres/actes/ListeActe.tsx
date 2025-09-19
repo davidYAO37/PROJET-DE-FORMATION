@@ -109,7 +109,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                 lettreCle: lettreCleSel,
                 prixClinique,
                 prixMutuel,
-                prixPreferenciel: prixPref,
+                prixPreferentiel: prixPref,
                 titre,
             });
             alert("Prix mis à jour avec succès !");
@@ -215,7 +215,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                                 <td>{a.coefficient}</td>
                                 <td>{a.prixClinique}</td>
                                 <td>{a.prixMutuel}</td>
-                                <td>{a.prixPreferenciel}</td>
+                                <td>{a.prixPreferentiel}</td>
                                 <td className="text-center">
                                     <Button size="sm" variant="outline-primary" className="me-2" onClick={() => { setActionLoading('edit-' + a._id); onEdit(a); }} disabled={actionLoading === 'edit-' + a._id}><FaEdit /></Button>
                                     {a._id && <Button size="sm" variant="outline-danger" disabled={actionLoading === 'delete-' + a._id} onClick={async () => { if (window.confirm(`Supprimer "${a.designationacte}" ?`)) { setActionLoading('delete-' + a._id); await onDelete(a._id as string); setActionLoading(null); } }}><FaTrash /></Button>}

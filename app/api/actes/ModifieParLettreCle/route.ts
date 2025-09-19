@@ -5,7 +5,7 @@ import { ActeClinique } from "@/models/acteclinique";
 export async function POST(req: NextRequest) {
     try {
         await db();
-        const { lettreCle, prixClinique, prixMutuel, prixPreferenciel } = await req.json();
+        const { lettreCle, prixClinique, prixMutuel, prixPreferentiel } = await req.json();
 
         if (!lettreCle) {
             return NextResponse.json({ error: "Lettre clé manquante" }, { status: 400 });
@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
                 $set: {
                     ...(prixClinique !== "" && { prixClinique }),
                     ...(prixMutuel !== "" && { prixMutuel }),
-                    ...(prixPreferenciel !== "" && { prixPreferenciel })
+                    ...(prixPreferentiel !== "" && { prixPreferentiel })
                 }
             }
         );

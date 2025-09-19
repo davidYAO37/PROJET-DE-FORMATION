@@ -13,6 +13,6 @@ export type Patient = {
   IDASSURANCE?: string; // Référence à l'assurance
   SOCIETE_PATIENT?: string;
   Souscripteur?: string;
-  TarifPatient?: string;
+  TarifPatient?: string; // NON ASSURE, TARIF ASSURE, TARIF MUTUALISTE
   assurance?: string; // facultatif, référence à l'assurance
 };

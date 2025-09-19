@@ -46,8 +46,8 @@ export async function POST(req: NextRequest) {
             const coefficient = cleanNumber(row.coefficient || row["Coefficient"] || row["coefficient"]);
             const prixClinique = cleanNumber(row.prixClinique || row["Prix Clinique"] || row["prixClinique"]);
             const prixMutuel = cleanNumber(row.prixMutuel || row["Prix Mutuel"] || row["prixMutuel"]);
-            const prixPreferenciel = cleanNumber(
-                row.prixPreferenciel || row["Prix Préférentiel"] || row["prixPreferenciel"]
+            const prixPreferentiel = cleanNumber(
+                row.prixPreferentiel || row["Prix Préférentiel"] || row["prixPreferentiel"]
             );
 
             let rowError = "";
@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
             if (isNaN(coefficient)) rowError += "Champ 'coefficient' invalide. ";
             if (isNaN(prixClinique)) rowError += "Champ 'prixClinique' invalide. ";
             if (isNaN(prixMutuel)) rowError += "Champ 'prixMutuel' invalide. ";
-            if (isNaN(prixPreferenciel)) rowError += "Champ 'prixPreferenciel' invalide. ";
+            if (isNaN(prixPreferentiel)) rowError += "Champ 'prixPreferentiel' invalide. ";
 
             if (rowError) errors.push({ index: i + 2, message: rowError.trim() });
 
@@ -66,7 +66,7 @@ export async function POST(req: NextRequest) {
                 coefficient,
                 prixClinique,
                 prixMutuel,
-                prixPreferenciel,
+                prixPreferentiel,
             };
         });
 

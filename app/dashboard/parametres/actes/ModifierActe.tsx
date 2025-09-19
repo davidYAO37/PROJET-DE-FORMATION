@@ -18,7 +18,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
         coefficient: 0,
         prixClinique: 0,
         prixMutuel: 0,
-        prixPreferenciel: 0,
+        prixPreferentiel: 0,
     });
 
     const [loading, setLoading] = useState(false);
@@ -33,7 +33,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 coefficient: acte.coefficient || 0,
                 prixClinique: acte.prixClinique || 0,
                 prixMutuel: acte.prixMutuel || 0,
-                prixPreferenciel: acte.prixPreferenciel || 0,
+                prixPreferentiel: acte.prixPreferentiel || 0,
             });
         }
     }, [acte]);
@@ -47,7 +47,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 coefficient: 0,
                 prixClinique: 0,
                 prixMutuel: 0,
-                prixPreferenciel: 0,
+                prixPreferentiel: 0,
             });
             setError("");
         }
@@ -146,9 +146,9 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                     <Form.Group className="mb-2">
                         <Form.Label>Prix Préférentiel</Form.Label>
                         <Form.Control
-                            name="prixPreferenciel"
+                            name="prixPreferentiel"
                             type="number"
-                            value={form.prixPreferenciel}
+                            value={form.prixPreferentiel}
                             onChange={handleChange}
                             required
                         />

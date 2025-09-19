@@ -6,7 +6,7 @@ export interface IActeClinique extends Document {
     coefficient: number;
     prixClinique: number;
     prixMutuel: number;
-    prixPreferenciel: number;
+    prixPreferentiel: number;
 }
 
 const ActeCliniqueSchema: Schema<IActeClinique> = new Schema({
@@ -14,7 +14,7 @@ const ActeCliniqueSchema: Schema<IActeClinique> = new Schema({
     lettreCle: { type: String, required: true },
     coefficient: { type: Number, required: true },
     prixClinique: { type: Number, required: true },
-    prixMutuel: { type: Number, required: true },
-    prixPreferenciel: { type: Number, required: true },
+    prixMutuel: { type: Number },
+    prixPreferentiel: { type: Number },
 }, { timestamps: true });
 export const ActeClinique: Model<IActeClinique> = mongoose.models.ActeClinique || mongoose.model<IActeClinique>("ActeClinique", ActeCliniqueSchema);

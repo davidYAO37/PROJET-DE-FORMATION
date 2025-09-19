@@ -17,7 +17,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
         coefficient: 0,
         prixClinique: 0,
         prixMutuel: 0,
-        prixPreferenciel: 0,
+        prixPreferentiel: 0,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -40,7 +40,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
             if (!res.ok) throw new Error("Erreur lors de l'ajout");
             const data = await res.json();
             onAdd(data);
-            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferenciel: 0 });
+            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0 });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -78,7 +78,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                     </Form.Group>
                     <Form.Group className="mb-2">
                         <Form.Label>Prix Préférentiel</Form.Label>
-                        <Form.Control name="prixPreferenciel" type="number" value={form.prixPreferenciel} onChange={handleChange} required />
+                        <Form.Control name="prixPreferentiel" type="number" value={form.prixPreferentiel} onChange={handleChange} required />
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>

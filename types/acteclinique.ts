@@ -5,5 +5,5 @@ export interface ActeClinique {
     coefficient: number;
     prixClinique: number;
     prixMutuel: number;
-    prixPreferenciel: number;
+    prixPreferentiel: number;
 }
