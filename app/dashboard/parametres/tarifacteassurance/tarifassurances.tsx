@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { Modal, Table, Button, Spinner, Form, Pagination } from "react-bootstrap";
+import { Modal, Table, Button, Spinner, Form, Pagination, InputGroup } from "react-bootstrap";
 import { Assurance } from "@/types/assurance";
 import { FaChevronLeft, FaChevronRight } from "react-icons/fa";
 
@@ -23,8 +23,10 @@ type Props = {
 export default function TarifAssuranceModal({ show, onHide, assurance }: Props) {
     const [loading, setLoading] = useState(false);
     const [tarifs, setTarifs] = useState<TarifAssurance[]>([]);
+    const [originalTarifs, setOriginalTarifs] = useState<TarifAssurance[]>([]);
     const [saving, setSaving] = useState(false);
 
+    // ✅ Chargement des tarifs quand l’assurance change
     useEffect(() => {
         if (!assurance) return;
 
@@ -34,6 +36,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                 const res = await fetch(`/api/tarifs/${assurance._id}`);
                 const data = await res.json();
                 setTarifs(data);
+                setOriginalTarifs(JSON.parse(JSON.stringify(data))); // sauvegarde de l’état original
             } catch (error) {
                 console.error("Erreur chargement tarifs:", error);
             } finally {
@@ -44,6 +47,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
         fetchTarifs();
     }, [assurance]);
 
+    // ✅ Modification champ individuel
     const handleChange = (id: string, field: keyof TarifAssurance, value: string) => {
         setTarifs((prev) =>
             prev.map((t) =>
@@ -52,6 +56,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
         );
     };
 
+    // ✅ Sauvegarde en base
     const handleSave = async () => {
         if (!assurance) return;
         setSaving(true);
@@ -63,6 +68,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
             });
             if (!res.ok) throw new Error("Erreur de sauvegarde");
             alert("Tarifs enregistrés avec succès ✅");
+            setOriginalTarifs(JSON.parse(JSON.stringify(tarifs))); // met à jour l’original après save
         } catch (err) {
             console.error(err);
             alert("Erreur lors de l'enregistrement ❌");
@@ -71,7 +77,29 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
         }
     };
 
-    // ✅ Filtrage + Pagination
+    // ✅ Ajustement global (augmentation/diminution %)
+    const [adjustValue, setAdjustValue] = useState<number>(0);
+
+    const applyAdjustment = () => {
+        setTarifs((prev) =>
+            prev.map((t) =>
+                t.prixmutuel > 0 || t.prixpreferenciel > 0
+                    ? {
+                        ...t,
+                        prixmutuel: Math.max(0, t.prixmutuel + (t.prixmutuel * adjustValue) / 100),
+                        prixpreferenciel: Math.max(0, t.prixpreferenciel + (t.prixpreferenciel * adjustValue) / 100),
+                    }
+                    : t
+            )
+        );
+    };
+
+    // ✅ Restauration des tarifs originaux
+    const restoreOriginal = () => {
+        setTarifs(JSON.parse(JSON.stringify(originalTarifs)));
+    };
+
+    // ✅ Filtrage + pagination
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
@@ -87,9 +115,9 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
         currentPage * itemsPerPage
     );
 
-    // Réinitialise le filtre à la fermeture du modal
     const handleHide = () => {
         setSearchTerm("");
+        setAdjustValue(0);
         setCurrentPage(1);
         onHide();
     };
@@ -108,10 +136,11 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                     </div>
                 ) : (
                     <>
-                        {/* ✅ Filtre */}
+                        {/* ✅ Barre de recherche */}
                         <Form.Control
                             className="mb-3"
-                            placeholder="Filtrer par acte ou lettre clé..."
+                            placeholder="Filtrer par le nom de l'acte..."
+                            title="Filtrer par le nom de l'acte..."
                             value={searchTerm}
                             onChange={(e) => {
                                 setSearchTerm(e.target.value);
@@ -119,7 +148,25 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                             }}
                         />
 
-                        {/* ✅ Choix d'affichage par page */}
+                        {/* ✅ Ajustement global */}
+                        <InputGroup className="mb-3">
+                            <Form.Control
+                                type="number"
+                                placeholder="Pourcentage d'ajustement (ex: -10 ou 5)"
+                                aria-label="Pourcentage d'ajustement"
+                                title="Pourcentage d'ajustement (ex: -10 ou 5)"
+                                value={adjustValue}
+                                onChange={(e) => setAdjustValue(Number(e.target.value))}
+                            />
+                            <Button variant="outline-primary" onClick={applyAdjustment}>
+                                Appliquer
+                            </Button>
+                            <Button variant="outline-warning" onClick={restoreOriginal}>
+                                Restaurer
+                            </Button>
+                        </InputGroup>
+
+                        {/* ✅ Choix d’affichage par page */}
                         <div className="d-flex justify-content-between align-items-center mb-2">
                             <Form.Group className="mb-0 d-flex align-items-center">
                                 <Form.Label className="me-2 mb-0">Afficher</Form.Label>
@@ -199,8 +246,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                             </tbody>
                         </Table>
 
-
-                        {/* ✅ Pagination moderne */}
+                        {/* ✅ Pagination */}
                         {totalPages > 1 && (
                             <div className="d-flex justify-content-center mt-3">
                                 <Pagination>
