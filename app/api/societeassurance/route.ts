@@ -1,36 +1,3 @@
-// PUT /api/societeassurance
-export async function PUT(request: Request) {
-    const body = await request.json();
-    const { id, societe } = body;
-    await db();
-    if (!id || !societe) {
-        return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
-    }
-    const doc = await SocieteAssurance.findByIdAndUpdate(id, { societe }, { new: true });
-    if (!doc) {
-        return NextResponse.json({ error: "Société non trouvée" }, { status: 404 });
-    }
-    // Retourne la liste à jour (par assurance)
-    const societes = await SocieteAssurance.find({ Assurance: doc.Assurance }).lean();
-    return NextResponse.json(societes);
-}
-
-// DELETE /api/societeassurance
-export async function DELETE(request: Request) {
-    const body = await request.json();
-    const { id } = body;
-    await db();
-    if (!id) {
-        return NextResponse.json({ error: "ID manquant" }, { status: 400 });
-    }
-    const doc = await SocieteAssurance.findByIdAndDelete(id);
-    if (!doc) {
-        return NextResponse.json({ error: "Société non trouvée" }, { status: 404 });
-    }
-    // Retourne la liste à jour (par assurance)
-    const societes = await SocieteAssurance.find({ Assurance: doc.Assurance }).lean();
-    return NextResponse.json(societes);
-}
 import { NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { SocieteAssurance } from "@/models/SocieteAssurance";
@@ -55,11 +22,43 @@ export async function POST(request: Request) {
     if (!assuranceId || !societe) {
         return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
     }
+
     await SocieteAssurance.create({
         societe,
         Assurance: assuranceId,
     });
-    // Retourne la liste à jour
+
+    // Retourner uniquement les sociétés de l'assurance concernée
     const societes = await SocieteAssurance.find({ Assurance: assuranceId }).lean();
     return NextResponse.json(societes);
+}
+
+// PUT /api/societeassurance
+export async function PUT(request: Request) {
+    const body = await request.json();
+    const { id, societe, assuranceId } = body;
+    await db();
+    if (!id || !societe || !assuranceId) {
+        return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
+    }
+
+    await SocieteAssurance.findByIdAndUpdate(id, { societe });
+
+    const updated = await SocieteAssurance.find({ Assurance: assuranceId }).lean();
+    return NextResponse.json(updated);
+}
+
+// DELETE /api/societeassurance
+export async function DELETE(request: Request) {
+    const body = await request.json();
+    const { id, assuranceId } = body;
+    await db();
+    if (!id || !assuranceId) {
+        return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
+    }
+
+    await SocieteAssurance.findByIdAndDelete(id);
+
+    const updated = await SocieteAssurance.find({ Assurance: assuranceId }).lean();
+    return NextResponse.json(updated);
 }

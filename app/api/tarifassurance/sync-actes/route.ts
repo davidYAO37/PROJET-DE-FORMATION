@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
             prixmutuel: a.prixMutuel,
             prixpreferenciel: a.prixPreferentiel,
             assurance: assuranceId,
+            acteId: a._id, // lien direct avec l'acte
         }));
         if (nouveauxTarifs.length > 0) {
             await TarifAssurance.insertMany(nouveauxTarifs);

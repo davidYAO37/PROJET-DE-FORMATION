@@ -1,6 +1,5 @@
 "use client";
 
-
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Table, Form } from "react-bootstrap";
 import { Assurance } from "@/types/assurance";
@@ -15,6 +14,7 @@ type Props = {
     onHide: () => void;
     assurance: Assurance | null;
 };
+
 export default function SocieteAssuranceModal({ show, onHide, assurance }: Props) {
     const [societes, setSocietes] = useState<SocieteAssurance[]>([]);
     const [loading, setLoading] = useState(false);
@@ -25,6 +25,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
     const [savingEdit, setSavingEdit] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
+    // Charger les sociétés liées à l'assurance
     useEffect(() => {
         if (show && assurance) {
             setLoading(true);
@@ -52,6 +53,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
         }
     }, [show, assurance]);
 
+    // Ajouter une société
     const handleCreate = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!assurance) return;
@@ -62,21 +64,21 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
             body: JSON.stringify({ ...form, assuranceId: assurance._id }),
         });
         if (res.ok) {
-            setForm({ societe: "" });
-            // Refresh list
             const data = await res.json();
             setSocietes(data);
+            setForm({ societe: "" });
         }
         setCreating(false);
     };
 
-    async function handleEditSave(id: string) {
-        if (!editValue.trim()) return;
+    // Modifier une société
+    const handleEditSave = async (id: string) => {
+        if (!editValue.trim() || !assurance) return;
         setSavingEdit(true);
         const res = await fetch("/api/societeassurance", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id, societe: editValue })
+            body: JSON.stringify({ id, societe: editValue, assuranceId: assurance._id })
         });
         if (res.ok) {
             const data = await res.json();
@@ -84,22 +86,23 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
             setEditId(null);
         }
         setSavingEdit(false);
-    }
+    };
 
-    async function handleDelete(id: string) {
-        if (!window.confirm("Voulez-vous vraiment supprimer cette société ?")) return;
+    // Supprimer une société
+    const handleDelete = async (id: string) => {
+        if (!window.confirm("Voulez-vous vraiment supprimer cette société ?") || !assurance) return;
         setDeletingId(id);
         const res = await fetch("/api/societeassurance", {
             method: "DELETE",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id })
+            body: JSON.stringify({ id, assuranceId: assurance._id })
         });
         if (res.ok) {
             const data = await res.json();
             setSocietes(data);
         }
         setDeletingId(null);
-    }
+    };
 
     return (
         <Modal show={show} onHide={onHide} size="lg" centered>
@@ -138,9 +141,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
                                                         size="sm"
                                                         autoFocus
                                                         onKeyDown={e => {
-                                                            if (e.key === 'Enter') {
-                                                                handleEditSave(s._id);
-                                                            }
+                                                            if (e.key === 'Enter') handleEditSave(s._id);
                                                         }}
                                                         disabled={savingEdit}
                                                     />
@@ -174,6 +175,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
                                 )}
                             </tbody>
                         </Table>
+
                         <div className="my-4 p-3 bg-white rounded shadow-sm border">
                             <h6 className="mb-3 text-primary"><i className="bi bi-plus-circle me-2" />Ajouter une société d'assurance</h6>
                             <Form onSubmit={handleCreate} className="row g-2 align-items-center">

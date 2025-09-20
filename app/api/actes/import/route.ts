@@ -38,10 +38,8 @@ export async function POST(req: NextRequest) {
 
         const actes = rows.map((row: any, i: number) => {
             // On accepte plusieurs variantes de noms de colonnes
-            const designationacte =
-                (row.designationacte || row["Désignation"] || row["designationacte"] || "").trim();
-            const lettreCle =
-                (row.lettreCle || row["Lettre Clé"] || row["lettreCle"] || "").trim();
+            const designationacte = (row.designationacte || row["Désignation"] || row["designationacte"] || "").trim();
+            const lettreCle = (row.lettreCle || row["Lettre Clé"] || row["lettreCle"] || "").trim();
 
             const coefficient = cleanNumber(row.coefficient || row["Coefficient"] || row["coefficient"]);
             const prixClinique = cleanNumber(row.prixClinique || row["Prix Clinique"] || row["prixClinique"]);

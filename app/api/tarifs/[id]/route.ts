@@ -23,6 +23,7 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
                 prixmutuel: acte.prixMutuel,
                 prixpreferenciel: acte.prixPreferentiel,
                 assurance: id,
+                acteId: acte._id, // lien direct avec l'acte
             }));
 
             await TarifAssurance.insertMany(nouveauxTarifs);
