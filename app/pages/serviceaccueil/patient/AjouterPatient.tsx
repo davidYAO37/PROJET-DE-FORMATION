@@ -1,4 +1,3 @@
-
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -36,19 +35,20 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     Souscripteur: '',
   });
 
-  // Callback pour sélection société
-  const handleSelectSociete = (societe: { _id: string; societe: string }) => {
-    setFormData((prev: any) => ({ ...prev, societePatient: societe.societe }));
-  };
   // Modal société patient
   const [showSocieteModal, setShowSocieteModal] = useState(false);
+
+  // Callback pour sélection société
+  const handleSelectSociete = (societe: { _id: string; societe: string }) => {
+    setFormData((prev: any) => ({ ...prev, SOCIETE_PATIENT: societe.societe }));
+  };
 
   const [assurances, setAssurances] = useState<Assurance[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Charger les assurances depuis l’API existante
+  // Charger les assurances depuis l’API
   useEffect(() => {
     const fetchAssurances = async () => {
       try {
@@ -110,7 +110,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         const birthDate = new Date(birthYear, today.getMonth(), today.getDate());
         newData.Date_naisse = birthDate.toISOString().split('T')[0];
       }
-
+      // Logique typevisiteur
       if (name === "typevisiteur" && value === "Non Assuré") {
         newData.IDASSURANCE = '';
         newData.Taux = '';
@@ -132,6 +132,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
       setErrorMsg('Veuillez remplir tous les champs obligatoires.');
       return false;
     }
+
     // Vérification unicité Code_dossier côté API
     try {
       const res = await fetch(`/api/patients?Code_dossier=${encodeURIComponent(formData.Code_dossier)}`);
@@ -143,6 +144,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         }
       }
     } catch { }
+
     // Vérification des champs pour Mutualiste et Préférentiel
     if ((formData.typevisiteur === "Mutualiste" || formData.typevisiteur === "Préférentiel")) {
       if (!formData.IDASSURANCE || !formData.Taux || !formData.Matricule) {
@@ -150,6 +152,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         return false;
       }
     }
+
     setErrorMsg(null);
     return true;
   };
@@ -161,6 +164,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
       setLoading(false);
       return;
     }
+
     try {
       let payload = { ...formData };
 
@@ -217,6 +221,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
           {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
           {successMsg && <Alert variant="success">{successMsg}</Alert>}
           <Form>
+            {/* Code Dossier & Type Visiteur */}
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -243,6 +248,8 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                 </Form.Group>
               </Col>
             </Row>
+
+            {/* Nom & Prénoms */}
             <Row>
               <Col md={6}>
                 <Form.Group className="mb-3">
@@ -265,6 +272,8 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                 </Form.Group>
               </Col>
             </Row>
+
+            {/* Âge, Date de Naissance, Sexe */}
             <Row>
               <Col md={4}>
                 <Form.Group className="mb-3">
@@ -302,6 +311,8 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                 </Form.Group>
               </Col>
             </Row>
+
+            {/* Contact */}
             <Form.Group className="mb-3">
               <Form.Label>Contact</Form.Label>
               <Form.Control
@@ -310,6 +321,8 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                 onChange={handleChange}
               />
             </Form.Group>
+
+            {/* Assurance + Société + infos complémentaires */}
             {formData.typevisiteur !== 'Non Assuré' && (
               <div className="border p-3 rounded bg-light">
                 <Row>
@@ -329,6 +342,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                     </Form.Select>
                   </Form.Group>
                 </Row>
+
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
@@ -353,6 +367,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                       </div>
                     </Form.Group>
                   </Col>
+
                   <Col md={6}>
                     <Form.Group className="mb-3">
                       <Form.Label>Matricule Patient</Form.Label>
@@ -364,6 +379,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                     </Form.Group>
                   </Col>
                 </Row>
+
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
@@ -376,9 +392,10 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                       />
                     </Form.Group>
                   </Col>
+
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Souscripteur/ Adherent</Form.Label>
+                      <Form.Label>Souscripteur / Adhérent</Form.Label>
                       <Form.Control
                         type="string"
                         name="Souscripteur"
@@ -407,11 +424,13 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
           </Button>
         </Modal.Footer>
       </Modal>
+
+      {/* Modal Société Patient */}
       <SocietePatientModal
         show={showSocieteModal}
         onHide={() => setShowSocieteModal(false)}
-        assuranceId={formData.assurance}
-        onSelect={handleSelectSociete}
+        assuranceId={formData.IDASSURANCE}   // ✅ correction ici
+        onSelect={handleSelectSociete}       // ✅ correction ici
       />
     </>
   );

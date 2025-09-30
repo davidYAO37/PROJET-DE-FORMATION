@@ -194,22 +194,27 @@ export default function Sidebar() {
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/signup" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserPlus className="me-2 text-dark" /> Gestion utilisateur
+                    <FaUserPlus className="me-2 text-dark" /> Utilisateurs
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/medecin" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserDoctor className="me-2 text-success" /> Gestion medecin
+                    <FaUserDoctor className="me-2 text-success" /> Medecins
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/assurances" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" /> Gestion Assurances
+                    <FaUserShield className="me-2 text-primary" /> Assurances
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/actes" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" /> Gestion Actes Cliniques
+                    <FaUserShield className="me-2 text-primary" />Actes Cliniques
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/dashboard/parametres/Typeacte" className="sidebar-link-medical d-flex align-items-center">
+                    <FaUserShield className="me-2 text-primary" /> Type d'actes
                   </Link>
                 </li>
               </ul>

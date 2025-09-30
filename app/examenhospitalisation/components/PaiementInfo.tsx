@@ -1,8 +1,7 @@
 "use client";
 
-
 import { ExamenHospitalisationForm } from "@/types/examenHospitalisation";
-import { Card, Table } from "react-bootstrap";
+import { Card, Form } from "react-bootstrap";
 
 type Props = {
     formData: ExamenHospitalisationForm;
@@ -14,30 +13,67 @@ export default function PaiementInfo({ formData }: Props) {
         <Card className="mt-3 shadow-sm">
             <Card.Header>Informations Paiement</Card.Header>
             <Card.Body>
-                <Table size="sm" bordered>
-                    <tbody>
-                        <tr>
-                            <td>Total Facture</td>
-                            <td>{formData.factureTotal} CFA</td>
-                        </tr>
-                        <tr>
-                            <td>Reste à payer</td>
-                            <td>{formData.resteAPayer} CFA</td>
-                        </tr>
-                        <tr>
-                            <td>Assurance</td>
-                            <td>{formData.assurancePart} CFA</td>
-                        </tr>
-                        <tr>
-                            <td>Part Patient</td>
-                            <td>{formData.partPatient} CFA</td>
-                        </tr>
-                        <tr>
-                            <td>Surplus</td>
-                            <td>{formData.surplus} CFA</td>
-                        </tr>
-                    </tbody>
-                </Table>
+                {/* Total facture */}
+                <Form.Group className="mb-1">
+                    <Form.Label>Total facture</Form.Label>
+                    <Form.Control
+                        type="number"
+                        value={formData.factureTotal}
+                        readOnly
+                    />
+                </Form.Group>
+
+
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="col-6 p-0 me-1">
+                        {/* Part Patient */}
+                        <Form.Group className="mb-1">
+                            <Form.Label>Part Patient</Form.Label>
+                            <Form.Control
+                                type="number"
+                                value={formData.partPatient ?? 0}  // ← corrige ici
+                                readOnly
+                            />
+                        </Form.Group>
+                    </div>
+                    <div className="col-6 p-0 me-1">
+                        {/* Part Assurance */}
+                        <Form.Group className="mb-1">
+                            <Form.Label>Part Assurance</Form.Label>
+                            <Form.Control
+                                type="number"
+                                value={formData.partAssurance}
+                                readOnly
+                            />
+                        </Form.Group>
+                    </div>
+                </div>
+
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <div className="col-6 p-0 me-1">
+                        {/* Surplus */}
+                        <Form.Group className="mb-1">
+                            <Form.Label>Surplus</Form.Label>
+                            <Form.Control
+                                type="number"
+                                value={formData.surplus}
+                                readOnly
+                            />
+                        </Form.Group>
+                    </div>
+                    <div className="col-6 p-0 me-1">
+
+                        {/* Reste à payer */}
+                        <Form.Group className="mb-1">
+                            <Form.Label>Reste à payer</Form.Label>
+                            <Form.Control
+                                type="number"
+                                value={formData.resteAPayer}
+                                readOnly
+                            />
+                        </Form.Group>
+                    </div>
+                </div>
             </Card.Body>
         </Card>
     );

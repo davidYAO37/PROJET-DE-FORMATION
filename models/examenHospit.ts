@@ -2,6 +2,7 @@
 import mongoose, { Schema, model, Document, Types, Model } from 'mongoose';
 
 export interface IExamenHospitalisation extends Document {
+    _id: string
     Code_Prestation?: string;
     NomMed?: string;
     PatientP?: string;
@@ -24,7 +25,7 @@ export interface IExamenHospitalisation extends Document {
     Assuance?: string;
     Taux?: string;
     IDASSURANCE?: Types.ObjectId;
-    IDTYPE_ACTE?: number;
+    IDTYPE_ACTE?: String;
     FacturePar?: string;
     Patient?: Types.ObjectId;
     CompteClient?: boolean;
@@ -112,7 +113,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         Assuance: { type: String, maxlength: 50 },
         Taux: { type: String, maxlength: 4 },
         IDASSURANCE: { type: Schema.Types.ObjectId, ref: 'Assurance' },
-        IDTYPE_ACTE: { type: Number },
+        IDTYPE_ACTE: { type: String },
         FacturePar: { type: String, maxlength: 50 },
         Patient: { type: Schema.Types.ObjectId, ref: 'Patient' },
         CompteClient: { type: Boolean },

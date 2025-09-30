@@ -1,9 +1,10 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export interface ILignePrestation extends Document {
+    _id: string;
     codePrestation: string;
     codeConsultation?: string;
-    dateLignePrestation?: Date;
+    dateLignePrestation: Date;
     prestation: string;
     qte: number;
     prix: number;
@@ -32,7 +33,7 @@ export interface ILignePrestation extends Document {
     exclusionActe?: string;
     tarifAssurance?: number;
     coefficientAssur?: number;
-    coefficientClinique?: string;
+    coefficientClinique?: Number;
     montantTotalAPayer?: number;
     totalSurplus?: number;
     statutExecutant?: string;
@@ -83,11 +84,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         partAssurance: { type: Number, required: true },
         tauxAssurance: { type: Number, required: true },
         idPatient: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
-        idHospitalisation: {
-            type: Schema.Types.ObjectId,
-            ref: "ExamenHospit",
-            required: true,
-        },
+        idHospitalisation: { type: Schema.Types.ObjectId, ref: "ExamenHospit" },
         partAssure: { type: Number, required: true },
         prixTotal: { type: Number, required: true },
         coefficientActe: { type: Number, required: true },
@@ -109,7 +106,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         exclusionActe: { type: String },
         tarifAssurance: { type: Number },
         coefficientAssur: { type: Number },
-        coefficientClinique: { type: String },
+        coefficientClinique: { type: Number },
         montantTotalAPayer: { type: Number },
         totalSurplus: { type: Number },
         statutExecutant: { type: String },

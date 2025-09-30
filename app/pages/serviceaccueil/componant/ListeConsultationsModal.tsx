@@ -9,6 +9,7 @@ interface Consultation {
     PrixClinique?: number;
     Date_consulation: string;
     Recupar: string;
+    Code_Prestation: string;
     Medecin?: string;
 }
 
@@ -59,6 +60,7 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                         <Table bordered hover>
                             <thead>
                                 <tr>
+                                    <th>N°Prestation</th>
                                     <th>Désignation</th>
                                     <th>Prix</th>
                                     <th>Date</th>
@@ -72,7 +74,9 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                                     <tr><td colSpan={6} className="text-center">Aucune consultation trouvée.</td></tr>
                                 ) : (
                                     filtered.map(c => (
-                                        <tr key={c._id}>
+
+                                        <tr key={c._id} className="text-center align-middle">
+                                            <td>{c.Code_Prestation}</td>
                                             <td>{c.designationC}</td>
                                             <td>{c.montantapayer ?? c.PrixClinique ?? 0} FCFA</td>
                                             <td>{new Date(c.Date_consulation).toLocaleDateString()}</td>

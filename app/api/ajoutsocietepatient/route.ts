@@ -48,17 +48,3 @@ export async function PUT(request: Request) {
     return NextResponse.json(updated);
 }
 
-// DELETE /api/societeassurance
-export async function DELETE(request: Request) {
-    const body = await request.json();
-    const { id, assuranceId } = body;
-    await db();
-    if (!id || !assuranceId) {
-        return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
-    }
-
-    await SocieteAssurance.findByIdAndDelete(id);
-
-    const updated = await SocieteAssurance.find({ Assurance: assuranceId }).lean();
-    return NextResponse.json(updated);
-}

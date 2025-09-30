@@ -15,7 +15,12 @@ interface SocietePatientModalProps {
     onSelect: (societe: SocieteAssurance) => void;
 }
 
-export default function SocietePatientModal({ show, onHide, assuranceId, onSelect }: SocietePatientModalProps) {
+export default function SocietePatientModal({
+    show,
+    onHide,
+    assuranceId,
+    onSelect,
+}: SocietePatientModalProps) {
     const [societes, setSocietes] = useState<SocieteAssurance[]>([]);
     const [loading, setLoading] = useState(false);
     const [newSociete, setNewSociete] = useState("");
@@ -27,10 +32,13 @@ export default function SocietePatientModal({ show, onHide, assuranceId, onSelec
     useEffect(() => {
         if (show && assuranceId) {
             setLoading(true);
-            fetch(`/api/societeassurance?assuranceId=${assuranceId}`)
-                .then(res => res.json())
-                .then(data => setSocietes(Array.isArray(data) ? data : []))
-                .catch(err => {
+            fetch(`/api/ajoutsocietepatient?assuranceId=${assuranceId}`)
+                .then((res) => {
+                    if (!res.ok) throw new Error("Erreur serveur");
+                    return res.json();
+                })
+                .then((data) => setSocietes(Array.isArray(data) ? data : []))
+                .catch((err) => {
                     console.error(err);
                     setErrorMsg("Erreur lors du chargement des sociétés");
                 })
@@ -46,15 +54,16 @@ export default function SocietePatientModal({ show, onHide, assuranceId, onSelec
         }
         setSaving(true);
         try {
-            const res = await fetch("/api/societeassurance", {
+            const res = await fetch("/api/ajoutsocietepatient", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ societe: newSociete, assuranceId }),
             });
             if (!res.ok) throw new Error("Erreur lors de l'ajout de la société");
 
+            // L’API doit renvoyer la liste mise à jour
             const updatedSocietes: SocieteAssurance[] = await res.json();
-            setSocietes(updatedSocietes); // Remplacer la liste par la liste complète renvoyée
+            setSocietes(updatedSocietes);
             setSuccessMsg("Société ajoutée avec succès ✅");
             setNewSociete("");
             setErrorMsg(null);
@@ -77,7 +86,9 @@ export default function SocietePatientModal({ show, onHide, assuranceId, onSelec
                 {successMsg && <Alert variant="success">{successMsg}</Alert>}
 
                 {loading ? (
-                    <div className="text-center py-3"><Spinner animation="border" /></div>
+                    <div className="text-center py-3">
+                        <Spinner animation="border" />
+                    </div>
                 ) : (
                     <>
                         <Table hover responsive>
@@ -90,17 +101,22 @@ export default function SocietePatientModal({ show, onHide, assuranceId, onSelec
                             <tbody>
                                 {societes.length === 0 && (
                                     <tr>
-                                        <td colSpan={2} className="text-center text-muted">Aucune société trouvée</td>
+                                        <td colSpan={2} className="text-center text-muted">
+                                            Aucune société trouvée
+                                        </td>
                                     </tr>
                                 )}
-                                {societes.map(soc => (
+                                {societes.map((soc) => (
                                     <tr key={soc._id}>
                                         <td>{soc.societe}</td>
                                         <td className="text-center">
                                             <Button
                                                 size="sm"
                                                 variant="primary"
-                                                onClick={() => { onSelect(soc); onHide(); }}
+                                                onClick={() => {
+                                                    onSelect(soc);
+                                                    onHide();
+                                                }}
                                             >
                                                 Sélectionner
                                             </Button>
@@ -117,7 +133,7 @@ export default function SocietePatientModal({ show, onHide, assuranceId, onSelec
                                     <Form.Control
                                         placeholder="Nom de la nouvelle société"
                                         value={newSociete}
-                                        onChange={e => setNewSociete(e.target.value)}
+                                        onChange={(e) => setNewSociete(e.target.value)}
                                     />
                                 </Col>
                                 <Col md={4} className="d-grid">
@@ -135,7 +151,9 @@ export default function SocietePatientModal({ show, onHide, assuranceId, onSelec
                 )}
             </Modal.Body>
             <Modal.Footer>
-                <Button variant="secondary" onClick={onHide}>Fermer</Button>
+                <Button variant="secondary" onClick={onHide}>
+                    Fermer
+                </Button>
             </Modal.Footer>
         </Modal>
     );

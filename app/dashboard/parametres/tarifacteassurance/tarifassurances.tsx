@@ -25,10 +25,10 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
     const [tarifs, setTarifs] = useState<TarifAssurance[]>([]);
     const [initialTarifs, setInitialTarifs] = useState<TarifAssurance[]>([]);
     const [saving, setSaving] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(25);
     const [adjustment, setAdjustment] = useState<number>(0);
+
+
+
 
     useEffect(() => {
         if (!assurance) return;
@@ -117,6 +117,12 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
         }
     };
 
+    // ✅ Filtrage + Pagination
+    const [searchTerm, setSearchTerm] = useState("");
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(25);
+
+
     const filteredTarifs = tarifs.filter(
         t =>
             t.acte.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -128,7 +134,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
         (currentPage - 1) * itemsPerPage,
         currentPage * itemsPerPage
     );
-
+    // Réinitialise le filtre à la fermeture du modal
     const handleHide = () => {
         setSearchTerm("");
         setCurrentPage(1);
@@ -152,6 +158,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                     </div>
                 ) : (
                     <>
+                        {/* ✅ Filtre */}
                         <Form.Control
                             className="mb-3"
                             placeholder="Filtrer par le nom de l'acte..."
@@ -161,7 +168,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                                 setCurrentPage(1);
                             }}
                         />
-
+                        {/* ✅ Choix d'affichage par page */}
                         <div className="d-flex justify-content-between align-items-center mb-3">
                             <Form.Group className="d-flex align-items-center mb-0">
                                 <Form.Label className="me-2 mb-0">Afficher</Form.Label>
@@ -182,6 +189,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                                 <span className="ms-2">par page</span>
                             </Form.Group>
 
+                            {/* ✅ Ajustement global*/}
                             <Form.Group className="d-flex align-items-center">
                                 <Form.Label className="me-2 mb-0">% Ajustement</Form.Label>
                                 <Form.Control
@@ -198,6 +206,8 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                                 </Button>
                             </Form.Group>
                         </div>
+
+                        {/* ✅ Table des tarifs */}
 
                         <Table bordered hover responsive>
                             <thead className="table-success">

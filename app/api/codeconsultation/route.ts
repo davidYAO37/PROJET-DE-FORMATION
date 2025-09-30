@@ -7,7 +7,7 @@ import { ExamenHospitalisation } from "@/models/examenHospit";
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const codePrestation = searchParams.get("codePrestation");
+    const codePrestation = searchParams.get("Code_Prestation");
 
     await db();
 
@@ -18,11 +18,12 @@ export async function GET(request: Request) {
     }
 
     // Vérification du ticket modérateur et du statut
-    if (consultation.tiket_moderateur !== 0) {
-        if (!consultation.StatutC) {
-            return NextResponse.json({ error: "La consultation liée à cette prestation doit-être facturée" }, { status: 400 });
-        }
+    let infoMessage: string | null = null;
+    if (consultation.tiket_moderateur !== 0 && !consultation.StatutC) {
+        infoMessage = "ℹ️ La consultation liée à cette prestation n'est pas encore facturée.";
     }
+
+
 
     // Recherche du patient lié à la consultation
     const patient = await Patient.findById(consultation.IDPARTIENT).lean();
@@ -37,7 +38,8 @@ export async function GET(request: Request) {
     const response: any = {
         patient: {
             _id: patient._id,
-            nom: patient.Nom,
+            Nom: patient.Nom,
+            Prenoms: patient.Prenoms,
         },
         medecinPrescripteur: consultation.IDMEDECIN,
         taux: consultation.tauxAssurance,
@@ -51,6 +53,7 @@ export async function GET(request: Request) {
         idApporteur: consultation.IDAPPORTEUR,
         assure: consultation.Assuré,
         Code_dossier: consultation.Code_dossier,
+        info: infoMessage,
     };
 
     if (examen) {

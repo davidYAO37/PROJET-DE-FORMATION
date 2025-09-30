@@ -13,47 +13,38 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const { id } = await params;
         const data = await req.json();
 
-        // ✅ Validation
-        if (!data.selectedActe || data.selectedActe === "") {
-            return NextResponse.json({ error: "Merci de préciser l'acte de consultation" }, { status: 400 });
-        }
-        if (!data.selectedMedecin || data.selectedMedecin === "") {
-            return NextResponse.json({ error: "Merci de préciser le médecin prescripteur" }, { status: 400 });
-        }
-        if (data.assure !== "non") {
-            if (!data.taux || data.taux === 0) {
-                return NextResponse.json({ error: "Merci de préciser le taux de couverture SVP" }, { status: 400 });
-            }
-            if (!data.matricule || data.matricule === "") {
-                return NextResponse.json({ error: "Merci de préciser le matricule du patient SVP" }, { status: 400 });
-            }
-            if (!data.selectedAssurance || data.selectedAssurance === "") {
-                return NextResponse.json({ error: "Merci de préciser l'assurance du patient SVP" }, { status: 400 });
-            }
-        }
+        // Validation minimale
+        if (!data.selectedActe) return NextResponse.json({ error: "Merci de préciser l'acte de consultation" }, { status: 400 });
+        if (!data.selectedMedecin) return NextResponse.json({ error: "Merci de préciser le médecin prescripteur" }, { status: 400 });
 
         const consultation = await Consultation.findById(id);
-        if (!consultation) {
-            return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
-        }
+        if (!consultation) return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
 
-        // Correction des types _id :
-        const patient = data.IDPARTIENT ? await Patient.findById(typeof data.IDPARTIENT === "string" ? new mongoose.Types.ObjectId(data.IDPARTIENT) : data.IDPARTIENT) : null;
-        const assurance = data.selectedAssurance ? await Assurance.findById(typeof data.selectedAssurance === "string" ? new mongoose.Types.ObjectId(data.selectedAssurance) : data.selectedAssurance) : null;
-        const medecin = data.selectedMedecin ? await Medecin.findById(typeof data.selectedMedecin === "string" ? new mongoose.Types.ObjectId(data.selectedMedecin) : data.selectedMedecin) : null;
+        // Récupération patient, assurance, médecin
+        const patient = data.IDPARTIENT ? await Patient.findById(
+            typeof data.IDPARTIENT === "string" ? new mongoose.Types.ObjectId(data.IDPARTIENT) : data.IDPARTIENT
+        ) : null;
 
-        // Calcul Montants
+        const assurance = data.selectedAssurance ? await Assurance.findById(
+            typeof data.selectedAssurance === "string" ? new mongoose.Types.ObjectId(data.selectedAssurance) : data.selectedAssurance
+        ) : null;
+
+        const medecin = data.selectedMedecin ? await Medecin.findById(
+            typeof data.selectedMedecin === "string" ? new mongoose.Types.ObjectId(data.selectedMedecin) : data.selectedMedecin
+        ) : null;
+
+        // Calcul montants
         let montantActe = data.montantClinique || 0;
+        const tauxNum = Number(data.taux) || 0;
         let partAssurance = 0;
         let partPatient = 0;
         let surplus = 0;
-        const tauxNum = Number(data.taux) || 0;
 
         if (data.assure === "mutualiste" || data.assure === "assure") {
             montantActe = data.montantAssurance || montantActe;
         }
-        if (data.montantClinique > montantActe) {
-            surplus = data.montantClinique - montantActe;
+        if ((data.montantClinique || 0) > montantActe) {
+            surplus = (data.montantClinique || 0) - montantActe;
         }
         partAssurance = (tauxNum * montantActe) / 100;
         partPatient = montantActe - partAssurance;
@@ -64,7 +55,6 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.assurance = assurance?.desiganationassurance || "NON ASSURE";
         consultation.Assuré = data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE";
 
-        // ✅ Conversion explicite en ObjectId
         consultation.IDASSURANCE = assurance?._id ? new mongoose.Types.ObjectId(String(assurance._id)) : undefined;
         consultation.IDPARTIENT = patient?._id ? new mongoose.Types.ObjectId(String(patient._id)) : undefined;
         consultation.IDMEDECIN = medecin?._id ? new mongoose.Types.ObjectId(String(medecin._id)) : undefined;
@@ -80,30 +70,40 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.Date_consulation = data.Date_consulation || consultation.Date_consulation;
         consultation.Heure_Consultation = data.Heure_Consultation || consultation.Heure_Consultation;
 
-        consultation.StatutC = data.montantClinique === 0;
-        consultation.StatutPaiement = data.montantClinique === 0 ? "Pas facturé" : "En cours de Paiement";
-        consultation.Toutencaisse = data.montantClinique === 0;
-
         consultation.tauxAssurance = tauxNum;
         consultation.PartAssurance = partAssurance;
         consultation.tiket_moderateur = partPatient;
         consultation.numero_carte = data.matricule;
         consultation.NumBon = data.NumBon;
-
         consultation.Recupar = data.Recupar;
         consultation.IDACTE = data.selectedActe;
         consultation.PatientP = patient?.Nom || "";
         consultation.Medecin = medecin ? `${medecin.nom} ${medecin.prenoms}` : "";
-        consultation.StatuPrescriptionMedecin = 2;
 
         await consultation.save();
 
-        return NextResponse.json({ success: true, consultation });
+        // ✅ Réponse structurée pour React
+        return NextResponse.json({
+            success: true,
+            consultation,
+            assure: consultation.Assuré,          // Type visiteur
+            patient: {
+                _id: patient?._id,
+                Nom: patient?.Nom,
+                Prenoms: patient?.Prenoms || "",
+            },
+            medecinPrescripteur: medecin?.nom || "",
+            idAssurance: assurance?._id || "",
+            matricule: data.matricule || "",
+            societe: assurance?.societes || "",
+            numeroBon: data.NumBon || "",
+            taux: tauxNum,
+            info: `Patient trouvé : ${patient?.Nom || ""}`,
+        });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
-
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await db();
 
