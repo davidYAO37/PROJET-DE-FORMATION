@@ -3,4 +3,7 @@ export type Medecin = {
   nom?: string;
   prenoms?: string;
   specialite?: string;
+  TauxHonoraire?: number;
+  TauxPrescription?: number;
+  TauxExecution?: number;
 };

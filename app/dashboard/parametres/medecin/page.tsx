@@ -109,27 +109,58 @@ export default function Medecins() {
           <div className="text-danger text-center">{error}</div>
         ) : (
           <div className="table-responsive">
-            <Table bordered hover>
+            <Table bordered hover className="text-center">
               <thead className="table-primary">
                 <tr>
-                  <th>#</th><th>Nom</th><th>Prénoms</th><th>Spécialité</th><th>Actions</th>
+                  <th>#</th>
+                  <th>Nom</th>
+                  <th>Prénoms</th>
+                  <th>Spécialité</th>
+                  <th>Taux Honoraire</th>
+                  <th>Taux Prescription</th>
+                  <th>Taux Execution</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {paginated.length === 0 ? (
-                  <tr><td colSpan={5} className="text-center">Aucun médecin trouvé.</td></tr>
-                ) : paginated.map((medecin, idx) => (
-                  <tr key={medecin._id}>
-                    <td>{idx + 1 + (currentPage - 1) * ITEMS_PER_PAGE}</td>
-                    <td>{medecin.nom}</td>
-                    <td>{medecin.prenoms}</td>
-                    <td>{medecin.specialite}</td>
-                    <td>
-                      <Button variant="outline-primary" size="sm" className="me-2" onClick={() => handleEditClick(medecin)}><FaEdit /></Button>
-                      <Button variant="outline-danger" size="sm" onClick={() => handleDeleteMedecin(medecin._id)}><FaTrash /></Button>
+                  <tr>
+                    <td colSpan={8} className="text-center">
+                      Aucun médecin trouvé.
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  paginated.map((medecin, idx) => (
+                    <tr key={medecin._id}>
+                      <td>{idx + 1 + (currentPage - 1) * ITEMS_PER_PAGE}</td>
+                      <td>{medecin.nom}</td>
+                      <td>{medecin.prenoms}</td>
+                      <td>{medecin.specialite}</td>
+                      <td>{medecin.TauxHonoraire || 0}</td>
+                      <td>{medecin.TauxPrescription || 0}</td>
+                      <td>{medecin.TauxExecution || 0}</td>
+                      <td className="bg-primary bg-opacity-10">
+                        <Button 
+                          variant="outline-primary" 
+                          size="sm" 
+                          className="me-2" 
+                          title="Modifier le médecin"
+                          onClick={() => handleEditClick(medecin)}
+                        >
+                          <FaEdit />
+                        </Button>
+                        <Button 
+                          variant="outline-danger" 
+                          size="sm"
+                          title="Supprimer le médecin"
+                          onClick={() => handleDeleteMedecin(medecin._id)}
+                        >
+                          <FaTrash />
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </Table>
           </div>

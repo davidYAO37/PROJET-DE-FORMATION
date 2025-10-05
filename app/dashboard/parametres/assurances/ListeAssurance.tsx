@@ -62,77 +62,79 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
                     <span className="ms-2">par page</span>
                 </div>
             </div>
-            <Table bordered hover responsive>
-                <thead className="table-primary">
-                    <tr>
-                        <th>#</th>
-                        <th>Désignation</th>
-                        <th>Code</th>
-                        <th>Téléphone</th>
-                        <th>Email</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {paginatedAssurances.length === 0 ? (
+            <div className="table-responsive">
+                <Table bordered hover className="text-center">
+                    <thead className="table-primary">
                         <tr>
-                            <td colSpan={6} className="text-center">
-                                Aucune assurance trouvée.
-                            </td>
+                            <th>#</th>
+                            <th>Désignation</th>
+                            <th>Code</th>
+                            <th>Téléphone</th>
+                            <th>Email</th>
+                            <th>Actions</th>
                         </tr>
-                    ) : (
-                        paginatedAssurances.map((a, i) => (
-                            <tr key={a._id}>
-                                <td>{i + 1 + (currentPage - 1) * itemsPerPage}</td>
-                                <td>{a.desiganationassurance}</td>
-                                <td>{a.codeassurance}</td>
-                                <td>{a.telephone}</td>
-                                <td>{a.email}</td>
-                                <td>
-                                    <Button
-                                        size="sm"
-                                        className="me-3"
-                                        variant="outline-primary"
-                                        title="Modifier l'assurance"
-                                        onClick={() => onEdit(a)}
-                                    >
-                                        Modifier
-                                    </Button>
-                                    <Button
-                                        className="me-3"
-                                        size="sm"
-                                        variant="outline-success"
-                                        title="Voir le tarif assurance"
-                                        onClick={async () => {
-                                            setSelectedAssurance(a);
-                                            // Synchroniser les actes cliniques dans les tarifs de cette assurance
-                                            await fetch("/api/tarifassurance/sync-actes", {
-                                                method: "POST",
-                                                headers: { "Content-Type": "application/json" },
-                                                body: JSON.stringify({ assuranceId: a._id }),
-                                            });
-                                            setShowTarifs(true);
-                                        }}
-                                    >
-                                        Tarif Assurance
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline-secondary"
-                                        title="Voir les sociétés assurance"
-                                        onClick={() => {
-                                            setSelectedSocieteAssurance(a);
-                                            setShowSocieteModal(true);
-                                        }}
-                                    >
-                                        Societe Assurance
-                                    </Button>
+                    </thead>
+                    <tbody>
+                        {paginatedAssurances.length === 0 ? (
+                            <tr>
+                                <td colSpan={6} className="text-center">
+                                    Aucune assurance trouvée.
                                 </td>
                             </tr>
-                        ))
-                    )}
-                </tbody>
-            </Table>
+                        ) : (
+                            paginatedAssurances.map((a, i) => (
+                                <tr key={a._id}>
+                                    <td>{i + 1 + (currentPage - 1) * itemsPerPage}</td>
+                                    <td>{a.desiganationassurance}</td>
+                                    <td>{a.codeassurance}</td>
+                                    <td>{a.telephone}</td>
+                                    <td>{a.email}</td>
+                                    <td className="bg-primary bg-opacity-10">
+                                        <Button
+                                            size="sm"
+                                            className="me-2"
+                                            variant="outline-primary"
+                                            title="Modifier l'assurance"
+                                            onClick={() => onEdit(a)}
+                                        >
+                                            Modifier
+                                        </Button>
+                                        <Button
+                                            className="me-2"
+                                            size="sm"
+                                            variant="outline-success"
+                                            title="Voir le tarif assurance"
+                                            onClick={async () => {
+                                                setSelectedAssurance(a);
+                                                // Synchroniser les actes cliniques dans les tarifs de cette assurance
+                                                await fetch("/api/tarifassurance/sync-actes", {
+                                                    method: "POST",
+                                                    headers: { "Content-Type": "application/json" },
+                                                    body: JSON.stringify({ assuranceId: a._id }),
+                                                });
+                                                setShowTarifs(true);
+                                            }}
+                                        >
+                                            Tarif Assurance
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline-secondary"
+                                            title="Voir les sociétés assurance"
+                                            onClick={() => {
+                                                setSelectedSocieteAssurance(a);
+                                                setShowSocieteModal(true);
+                                            }}
+                                        >
+                                            Societe Assurance
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </Table>
+            </div>
             {totalPages > 1 && (
                 <div className="d-flex justify-content-center mt-2">
                     <nav>

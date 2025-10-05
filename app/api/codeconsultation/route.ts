@@ -2,8 +2,6 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { Consultation } from "@/models/consultation";
-import { Patient } from "@/models/patient";
-import { ExamenHospitalisation } from "@/models/examenHospit";
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
@@ -19,51 +17,35 @@ export async function GET(request: Request) {
 
     // Vérification du ticket modérateur et du statut
     let infoMessage: string | null = null;
-    if (consultation.tiket_moderateur !== 0 && !consultation.StatutC) {
-        infoMessage = "ℹ️ La consultation liée à cette prestation n'est pas encore facturée.";
+    
+    if (consultation.tiket_moderateur && consultation.tiket_moderateur !== 0) {
+        if (!consultation.StatutC) {
+            infoMessage = "⚠️ ATTENTION: La consultation liée à cette prestation doit être facturée";
+        }
     }
 
-
-
-    // Recherche du patient lié à la consultation
-    const patient = await Patient.findById(consultation.IDPARTIENT).lean();
-    if (!patient) {
-        return NextResponse.json({ error: "Ce patient n'est pas connu" }, { status: 404 });
-    }
-
-    // Recherche d'un examen hospitalisation lié à ce code prestation
-    const examen = await ExamenHospitalisation.findOne({ Code_Prestation: codePrestation }).lean();
-
-    // Préparation de la réponse
+    // Préparation de la réponse avec les infos patient de la consultation
     const response: any = {
-        patient: {
-            _id: patient._id,
-            Nom: patient.Nom,
-            Prenoms: patient.Prenoms,
-        },
+        patient: consultation.PatientP,
         medecinPrescripteur: consultation.IDMEDECIN,
         taux: consultation.tauxAssurance,
+        tauxAssurance: consultation.tauxAssurance,
         matricule: consultation.numero_carte,
         numeroBon: consultation.NumBon,
-        designationC: consultation.designationC,
+        NumBon: consultation.NumBon,
+        //designationC: consultation.Diagnostic || consultation.designationC || "",
         idAssurance: consultation.IDASSURANCE,
+        SOCIETE_PATIENT: consultation.SOCIETE_PATIENT,
         societe: consultation.SOCIETE_PATIENT,
         numero: consultation.IDSOCIETEASSUANCE,
+        Souscripteur: consultation.Souscripteur,
         souscripteur: consultation.Souscripteur,
         idApporteur: consultation.IDAPPORTEUR,
+        Assuré: consultation.Assuré,
         assure: consultation.Assuré,
         Code_dossier: consultation.Code_dossier,
         info: infoMessage,
     };
-
-    if (examen) {
-        response.examen = {
-            designationTypeActe: examen.Designationtypeacte,
-            idHospitalisation: examen._id,
-            partApporteur: examen.PartApporteur,
-            rclinique: examen.Rclinique,
-        };
-    }
 
     return NextResponse.json(response);
 }

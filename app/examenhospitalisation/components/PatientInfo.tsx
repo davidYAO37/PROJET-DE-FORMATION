@@ -45,28 +45,34 @@ export default function PatientInfo({ formData, setFormData, onCodePrestationCha
 
                 setErrorMessage(null);
                 setInfoMessage(data.info || null);
+                
+                // Masquer le message info après 10 secondes
+                if (data.info) {
+                    setTimeout(() => {
+                        setInfoMessage(null);
+                    }, 10000);
+                }
 
                 // Nom complet du patient
-                setPatientNom(
-                    data.patient.Nom + (data.patient.Prenoms ? " " + data.patient.Prenoms : "")
-                );
+                setPatientNom(data.patient || "");
 
-                // Mise à jour du formulaire avec type visiteur (Assure) automatiquement
+                // Charger les données de la consultation
                 setFormData((prev) => ({
                     ...prev,
-                    patientId: data.patient._id || "",
-                    Assure: data.Assuré || data.assure || "NON ASSURE", // aligné modèle Consultation sans mappage
-                    medecinPrescripteur: data.medecinPrescripteur || "",
+                    patientId: data.patient._id || prev.patientId,
+                    Assure: data.Assuré || data.assure || prev.Assure,
+                    medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
+                    renseignementclinique: data.designationC || prev.renseignementclinique,
+                    societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
                     assurance: {
-                        ...prev.assurance,
-                        assuranceId: data.idAssurance || "",
-                        type: data.Assuré || data.assure || "",
-                        taux: data.tauxAssurance ?? data.taux ?? 0,
-                        matricule: data.matricule || "",
-                        numeroBon: data.NumBon || data.numeroBon || "",
-                        societe: data.SOCIETE_PATIENT || data.societe || "",
-                        numero: data.numero || "",
-                        adherent: data.Souscripteur || data.souscripteur || "",
+                        assuranceId: data.idAssurance || prev.assurance.assuranceId,
+                        type: data.Assuré || data.assure || prev.assurance.type,
+                        taux: data.tauxAssurance ?? data.taux ?? prev.assurance.taux,
+                        matricule: data.matricule || prev.assurance.matricule,
+                        numeroBon: data.NumBon || data.numeroBon || prev.assurance.numeroBon,
+                        societe: data.SOCIETE_PATIENT || data.societe || prev.assurance.societe,
+                        numero: data.numero || prev.assurance.numero,
+                        adherent: data.Souscripteur || data.souscripteur || prev.assurance.adherent,
                     },
                 }));
             })

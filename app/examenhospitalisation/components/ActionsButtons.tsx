@@ -23,7 +23,7 @@ export default function ActionsButtons({ disabled = false, onSubmit }: Props) {
                 <Button
                     variant="success"
                     className="w-100"
-                    disabled={disabled} // ✅ bouton désactivé si erreur
+                    disabled={disabled} // bouton désactivé si erreur
                     onClick={onSubmit}
                 >
                     Allez à la caisse SVP

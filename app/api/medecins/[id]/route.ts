@@ -19,10 +19,13 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   const { id } = await params;
   try {
     const body = await req.json();
+    console.log("Données reçues pour modification médecin:", body);
     const updated = await Medecin.findByIdAndUpdate(id, body, { new: true });
     if (!updated) return NextResponse.json({ error: "Médecin non trouvé" }, { status: 404 });
+    console.log("Médecin modifié:", updated);
     return NextResponse.json(updated);
-  } catch {
+  } catch (error) {
+    console.error("Erreur update médecin:", error);
     return NextResponse.json({ error: "Erreur update" }, { status: 500 });
   }
 }

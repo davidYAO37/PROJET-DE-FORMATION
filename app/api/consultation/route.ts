@@ -101,9 +101,9 @@ export async function POST(req: NextRequest) {
 
             IDPARTIENT: patient?._id,
             Souscripteur: patient?.Souscripteur,
-            PatientP: patient?.Nom,
-            SOCIETE_PATIENT: patient?.SOCIETE_PATIENT,
-            IDSOCIETEASSUANCE: patient?.IDSOCIETEASSUANCE,
+            PatientP: patient?.Nom+" "+patient?.Prenoms,
+            SOCIETE_PATIENT: patient?.SOCIETE_PATIENT || data.societePatient,
+            IDSOCIETEASSUANCE: patient?.IDSOCIETEASSUANCE || data.selectedAssurance,
 
             Medecin: medecin ? `${medecin.nom} ${medecin.prenoms}` : "",
             IDMEDECIN: medecin?._id,

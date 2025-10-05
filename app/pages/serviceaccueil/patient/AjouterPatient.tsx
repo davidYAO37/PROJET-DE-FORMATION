@@ -25,7 +25,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     Age_partient: 0,
     sexe: 'Masculin',
     Contact: '',
-    typevisiteur: 'Non Assuré',
+    TarifPatient: 'Non Assuré',
     Code_dossier: `P00${nextId}`,
     Matricule: '',
     Date_naisse: '',
@@ -73,7 +73,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         Age_partient: 0,
         sexe: 'Masculin',
         Contact: '',
-        typevisiteur: 'Non Assuré',
+        TarifPatient: 'Non Assuré',
         Code_dossier: `P00${nextId}`,
         Matricule: '',
         Date_naisse: '',
@@ -110,8 +110,8 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         const birthDate = new Date(birthYear, today.getMonth(), today.getDate());
         newData.Date_naisse = birthDate.toISOString().split('T')[0];
       }
-      // Logique typevisiteur
-      if (name === "typevisiteur" && value === "Non Assuré") {
+      // Logique TarifPatient
+      if (name === "TarifPatient" && value === "Non Assuré") {
         newData.IDASSURANCE = '';
         newData.Taux = '';
         newData.Matricule = '';
@@ -146,7 +146,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     } catch { }
 
     // Vérification des champs pour Mutualiste et Préférentiel
-    if ((formData.typevisiteur === "Mutualiste" || formData.typevisiteur === "Préférentiel")) {
+    if ((formData.TarifPatient === "Mutualiste" || formData.TarifPatient === "Préférentiel")) {
       if (!formData.IDASSURANCE || !formData.Taux || !formData.Matricule) {
         setErrorMsg("Veuillez renseigner l'assurance, le taux et le matricule.");
         return false;
@@ -168,7 +168,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     try {
       let payload = { ...formData };
 
-      if (payload.typevisiteur === "Non Assuré") {
+      if (payload.TarifPatient === "Non Assuré") {
         payload.IDASSURANCE = undefined;
         payload.Taux = undefined;
         payload.Matricule = '';
@@ -202,7 +202,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
           onHide();
         }, 1500);
       } else {
-        setErrorMsg('Erreur lors de l’ajout du patient.');
+        setErrorMsg('Erreur lors de l\'ajout du patient.');
       }
     } catch (error) {
       setErrorMsg('Erreur réseau.');
@@ -237,8 +237,8 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                 <Form.Group className="mb-3">
                   <Form.Label>Type Visiteur</Form.Label>
                   <Form.Select
-                    name="typevisiteur"
-                    value={formData.typevisiteur}
+                    name="TarifPatient"
+                    value={formData.TarifPatient}
                     onChange={handleChange}
                   >
                     <option value="Non Assuré">Non Assuré</option>
@@ -323,7 +323,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
             </Form.Group>
 
             {/* Assurance + Société + infos complémentaires */}
-            {formData.typevisiteur !== 'Non Assuré' && (
+            {formData.TarifPatient !== 'Non Assuré' && (
               <div className="border p-3 rounded bg-light">
                 <Row>
                   <Form.Group className="mb-3">

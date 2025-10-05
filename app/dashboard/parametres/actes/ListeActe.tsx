@@ -188,43 +188,74 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                 </div>
             </Form>
 
-            <Table bordered hover responsive className="table-hover table-striped">
-                <thead className="table-primary">
-                    <tr>
-                        <th onClick={() => handleSort("designationacte")} style={{ cursor: "pointer" }}>
-                            Désignation {renderSortIcon("designationacte")}
-                        </th>
-                        <th onClick={() => handleSort("lettreCle")} style={{ cursor: "pointer" }}>
-                            Lettre Clé {renderSortIcon("lettreCle")}
-                        </th>
-                        <th>Coefficient</th>
-                        <th>Prix Clinique</th>
-                        <th>Prix Mutuel</th>
-                        <th>Prix Préférentiel</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {paginated.length === 0 ? (
-                        <tr><td colSpan={7} className="text-center">Aucun acte trouvé.</td></tr>
-                    ) : (
-                        paginated.map((a, idx) => (
-                            <tr key={a._id ? a._id : `row-${(currentPage - 1) * itemsPerPage + idx}`}>
-                                <td>{a.designationacte}</td>
-                                <td>{a.lettreCle}</td>
-                                <td>{a.coefficient}</td>
-                                <td>{a.prixClinique}</td>
-                                <td>{a.prixMutuel}</td>
-                                <td>{a.prixPreferentiel}</td>
-                                <td className="text-center">
-                                    <Button size="sm" variant="outline-primary" className="me-2" onClick={() => { setActionLoading('edit-' + a._id); onEdit(a); }} disabled={actionLoading === 'edit-' + a._id}><FaEdit /></Button>
-                                    {a._id && <Button size="sm" variant="outline-danger" disabled={actionLoading === 'delete-' + a._id} onClick={async () => { if (window.confirm(`Supprimer "${a.designationacte}" ?`)) { setActionLoading('delete-' + a._id); await onDelete(a._id as string); setActionLoading(null); } }}><FaTrash /></Button>}
+            <div className="table-responsive">
+                <Table bordered hover className="text-center">
+                    <thead className="table-primary">
+                        <tr>
+                            <th onClick={() => handleSort("designationacte")} style={{ cursor: "pointer" }}>
+                                Désignation {renderSortIcon("designationacte")}
+                            </th>
+                            <th onClick={() => handleSort("lettreCle")} style={{ cursor: "pointer" }}>
+                                Lettre Clé {renderSortIcon("lettreCle")}
+                            </th>
+                            <th>Coefficient</th>
+                            <th>Prix Clinique</th>
+                            <th>Prix Mutuel</th>
+                            <th>Prix Préférentiel</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {paginated.length === 0 ? (
+                            <tr>
+                                <td colSpan={7} className="text-center">
+                                    Aucun acte trouvé.
                                 </td>
                             </tr>
-                        ))
-                    )}
-                </tbody>
-            </Table>
+                        ) : (
+                            paginated.map((a, idx) => (
+                                <tr key={a._id ? a._id : `row-${(currentPage - 1) * itemsPerPage + idx}`}>
+                                    <td>{a.designationacte}</td>
+                                    <td>{a.lettreCle}</td>
+                                    <td>{a.coefficient}</td>
+                                    <td>{a.prixClinique}</td>
+                                    <td>{a.prixMutuel}</td>
+                                    <td>{a.prixPreferentiel}</td>
+                                    <td className="bg-primary bg-opacity-10">
+                                        <Button 
+                                            size="sm" 
+                                            variant="outline-primary" 
+                                            className="me-2" 
+                                            title="Modifier l'acte"
+                                            onClick={() => { setActionLoading('edit-' + a._id); onEdit(a); }} 
+                                            disabled={actionLoading === 'edit-' + a._id}
+                                        >
+                                            <FaEdit />
+                                        </Button>
+                                        {a._id && (
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline-danger" 
+                                                title="Supprimer l'acte"
+                                                disabled={actionLoading === 'delete-' + a._id} 
+                                                onClick={async () => { 
+                                                    if (window.confirm(`Supprimer "${a.designationacte}" ?`)) { 
+                                                        setActionLoading('delete-' + a._id); 
+                                                        await onDelete(a._id as string); 
+                                                        setActionLoading(null); 
+                                                    } 
+                                                }}
+                                            >
+                                                <FaTrash />
+                                            </Button>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))
+                        )}
+                    </tbody>
+                </Table>
+            </div>
 
             {totalPages > 1 && (
                 <div className="d-flex flex-wrap justify-content-between align-items-center mt-4">

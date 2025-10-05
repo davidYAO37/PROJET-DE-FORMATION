@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export interface ILignePrestation extends Document {
-    _id: string;
+    _id: Types.ObjectId | string;
     codePrestation: string;
     codeConsultation?: string;
     dateLignePrestation: Date;
@@ -91,7 +91,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         reliquatCoefAssurance: { type: Number, required: true },
         lettreCle: { type: String, required: true },
         taxe: { type: Number },
-        idTypeActe: { type: Schema.Types.ObjectId, ref: "NatureActe", required: true },
+        idTypeActe: { type: Schema.Types.ObjectId, ref: "NatureActe" },
         idActe: { type: Schema.Types.ObjectId, ref: "ActeClinique", required: true },
         idApporteur: { type: Schema.Types.ObjectId, ref: "Apporteur" },
         reliquatPatient: { type: Number },

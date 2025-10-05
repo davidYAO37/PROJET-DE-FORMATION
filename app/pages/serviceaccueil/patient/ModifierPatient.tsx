@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
+import SocietePatientModal from "@/components/SocietePatientModal";
 
 interface Assurance {
   _id: string;
@@ -20,6 +21,14 @@ interface ModifierPatientProps {
 export default function ModifierPatient({ show, handleClose, patient, onUpdate }: ModifierPatientProps) {
   const [form, setForm] = useState<any>({});
   const [assurances, setAssurances] = useState<Assurance[]>([]);
+  
+  // Modal société patient
+  const [showSocieteModal, setShowSocieteModal] = useState(false);
+
+  // Callback pour sélection société
+  const handleSelectSociete = (societe: { _id: string; societe: string }) => {
+    setForm((prev: any) => ({ ...prev, SOCIETE_PATIENT: societe.societe }));
+  };
 
   useEffect(() => {
     const fetchAssurances = async () => {
@@ -65,6 +74,10 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
         updatedForm.Matricule = '';
         updatedForm.SOCIETE_PATIENT = '';
         updatedForm.Souscripteur = '';
+      }
+      // Ouvrir le modal si on sélectionne une assurance
+      if (name === "IDASSURANCE" && value) {
+        setShowSocieteModal(true);
       }
       return updatedForm;
     });
@@ -263,12 +276,24 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Société Patient</Form.Label>
-                <Form.Control
-                  name="SOCIETE_PATIENT"
-                  value={form.SOCIETE_PATIENT || ''}
-                  onChange={handleChange}
-                  placeholder="Société du patient"
-                />
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Form.Control
+                    name="SOCIETE_PATIENT"
+                    value={form.SOCIETE_PATIENT || ''}
+                    readOnly
+                    placeholder="Sélectionner une société"
+                    onClick={() => form.IDASSURANCE && setShowSocieteModal(true)}
+                    style={{ cursor: form.IDASSURANCE ? 'pointer' : 'not-allowed', background: '#f8f9fa' }}
+                  />
+                  <Button
+                    variant="outline-primary"
+                    onClick={() => form.IDASSURANCE && setShowSocieteModal(true)}
+                    disabled={!form.IDASSURANCE}
+                    title="Choisir une société"
+                  >
+                    +
+                  </Button>
+                </div>
               </Form.Group>
               <Form.Group className="mb-3">
                 <Form.Label>Souscripteur</Form.Label>
@@ -291,6 +316,14 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
           </Button>
         </Modal.Footer>
       </Form>
+      
+      {/* Modal Société Patient */}
+      <SocietePatientModal
+        show={showSocieteModal}
+        onHide={() => setShowSocieteModal(false)}
+        onSelect={handleSelectSociete}
+        assuranceId={form.IDASSURANCE || ""}
+      />
     </Modal>
   );
 }

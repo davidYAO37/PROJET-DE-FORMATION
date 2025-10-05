@@ -313,4 +313,185 @@ body {
   background-repeat: no-repeat;
 }
 
+/* =============================
+   Recherche d'Acte Moderne
+   ============================= */
+
+/* Container principal */
+.searchable-acte-container {
+  position: relative;
+}
+
+/* Icône de recherche */
+.searchable-acte-icon {
+  background-color: #f8f9fa;
+  border: 1px solid #ced4da;
+  border-right: none;
+}
+
+/* Input de recherche */
+.searchable-acte-input {
+  border-left: none;
+  font-size: 0.875rem;
+}
+
+/* Bouton de suppression */
+.searchable-acte-clear {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+}
+
+/* Dropdown - s'ouvre vers le haut */
+.searchable-acte-dropdown {
+  position: fixed;
+  bottom: auto;
+  left: auto;
+  right: auto;
+  max-height: 400px;
+  min-width: 300px;
+  overflow: hidden;
+  background-color: white;
+  border: 2px solid #0d6efd;
+  border-radius: 0.5rem;
+  z-index: 9999;
+  box-shadow: 0 -4px 20px rgba(13, 110, 253, 0.3);
+  margin-bottom: 4px;
+}
+
+/* Compteur de résultats */
+.searchable-acte-counter {
+  padding: 8px 12px;
+  background-color: #f8f9fa;
+  border-bottom: 2px solid #e9ecef;
+  font-size: 0.85rem;
+  color: #6c757d;
+  font-weight: 500;
+}
+
+/* État vide */
+.searchable-acte-empty {
+  padding: 20px;
+  text-align: center;
+  color: #6c757d;
+  font-size: 0.9rem;
+}
+
+.searchable-acte-empty-icon {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.searchable-acte-empty-hint {
+  font-size: 0.8rem;
+  margin-top: 4px;
+}
+
+/* Liste des résultats */
+.searchable-acte-list {
+  max-height: 350px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Scrollbar personnalisée */
+.searchable-acte-list::-webkit-scrollbar {
+  width: 8px;
+}
+
+.searchable-acte-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.searchable-acte-list::-webkit-scrollbar-thumb {
+  background: #0d6efd;
+  border-radius: 4px;
+}
+
+.searchable-acte-list::-webkit-scrollbar-thumb:hover {
+  background: #0b5ed7;
+}
+
+/* Item de la liste */
+.searchable-acte-item {
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid #f0f0f0;
+  background-color: white;
+  transition: all 0.2s ease;
+}
+
+.searchable-acte-item:last-child {
+  border-bottom: none;
+}
+
+.searchable-acte-item.selected {
+  background-color: #e7f3ff;
+}
+
+.searchable-acte-item:hover {
+  background-color: #f8f9fa;
+  padding-left: 18px;
+}
+
+.searchable-acte-item.selected:hover {
+  background-color: #d0e7ff;
+}
+
+/* Titre de l'acte */
+.searchable-acte-title {
+  font-weight: 600;
+  color: #212529;
+  margin-bottom: 4px;
+  font-size: 0.9rem;
+}
+
+/* Container des badges */
+.searchable-acte-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: #6c757d;
+  margin-top: 6px;
+}
+
+/* Badge lettre clé */
+.searchable-acte-badge-key {
+  background-color: #e7f3ff;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid #b3d9ff;
+}
+
+/* Badge prix normal */
+.searchable-acte-badge-price {
+  background-color: #d1e7dd;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid #a3cfbb;
+}
+
+/* Badge prix mutuel */
+.searchable-acte-badge-mutuel {
+  background-color: #fff3cd;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid #ffe69c;
+  color: #856404;
+}
+
+/* Badge prix assuré */
+.searchable-acte-badge-assure {
+  background-color: #f8d7da;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-weight: 600;
+  border: 1px solid #f5c2c7;
+  color: #842029;
+}
+
 

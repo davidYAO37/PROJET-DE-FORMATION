@@ -142,7 +142,22 @@ export default function Page() {
             />
           </InputGroup>
         </Col>
-        <Col xs={12} md={6} className="mt-2 mt-md-0 text-md-end text-start">
+        <Col xs={12} md={4}>
+          <Button
+            variant="outline-warning"
+            title="Ajouter examens ou hospitalisation"
+            size="sm"
+            onClick={() => setShowExamenHospitalisationModal(true)}
+          >
+            Ajouter examens ou hospitalisation
+          </Button>
+          {/* Modal ajouter examens*hospit ... */}
+          <ExamenHospitalisationModal
+            show={showExamenHospitalisationModal}
+            onHide={() => setShowExamenHospitalisationModal(false)}
+          />
+        </Col>
+        <Col xs={12} md={2} className="mt-2 mt-md-0 text-md-end text-start">
           <Button variant="success" onClick={() => setShowAddModal(true)}>
             <FaPlus className="me-2" />
             Ajouter un Patient
@@ -241,20 +256,7 @@ export default function Page() {
                         show={showListeConsultModal}
                         onHide={() => setShowListeConsultModal(false)}
                         patientId={patientIdConsultModal || ''}
-                      />
-                      <Button
-                        variant="outline-warning"
-                        title="Ajouter examens ou hospitalisation"
-                        size="sm"
-                        onClick={() => setShowExamenHospitalisationModal(true)}
-                      >
-                        Ajouter examens ou hospitalisation
-                      </Button>
-                      {/* Modal ajouter examens*hospit ... */}
-                      <ExamenHospitalisationModal
-                        show={showExamenHospitalisationModal}
-                        onHide={() => setShowExamenHospitalisationModal(false)}
-                      />
+                      />                      
                     </td>
 
                     <td className="bg-primary bg-opacity-10">

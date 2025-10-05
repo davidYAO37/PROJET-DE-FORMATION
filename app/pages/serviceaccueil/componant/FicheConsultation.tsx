@@ -233,7 +233,9 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                 selectedAssurance={selectedAssurance}
                 setSelectedAssurance={setSelectedAssurance}
                 matricule={matricule}
+                setMatricule={setMatricule}
                 taux={taux}
+                setTaux={setTaux}
                 numBon={numBon}
                 setNumBon={setNumBon}
                 souscripteur={souscripteur}

@@ -2,7 +2,7 @@
 
 import { Medecin } from '@/types/medecin';
 import React, { useState, useEffect } from 'react';
-import { Modal, Button, Form } from 'react-bootstrap';
+import { Modal, Button, Form, Row, Col } from 'react-bootstrap';
 
 interface ModifierMedecinProps {
   show: boolean;
@@ -17,6 +17,9 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
   const [nom, setNom] = useState('');
   const [prenoms, setPrenoms] = useState('');
   const [specialite, setSpecialite] = useState('');
+  const [tauxHonoraire, setTauxHonoraire] = useState('');
+  const [tauxPrescription, setTauxPrescription] = useState('');
+  const [tauxExecution, setTauxExecution] = useState('');
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
@@ -24,6 +27,9 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
       setNom(medecin?.nom!);
       setPrenoms(medecin?.prenoms!);
       setSpecialite(medecin?.specialite!);
+      setTauxHonoraire(String(medecin?.TauxHonoraire || ''));
+      setTauxPrescription(String(medecin?.TauxPrescription || ''));
+      setTauxExecution(String(medecin?.TauxExecution || ''));
     }
   }, [medecin]);
 
@@ -36,7 +42,14 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
       const response = await fetch(`/api/medecins/${medecin._id}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nom, prenoms, specialite }),
+        body: JSON.stringify({ 
+          nom, 
+          prenoms, 
+          specialite, 
+          TauxHonoraire: Number(tauxHonoraire), 
+          TauxPrescription: Number(tauxPrescription), 
+          TauxExecution: Number(tauxExecution) 
+        }),
       });
 
       if (response.ok) {
@@ -70,6 +83,26 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
             <Form.Label>Spécialité</Form.Label>
             <Form.Control value={specialite} onChange={(e) => setSpecialite(e.target.value)} required />
           </Form.Group>
+          <Row>
+            <Col className="col-4">
+              <Form.Group className="mb-3">
+                <Form.Label>Taux Honoraire</Form.Label>
+                <Form.Control type="number" value={tauxHonoraire} onChange={(e) => setTauxHonoraire(e.target.value)} required />
+              </Form.Group>
+            </Col>
+            <Col className="col-4">
+              <Form.Group className="mb-3">
+                <Form.Label>Taux Prescription</Form.Label>
+                <Form.Control type="number" value={tauxPrescription} onChange={(e) => setTauxPrescription(e.target.value)} required />
+              </Form.Group>
+            </Col>
+            <Col className="col-4">
+              <Form.Group className="mb-3">
+                <Form.Label>Taux Execution</Form.Label>
+                <Form.Control type="number" value={tauxExecution} onChange={(e) => setTauxExecution(e.target.value)} required />
+              </Form.Group>
+            </Col>
+          </Row>
           <div className="text-end">
             <Button variant="secondary" onClick={onHide} className="me-2">Annuler</Button>
             <Button variant="primary" type="submit" disabled={loading}>

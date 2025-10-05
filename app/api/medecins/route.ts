@@ -16,9 +16,12 @@ export async function POST(req: Request) {
   await db();
   try {
     const body = await req.json();
+    console.log("Données reçues pour ajout médecin:", body);
     const newMedecin = await Medecin.create(body);
+    console.log("Médecin créé:", newMedecin);
     return NextResponse.json(newMedecin, { status: 201 });
-  } catch {
+  } catch (error) {
+    console.error("Erreur ajout médecin:", error);
     return NextResponse.json({ error: "Erreur ajout médecin" }, { status: 500 });
   }
 }
