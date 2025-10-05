@@ -873,6 +873,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                 if (!copy.QteP || copy.QteP === 0) copy.QteP = 1;
                 copy.Statutprescription = 2;
                 copy.Refuser = acte.Prix || 0;
+                copy.ordonnancementAffichage = acte.ORdonnacementAffichage || 0;
 
                 // Selon COMBO_Assurance (prop assuranceId)
                 if (assuranceId === 1) {

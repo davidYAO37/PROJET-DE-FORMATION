@@ -4,11 +4,12 @@ import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { HouseDoorFill, ArrowRightCircleFill, PeopleFill, Clipboard2PulseFill, CalendarFill, Calendar2CheckFill, ClockFill, PencilSquare, KeyFill } from 'react-bootstrap-icons';
+import TransfertPatientModal from '@/app/pages/serviceaccueil/componant/TransfertPatientModal';
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <HouseDoorFill size={24} className="me-2" /> },
   { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Transférer un patient', path: '/transfert-patient', icon: <ArrowRightCircleFill size={24} className="me-2" /> },
+  { label: 'Transférer un patient', path: '#', isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2" /> },
   { label: 'Salle d\'attente', path: '/salle-attente', icon: <PeopleFill size={24} className="me-2" /> },
   { label: 'Constantes', path: '/constantes', icon: <Clipboard2PulseFill size={24} className="me-2" /> },
   { label: 'Planning Médecin', path: '/planning-medecin', icon: <CalendarFill size={24} className="me-2" /> },
@@ -18,12 +19,20 @@ const menu = [
   { label: 'Gérer mon Mot De Passe', path: '/mot-de-passe', icon: <KeyFill size={24} className="me-2" /> },
 ];
 
-export default function Sidebaraccueil() {
+export default function Sidebaracceuil() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [showTransfertModal, setShowTransfertModal] = useState(false);
 
   // Ferme la sidebar quand on clique sur un lien (mobile)
   const handleLinkClick = () => setOpen(false);
+
+  // Ouvre le modal de transfert
+  const handleTransfertClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowTransfertModal(true);
+    setOpen(false);
+  };
 
   return (
     <>
@@ -56,18 +65,35 @@ export default function Sidebaraccueil() {
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
             <Nav.Item key={index} className="mb-2">
-              <Link
-                href={item.path}
-                className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''}`}
-                onClick={handleLinkClick}
-              >
-                {item.icon}
-                <span>{item.label}</span>
-              </Link>
+              {item.isModal ? (
+                <a
+                  href="#"
+                  className="sidebar-link-medical d-flex align-items-center"
+                  onClick={handleTransfertClick}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </a>
+              ) : (
+                <Link
+                  href={item.path}
+                  className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              )}
             </Nav.Item>
           ))}
         </Nav>
       </aside>
+
+      {/* Modal de transfert de patient */}
+      <TransfertPatientModal 
+        show={showTransfertModal} 
+        onHide={() => setShowTransfertModal(false)} 
+      />
     </>
   );
 }

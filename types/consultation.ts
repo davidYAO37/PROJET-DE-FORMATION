@@ -38,4 +38,9 @@ export interface ConsultationType {
     IDASSURANCE: string;
     assurance: string;
     Assuré: string;
+
+    // Champs de transfert
+    AncienMedecin?: string;
+    datetransfert?: Date;
+    TransfererPar?: string;
 }
