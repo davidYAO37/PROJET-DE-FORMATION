@@ -6,8 +6,8 @@ export interface ActeClinique {
     prixMutuel: number;
     prixPreferentiel: number;
     coefficient: number;
-    montantAuMed: boolean;
-    idFamille?: string;
+    MontantAuMed?: number;
+    IDFAMILLE_ACTE_BIOLOGIE?: string;
 }
 /* export interface ActeClinique {
     _id: string;
@@ -54,7 +54,7 @@ export function ajouterActe(
     const prixTotal = prixUnitaire * coefficient * quantite;
 
     // Montant pour médecin
-    const montantMedecin = acte.montantAuMed ? prixTotal : 0;
+    const montantMedecin = acte.MontantAuMed ? prixTotal : 0;
 
     return {
         _id: acte._id,

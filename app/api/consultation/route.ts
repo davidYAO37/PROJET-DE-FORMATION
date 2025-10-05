@@ -30,14 +30,13 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: "Merci de préciser l'assurance du patient SVP" }, { status: 400 });
             }
         }
-
         // ✅ Préparation de la consultation
         const patient = await Patient.findById(data.IDPARTIENT);
         const assurance = data.selectedAssurance ? await Assurance.findById(data.selectedAssurance) : null;
         const medecin = await Medecin.findById(data.selectedMedecin);
 
-        // Montants et calculs
-        let montantActe = data.montantClinique || 0;
+        // Montants et calculs (tous en entiers)
+        let montantActe = Math.round(data.montantClinique || 0);
         let partAssurance = 0;
         let partPatient = 0;
         let surplus = 0;
@@ -48,16 +47,16 @@ export async function POST(req: NextRequest) {
 
         // Calcul Part Assurance, Part Patient, Surplus
         if (data.assure === "mutualiste") {
-            montantActe = data.montantAssurance || montantActe;
+            montantActe = Math.round(data.montantAssurance || montantActe);
         } else if (data.assure === "assure") {
-            montantActe = data.montantAssurance || montantActe;
+            montantActe = Math.round(data.montantAssurance || montantActe);
         }
 
         if (data.montantClinique > montantActe) {
-            surplus = data.montantClinique - montantActe;
+            surplus = Math.round(data.montantClinique - montantActe);
         }
 
-        partAssurance = (tauxNum * montantActe) / 100;
+        partAssurance = Math.round((tauxNum * montantActe) / 100);
         partPatient = montantActe - partAssurance;
         const totalPatient = partPatient + surplus;
 
@@ -75,15 +74,15 @@ export async function POST(req: NextRequest) {
             Assuré: data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE",
             IDASSURANCE: assurance?._id,
 
-            Prix_Assurance: montantActe,
-            PrixClinique: data.montantClinique || 0,
-            Restapayer: totalPatient,
-            montantapayer: Number(partPatient + surplus),
-            ReliquatPatient: surplus,
+            Prix_Assurance: Math.round(montantActe),
+            PrixClinique: Math.round(data.montantClinique || 0),
+            Restapayer: Math.round(totalPatient),
+            montantapayer: Math.round(partPatient + surplus),
+            ReliquatPatient: Math.round(surplus),
 
             Code_dossier: patient.Code_dossier, // Toujours le code dossier du patient
             // Code_Prestation: généré automatiquement par le modèle
-            Date_consulation: data.Date_consulation || new Date(),
+            Date_consultation: data.Date_consultation || new Date(),
             Heure_Consultation: data.Heure_Consultation || new Date().toLocaleTimeString(),
 
             StatutC: data.montantClinique === 0 ? true : false,
@@ -91,14 +90,13 @@ export async function POST(req: NextRequest) {
             Toutencaisse: data.montantClinique === 0 ? true : false,
 
             tauxAssurance: tauxNum,
-            PartAssurance: partAssurance,
-            tiket_moderateur: partPatient,
+            PartAssurance: Math.round(partAssurance),
+            tiket_moderateur: Math.round(partPatient),
             numero_carte: data.matricule,
             NumBon: data.NumBon,
 
             Recupar: data.Recupar, // Nom de l'utilisateur connecté
             IDACTE: data.selectedActe,
-
             IDPARTIENT: patient?._id,
             Souscripteur: patient?.Souscripteur,
             PatientP: patient?.Nom+" "+patient?.Prenoms,

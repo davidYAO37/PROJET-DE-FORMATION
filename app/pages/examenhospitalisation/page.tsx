@@ -78,6 +78,7 @@ export default function HospitalisationPage() {
                 Statutprescription: Number(l.statutPrescriptionMedecin ?? 2),
                 CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
                 forfaitclinique: 0,
+                ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
                 Action: "",
             }));
             
@@ -320,6 +321,7 @@ export default function HospitalisationPage() {
                                                             Statutprescription: Number(l.statutPrescriptionMedecin ?? 2),
                                                             CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
                                                             forfaitclinique: 0,
+                                                            ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
                                                             Action: "",
                                                         }));
                                                         

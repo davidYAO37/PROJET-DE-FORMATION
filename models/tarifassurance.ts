@@ -23,4 +23,7 @@ const TarifAssuranceSchema = new Schema<ITarifAssurance>(
   { timestamps: true }
 );
 
+// Index unique pour éviter les doublons : une assurance ne peut avoir qu'un seul tarif par acte
+TarifAssuranceSchema.index({ assurance: 1, acteId: 1 }, { unique: true });
+
 export const TarifAssurance: Model<ITarifAssurance> = mongoose.models.TarifAssurance || mongoose.model<ITarifAssurance>("TarifAssurance", TarifAssuranceSchema);

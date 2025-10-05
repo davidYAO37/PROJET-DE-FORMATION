@@ -17,6 +17,8 @@ export interface IActeClinique {
     PrixMutualiste?: number;
     PrixAssure?: number;
     MontantAuMed?: string | number; // "1" ou 1
+    IDFAMILLE_ACTE_BIOLOGIE?: string;
+    ORdonnacementAffichage?: number;
     // ... autres champs si besoin
 }
 
@@ -62,6 +64,7 @@ export interface ILignePrestation {
     Statutprescription: number;
     CoefClinique: number;
     forfaitclinique: number;
+    ordonnancementAffichage?: number;
     Action?: string;
 }
 // utilise Assurance et le taux de assurance info
@@ -269,6 +272,7 @@ const emptyLigne = (): ILignePrestation => ({
     Statutprescription: 2,
     CoefClinique: 1,
     forfaitclinique: 0,
+    ordonnancementAffichage: 0,
     Action: ""
 });
 
@@ -304,6 +308,8 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                     PrixMutualiste: a.prixMutuel,
                     PrixAssure: a.prixPreferentiel,
                     MontantAuMed: a.MontantAuMed,
+                    IDFAMILLE_ACTE_BIOLOGIE: a.IDFAMILLE_ACTE_BIOLOGIE,
+                    ORdonnacementAffichage: a.ORdonnacementAffichage,
                 }));
                 setActes(mapped);
             })
@@ -861,6 +867,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                 copy.DATE = new Date().toISOString().split("T")[0];
                 copy.IDACTE = acte._id;
                 copy.IDTYPE = acte.IDTYPE_ACTE || ""; // ✅ Remplir le type d'acte
+                copy.IDFAMILLE = acte.IDFAMILLE_ACTE_BIOLOGIE || ""; // ✅ Remplir la famille d'acte
                 copy.Exclusion = "Accepter";
                 copy.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
                 if (!copy.QteP || copy.QteP === 0) copy.QteP = 1;

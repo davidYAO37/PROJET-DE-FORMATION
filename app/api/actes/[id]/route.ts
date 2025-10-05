@@ -10,6 +10,14 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const { id } = await params;
         const body = await req.json();
 
+        // Nettoyer les champs ObjectId vides
+        if (body.IDFAMILLE_ACTE_BIOLOGIE === "" || body.IDFAMILLE_ACTE_BIOLOGIE === null) {
+            delete body.IDFAMILLE_ACTE_BIOLOGIE;
+        }
+        if (body.IDTYPE_ACTE === "" || body.IDTYPE_ACTE === null) {
+            delete body.IDTYPE_ACTE;
+        }
+
         // Mettre à jour l'acte
         const updated = await ActeClinique.findByIdAndUpdate(id, body, { new: true });
         if (!updated) {

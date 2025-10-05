@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
                 prixClinique,
                 prixMutuel,
                 prixPreferentiel,
+                MontantAuMed: 0,
+                IDFAMILLE_ACTE_BIOLOGIE: "",
             };
         });
 

@@ -117,17 +117,45 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
         }
     };
 
+    const handleRemoveDuplicates = async () => {
+        if (!assurance) return;
+        if (!confirm("Voulez-vous vraiment supprimer les doublons de tarifs pour cette assurance ?")) return;
+        
+        try {
+            const res = await fetch("/api/tarifassurance/remove-duplicates", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ assuranceId: assurance._id }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || "Erreur");
+            
+            alert(data.message || "Doublons supprimés ✅");
+            
+            // Recharger les tarifs
+            const reloadRes = await fetch(`/api/tarifs/${assurance._id}`);
+            const reloadData = await reloadRes.json();
+            setTarifs(reloadData);
+            setInitialTarifs(reloadData.map((t: TarifAssurance) => ({ ...t })));
+        } catch (err: any) {
+            console.error(err);
+            alert(err.message || "Erreur lors de la suppression des doublons ❌");
+        }
+    };
+
     // ✅ Filtrage + Pagination
     const [searchTerm, setSearchTerm] = useState("");
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(25);
 
 
-    const filteredTarifs = tarifs.filter(
-        t =>
-            t.acte.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            t.lettreCle.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const filteredTarifs = tarifs
+        .filter(
+            t =>
+                t.acte.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                t.lettreCle.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        .sort((a, b) => a.acte.localeCompare(b.acte));
 
     const totalPages = Math.ceil(filteredTarifs.length / itemsPerPage);
     const paginatedTarifs = filteredTarifs.slice(
@@ -282,6 +310,9 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                 )}
             </Modal.Body>
             <Modal.Footer>
+                <Button variant="danger" onClick={handleRemoveDuplicates} className="me-auto">
+                    Supprimer les doublons
+                </Button>
                 <Button variant="secondary" onClick={onHide}>
                     Fermer
                 </Button>

@@ -36,9 +36,9 @@ export default function BlocActe({
         if (!selectedActe) return;
         const acte = actes.find(a => a._id === selectedActe);
         if (!acte) return;
-        if (assure === "mutualiste") setMontantClinique(acte.prixMutuel ?? acte.prixClinique ?? 0);
-        else if (assure === "preferentiel") setMontantClinique(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
-        else setMontantClinique(acte.prixClinique ?? 0);
+        if (assure === "mutualiste") setMontantClinique(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
+        else if (assure === "preferentiel") setMontantClinique(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
+        else setMontantClinique(Math.round(acte.prixClinique ?? 0));
     }, [selectedActe, actes, assure, setMontantClinique]);
 
     return (
@@ -61,7 +61,7 @@ export default function BlocActe({
                     <Form.Control
                         type="number"
                         value={montantClinique}
-                        onChange={(e) => setMontantClinique(Number(e.target.value))}
+                        onChange={(e) => setMontantClinique(Math.round(Number(e.target.value)))}
 
                     />
 
@@ -71,7 +71,7 @@ export default function BlocActe({
                     <Form.Control
                         type="number"
                         value={montantAssurance}
-                        onChange={(e) => setMontantAssurance(Number(e.target.value))}
+                        onChange={(e) => setMontantAssurance(Math.round(Number(e.target.value)))}
                     />
                 </Col>
                 <Col md={3}>

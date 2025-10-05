@@ -217,6 +217,11 @@ export default function Sidebar() {
                     <FaUserShield className="me-2 text-primary" /> Type d'actes
                   </Link>
                 </li>
+                <li>
+                  <Link href="/dashboard/parametres/familleacte" className="sidebar-link-medical d-flex align-items-center">
+                    <FaUserShield className="me-2 text-primary" /> Famille d'actes
+                  </Link>
+                </li>
               </ul>
             </Accordion.Body>
           </Accordion.Item>

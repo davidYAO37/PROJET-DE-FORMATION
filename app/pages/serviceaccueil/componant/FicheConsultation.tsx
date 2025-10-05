@@ -104,9 +104,9 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
 
         // Montant clinique selon le type patient
         let montant = 0;
-        if (assure === "mutualiste") montant = acte.prixMutuel ?? acte.prixClinique ?? 0;
-        else if (assure === "preferentiel") montant = acte.prixPreferentiel ?? acte.prixClinique ?? 0;
-        else montant = acte.prixClinique ?? 0;
+        if (assure === "mutualiste") montant = Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0);
+        else if (assure === "preferentiel") montant = Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+        else montant = Math.round(acte.prixClinique ?? 0);
         setMontantClinique(montant);
 
         // Si patient mutualiste ou préférentiel, on cherche le tarif dans la collection tarifassurance
@@ -117,19 +117,19 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                     if (!Array.isArray(tarifs)) { setMontantAssurance(0); return; }
                     const tarif = tarifs.find((t: any) => t.acte === acte.designationacte);
                     if (tarif) {
-                        if (assure === "mutualiste") setMontantAssurance(tarif.prixmutuel ?? acte.prixMutuel ?? acte.prixClinique ?? 0);
-                        else if (assure === "preferentiel") setMontantAssurance(tarif.prixpreferenciel ?? acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+                        if (assure === "mutualiste") setMontantAssurance(Math.round(tarif.prixmutuel ?? acte.prixMutuel ?? acte.prixClinique ?? 0));
+                        else if (assure === "preferentiel") setMontantAssurance(Math.round(tarif.prixpreferenciel ?? acte.prixPreferentiel ?? acte.prixClinique ?? 0));
                     } else {
-                        if (assure === "mutualiste") setMontantAssurance(acte.prixMutuel ?? acte.prixClinique ?? 0);
-                        else if (assure === "preferentiel") setMontantAssurance(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+                        if (assure === "mutualiste") setMontantAssurance(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
+                        else if (assure === "preferentiel") setMontantAssurance(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
                     }
                 })
                 .catch(() => {
-                    if (assure === "mutualiste") setMontantAssurance(acte.prixMutuel ?? acte.prixClinique ?? 0);
-                    else if (assure === "preferentiel") setMontantAssurance(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+                    if (assure === "mutualiste") setMontantAssurance(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
+                    else if (assure === "preferentiel") setMontantAssurance(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
                 });
         } else {
-            setMontantAssurance(acte.prixClinique ?? 0);
+            setMontantAssurance(Math.round(acte.prixClinique ?? 0));
         }
     }, [selectedActe, assure, actes, selectedAssurance]);
 
@@ -139,8 +139,8 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
         // Si le montant assurance n'est pas paramétré, on prend celui de la clinique
         if (!montantAssur || montantAssur === 0) montantAssur = montantClinique;
 
-        // Calcul de la part de l'assurance
-        const partAssur = (montantAssur * tauxNum) / 100;
+        // Calcul de la part de l'assurance (arrondi à l'entier)
+        const partAssur = Math.round((montantAssur * tauxNum) / 100);
         const partPat = montantAssur - partAssur;
 
         // Calcul du surplus

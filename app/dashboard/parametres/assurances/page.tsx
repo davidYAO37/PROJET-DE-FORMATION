@@ -5,7 +5,6 @@ import ListeAssurance from "./ListeAssurance";
 import AjouterAssurance from "./AjouterAssurance";
 import ModifierAssurance from "./ModifierAssurance";
 import { Assurance } from "@/types/assurance";
-import Sidebar from "@/components/Sidebar";
 
 export default function AssurancePage() {
     const [assurances, setAssurances] = useState<Assurance[]>([]);

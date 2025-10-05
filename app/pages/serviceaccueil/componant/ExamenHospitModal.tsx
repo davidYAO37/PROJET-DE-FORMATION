@@ -1,6 +1,7 @@
-import HospitalisationPage from "@/app/examenhospitalisation/page";
+
 import React from "react";
 import { Modal } from "react-bootstrap";
+import HospitalisationPage from "../../examenhospitalisation/page";
 
 interface ExamenHospitalisationModalProps {
     show: boolean;
