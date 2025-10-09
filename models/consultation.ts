@@ -47,6 +47,16 @@ export interface IConsultation extends Document {
   AncienMedecin?: string;
   datetransfert?: Date;
   TransfererPar?: string;
+
+
+  Temperature?: string; // Temperature
+  Poids?: string; // Poids
+  Tension?: string; // Tension
+  Glycemie?: string; // Glycemie
+  TailleCons?: string; // TailleCons
+
+  AttenteAccueil?: number;
+  attenteMedecin?: number;
 }
 
 const ConsultationSchema: Schema<IConsultation> = new Schema(
@@ -91,9 +101,19 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     MontantMedecin: { type: Number, default: 0 },
     StatuPrescriptionMedecin: { type: Number, default: 2 },
     Diagnostic: { type: String },
+
     AncienMedecin: { type: String },
     datetransfert: { type: Date },
     TransfererPar: { type: String },
+
+    Temperature: { type: String },
+    Poids: { type: String },
+    Tension: { type: String },
+    Glycemie: { type: String },
+    TailleCons: { type: String },
+
+    AttenteAccueil: { type: Number, default: 0 },
+    attenteMedecin: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

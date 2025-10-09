@@ -74,6 +74,7 @@ export async function POST(req: NextRequest) {
             Assuré: data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE",
             IDASSURANCE: assurance?._id,
 
+
             Prix_Assurance: Math.round(montantActe),
             PrixClinique: Math.round(data.montantClinique || 0),
             Restapayer: Math.round(totalPatient),
@@ -99,7 +100,7 @@ export async function POST(req: NextRequest) {
             IDACTE: data.selectedActe,
             IDPARTIENT: patient?._id,
             Souscripteur: patient?.Souscripteur,
-            PatientP: patient?.Nom+" "+patient?.Prenoms,
+            PatientP: patient?.Nom + " " + patient?.Prenoms,
             SOCIETE_PATIENT: patient?.SOCIETE_PATIENT || data.societePatient,
             IDSOCIETEASSUANCE: patient?.IDSOCIETEASSUANCE || data.selectedAssurance,
 
@@ -107,6 +108,8 @@ export async function POST(req: NextRequest) {
             IDMEDECIN: medecin?._id,
 
             StatuPrescriptionMedecin: 2, // pour afficher l'acte dans la liste des actes prescrits
+            AttenteAccueil: false, // Par défaut, le patient est en attente d'accueil
+            attenteMedecin: 0, // Par défaut, le patient n'a pas encore vu le médecin
         });
 
         await consultation.save();

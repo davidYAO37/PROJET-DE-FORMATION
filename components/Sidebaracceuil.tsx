@@ -1,16 +1,18 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { HouseDoorFill, ArrowRightCircleFill, PeopleFill, Clipboard2PulseFill, CalendarFill, Calendar2CheckFill, ClockFill, PencilSquare, KeyFill } from 'react-bootstrap-icons';
 import TransfertPatientModal from '@/app/pages/serviceaccueil/componant/TransfertPatientModal';
+import SalleAttenteModal from '@/app/pages/serviceaccueil/componant/SalleAttenteModal';
+import SalleConstante from '@/app/pages/serviceaccueil/componant/SalleConstante';
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <HouseDoorFill size={24} className="me-2" /> },
   { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <HouseDoorFill size={24} className="me-2" /> },
   { label: 'Transférer un patient', path: '#', isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2" /> },
-  { label: 'Salle d\'attente', path: '/salle-attente', icon: <PeopleFill size={24} className="me-2" /> },
+  { label: 'Salle d\'attente', path: '#', isModal: true, icon: <PeopleFill size={24} className="me-2" /> },
   { label: 'Constantes', path: '/constantes', icon: <Clipboard2PulseFill size={24} className="me-2" /> },
   { label: 'Planning Médecin', path: '/planning-medecin', icon: <CalendarFill size={24} className="me-2" /> },
   { label: 'Disponibilité Médecin', path: '/disponibilite-medecin', icon: <Calendar2CheckFill size={24} className="me-2" /> },
@@ -23,6 +25,15 @@ export default function Sidebaracceuil() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [showTransfertModal, setShowTransfertModal] = useState(false);
+  const [showSalleAttenteModal, setShowSalleAttenteModal] = useState(false);
+  const [showSalleConstanteModal, setShowSalleConstanteModal] = useState(false);
+  const [user, setUser] = useState('');
+
+  // Charger l'utilisateur connecté au montage
+  useEffect(() => {
+    const storedUser = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || '';
+    setUser(storedUser);
+  }, []);
 
   // Ferme la sidebar quand on clique sur un lien (mobile)
   const handleLinkClick = () => setOpen(false);
@@ -31,6 +42,21 @@ export default function Sidebaracceuil() {
   const handleTransfertClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowTransfertModal(true);
+    setOpen(false);
+  };
+
+  // Ouvre le modal de salle d'attente
+  const handleSalleAttenteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    console.log('Salle d\'attente clicked'); // Debug log
+    setShowSalleAttenteModal(true);
+    setOpen(false);
+  };
+
+  // Ouvre le modal de saisie des constantes
+  const handleSalleConstanteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowSalleConstanteModal(true);
     setOpen(false);
   };
 
@@ -65,11 +91,20 @@ export default function Sidebaracceuil() {
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
             <Nav.Item key={index} className="mb-2">
-              {item.isModal ? (
+              {item.label === 'Constantes' ? (
                 <a
                   href="#"
                   className="sidebar-link-medical d-flex align-items-center"
-                  onClick={handleTransfertClick}
+                  onClick={handleSalleConstanteClick}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </a>
+              ) : item.isModal ? (
+                <a
+                  href="#"
+                  className="sidebar-link-medical d-flex align-items-center"
+                  onClick={item.label === 'Transférer un patient' ? handleTransfertClick : handleSalleAttenteClick}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -90,9 +125,25 @@ export default function Sidebaracceuil() {
       </aside>
 
       {/* Modal de transfert de patient */}
-      <TransfertPatientModal 
-        show={showTransfertModal} 
-        onHide={() => setShowTransfertModal(false)} 
+      <TransfertPatientModal
+        show={showTransfertModal}
+        onHide={() => setShowTransfertModal(false)}
+      />
+
+      {/* Modal de salle d'attente */}
+      <SalleAttenteModal
+        show={showSalleAttenteModal}
+        onHide={() => {
+          console.log('Modal closed'); // Debug log
+          setShowSalleAttenteModal(false);
+        }}
+      />
+
+      {/* Modal de saisie des constantes */}
+      <SalleConstante
+        show={showSalleConstanteModal}
+        onHide={() => setShowSalleConstanteModal(false)}
+        user={user}
       />
     </>
   );
