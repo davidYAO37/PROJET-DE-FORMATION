@@ -6,7 +6,7 @@ type InfosPatientProps = {
     setAssure: (value: string) => void;
 };
 
-export default function InfosPatient({ assure, setAssure }: InfosPatientProps) {
+export default function InfosPatientUpdate({ assure, setAssure }: InfosPatientProps) {
     return (
         <Card className="p-3 mb-3 shadow-sm" style={{ background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)", border: "1px solid #dee2e6" }}>
             <h5 className="mb-3 text-primary">

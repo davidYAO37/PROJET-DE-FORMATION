@@ -1,3 +1,27 @@
+import { NextResponse } from "next/server";
+import { db } from "@/db/mongoConnect";
+import mongoose from "mongoose";
+import { Patient } from "@/models/patient";
+
+export async function GET(
+  req: Request,
+  context: { params: Promise<{ id: string }> }
+) {
+  await db();
+  const { id } = await context.params;
+  
+  try {
+    const patient = await Patient.findById(id);
+    if (!patient) {
+      return NextResponse.json({ message: "Patient non trouvé" }, { status: 404 });
+    }
+    return NextResponse.json(patient, { status: 200 });
+  } catch (error) {
+    console.error('Erreur API GET /api/patients/[id]:', error);
+    return NextResponse.json({ message: "Erreur lors de la récupération", error: String(error) }, { status: 500 });
+  }
+}
+
 export async function DELETE(
   req: Request,
   context: { params: Promise<{ id: string }> }
@@ -15,10 +39,6 @@ export async function DELETE(
     return NextResponse.json({ message: "Erreur lors de la suppression", error: String(error) }, { status: 500 });
   }
 }
-import { NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import mongoose from "mongoose";
-import { Patient } from "@/models/patient";
 
 export async function PUT(
   req: Request,

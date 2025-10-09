@@ -6,6 +6,24 @@ import { Assurance } from "@/models/assurance";
 import { Medecin } from "@/models/medecin";
 import { db } from "@/db/mongoConnect";
 
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    await db();
+
+    try {
+        const { id } = await params;
+        const consultation = await Consultation.findById(id);
+
+        if (!consultation) {
+            return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
+        }
+
+        return NextResponse.json(consultation, { status: 200 });
+    } catch (error: any) {
+        console.error('Erreur API GET /api/consultation/[id]:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await db();
 

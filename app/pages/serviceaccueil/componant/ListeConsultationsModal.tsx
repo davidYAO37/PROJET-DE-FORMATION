@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Modal, Table, Button, Form, Spinner } from 'react-bootstrap';
+import { Modal, Table, Button, Form, Spinner, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { FaPencilAlt, FaEye } from 'react-icons/fa';
 import RecuConsultationPrint from './RecuConsultationPrint';
+import FicheConsultationUpdate from './FicheConsultationUpdate';
 
 interface Consultation {
     _id: string;
@@ -11,6 +13,8 @@ interface Consultation {
     Recupar: string;
     Code_Prestation: string;
     Medecin?: string;
+    StatuC?: boolean;
+    IDPARTIENT?: string;
 }
 
 interface ListeConsultationsModalProps {
@@ -24,17 +28,49 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [showRecu, setShowRecu] = useState(false);
+    const [showUpdate, setShowUpdate] = useState(false);
     const [selectedConsult, setSelectedConsult] = useState<Consultation | null>(null);
+    const [selectedPatient, setSelectedPatient] = useState<any>(null);
     const recuRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!show || !patientId) return;
         setLoading(true);
+        
+        // Charger les consultations
         fetch(`/api/consultation?patientId=${patientId}`)
             .then(res => res.json())
             .then(data => setConsultations(Array.isArray(data) ? data : []))
             .finally(() => setLoading(false));
+        
+        // Charger les informations du patient
+        fetch(`/api/patients/${patientId}`)
+            .then(res => res.json())
+            .then(data => setSelectedPatient(data))
+            .catch(err => console.error('Erreur chargement patient:', err));
     }, [show, patientId]);
+
+    const handleModifier = (consultation: Consultation) => {
+        if (consultation.StatuC) {
+            alert("⚠️ Cette consultation est déjà validée et ne peut plus être modifiée.");
+            return;
+        }
+        setSelectedConsult(consultation);
+        setShowUpdate(true);
+    };
+
+    const handleCloseUpdate = () => {
+        setShowUpdate(false);
+        setSelectedConsult(null);
+        // Recharger les consultations après modification
+        if (patientId) {
+            setLoading(true);
+            fetch(`/api/consultation?patientId=${patientId}`)
+                .then(res => res.json())
+                .then(data => setConsultations(Array.isArray(data) ? data : []))
+                .finally(() => setLoading(false));
+        }
+    };
 
     const filtered = consultations.filter(c =>
         c.designationC?.toLowerCase().includes(search.toLowerCase()) ||
@@ -58,32 +94,75 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                         <div className="text-center"><Spinner animation="border" /></div>
                     ) : (
                         <Table bordered hover>
-                            <thead>
+                            <thead className="table-primary">
                                 <tr>
                                     <th>N°Prestation</th>
                                     <th>Désignation</th>
                                     <th>Prix</th>
                                     <th>Date</th>
                                     <th>Ajouté par</th>
-                                    <th>Medecin Prescripteur</th>
-                                    <th>Action</th>
+                                    <th>Médecin</th>
+                                    <th>Statut</th>
+                                    <th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filtered.length === 0 ? (
-                                    <tr><td colSpan={6} className="text-center">Aucune consultation trouvée.</td></tr>
+                                    <tr><td colSpan={8} className="text-center">Aucune consultation trouvée.</td></tr>
                                 ) : (
                                     filtered.map(c => (
-
                                         <tr key={c._id} className="text-center align-middle">
                                             <td>{c.Code_Prestation}</td>
                                             <td>{c.designationC}</td>
                                             <td>{c.montantapayer ?? c.PrixClinique ?? 0} FCFA</td>
                                             <td>{new Date(c.Date_consulation).toLocaleDateString()}</td>
                                             <td>{c.Recupar}</td>
-                                            <td>{c.Medecin}</td>
+                                            <td>{c.Medecin || '-'}</td>
                                             <td>
-                                                <Button size="sm" variant="outline-primary" onClick={() => { setSelectedConsult(c); setShowRecu(true); }}>Voir</Button>
+                                                {c.StatuC ? (
+                                                    <Badge bg="success">✅ Validée</Badge>
+                                                ) : (
+                                                    <Badge bg="warning" text="dark">⏳ En attente</Badge>
+                                                )}
+                                            </td>
+                                            <td>
+                                                <div className="d-flex gap-1 justify-content-center">
+                                                    <Button 
+                                                        size="sm" 
+                                                        variant="outline-primary" 
+                                                        onClick={() => { setSelectedConsult(c); setShowRecu(true); }}
+                                                        title="Voir le reçu"
+                                                    >
+                                                        <FaEye />
+                                                    </Button>
+                                                    
+                                                    {c.StatuC ? (
+                                                        <OverlayTrigger
+                                                            placement="top"
+                                                            overlay={<Tooltip>Cette consultation est validée et ne peut plus être modifiée</Tooltip>}
+                                                        >
+                                                            <span className="d-inline-block">
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    variant="outline-secondary" 
+                                                                    disabled
+                                                                    style={{ pointerEvents: 'none' }}
+                                                                >
+                                                                    <FaPencilAlt />
+                                                                </Button>
+                                                            </span>
+                                                        </OverlayTrigger>
+                                                    ) : (
+                                                        <Button 
+                                                            size="sm" 
+                                                            variant="outline-warning" 
+                                                            onClick={() => handleModifier(c)}
+                                                            title="Modifier la consultation"
+                                                        >
+                                                            <FaPencilAlt />
+                                                        </Button>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     ))
@@ -117,6 +196,24 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                         }
                     }}>Imprimer</Button>
                 </Modal.Footer>
+            </Modal>
+
+            {/* Modal de modification de consultation */}
+            <Modal show={showUpdate} onHide={handleCloseUpdate} size="xl" centered scrollable>
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        📝 Modifier la consultation - {selectedConsult?.Code_Prestation}
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {selectedPatient && (
+                        <FicheConsultationUpdate 
+                            patient={selectedPatient} 
+                            consultationId={selectedConsult?._id}
+                            onClose={handleCloseUpdate}
+                        />
+                    )}
+                </Modal.Body>
             </Modal>
         </>
     );

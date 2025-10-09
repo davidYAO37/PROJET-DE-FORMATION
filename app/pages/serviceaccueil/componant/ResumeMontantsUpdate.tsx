@@ -8,7 +8,7 @@ type ResumeMontantsProps = {
     totalPatient: number;
 };
 
-export default function ResumeMontants({ surplus, partAssurance, partPatient, totalPatient }: ResumeMontantsProps) {
+export default function ResumeMontantsUpdate({ surplus, partAssurance, partPatient, totalPatient }: ResumeMontantsProps) {
     return (
         <Card className="p-4 mb-3 shadow-sm" style={{ 
             background: "linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%)",

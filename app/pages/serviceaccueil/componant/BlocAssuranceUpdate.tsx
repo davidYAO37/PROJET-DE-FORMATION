@@ -21,7 +21,7 @@ type BlocAssuranceProps = {
     setSocietePatient: (val: string) => void;
 };
 
-export default function BlocAssurance({
+export default function BlocAssuranceUpdate({
     assure,
     assurances,
     selectedAssurance,

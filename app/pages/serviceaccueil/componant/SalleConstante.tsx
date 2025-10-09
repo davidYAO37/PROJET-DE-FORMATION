@@ -66,6 +66,29 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
         }
     }, []);
 
+    // Réinitialisation à l'ouverture du modal
+    useEffect(() => {
+        if (show) {
+            // Si aucune consultation n'est passée, réinitialiser les champs
+            if (!consultation) {
+                setCodePrestation("");
+                setConsultationTrouvee(null);
+                setConstantesChargees(false);
+                setSearchError("");
+                setSearchSuccess("");
+                setFormData({
+                    temperature: "",
+                    tension: "",
+                    taille: "",
+                    poids: "",
+                    glycemie: "",
+                    medecin: "",
+                    prisePar: user,
+                });
+            }
+        }
+    }, [show, consultation, user]);
+
     // Initialisation et gestion de la consultation
     useEffect(() => {
         // Si aucune consultation n'est passée, rien à faire
