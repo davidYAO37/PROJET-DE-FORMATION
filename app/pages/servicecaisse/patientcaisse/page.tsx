@@ -2,17 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaPlus, FaPlusCircle } from 'react-icons/fa';
-import AjouterPatient from './AjouterPatient';
+import { FaEdit, FaTrash } from 'react-icons/fa';
+
 import { Patient } from '@/types/patient';
-import { BiSolidBookAdd } from 'react-icons/bi';
-import { CgUserList } from 'react-icons/cg';
+import { CgAbstract, CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
-import FicheConsultation from '../componant/FicheConsultation';
-import dayjs from 'dayjs';
-import ListeConsultationsModal from '../componant/ListeConsultationsModal';
-import ExamenHospitalisationModal from '../componant/ExamenHospitModal';
-import ModifierPatient from './ModifierPatient';
+import ModifierPatientCaisse from './ModifierPatientCaisse';
+import ListeConsultationsModalCaisse from '../componant/ListeConsultationsModalCaisse';
+import FicheConsultationUpdateCaisse from '../componant/FicheConsultationUpdateCaisse';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -20,8 +17,6 @@ export default function Page() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
-  const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,7 +27,6 @@ export default function Page() {
   const [toastVariant, setToastVariant] = useState<'success' | 'info' | 'danger'>('info');
   const [showListeConsultModal, setShowListeConsultModal] = useState(false);
   const [patientIdConsultModal, setPatientIdConsultModal] = useState<string | null>(null);
-  const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
     setToastMessage(message);
@@ -57,12 +51,6 @@ export default function Page() {
     };
     fetchPatients();
   }, []);
-
-  // ✅ Ajouter patient (local + MongoDB)
-  const handleAddPatient = (patient: Patient) => {
-    setPatients((prev) => [...prev, patient]);
-    showNotification(`✅ Patient "${patient.Nom}" ajouté.`, 'success');
-  };
 
   // ✅ Modifier patient
   const handleEditClick = (patient: Patient) => {
@@ -122,6 +110,7 @@ export default function Page() {
 
   return (
     <Container className="py-4">
+
       <Row className="mb-3 align-items-center">
         <Col xs={12} md={6}>
           <h2>Liste des Patients</h2>
@@ -141,27 +130,6 @@ export default function Page() {
               }}
             />
           </InputGroup>
-        </Col>
-        <Col xs={12} md={4}>
-          <Button
-            variant="outline-warning"
-            title="Ajouter examens ou hospitalisation"
-            size="sm"
-            onClick={() => setShowExamenHospitalisationModal(true)}
-          >
-            Ajouter examens ou hospitalisation
-          </Button>
-          {/* Modal ajouter examens*hospit ... */}
-          <ExamenHospitalisationModal
-            show={showExamenHospitalisationModal}
-            onHide={() => setShowExamenHospitalisationModal(false)}
-          />
-        </Col>
-        <Col xs={12} md={2} className="mt-2 mt-md-0 text-md-end text-start">
-          <Button variant="success" onClick={() => setShowAddModal(true)}>
-            <FaPlus className="me-2" />
-            Ajouter un Patient
-          </Button>
         </Col>
       </Row>
 
@@ -184,7 +152,7 @@ export default function Page() {
                 <th>Sexe</th>
                 <th>Contact</th>
                 <th>Code Dossier</th>
-                <th>Visite ou Consultation</th>
+                <th>Liste Prestations</th>
                 <th>Gestion Patient</th>
               </tr>
             </thead>
@@ -206,44 +174,13 @@ export default function Page() {
                     <td>{patient.Contact}</td>
                     <td>{patient.Code_dossier}</td>
                     <td className="bg-secondary bg-opacity-10">
-                      <Button
-                        variant="outline-primary"
-                        title="Nouvelle Consultation ou visite"
-                        size="sm"
-                        className="me-4"
-                        onClick={async () => {
-                          setSelectedPatient(patient);
-                          try {
-                            const res = await fetch(`/api/consultation?patientId=${patient._id}`);
-                            if (res.ok) {
-                              const consultations = await res.json();
-                              const today = dayjs().startOf('day');
-                              const found = consultations.find((c: any) => {
-                                const date = dayjs(c.Date_consulation);
-                                return date.isSame(today, 'day');
-                              });
-                              if (found && found.Code_Prestation) {
-                                setConsultationJour(found.Code_Prestation);
-                                setShowConsultationModal(true);
-                                return;
-                              }
-                            }
-                          } catch (e) {
-                            console.error("Erreur vérification consultation", e);
-                          }
-                          // sinon -> pas de consultation aujourd’hui, ouvrir la fiche
-                          setConsultationJour(null);
-                          setShowConsultationModal(true);
-                        }}
 
-                      >
-                        <BiSolidBookAdd />
-                      </Button>
 
                       <Button
                         variant="outline-success"
                         title="Liste des consultations ou visites du patient"
                         size="sm"
+                        className="me-5"
                         onClick={() => {
                           setPatientIdConsultModal(patient._id || '');
                           setShowListeConsultModal(true);
@@ -251,12 +188,24 @@ export default function Page() {
                       >
                         <CgUserList />
                       </Button>
-                      {/* Modal liste consultations/visites */}
-                      <ListeConsultationsModal
+                      {/* Modal liste prestation */}
+                      <ListeConsultationsModalCaisse
                         show={showListeConsultModal}
                         onHide={() => setShowListeConsultModal(false)}
                         patientId={patientIdConsultModal || ''}
                       />
+                      <Button
+                        variant="outline-secondary"
+                        title="Examens-Hospitalisation ..."
+                        size="sm"
+                        className="me-4"
+                        onClick={() => {
+                          setPatientIdConsultModal(patient._id || '');
+                          setShowListeConsultModal(true);
+                        }}
+                      >
+                        <CgAbstract />
+                      </Button>
                     </td>
 
                     <td className="bg-primary bg-opacity-10">
@@ -326,15 +275,7 @@ export default function Page() {
         </Toast>
       </ToastContainer>
 
-      {/* Modales */}
-      <AjouterPatient
-        show={showAddModal}
-        onHide={() => setShowAddModal(false)}
-        onAdd={handleAddPatient}
-        nextId={patients.length + 1}
-      />
-
-      <ModifierPatient
+      <ModifierPatientCaisse
         show={showEditModal}
         handleClose={() => setShowEditModal(false)}
         patient={selectedPatient}
@@ -362,7 +303,7 @@ export default function Page() {
               <p>Code Prestation : <b>{consultationJour}</b></p>
             </div>
           ) : (
-            <FicheConsultation patient={selectedPatient} />
+            <FicheConsultationUpdateCaisse patient={selectedPatient} />
           )}
         </Modal.Body>
       </Modal>

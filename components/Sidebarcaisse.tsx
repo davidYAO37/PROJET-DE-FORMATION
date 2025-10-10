@@ -7,14 +7,12 @@ import { HouseDoorFill, ArrowRightCircleFill, PeopleFill, Clipboard2PulseFill, C
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicecaisse/tcaisse', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Liste des Patients', path: '/pages/serviceacaisse/patient', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Patients en attente', path: '/transfert-patient', icon: <ArrowRightCircleFill size={24} className="me-2" /> },
-  { label: 'Mes rendez-vous', path: '/transfert-patient', icon: <ArrowRightCircleFill size={24} className="me-2" /> },
-  { label: 'Fiche prescription', path: '/salle-attente', icon: <PeopleFill size={24} className="me-2" /> },
-  { label: 'Mon planning', path: '/constantes', icon: <Clipboard2PulseFill size={24} className="me-2" /> },
-  { label: 'Mes comptes rendus', path: '/planning-medecin', icon: <CalendarFill size={24} className="me-2" /> },
-  { label: 'Statistiques', path: '/disponibilite-medecin', icon: <Calendar2CheckFill size={24} className="me-2" /> },
-  { label: 'Gérer mon Mot De Passe', path: '/mot-de-passe', icon: <KeyFill size={24} className="me-2" /> },
+  { label: 'Factures en attente', path: '/pages/serviceacaisse/patient', icon: <HouseDoorFill size={24} className="me-2" /> },
+  { label: 'PSaisir une Facture', path: '/transfert-patient', icon: <ArrowRightCircleFill size={24} className="me-2" /> },
+  { label: 'Facturer une pharmacie', path: '/transfert-patient', icon: <ArrowRightCircleFill size={24} className="me-2" /> },
+  { label: 'Caution Patient', path: '/salle-attente', icon: <PeopleFill size={24} className="me-2" /> },
+  { label: 'Facture a solder', path: '/constantes', icon: <Clipboard2PulseFill size={24} className="me-2" /> },
+  { label: 'Imprimer Facture', path: '/planning-medecin', icon: <CalendarFill size={24} className="me-2" /> },
 ];
 
 export default function Sidebarcaisse() {
