@@ -19,7 +19,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
         return NextResponse.json(consultation, { status: 200 });
     } catch (error: any) {
-        console.error('Erreur API GET /api/consultation/[id]:', error);
+        console.error('Erreur API GET /api/consultationFacture/[id]:', error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
@@ -79,7 +79,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         consultation.Prix_Assurance = montantActe;
         consultation.PrixClinique = data.montantClinique || 0;
-        consultation.Restapayer = totalPatient;
+
         consultation.montantapayer = partPatient;
         consultation.ReliquatPatient = surplus;
 
@@ -95,8 +95,24 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.NumBon = data.NumBon;
         consultation.Recupar = data.Recupar;
         consultation.IDACTE = data.selectedActe;
-        consultation.PatientP = patient?.Nom + " " + patient?.Prenoms || "";
+        consultation.PatientP = patient?.Nom || "";
         consultation.Medecin = medecin ? `${medecin.nom} ${medecin.prenoms}` : "";
+
+        // Calcul Toutencaisse
+        const resteAPayer = totalPatient - (data.Montantencaisse || 0);
+        consultation.Restapayer = resteAPayer >= 0 ? resteAPayer : 0;
+        const toutEncaisse = resteAPayer <= 0;
+
+        // Mise à jour consultation apres paiement
+        consultation.Toutencaisse = toutEncaisse; // True si Restapayer = 0
+        consultation.StatuPrescriptionMedecin = 3;
+        consultation.DateFacturation = data.DateFacturation || new Date();
+        consultation.FacturéPar = data.FacturéPar || data.Recupar || "";
+        consultation.Modepaiement = data.Modepaiement || "Espèce";
+        consultation.Montantencaisse = data.Montantencaisse || 0;
+        consultation.StatutPaiement = toutEncaisse ? "En cours de Paiement" : "Pas facturé";
+        consultation.StatutC = true;
+
 
         await consultation.save();
 

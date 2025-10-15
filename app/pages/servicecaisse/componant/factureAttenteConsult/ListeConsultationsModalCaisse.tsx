@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Modal, Table, Button, Form, Spinner, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaPencilAlt, FaEye } from 'react-icons/fa';
-import FicheConsultationUpdate from './FicheConsultationUpdateCaisse';
-import RecuConsultationPrint from '../../serviceaccueil/componant/RecuConsultationPrint';
+import RecuConsultationPrint from '../../../serviceaccueil/componant/RecuConsultationPrint';
+import FicheConsultationUpdateCaisse from './FicheConsultationUpdateCaisse';
+
 
 interface Consultation {
     _id: string;
@@ -13,7 +14,7 @@ interface Consultation {
     Recupar: string;
     Code_Prestation: string;
     Medecin?: string;
-    StatuC?: boolean;
+    StatutC?: boolean;
     IDPARTIENT?: string;
 }
 
@@ -51,7 +52,8 @@ export default function ListeConsultationsModalCaisse({ show, onHide, patientId 
     }, [show, patientId]);
 
     const handleModifier = (consultation: Consultation) => {
-        if (consultation.StatuC) {
+        if (consultation.StatutC) {
+
             alert("⚠️ Cette consultation est déjà validée et ne peut plus être modifiée.");
             return;
         }
@@ -75,6 +77,8 @@ export default function ListeConsultationsModalCaisse({ show, onHide, patientId 
     const filtered = consultations.filter(c =>
         c.designationC?.toLowerCase().includes(search.toLowerCase()) ||
         c.Recupar?.toLowerCase().includes(search.toLowerCase())
+
+
     );
 
     return (
@@ -114,6 +118,7 @@ export default function ListeConsultationsModalCaisse({ show, onHide, patientId 
                                     <tr><td colSpan={8} className="text-center">Aucune consultation trouvée.</td></tr>
                                 ) : (
                                     filtered.map(c => (
+
                                         <tr key={c._id} className="text-center align-middle">
                                             <td>{c.Code_Prestation}</td>
                                             <td>{c.designationC}</td>
@@ -121,13 +126,17 @@ export default function ListeConsultationsModalCaisse({ show, onHide, patientId 
                                             <td>{new Date(c.Date_consulation).toLocaleDateString()}</td>
                                             <td>{c.Recupar}</td>
                                             <td>{c.Medecin || '-'}</td>
-                                            <td>
-                                                {c.StatuC ? (
-                                                    <Badge bg="success">✅ Validée</Badge>
+                                            <td >
+
+                                                {c.StatutC ? (
+                                                    <Badge bg="success">✅ Facturée<em></em></Badge>
                                                 ) : (
                                                     <Badge bg="warning" text="dark">⏳ En attente</Badge>
-                                                )}
+                                                )
+
+                                                }
                                             </td>
+
                                             <td>
                                                 <div className="d-flex gap-1 justify-content-center">
                                                     <Button
@@ -139,7 +148,7 @@ export default function ListeConsultationsModalCaisse({ show, onHide, patientId 
                                                         <FaEye />
                                                     </Button>
 
-                                                    {c.StatuC ? (
+                                                    {c.StatutC ? (
                                                         <OverlayTrigger
                                                             placement="top"
                                                             overlay={<Tooltip>Cette consultation est validée et ne peut plus être modifiée</Tooltip>}
@@ -164,6 +173,7 @@ export default function ListeConsultationsModalCaisse({ show, onHide, patientId 
                                                         >
                                                             <FaPencilAlt />
                                                         </Button>
+
                                                     )}
                                                 </div>
                                             </td>
@@ -210,7 +220,7 @@ export default function ListeConsultationsModalCaisse({ show, onHide, patientId 
                 </Modal.Header>
                 <Modal.Body>
                     {selectedPatient && (
-                        <FicheConsultationUpdate
+                        <FicheConsultationUpdateCaisse
                             patient={selectedPatient}
                             consultationId={selectedConsult?._id}
                             onClose={handleCloseUpdate}

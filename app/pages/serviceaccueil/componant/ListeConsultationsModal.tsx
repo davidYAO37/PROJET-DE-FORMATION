@@ -13,7 +13,7 @@ interface Consultation {
     Recupar: string;
     Code_Prestation: string;
     Medecin?: string;
-    StatuC?: boolean;
+    StatutC?: boolean;
     IDPARTIENT?: string;
 }
 
@@ -36,13 +36,13 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
     useEffect(() => {
         if (!show || !patientId) return;
         setLoading(true);
-        
+
         // Charger les consultations
         fetch(`/api/consultation?patientId=${patientId}`)
             .then(res => res.json())
             .then(data => setConsultations(Array.isArray(data) ? data : []))
             .finally(() => setLoading(false));
-        
+
         // Charger les informations du patient
         fetch(`/api/patients/${patientId}`)
             .then(res => res.json())
@@ -51,7 +51,7 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
     }, [show, patientId]);
 
     const handleModifier = (consultation: Consultation) => {
-        if (consultation.StatuC) {
+        if (consultation.StatutC) {
             alert("⚠️ Cette consultation est déjà validée et ne peut plus être modifiée.");
             return;
         }
@@ -119,32 +119,32 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                                             <td>{c.Recupar}</td>
                                             <td>{c.Medecin || '-'}</td>
                                             <td>
-                                                {c.StatuC ? (
-                                                    <Badge bg="success">✅ Validée</Badge>
+                                                {c.StatutC ? (
+                                                    <Badge bg="success">✅ Facturée</Badge>
                                                 ) : (
                                                     <Badge bg="warning" text="dark">⏳ En attente</Badge>
                                                 )}
                                             </td>
                                             <td>
                                                 <div className="d-flex gap-1 justify-content-center">
-                                                    <Button 
-                                                        size="sm" 
-                                                        variant="outline-primary" 
+                                                    <Button
+                                                        size="sm"
+                                                        variant="outline-primary"
                                                         onClick={() => { setSelectedConsult(c); setShowRecu(true); }}
                                                         title="Voir le reçu"
                                                     >
                                                         <FaEye />
                                                     </Button>
-                                                    
-                                                    {c.StatuC ? (
+
+                                                    {c.StatutC ? (
                                                         <OverlayTrigger
                                                             placement="top"
                                                             overlay={<Tooltip>Cette consultation est validée et ne peut plus être modifiée</Tooltip>}
                                                         >
                                                             <span className="d-inline-block">
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    variant="outline-secondary" 
+                                                                <Button
+                                                                    size="sm"
+                                                                    variant="outline-secondary"
                                                                     disabled
                                                                     style={{ pointerEvents: 'none' }}
                                                                 >
@@ -153,9 +153,9 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                                                             </span>
                                                         </OverlayTrigger>
                                                     ) : (
-                                                        <Button 
-                                                            size="sm" 
-                                                            variant="outline-warning" 
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline-warning"
                                                             onClick={() => handleModifier(c)}
                                                             title="Modifier la consultation"
                                                         >
@@ -207,8 +207,8 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                 </Modal.Header>
                 <Modal.Body>
                     {selectedPatient && (
-                        <FicheConsultationUpdate 
-                            patient={selectedPatient} 
+                        <FicheConsultationUpdate
+                            patient={selectedPatient}
                             consultationId={selectedConsult?._id}
                             onClose={handleCloseUpdate}
                         />

@@ -43,4 +43,10 @@ export interface ConsultationType {
     AncienMedecin?: string;
     datetransfert?: Date;
     TransfererPar?: string;
+
+    Montantencaisse?: number;
+    DateFacturation?: Date;
+    Modepaiement?: string;
+    FacturéPar?: string;
+
 }

@@ -77,10 +77,10 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
     useEffect(() => {
         if (currentConsultation && consultationLoaded) {
             console.log("Chargement des données de consultation:", currentConsultation);
-            
+
             // Remplir automatiquement tous les champs avec les données de la consultation
             setCodePrestation(currentConsultation.Code_Prestation || "");
-            
+
             // Déterminer le type d'assuré depuis la consultation
             if (currentConsultation.Assuré === "NON ASSURE") {
                 setAssure("non");
@@ -93,7 +93,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             // Remplir les champs d'acte - Convertir ObjectId en string
             const idActe = currentConsultation.IDACTE ? String(currentConsultation.IDACTE) : "";
             const idMedecin = currentConsultation.IDMEDECIN ? String(currentConsultation.IDMEDECIN) : "";
-            
+
             setSelectedActe(idActe);
             setSelectedMedecin(idMedecin);
             setMontantClinique(Math.round(currentConsultation.PrixClinique || 0));
@@ -107,7 +107,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             setNumBon(currentConsultation.NumBon || "");
             setSouscripteur(currentConsultation.Souscripteur || "");
             setSocietePatient(currentConsultation.SOCIETE_PATIENT || "");
-            
+
             console.log("Données chargées - Acte:", idActe, "Médecin:", idMedecin, "Assurance:", idAssurance);
         }
     }, [currentConsultation, consultationLoaded]);
@@ -149,39 +149,39 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         if (assure === "mutualiste") montant = Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0);
         else if (assure === "preferentiel") montant = Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
         else montant = Math.round(acte.prixClinique ?? 0);
-        
-        console.log("Montant clinique calculé:", montant);
+
+        //console.log("Montant clinique calculé:", montant);
         setMontantClinique(montant);
 
         // Si patient mutualiste ou préférentiel, on cherche le tarif dans la collection tarifassurance
         if ((assure === "mutualiste" || assure === "preferentiel") && selectedAssurance) {
-            console.log("Recherche tarif assurance pour:", selectedAssurance);
+            //console.log("Recherche tarif assurance pour:", selectedAssurance);
             fetch(`/api/tarifs/${selectedAssurance}`)
                 .then(res => res.json())
                 .then((tarifs) => {
-                    if (!Array.isArray(tarifs)) { 
-                        console.log("Pas de tarifs trouvés");
-                        setMontantAssurance(0); 
-                        return; 
+                    if (!Array.isArray(tarifs)) {
+                        //console.log("Pas de tarifs trouvés");
+                        setMontantAssurance(0);
+                        return;
                     }
                     const tarif = tarifs.find((t: any) => t.acte === acte.designationacte);
                     if (tarif) {
-                        console.log("Tarif trouvé:", tarif);
+                        // console.log("Tarif trouvé:", tarif);
                         if (assure === "mutualiste") setMontantAssurance(Math.round(tarif.prixmutuel ?? acte.prixMutuel ?? acte.prixClinique ?? 0));
                         else if (assure === "preferentiel") setMontantAssurance(Math.round(tarif.prixpreferenciel ?? acte.prixPreferentiel ?? acte.prixClinique ?? 0));
                     } else {
-                        console.log("Tarif non trouvé, utilisation prix acte");
+                        //console.log("Tarif non trouvé, utilisation prix acte");
                         if (assure === "mutualiste") setMontantAssurance(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
                         else if (assure === "preferentiel") setMontantAssurance(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
                     }
                 })
                 .catch((err) => {
-                    console.log("Erreur récupération tarifs:", err);
+                    //console.log("Erreur récupération tarifs:", err);
                     if (assure === "mutualiste") setMontantAssurance(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
                     else if (assure === "preferentiel") setMontantAssurance(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
                 });
         } else {
-            console.log("Pas d'assurance ou patient non assuré, montant assurance = montant clinique");
+            // console.log("Pas d'assurance ou patient non assuré, montant assurance = montant clinique");
             setMontantAssurance(Math.round(acte.prixClinique ?? 0));
         }
     }, [selectedActe, assure, actes, selectedAssurance]);
@@ -356,8 +356,8 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                 <Row>
                     <Col md={5}>
                         <Form.Label className="fw-semibold">Choisir la prestation</Form.Label>
-                        <Form.Select 
-                            value={selectedActe} 
+                        <Form.Select
+                            value={selectedActe}
                             onChange={e => {
                                 console.log("Acte sélectionné:", e.target.value);
                                 setSelectedActe(e.target.value);

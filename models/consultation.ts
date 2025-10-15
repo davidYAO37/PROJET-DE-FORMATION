@@ -57,6 +57,13 @@ export interface IConsultation extends Document {
 
   AttenteAccueil?: number;
   attenteMedecin?: number;
+
+
+  Montantencaisse?: number;
+  DateFacturation?: Date;
+  Modepaiement?: string;
+  FacturéPar?: string;
+
 }
 
 const ConsultationSchema: Schema<IConsultation> = new Schema(
@@ -114,6 +121,12 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
 
     AttenteAccueil: { type: Number, default: 0 },
     attenteMedecin: { type: Number, default: 0 },
+
+    Montantencaisse: { type: Number },
+    DateFacturation: { type: Date },
+    Modepaiement: { type: String },
+    FacturéPar: { type: String },
+
   },
   { timestamps: true }
 );
