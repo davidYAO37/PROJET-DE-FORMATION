@@ -41,7 +41,7 @@ export interface IConsultation extends Document {
   MontantMedecin: number;
 
   IDAPPORTEUR?: string;
-  StatuPrescriptionMedecin: number;
+  StatuPrescriptionMedecin?: number;
   Diagnostic?: string;
 
   AncienMedecin?: string;
@@ -168,6 +168,4 @@ ConsultationSchema.pre<IConsultation>("save", async function (next) {
 });
 
 
-export const Consultation: Model<IConsultation> =
-  mongoose.models.Consultation ||
-  mongoose.model<IConsultation>("Consultation", ConsultationSchema);
+export const Consultation: Model<IConsultation> =  mongoose.models.Consultation || mongoose.model<IConsultation>("Consultation", ConsultationSchema);

@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from "react";
 import { Container, Row, Col, Form } from "react-bootstrap";
-import PatientInfo from "./components/PatientInfo";
-import AssuranceInfo from "./components/AssuranceInfo";
-import ActesTable from "./components/ActesTable";
-import CliniqueInfo from "./components/CliniqueInfo";
-import PaiementInfo from "./components/PaiementInfo";
-import ActionsButtons from "./components/ActionsButtons";
-import { defaultFormData, ExamenHospitalisationForm } from "@/types/examenHospitalisation";
 
-export default function HospitalisationPage() {
+import { defaultFormData, ExamenHospitalisationForm } from "@/types/examenHospitalisation";
+import PatientInfoCaisse from "./PatientInfoCaisse";
+import AssuranceInfoCaisse from "./AssuranceInfoCaisse";
+import TablePrestationsCaisse from "./ActesTableCaisse";
+import CliniqueInfoCaisse from "./CliniqueInfoCaisse";
+import ActionsButtonsCaisse from "./ActionsButtonsCaisse";
+import PaiementInfoCaisse from "./PaiementInfoCaisse";
+
+export default function HospitalisationPageCaisse() {
     const [formData, setFormData] = useState<ExamenHospitalisationForm>(defaultFormData);
 
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -188,7 +189,7 @@ export default function HospitalisationPage() {
 
             <Row>
                 <Col md={3}>
-                    <PatientInfo
+                    <PatientInfoCaisse
                         formData={formData}
                         setFormData={setFormData}
                         onCodePrestationChange={(code) => {
@@ -210,7 +211,7 @@ export default function HospitalisationPage() {
                             setResetKey((k) => k + 1);
                         }}
                     />
-                    <AssuranceInfo
+                    <AssuranceInfoCaisse
                         formData={formData}
                         setFormData={setFormData}
                         currentLignes={currentLignes}
@@ -449,7 +450,7 @@ export default function HospitalisationPage() {
                         {errorMessage && <div className="alert alert-danger mt-2">{errorMessage}</div>}
                     </Form>
                     <Row>
-                        <ActesTable
+                        <TablePrestationsCaisse
                             key={`actes-${resetKey}-${triggerRecalculation}`}
                             assuranceId={formData.Assure === "NON ASSURE" ? 1 : formData.Assure === "TARIF MUTUALISTE" ? 2 : 3}
                             saiTaux={formData.assurance.taux || 0}
@@ -474,18 +475,18 @@ export default function HospitalisationPage() {
                     </Row>
                     <Row>
                         <Col md={5}>
-                            <CliniqueInfo
+                            <CliniqueInfoCaisse
                                 formData={formData}
                                 setFormData={setFormData}
                                 hasActesMedecin={currentLignes.some(ligne => ligne.StatutMedecinActe === "OUI")}
                             />
                         </Col>
                         <Col md={7}>
-                            <PaiementInfo formData={formData} setFormData={setFormData} />
+                            <PaiementInfoCaisse formData={formData} setFormData={setFormData} />
                         </Col>
                     </Row>
 
-                    <ActionsButtons
+                    <ActionsButtonsCaisse
                         disabled={!!errorMessage}
                         onSubmit={async () => {
                             // validations principales
@@ -580,9 +581,7 @@ export default function HospitalisationPage() {
                             console.log("✅ Enregistrement réussi:", out);
                             alert(out?.message || 'Facture enregistrée avec succès');
                         }}
-                      /*   onSuccess={() => {
-                             onClose?.(); // 👈 ferme automatiquement le modal
-                        }} */
+
                     />
                 </Col>
             </Row>

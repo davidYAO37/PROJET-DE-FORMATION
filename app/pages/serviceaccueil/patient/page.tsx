@@ -8,11 +8,11 @@ import { Patient } from '@/types/patient';
 import { BiSolidBookAdd } from 'react-icons/bi';
 import { CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
-import FicheConsultation from '../componant/FicheConsultation';
 import dayjs from 'dayjs';
 import ListeConsultationsModal from '../componant/ListeConsultationsModal';
 import ExamenHospitalisationModal from '../componant/ExamenHospitModal';
 import ModifierPatient from './ModifierPatient';
+import FicheConsultation from '../componant/ConsultationAdd/FicheConsultation';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -229,7 +229,7 @@ export default function Page() {
                               }
                             }
                           } catch (e) {
-                            console.error("Erreur vérification consultation", e);
+                           // console.error("Erreur vérification consultation", e);
                           }
                           // sinon -> pas de consultation aujourd’hui, ouvrir la fiche
                           setConsultationJour(null);

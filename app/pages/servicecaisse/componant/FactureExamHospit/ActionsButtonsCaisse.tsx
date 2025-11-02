@@ -9,7 +9,7 @@ type Props = {
   onSuccess?: () => void; // 👈 callback quand tout s’est bien passé
 };
 
-export default function ActionsButtons({ disabled = false, onSubmit, onSuccess }: Props) {
+export default function ActionsButtonsCaisse({ disabled = false, onSubmit, onSuccess }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locked, setLocked] = useState(false);
 

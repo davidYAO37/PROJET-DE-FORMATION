@@ -24,7 +24,7 @@ export interface ILignePrestation extends Document {
     reliquatPatient?: number;
     totalCoefficient?: number;
     prixClinique?: number;
-    numMedecinExecutant?: Types.ObjectId | string;
+    numMedecinExecutant?:string;
     montantMedecinExecutant?: number;
     idMedecin?: Types.ObjectId | string;
     acteMedecin?: string;
@@ -68,8 +68,7 @@ export interface ILignePrestation extends Document {
     compteRenduValideLe?: Date;
     medecinExecutant?: string;
     idFacturation?: Types.ObjectId | string;
-    idSocieteAssurance?: Types.ObjectId | string;
-    societePatient?: string;
+    SOCIETE_PATIENT?: string;
     ordonnancementAffichage?: number;
 }
 
@@ -97,7 +96,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         reliquatPatient: { type: Number },
         totalCoefficient: { type: Number },
         prixClinique: { type: Number },
-        numMedecinExecutant: { type: Schema.Types.ObjectId, ref: "Medecin" },
+        numMedecinExecutant: { type: String },
         montantMedecinExecutant: { type: Number },
         idMedecin: { type: Schema.Types.ObjectId, ref: "Medecin" },
         acteMedecin: { type: String },
@@ -141,8 +140,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         compteRenduValideLe: { type: Date },
         medecinExecutant: { type: String },
         idFacturation: { type: Schema.Types.ObjectId, ref: "Facturation" },
-        idSocieteAssurance: { type: Schema.Types.ObjectId, ref: "SocieteAssurance" },
-        societePatient: { type: String },
+        SOCIETE_PATIENT: { type: String },
         ordonnancementAffichage: { type: Number },
     },
     { timestamps: true }

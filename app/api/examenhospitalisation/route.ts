@@ -3,6 +3,7 @@ import { db } from "@/db/mongoConnect";
 import { ExamenHospitalisation } from "@/models/examenHospit";
 import { LignePrestation } from "@/models/lignePrestation";
 import mongoose, { Schema } from "mongoose";
+import { Assurance } from "@/models/assurance";
 
 export async function GET(req: NextRequest) {
     try {
@@ -40,12 +41,13 @@ export async function GET(req: NextRequest) {
         );
     }
 }
+// enregistrement ou modification de l'examen
 
 export async function POST(req: NextRequest) {
     try {
         await db();
         const body = await req.json();
-        const { header, lignes } = body || {};
+        const { header, lignes,Recupar } = body || {};
 
         // Validation du payload
         if (!header) {
@@ -69,12 +71,68 @@ export async function POST(req: NextRequest) {
             );
         }
 
+
+        const currentDate = new Date();
+        let assuranceName = '';
+        
+        // Si un ID d'assurance est fourni, récupérer le nom de l'assurance
+        if (header.assurance?.assuranceId) {
+            try {
+                const assurance = await Assurance.findById(header.assurance.assuranceId);
+                assuranceName = assurance?.desiganationassurance || '';
+            } catch (error) {
+                console.error('Error fetching assurance:', error);
+            }
+        }
+
+        // Récupérer les informations de la consultation si disponible
+        let consultationData: any = {};
+        if (header.Code_Prestation) {
+            const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
+            consultationData = await Consultation.findOne({ Code_Prestation: header.Code_Prestation }).lean() || {};
+            console.log("📋 Données de la consultation récupérées:", {
+                IDPARTIENT: consultationData.IDPARTIENT,
+                PatientP: consultationData.PatientP,
+                Medecin: consultationData.Medecin,
+                IDMEDECIN: consultationData.IDMEDECIN
+            });
+        }
+
+        // Préparer les données de l'examen avec les champs supplémentaires
+        const examenData = {
+            ...header,
+            // Utiliser le médecin du formulaire, de l'assurance ou celui de la consultation
+            NomMed: header.assuranceInfo?.medecinPrescripteur.nom || header.medecinPrescripteur.nom || consultationData.Medecin || "",
+            idMedecin: header.medecinPrescripteur ? 
+                (consultationData.IDMEDECIN ? new mongoose.Types.ObjectId(consultationData.IDMEDECIN) : null) : null,
+            
+            // Utiliser les informations patient de la consultation
+            idPatient: consultationData.IDPARTIENT ? 
+                new mongoose.Types.ObjectId(consultationData.IDPARTIENT) : null,
+            PatientP: consultationData.PatientP || header.PatientP || "",
+
+            //StatutPrescription
+            statutPrescriptionMedecin: header.Statutprescription || 2,            
+            
+            // Informations de suivi
+            SaisiPar: Recupar,  
+            
+            // Date de prescription (uniquement à la création)
+            ...(!header._id && { DatePres: currentDate }),
+            
+            // Informations d'assurance
+            Assurance: assuranceName,
+            ...(header.assurance?.assuranceId && { 
+                IDASSURANCE: new mongoose.Types.ObjectId(header.assurance.assuranceId) 
+            }),
+        };
+
         // Création ou mise à jour de l'examen
         const isUpdate = Boolean(header._id);
         let saved;
 
         if (isUpdate) {
-            saved = await ExamenHospitalisation.findByIdAndUpdate(header._id, header, { new: true });
+            saved = await ExamenHospitalisation.findByIdAndUpdate(header._id, examenData, { new: true });
             if (!saved) {
                 return NextResponse.json(
                     { error: "Examen introuvable", message: "L'examen à mettre à jour n'existe pas" },
@@ -82,12 +140,12 @@ export async function POST(req: NextRequest) {
                 );
             }
         } else {
-            saved = await ExamenHospitalisation.create(header);
+            saved = await ExamenHospitalisation.create(examenData);
         }
 
         const hospId = saved._id;
 
-        // Récupérer l'idPatient depuis la consultation si non fourni
+        // Récupérer l'idPatient depuis la consultation s'il n'est pas fourni
         let patientId = header.IDPARTIENT;
         if (!patientId && header.Code_Prestation) {
             const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
@@ -98,7 +156,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Upsert des lignes de prestation
+        // Mise à jour ou insertion des lignes de prestation
         console.log("📋 Nombre de lignes à enregistrer:", lignes.length);
         
         const results = await Promise.allSettled(
@@ -116,6 +174,7 @@ export async function POST(req: NextRequest) {
                     }
 
                     const doc: any = {
+                        ...l,
                         codePrestation: header.Code_Prestation,
                         idHospitalisation: hospId,
                         idPatient: patientId || l.IDPATIENT,
@@ -133,6 +192,7 @@ export async function POST(req: NextRequest) {
                         prixClinique: l.SURPLUS || 0,
                         reliquatPatient: l.Reliquat || 0,
                         montantMedecinExecutant: l.Montant_MedExecutant || 0,
+                        numMedecinExecutant: (l.StatutMedecinActe === "OUI" && header.medecinId) ? header.medecinId : "",
                         acteMedecin: l.StatutMedecinActe === "OUI" ? "OUI" : "NON",
                         totalCoefficient: l.TotalRelicatCoefAssur || 0,
                         reliquatCoefAssurance: l.Coef_ASSUR || 0,
@@ -146,14 +206,17 @@ export async function POST(req: NextRequest) {
                         statutPrescriptionMedecin: l.Statutprescription || 2,
                         coefficientClinique: l.CoefClinique || l.Coefficient || 1,
                         taxe: l.TAXE || 0,
+                        Assurance: header.Assurance?.desiganationassurance || "",
+                        medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
+                        SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
                     };
 
-                    // Ajouter idTypeActe seulement s'il est valide
+                    // Ajouter idTypeActe uniquement s'il est valide
                     if (l.IDTYPE && l.IDTYPE.trim() !== "") {
                         doc.idTypeActe = l.IDTYPE;
                     }
 
-                    // Ajouter idFamilleActeBiologie seulement s'il est valide
+                    // Ajouter idFamilleActeBiologie uniquement s'il est valide
                     if (l.IDFAMILLE && l.IDFAMILLE.trim() !== "") {
                         doc.idFamilleActeBiologie = l.IDFAMILLE;
                     }

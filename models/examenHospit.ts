@@ -22,12 +22,12 @@ export interface IExamenHospitalisation extends Document {
     SocieteP?: string;
     PartAssuranceP?: number;
     Partassure?: number;
-    Assuance?: string;
+    Assurance?: string;
     Taux?: string;
     IDASSURANCE?: Types.ObjectId;
     IDTYPE_ACTE?: String;
     FacturePar?: string;
-    Patient?: Types.ObjectId;
+    idPatient?: Types.ObjectId;
     CompteClient?: boolean;
     ModifierPar?: string;
     HeureModif?: string;
@@ -43,7 +43,7 @@ export interface IExamenHospitalisation extends Document {
     NumBon?: string;
     MontantMedecin?: number;
     PartApporteur?: number;
-    Medecin?: Types.ObjectId;
+    idMedecin?: Types.ObjectId;
     Statumed?: string;
     BanqueC?: string;
     NumChèque?: string;
@@ -52,7 +52,7 @@ export interface IExamenHospitalisation extends Document {
     CautionPatient?: number;
     Assure?: string;
     MontantMedecinExécutant?: number;
-    NummedecinExécutant?: number;
+    NummedecinExécutant?: string;
     MedecinExécutant?: string;
     Payeoupas?: boolean;
     resultatacte?: string;
@@ -87,6 +87,7 @@ export interface IExamenHospitalisation extends Document {
     IDCHAMBRE?: Types.ObjectId;
     IDSOCIETEASSUANCE?: Types.ObjectId;
     SOCIETE_PATIENT?: string;
+    statutPrescriptionMedecin?:number;
 }
 
 const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
@@ -110,12 +111,12 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         SocieteP: { type: String, maxlength: 100 },
         PartAssuranceP: { type: Number },
         Partassure: { type: Number },
-        Assuance: { type: String, maxlength: 50 },
+        Assurance: { type: String, maxlength: 50 },
         Taux: { type: String, maxlength: 4 },
         IDASSURANCE: { type: Schema.Types.ObjectId, ref: 'Assurance' },
         IDTYPE_ACTE: { type: String },
         FacturePar: { type: String, maxlength: 50 },
-        Patient: { type: Schema.Types.ObjectId, ref: 'Patient' },
+        idPatient: { type: Schema.Types.ObjectId, ref: 'Patient' },
         CompteClient: { type: Boolean },
         ModifierPar: { type: String, maxlength: 50 },
         HeureModif: { type: String, maxlength: 10 },
@@ -131,7 +132,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         NumBon: { type: String, maxlength: 50 },
         MontantMedecin: { type: Number },
         PartApporteur: { type: Number },
-        Medecin: { type: Schema.Types.ObjectId, ref: 'Medecin' },
+        idMedecin: { type: Schema.Types.ObjectId, ref: 'Medecin' },
         Statumed: { type: String, maxlength: 5 },
         BanqueC: { type: String, maxlength: 50 },
         NumChèque: { type: String, maxlength: 50 },
@@ -140,7 +141,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         CautionPatient: { type: Number },
         Assure: { type: String, maxlength: 25 },
         MontantMedecinExécutant: { type: Number },
-        NummedecinExécutant: { type: Number },
+        NummedecinExécutant: { type: String },
         MedecinExécutant: { type: String, maxlength: 50 },
         Payeoupas: { type: Boolean },
         resultatacte: { type: String },
@@ -175,6 +176,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         IDCHAMBRE: { type: Schema.Types.ObjectId, ref: 'Chambre' },
         IDSOCIETEASSUANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
+        statutPrescriptionMedecin:{type:Number},
     },
     { timestamps: true }
 );

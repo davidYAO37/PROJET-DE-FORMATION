@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { Modal, Table, Button, Form, Spinner, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaPencilAlt, FaEye } from 'react-icons/fa';
 import RecuConsultationPrint from './RecuConsultationPrint';
-import FicheConsultationUpdate from './FicheConsultationUpdate';
+import FicheConsultationUpdate from './ConsultationUpdate/FicheConsultationUpdate';
 
 interface Consultation {
     _id: string;

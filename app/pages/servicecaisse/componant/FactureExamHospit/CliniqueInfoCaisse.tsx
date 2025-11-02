@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Card, Form, Spinner } from 'react-bootstrap';
 import { ExamenHospitalisationForm } from '@/types/examenHospitalisation';
 import { IMedecin } from '@/models/medecin';
-import { getMedecins } from '../../services/medecinService';
+import { getMedecins } from '@/app/pages/services/medecinService';
 
 interface CliniqueInfoProps {
     formData: ExamenHospitalisationForm;
@@ -10,7 +10,7 @@ interface CliniqueInfoProps {
     hasActesMedecin: boolean;
 }
 
-export default function CliniqueInfo({ formData, setFormData, hasActesMedecin }: CliniqueInfoProps) {
+export default function CliniqueInfoCaisse({ formData, setFormData, hasActesMedecin }: CliniqueInfoProps) {
     const [medecinExecutant, setMedecinExecutant] = useState<IMedecin[]>([]);
     const [loading, setLoading] = useState(true);
 

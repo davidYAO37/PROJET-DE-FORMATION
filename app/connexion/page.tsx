@@ -90,6 +90,11 @@ export default function ConnexionPage() {
                     </>
                   ) : 'Se connecter'}
                 </Button>
+                {/* BOUTON RETOUR DASHBOARD */}
+                <Button variant="secondary" className="w-100 mt-3" onClick={() => router.push ('/')}>
+                  Retour
+                </Button>
+                  
               </Form>
             </Card.Body>
           </Card>

@@ -3,8 +3,6 @@ import mongoose, { Model, Schema } from "mongoose";
 export interface IModeDePaiement extends Document {
     legacyId?: number;
     Modepaiement: string;
-    createdAt?: Date;
-    updatedAt?: Date;
 }
 
 

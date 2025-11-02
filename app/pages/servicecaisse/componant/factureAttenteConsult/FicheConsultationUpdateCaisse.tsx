@@ -250,7 +250,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
 
                     // Nouveaux champs facturation
                     Toutencaisse: toutEncaisse,
-                    StatuPrescriptionMedecin: 3,
+                    StatutPrescriptionMedecin: 3,
                     DateFacturation: new Date(),
                     FacturéPar: recuPar,
                     Modepaiement: modePaiement,

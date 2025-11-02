@@ -276,7 +276,7 @@ const emptyLigne = (): ILignePrestation => ({
     Action: ""
 });
 
-export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuranceDbId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
+export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, assuranceDbId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
     const [actes, setActes] = useState<IActeClinique[]>([]);
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
     const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
