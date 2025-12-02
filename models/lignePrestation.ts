@@ -10,7 +10,7 @@ export interface ILignePrestation extends Document {
     prix: number;
     partAssurance: number;
     tauxAssurance: number;
-    idPatient: Types.ObjectId | string;
+    IdPatient: Types.ObjectId | string;
     idHospitalisation: Types.ObjectId | string;
     partAssure: number;
     prixTotal: number;
@@ -24,7 +24,7 @@ export interface ILignePrestation extends Document {
     reliquatPatient?: number;
     totalCoefficient?: number;
     prixClinique?: number;
-    numMedecinExecutant?:string;
+    numMedecinExecutant?: string;
     montantMedecinExecutant?: number;
     idMedecin?: Types.ObjectId | string;
     acteMedecin?: string;
@@ -82,7 +82,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         prix: { type: Number, required: true },
         partAssurance: { type: Number, required: true },
         tauxAssurance: { type: Number, required: true },
-        idPatient: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
+        IdPatient: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
         idHospitalisation: { type: Schema.Types.ObjectId, ref: "ExamenHospit" },
         partAssure: { type: Number, required: true },
         prixTotal: { type: Number, required: true },

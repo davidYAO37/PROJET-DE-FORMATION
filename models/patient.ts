@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IPatient extends Document {
+  _id: mongoose.Types.ObjectId | string;
   Nom: string;
   Prenoms: string;
   sexe: string;
@@ -21,8 +22,8 @@ export interface IPatient extends Document {
   Souscripteur: string;
   AlergiePatient: string;
   IDASSURANCE: mongoose.Types.ObjectId; // relation
-  Assuance: string;
-  IDSOCIETEASSUANCE: mongoose.Types.ObjectId; // relation
+  Assurance: string;
+  IDSOCIETEASSURANCE: mongoose.Types.ObjectId; // relation
   SOCIETE_PATIENT: string;
   Taux: number;
   TarifPatient: string;
@@ -50,8 +51,8 @@ const PatientSchema = new Schema<IPatient>(
     Souscripteur: { type: String, required: false },
     AlergiePatient: { type: String, required: false },
     IDASSURANCE: { type: Schema.Types.ObjectId, ref: 'Assurance', required: false },
-    Assuance: { type: String, required: false },
-    IDSOCIETEASSUANCE: { type: Schema.Types.ObjectId, ref: 'SocietePatient', required: false },
+    Assurance: { type: String, required: false },
+    IDSOCIETEASSURANCE: { type: Schema.Types.ObjectId, ref: 'SocietePatient', required: false },
     SOCIETE_PATIENT: { type: String, required: false },
     Taux: { type: Number, required: false },
     TarifPatient: { type: String, required: false },

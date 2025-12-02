@@ -39,8 +39,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         if (!consultation) return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
 
         // Récupération patient, assurance, médecin
-        const patient = data.IDPARTIENT ? await Patient.findById(
-            typeof data.IDPARTIENT === "string" ? new mongoose.Types.ObjectId(data.IDPARTIENT) : data.IDPARTIENT
+        const patient = data.IdPatient ? await Patient.findById(
+            typeof data.IdPatient === "string" ? new mongoose.Types.ObjectId(data.IdPatient) : data.IdPatient
         ) : null;
 
         const assurance = data.selectedAssurance ? await Assurance.findById(
@@ -55,7 +55,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         let montantActe = data.montantClinique || 0;
         const tauxNum = Number(data.taux) || 0;
         let partAssurance = 0;
-        let partPatient = 0;
+        let Partassure = 0;
         let surplus = 0;
 
         if (data.assure === "mutualiste" || data.assure === "assure") {
@@ -65,8 +65,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             surplus = (data.montantClinique || 0) - montantActe;
         }
         partAssurance = (tauxNum * montantActe) / 100;
-        partPatient = montantActe - partAssurance;
-        const totalPatient = partPatient + surplus;
+        Partassure = montantActe - partAssurance;
+        const totalPatient = Partassure + surplus;
 
         // Mise à jour consultation
         consultation.designationC = data.selectedActeDesignation;
@@ -74,13 +74,13 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.Assuré = data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE";
 
         consultation.IDASSURANCE = assurance?._id ? new mongoose.Types.ObjectId(String(assurance._id)) : undefined;
-        consultation.IDPARTIENT = patient?._id ? new mongoose.Types.ObjectId(String(patient._id)) : undefined;
+        consultation.IdPatient = patient?._id ? new mongoose.Types.ObjectId(String(patient._id)) : undefined;
         consultation.IDMEDECIN = medecin?._id ? new mongoose.Types.ObjectId(String(medecin._id)) : undefined;
 
         consultation.Prix_Assurance = montantActe;
         consultation.PrixClinique = data.montantClinique || 0;
 
-        consultation.montantapayer = partPatient;
+        consultation.montantapayer = Partassure;
         consultation.ReliquatPatient = surplus;
 
         consultation.Code_dossier = data.Code_dossier;
@@ -90,7 +90,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         consultation.tauxAssurance = tauxNum;
         consultation.PartAssurance = partAssurance;
-        consultation.tiket_moderateur = partPatient;
+        consultation.tiket_moderateur = Partassure;
         consultation.numero_carte = data.matricule;
         consultation.NumBon = data.NumBon;
         consultation.Recupar = data.Recupar;

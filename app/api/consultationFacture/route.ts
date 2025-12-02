@@ -31,14 +31,14 @@ export async function POST(req: NextRequest) {
             }
         }
         // ✅ Préparation de la consultation
-        const patient = await Patient.findById(data.IDPARTIENT);
+        const patient = await Patient.findById(data.IdPatient);
         const assurance = data.selectedAssurance ? await Assurance.findById(data.selectedAssurance) : null;
         const medecin = await Medecin.findById(data.selectedMedecin);
 
         // Montants et calculs (tous en entiers)
         let montantActe = Math.round(data.montantClinique || 0);
         let partAssurance = 0;
-        let partPatient = 0;
+        let Partassure = 0;
         let surplus = 0;
         let statutC = false;
         let statutPaiement = "En cours de Paiement";
@@ -57,8 +57,8 @@ export async function POST(req: NextRequest) {
         }
 
         partAssurance = Math.round((tauxNum * montantActe) / 100);
-        partPatient = montantActe - partAssurance;
-        const totalPatient = partPatient + surplus;
+        Partassure = montantActe - partAssurance;
+        const totalPatient = Partassure + surplus;
 
         // Correction des champs obligatoires
         if (!patient || !patient.Code_dossier) {
@@ -78,7 +78,7 @@ export async function POST(req: NextRequest) {
             Prix_Assurance: Math.round(montantActe),
             PrixClinique: Math.round(data.montantClinique || 0),
             Restapayer: Math.round(totalPatient),
-            montantapayer: Math.round(partPatient + surplus),
+            montantapayer: Math.round(Partassure + surplus),
             ReliquatPatient: Math.round(surplus),
 
             Code_dossier: patient.Code_dossier, // Toujours le code dossier du patient
@@ -92,17 +92,17 @@ export async function POST(req: NextRequest) {
 
             tauxAssurance: tauxNum,
             PartAssurance: Math.round(partAssurance),
-            tiket_moderateur: Math.round(partPatient),
+            tiket_moderateur: Math.round(Partassure),
             numero_carte: data.matricule,
             NumBon: data.NumBon,
 
             Recupar: data.Recupar, // Nom de l'utilisateur connecté
             IDACTE: data.selectedActe,
-            IDPARTIENT: patient?._id,
+            IdPatient: patient?._id,
             Souscripteur: patient?.Souscripteur,
             PatientP: patient?.Nom + " " + patient?.Prenoms,
             SOCIETE_PATIENT: patient?.SOCIETE_PATIENT || data.societePatient,
-            IDSOCIETEASSUANCE: patient?.IDSOCIETEASSUANCE || data.selectedAssurance,
+            IDSOCIETEASSURANCE: patient?.IDSOCIETEASSURANCE || data.selectedAssurance,
 
             Medecin: medecin ? `${medecin.nom} ${medecin.prenoms}` : "",
             IDMEDECIN: medecin?._id,
@@ -127,12 +127,12 @@ export async function GET(req: NextRequest) {
 
         let query: any = {};
         if (patientId) {
-            query.IDPARTIENT = patientId;
+            query.IdPatient = patientId;
         }
 
         const consultations = await Consultation.find(query)
             .populate("IDASSURANCE", "desiganationassurance")
-            .populate("IDPARTIENT", "Nom Prenoms")
+            .populate("IdPatient", "Nom Prenoms")
             .populate("IDMEDECIN", "nom prenoms");
 
         return NextResponse.json(consultations);

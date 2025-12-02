@@ -30,11 +30,11 @@ export interface IConsultation extends Document {
   Recupar: string;
   IDACTE: string;
 
-  IDPARTIENT?: mongoose.Types.ObjectId;
+  IdPatient?: mongoose.Types.ObjectId;
   Souscripteur?: string;
   PatientP?: string;
   SOCIETE_PATIENT?: string;
-  IDSOCIETEASSUANCE?: string;
+  IDSOCIETEASSURANCE?: string;
 
   Medecin?: string;
   IDMEDECIN?: mongoose.Types.ObjectId;
@@ -97,11 +97,11 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     Recupar: { type: String, required: true },
     IDACTE: { type: String, required: true },
 
-    IDPARTIENT: { type: Schema.Types.ObjectId, ref: "Patient" },
+    IdPatient: { type: Schema.Types.ObjectId, ref: "Patient" },
     Souscripteur: { type: String },
     PatientP: { type: String },
     SOCIETE_PATIENT: { type: String },
-    IDSOCIETEASSUANCE: { type: String },
+    IDSOCIETEASSURANCE: { type: String },
 
     Medecin: { type: String },
     IDMEDECIN: { type: Schema.Types.ObjectId, ref: "Medecin" },
@@ -140,7 +140,7 @@ ConsultationSchema.pre<IConsultation>("save", async function (next) {
   try {
     // Récupérer le patient lié
     const PatientModel = mongoose.model("Patient");
-    const patient: any = await PatientModel.findById(this.IDPARTIENT).lean();
+    const patient: any = await PatientModel.findById(this.IdPatient).lean();
 
     if (!patient) {
       return next(new Error("Patient introuvable pour générer le Code_Prestation"));
@@ -168,4 +168,4 @@ ConsultationSchema.pre<IConsultation>("save", async function (next) {
 });
 
 
-export const Consultation: Model<IConsultation> =  mongoose.models.Consultation || mongoose.model<IConsultation>("Consultation", ConsultationSchema);
+export const Consultation: Model<IConsultation> = mongoose.models.Consultation || mongoose.model<IConsultation>("Consultation", ConsultationSchema);

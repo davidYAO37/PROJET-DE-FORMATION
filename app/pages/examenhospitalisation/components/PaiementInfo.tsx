@@ -31,7 +31,7 @@ export default function PaiementInfo({ formData }: Props) {
                             <Form.Label>Part Patient</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={formData.partPatient ?? 0}  // ← corrige ici
+                                value={formData.Partassure ?? 0}  // ← corrige ici
                                 readOnly
                             />
                         </Form.Group>

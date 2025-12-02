@@ -2,7 +2,7 @@ export interface RendezVous {
     LibelleRDV: string;
     PatientR: string;
     Medecinr: string;
-    IDPARTIENT: string;
+    IdPatient: string;
     IDMEDECIN: string;
     StatutRdv: string;
     DisponibiliteSaisiePar: string;

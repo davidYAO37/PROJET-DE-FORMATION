@@ -10,7 +10,7 @@ export interface IResultatLignePrestation extends Document {
     IDPARAM_LABO?: Types.ObjectId;
     IDLIGNE_PRESTATION?: Types.ObjectId;
     IDACTEP?: Types.ObjectId;
-    IDHOSPITALISATION?: Types.ObjectId;
+    idHospitalisation?: Types.ObjectId;
     IDFAMILLE_ACTE_BIOLOGIE?: Types.ObjectId;
     ACTE?: string;
     Interpretation?: string;
@@ -33,7 +33,7 @@ const ResultatLignePrestationSchema = new Schema<IResultatLignePrestation>({
     IDPARAM_LABO: { type: Schema.Types.ObjectId, ref: 'ParamLabo' },
     IDLIGNE_PRESTATION: { type: Schema.Types.ObjectId, ref: 'LignePrestation' },
     IDACTEP: { type: Schema.Types.ObjectId, ref: 'Acte' },
-    IDHOSPITALISATION: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation' },
+    idHospitalisation: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation' },
     IDFAMILLE_ACTE_BIOLOGIE: { type: Schema.Types.ObjectId, ref: 'FamilleActe' },
     ACTE: { type: String, maxlength: 100 },
     Interpretation: { type: String, maxlength: 1000 },

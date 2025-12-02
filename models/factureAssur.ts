@@ -15,7 +15,7 @@ export interface IFactureAssur extends Document {
     PartAssurance?: number;
     DebutF?: Date;
     FinF?: Date;
-    Assuance?: string;
+    Assurance?: string;
     TYPEACTE?: string;
     TotalPaye?: number;
     Restapayer?: number;
@@ -36,7 +36,7 @@ const FactureAssurSchema = new Schema<IFactureAssur>({
     PartAssurance: { type: Number },
     DebutF: { type: Date },
     FinF: { type: Date },
-    Assuance: { type: String, maxlength: 50 },
+    Assurance: { type: String, maxlength: 50 },
     TYPEACTE: { type: String, maxlength: 50 },
     TotalPaye: { type: Number },
     Restapayer: { type: Number },

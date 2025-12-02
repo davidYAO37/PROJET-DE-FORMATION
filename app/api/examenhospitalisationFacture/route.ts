@@ -4,6 +4,7 @@ import { ExamenHospitalisation } from "@/models/examenHospit";
 import { LignePrestation } from "@/models/lignePrestation";
 import mongoose, { Schema } from "mongoose";
 import { Assurance } from "@/models/assurance";
+import { Facturation } from "@/models/Facturation";
 
 export async function GET(req: NextRequest) {
     try {
@@ -13,6 +14,7 @@ export async function GET(req: NextRequest) {
         const typeActe = searchParams.get("typeActe");
 
         if (!codePrestation || !typeActe) {
+            console.log("Examen trouve avec le code")
             return NextResponse.json(
                 { error: "Paramètres manquants", message: "Code prestation et type acte requis" },
                 { status: 400 }
@@ -41,13 +43,44 @@ export async function GET(req: NextRequest) {
         );
     }
 }
+
+// Utilitaire pour transformer différents formats d'ID en ObjectId
+function toObjectId(value: any) {
+    if (!value) return null;
+    
+    try {
+        // Si c'est déjà un ObjectId
+        if (value instanceof mongoose.Types.ObjectId) return value;
+        
+        // Si c'est une chaîne
+        if (typeof value === 'string') {
+            // Si la chaîne est vide ou ne contient que des espaces
+            if (!value.trim()) return null;
+            return new mongoose.Types.ObjectId(value);
+        }
+        
+        // Si c'est un objet avec une propriété _id
+        if (value._id) return toObjectId(value._id);
+        
+        // Si c'est un objet avec une propriété id
+        if (value.id) return toObjectId(value.id);
+        
+        // Si c'est un objet avec une propriété $oid (format BSON)
+        if (value.$oid) return new mongoose.Types.ObjectId(value.$oid);
+        
+        return null;
+    } catch (error) {
+        console.error('Erreur de conversion en ObjectId:', { value, error });
+        return null;
+    }
+}
 // enregistrement ou modification de l'examen
 
 export async function POST(req: NextRequest) {
     try {
         await db();
         const body = await req.json();
-        const { header, lignes,Recupar } = body || {};
+        const { header, lignes, Recupar } = body || {};
 
         // Validation du payload
         if (!header) {
@@ -70,11 +103,9 @@ export async function POST(req: NextRequest) {
                 { status: 400 }
             );
         }
-
-
         const currentDate = new Date();
         let assuranceName = '';
-        
+
         // Si un ID d'assurance est fourni, récupérer le nom de l'assurance
         if (header.assurance?.assuranceId) {
             try {
@@ -102,48 +133,133 @@ export async function POST(req: NextRequest) {
         const examenData = {
             ...header,
             // Utiliser le médecin du formulaire, de l'assurance ou celui de la consultation
-            NomMed: header.assuranceInfo?.medecinPrescripteur.nom || header.medecinPrescripteur.nom || consultationData.Medecin || "",
-            idMedecin: header.medecinPrescripteur ? 
+            NomMed: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
+            idMedecin: header.medecinPrescripteur ?
                 (consultationData.IDMEDECIN ? new mongoose.Types.ObjectId(consultationData.IDMEDECIN) : null) : null,
-            
+
             // Utiliser les informations patient de la consultation
-            IdPatient: consultationData.IdPatient ? 
+            IdPatient: consultationData.IdPatient ?
                 new mongoose.Types.ObjectId(consultationData.IdPatient) : null,
             PatientP: consultationData.PatientP || header.PatientP || "",
 
             //StatutPrescription
-            statutPrescriptionMedecin: header.Statutprescription || 2,            
-            
+            statutPrescriptionMedecin: header.Statutprescription || 3,
+
             // Informations de suivi
-            SaisiPar: Recupar,  
-            
+            SaisiPar: Recupar,
+
             // Date de prescription (uniquement à la création)
             ...(!header._id && { DatePres: currentDate }),
-            
+
             // Informations d'assurance
             Assurance: assuranceName,
-            ...(header.assurance?.assuranceId && { 
-                IDASSURANCE: new mongoose.Types.ObjectId(header.assurance.assuranceId) 
+            ...(header.assurance?.assuranceId && {
+                IDASSURANCE: new mongoose.Types.ObjectId(header.assurance.assuranceId)
             }),
         };
 
-        // Création ou mise à jour de l'examen
+        // Utiliser une session/transaction pour garantir atomiticité : examen + facturation + lignes
+        const session = await mongoose.startSession();
+        let factureSaved: any = null;
+        let saved: any = null;
         const isUpdate = Boolean(header._id);
-        let saved;
+        let hospId: any = null;
+        try {
+            session.startTransaction();
 
-        if (isUpdate) {
-            saved = await ExamenHospitalisation.findByIdAndUpdate(header._id, examenData, { new: true });
-            if (!saved) {
-                return NextResponse.json(
-                    { error: "Examen introuvable", message: "L'examen à mettre à jour n'existe pas" },
-                    { status: 404 }
-                );
+            // Création ou mise à jour de l'examen dans la session
+            if (isUpdate) {
+                saved = await ExamenHospitalisation.findByIdAndUpdate(header._id, examenData, { new: true, session });
+                if (!saved) {
+                    await session.abortTransaction();
+                    session.endSession();
+                    return NextResponse.json(
+                        { error: "Examen introuvable", message: "L'examen à mettre à jour n'existe pas" },
+                        { status: 404 }
+                    );
+                }
+            } else {
+                // create with session
+                const created = await ExamenHospitalisation.create([examenData], { session });
+                saved = Array.isArray(created) ? created[0] : created;
             }
-        } else {
-            saved = await ExamenHospitalisation.create(examenData);
-        }
 
-        const hospId = saved._id;
+            hospId = saved._id;
+
+            // Construire facturation à partir du header (noms conformes au schéma Facturation)
+            const factData: any = {
+                Code_Prestation: header.Code_Prestation || "",
+                NomMed: header.medecinPrescripteur?.nom || header.NomMed || "",
+                PatientP: header.PatientP || "",
+                DatePres: header.DatePres ? new Date(header.DatePres) : currentDate,
+                SaisiPar: Recupar || header.SaisiPar || "",
+                Rclinique: header.Rclinique || "",
+                Montanttotal: header.Montanttotal || header.factureTotal || 0,
+                MontantRecu: header.MontantRecu || 0,
+                TotalapayerPatient: header.TotalapayerPatient || header.TotalapayerPatient || 0,
+                PartAssuranceP: header.PartAssuranceP || header.partAssurance || 0,
+                Partassure: header.Partassure || header.Partassure || 0,
+                Assurance: header.Assurance?.desiganationassurance || (typeof header.Assurance === 'string' ? header.Assurance : ''),
+                IDSOCIETEASSURANCE: header.IDSOCIETEASSURANCE || undefined,
+                Souscripteur: header.Souscripteur || "",
+                SOCIETE_PATIENT: header.SOCIETE_PATIENT || "",
+                TotalPaye: header.TotalPaye || header.MontantRecu || 0,
+                Restapayer: header.Restapayer || header.resteAPayer || 0,
+                Taux: header.Taux || 0,
+                NumBon: header.NumBon || "",
+                reduction: header.reduction || 0,
+                MotifRemise: header.MotifRemise || "",
+                tauxreduction: header.tauxreduction || 0,
+                TotaleTaxe: header.TotaleTaxe || 0,
+                FacturéPar: Recupar || header.SaisiPar || "",
+                IdPatient: header.IdPatient || header.IdPatient || undefined,
+                Numcarte: header.Numcarte || "",
+                IDTYPE_ACTE: header.IDTYPE_ACTE || undefined,
+                Entrele: header.Entrele ? new mongoose.Types.ObjectId(header.Entrele) : undefined,
+                SortieLe: header.SortieLe ? new mongoose.Types.ObjectId(header.SortieLe) : undefined,
+                DureeE: header.DureeE || 0,
+                Designationtypeacte: header.Designationtypeacte || header.typeacte || "",
+                Assure: typeof header.Assuré === 'boolean' ? (header.Assuré ? 'Oui' : 'Non') : header.Assure || '',
+                Payeoupas: true,
+                StatutLaboratoire: header.StatutLaboratoire || 1,
+                TotalReliquatPatient: header.TotalReliquatPatient || header.surplus || 0,
+                StatuPrescriptionMedecin: header.StatuPrescriptionMedecin || 3,
+                StatutPaiement: header.StatutPaiement || "Facture Payée",
+                CompteClient: header.CompteClient || false,
+                CautionPatient: header.CautionPatient || 0,
+                Modepaiement: header.Modepaiement || "",
+                IDMEDECIN: header.IDMEDECIN || undefined,
+                MontantMedecin: header.MontantMedecin || 0,
+                DateFacturation: currentDate,
+                Heure_Facturation: new Date().toLocaleTimeString("fr-FR"),
+                idHospitalisation: hospId,
+            };
+
+            if (header.IDASSURANCE) {
+                try {
+                    factData.Assurance = new mongoose.Types.ObjectId(header.IDASSURANCE);
+                } catch (err) {
+                    // ignore invalid id
+                }
+            }
+
+            // Créer la facturation dans la session
+            const createdFact = await Facturation.create([factData], { session });
+            factureSaved = Array.isArray(createdFact) ? createdFact[0] : createdFact;
+        } catch (err) {
+            console.error("Erreur création Facturation :", err);
+            // Annuler la transaction et fermer la session avant de renvoyer l'erreur
+            try {
+                await session.abortTransaction();
+            } catch (abErr) {
+                console.error('Erreur abort transaction après échec facturation:', abErr);
+            }
+            session.endSession();
+            return NextResponse.json(
+                { error: "Erreur création facture", message: String(err) },
+                { status: 500 }
+            );
+        }
 
         // Récupérer l'IdPatient depuis la consultation s'il n'est pas fourni
         let patientId = header.IdPatient;
@@ -156,9 +272,9 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Mise à jour ou insertion des lignes de prestation
+        // Mise à jour ou insertion des lignes de prestation (dans la même transaction)
         console.log("📋 Nombre de lignes à enregistrer:", lignes.length);
-        
+
         const results = await Promise.allSettled(
             lignes.map(async (l: any, index: number) => {
                 try {
@@ -168,10 +284,10 @@ export async function POST(req: NextRequest) {
                         IDLignePrestation: l.IDLignePrestation
                     });
 
-                    // Vérifier que IdPatient est fourni
-                    if (!patientId && !l.IdPatient) {
-                        throw new Error("IdPatient est requis pour la ligne de prestation");
-                    }
+                    /*  // Vérifier que IdPatient est fourni
+                     if (!patientId && !l.IdPatient) {
+                         throw new Error("IdPatient est requis pour la ligne de prestation");
+                     } */
 
                     const doc: any = {
                         ...l,
@@ -211,34 +327,43 @@ export async function POST(req: NextRequest) {
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
                     };
 
-                    // Ajouter idTypeActe uniquement s'il est valide
-                    if (l.IDTYPE && l.IDTYPE.trim() !== "") {
-                        doc.idTypeActe = l.IDTYPE;
+                    // Ajouter idTypeActe et idFamille si fournis
+                    if (l.IDTYPE && l.IDTYPE.trim() !== "") doc.idTypeActe = l.IDTYPE;
+                    if (l.IDFAMILLE && l.IDFAMILLE.trim() !== "") doc.idFamilleActeBiologie = l.IDFAMILLE;
+
+                    // Gestion paiement / facturation
+                    const isPaid = (l.AFacturer && String(l.AFacturer).toLowerCase().includes('pay')) || (l.Statutprescription === 3) || (l.payé === true);
+                    if (isPaid) {
+                        if (factureSaved && factureSaved._id) doc.idFacturation = factureSaved._id;
+                        doc.datePaiementCaisse = l.datePaiementCaisse ? new Date(l.datePaiementCaisse) : new Date();
+                        doc.heurePaiement = l.heurePaiement || new Date().toLocaleTimeString('fr-FR');
+                        doc.payePar = l.payePar || Recupar || '';
+                        doc.statutPrescriptionMedecin = 3;
+                        doc.actePayeCaisse = 'Payé';
+                    } else {
+                        doc.idFacturation = undefined;
+                        doc.datePaiementCaisse = undefined;
+                        doc.heurePaiement = '';
+                        doc.payePar = '';
+                        doc.statutPrescriptionMedecin = l.Statutprescription || 1;
+                        doc.actePayeCaisse = l.AFacturer || 'Non Payé';
                     }
 
-                    // Ajouter idFamilleActeBiologie uniquement s'il est valide
-                    if (l.IDFAMILLE && l.IDFAMILLE.trim() !== "") {
-                        doc.idFamilleActeBiologie = l.IDFAMILLE;
-                    }
+                    let result: any;
+                    const isValidObjectId = l.IDLignePrestation && l.IDLignePrestation.length === 24 && /^[0-9a-fA-F]{24}$/.test(l.IDLignePrestation);
 
-                    let result;
-                    // Vérifier si l'ID est un ObjectId MongoDB valide (24 caractères hexadécimaux)
-                    const isValidObjectId = l.IDLignePrestation && 
-                                           l.IDLignePrestation.length === 24 && 
-                                           /^[0-9a-fA-F]{24}$/.test(l.IDLignePrestation);
-                    
                     if (isValidObjectId) {
                         console.log(`✏️ Mise à jour ligne ${index + 1} avec ObjectId:`, l.IDLignePrestation);
-                        result = await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, doc, { new: true });
+                        result = await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, doc, { new: true, session });
                         if (!result) {
-                            // Si pas trouvé, créer une nouvelle ligne
                             console.log(`⚠️ Ligne non trouvée, création d'une nouvelle ligne ${index + 1}`);
-                            result = await LignePrestation.create(doc);
+                            const created = await LignePrestation.create([doc], { session });
+                            result = Array.isArray(created) ? created[0] : created;
                         }
                     } else {
-                        // UUID ou ID invalide -> créer une nouvelle ligne
                         console.log(`➕ Création nouvelle ligne ${index + 1} (ID invalide ou absent: ${l.IDLignePrestation})`);
-                        result = await LignePrestation.create(doc);
+                        const created = await LignePrestation.create([doc], { session });
+                        result = Array.isArray(created) ? created[0] : created;
                     }
                     console.log(`✅ Ligne ${index + 1} enregistrée avec succès, ID:`, result._id);
                     return result;
@@ -253,8 +378,14 @@ export async function POST(req: NextRequest) {
         const failures = results.filter((r) => r.status === "rejected");
         if (failures.length > 0) {
             console.error("❌ Erreurs lors de l'enregistrement des lignes:", failures);
-            
-            // Extraire les détails des erreurs
+            // Annuler la transaction
+            try {
+                await session.abortTransaction();
+            } catch (abErr) {
+                console.error('Erreur abort transaction:', abErr);
+            }
+            session.endSession();
+
             const errorDetails = failures.map((f: any, idx) => {
                 const reason = f.reason;
                 return {
@@ -264,9 +395,7 @@ export async function POST(req: NextRequest) {
                     name: reason?.name
                 };
             });
-            
-            console.error("📊 Détails des erreurs:", errorDetails);
-            
+
             return NextResponse.json(
                 {
                     error: "Erreur partielle",
@@ -279,6 +408,10 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Tout est bon -> valider la transaction
+        await session.commitTransaction();
+        session.endSession();
+
         return NextResponse.json({
             success: true,
             message: isUpdate ? "Examen mis à jour avec succès" : "Examen créé avec succès",
@@ -286,7 +419,7 @@ export async function POST(req: NextRequest) {
             lignesCount: lignes.length,
         });
     } catch (e: any) {
-        console.error("Erreur POST /api/examenhospitalisation:", e);
+        console.error("Erreur POST /api/examenhospitalisationFacture:", e);
         return NextResponse.json(
             {
                 error: "Erreur serveur",
@@ -296,5 +429,3 @@ export async function POST(req: NextRequest) {
         );
     }
 }
-
-

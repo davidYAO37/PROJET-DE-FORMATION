@@ -1,5 +1,5 @@
 export interface PaiementPartenaire {
-    Assuance?: string;
+    Assurance?: string;
     DatePaiement?: Date;
     Recupar?: string;
     MontantRecu?: number;

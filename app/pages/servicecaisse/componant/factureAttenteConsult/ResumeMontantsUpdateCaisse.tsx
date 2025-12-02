@@ -4,7 +4,7 @@ import { Card, Row, Col, Form } from "react-bootstrap";
 type ResumeMontantsProps = {
     surplus: number;
     partAssurance: number;
-    partPatient: number;
+    Partassure: number;
     totalPatient: number;
     montantEncaisse?: number;
     setMontantEncaisse?: (val: number) => void;
@@ -15,7 +15,7 @@ type ResumeMontantsProps = {
 export default function ResumeMontantsUpdateCaisse({
     surplus,
     partAssurance,
-    partPatient,
+    Partassure,
     totalPatient,
     montantEncaisse = 0,
     setMontantEncaisse,
@@ -74,7 +74,7 @@ export default function ResumeMontantsUpdateCaisse({
                     <Form.Control
                         className="bg-info bg-opacity-10 border-info fw-bold text-info text-end"
                         type="text"
-                        value={`${Math.round(partPatient)} FCFA`}
+                        value={`${Math.round(Partassure)} FCFA`}
                         readOnly
                         size="lg"
                     />

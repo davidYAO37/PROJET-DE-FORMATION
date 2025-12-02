@@ -13,7 +13,7 @@ export interface ILigneFacture extends Document {
     TYPEACTE?: string;
     Matricule?: string;
     NumBon?: string;
-    IDHOSPITALISATION?: Types.ObjectId;
+    idHospitalisation?: Types.ObjectId;
     IDCONSULTATION?: Types.ObjectId;
     IDPRESCRIPTION?: Types.ObjectId;
     IDANNALYSE?: Types.ObjectId;
@@ -36,7 +36,7 @@ const LigneFactureSchema = new Schema<ILigneFacture>({
     TYPEACTE: { type: String, maxlength: 50 },
     Matricule: { type: String, maxlength: 50 },
     NumBon: { type: String, maxlength: 50 },
-    IDHOSPITALISATION: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation' },
+    idHospitalisation: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation' },
     IDCONSULTATION: { type: Schema.Types.ObjectId, ref: 'Consultation' },
     IDPRESCRIPTION: { type: Schema.Types.ObjectId, ref: 'Prescription' },
     IDANNALYSE: { type: Schema.Types.ObjectId, ref: 'Analyse' },

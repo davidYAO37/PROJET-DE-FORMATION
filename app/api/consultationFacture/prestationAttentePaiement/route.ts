@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { ExamenHospitalisation } from "@/models/examenHospit";
-import { Patient } from "@/models/patient";      // ✅ Pour populate idPatient
+import { Patient } from "@/models/patient";      // ✅ Pour populate IdPatient
 import { Medecin } from "@/models/medecin";      // ✅ Pour populate idMedecin
 
 export async function GET(req: NextRequest) {
@@ -24,7 +24,7 @@ export async function GET(req: NextRequest) {
 
         const prestations = await ExamenHospitalisation.find(filter)
             .populate({
-                path: 'idPatient',
+                path: 'IdPatient',
                 select: 'Nom Prenoms',
                 model: 'Patient'
             })
@@ -39,7 +39,7 @@ export async function GET(req: NextRequest) {
         const result = prestations.map((p: any) => ({
             id: p._id,
             code: p.Code_Prestation || "N/A",
-            patient: p.PatientP || (p.idPatient ? `${p.idPatient.Nom || ''} ${p.idPatient.Prenoms || ''}`.trim() : "Patient inconnu"),
+            patient: p.PatientP || (p.IdPatient ? `${p.IdPatient.Nom || ''} ${p.IdPatient.Prenoms || ''}`.trim() : "Patient inconnu"),
             designation: p.Designationtypeacte || "Prestation sans désignation",
             // Calcul du montant selon la logique WLanguage: Partassure + TotalReliquatPatient
             montant: Number((p.Partassure || 0) + (p.TotalReliquatPatient || 0)),

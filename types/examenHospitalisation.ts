@@ -23,7 +23,7 @@ export type Acte = {
     idExamenHospitalisation?: string;
     idActeClinique?: string;
     partAssurance?: number;
-    partPatient?: number;
+    Partassure?: number;
     reliquat?: number;
     totalRelicatCoefAssur?: number;
     montantMedExecutant?: number
@@ -46,6 +46,7 @@ export type ExamenHospitalisationForm = {
     medecinId: string;
     dateEntree: string;
     dateSortie: string;
+    DatePres: Date;
     nombreDeJours: number;
     diagnostic: string;
     observations: string;
@@ -57,10 +58,38 @@ export type ExamenHospitalisationForm = {
     factureTotal: number;
     resteAPayer: number;
     partAssurance: number;
-    partPatient: number;
+    Partassure: number;
     surplus: number;
     renseignementclinique: string;
     societePatient: string;
+    Code_Prestation: string
+    Designationtypeacte: string
+    reduction: number;
+    MotifRemise: string;
+    TotalapayerPatient: number;
+    // Legacy / alternate field names (optional) used across the codebase
+    PatientP?: string;
+    IdPatient?: string;
+    MontantRecu?: number;
+    IDASSURANCE?: string;
+    Souscripteur?: string;
+    SOCIETE_PATIENT?: string;
+    TotalPaye?: number;
+    Taux?: number;
+    NumBon?: string;
+    numeroBon?: string;
+    NomMed?: string;
+    Numcarte?: string;
+    IDTYPE_ACTE?: string;
+    Payeoupas?: boolean;
+    TotalReliquatPatient?: number;
+    StatutPaiement?: string;
+    tauxreduction?: number;
+    Modepaiement?: string;
+    MontantMedecinExécutant?: number;
+    TotaleTaxe?: number;
+    Assuré?: boolean;
+    IDMEDECIN?: string;
 
 };
 
@@ -70,6 +99,7 @@ export const defaultFormData: ExamenHospitalisationForm = {
     medecinId: "",
     dateEntree: "",
     dateSortie: "",
+    DatePres: new Date(),
     nombreDeJours: 0,
     diagnostic: "",
     observations: "",
@@ -92,6 +122,11 @@ export const defaultFormData: ExamenHospitalisationForm = {
     factureTotal: 0,
     resteAPayer: 0,
     partAssurance: 0,
-    partPatient: 0,
+    Partassure: 0,
     surplus: 0,
+    Code_Prestation: "",
+    Designationtypeacte: "",
+    reduction: 0,
+    MotifRemise: "",
+    TotalapayerPatient: 0
 };

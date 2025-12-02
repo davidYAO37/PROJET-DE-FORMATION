@@ -4,7 +4,7 @@ export interface IRendezVous extends Document {
     LibelleRDV: string;
     PatientR: string;
     Medecinr: string;
-    IDPARTIENT: Schema.Types.ObjectId;
+    IdPatient: Schema.Types.ObjectId;
     IDMEDECIN: Schema.Types.ObjectId;
     StatutRdv: string;
     DisponibiliteSaisiePar: string;
@@ -22,7 +22,7 @@ const RendezVousSchema = new Schema<IRendezVous>({
     LibelleRDV: String,
     PatientR: String,
     Medecinr: String,
-    IDPARTIENT: { type: Schema.Types.ObjectId, ref: "Patient" },
+    IdPatient: { type: Schema.Types.ObjectId, ref: "Patient" },
     IDMEDECIN: { type: Schema.Types.ObjectId, ref: "Medecin" },
     StatutRdv: String,
     DisponibiliteSaisiePar: String,

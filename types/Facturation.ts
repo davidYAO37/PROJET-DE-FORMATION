@@ -17,9 +17,8 @@ export interface Facturation {
     SocieteP?: string;
     PartAssuranceP?: number;
     Partassure?: number;
-    Assuance?: string;
-    Taux?: string;
     Assurance?: string;
+    Taux?: string;
     IDTYPE_ACTE?: number;
     FacturePar?: string;
     Patient?: string;
@@ -90,6 +89,6 @@ export interface Facturation {
     IDHOSPITALISATION?: string;
     IDPRESCRIPTION?: string;
     typefacture?: string;
-    IDSOCIETEASSUANCE?: string;
+    IDSOCIETEASSURANCE?: string;
     SOCIETE_PATIENT?: string;
 }

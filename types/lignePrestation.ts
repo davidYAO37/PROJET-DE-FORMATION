@@ -7,7 +7,7 @@ export interface LignePrestation {
     Prix: number;
     PartAssurance: number;
     tauxAssurance: number;
-    IDPARTIENT: number;
+    IdPatient: number;
     IDHOSPITALISATION: number;
     Partassuré: number;
     PrixTotal: number;
@@ -53,15 +53,16 @@ export interface LignePrestation {
     StatutHonoraireMedecin: number;
     TypeResultat: number;
     ACTEPAYECAISSE: string;
-    Datepaiementcaisse: Date;
-    HeurePaiement: string;
-    PayéPar: string;
-    CompterenduValidépar: string;
-    CompteRenduValidéA: string;
-    compterenduValidéLe: Date;
-    MedecinExécutant: string;
-    IDFACTURATION: number;
-    IDSOCIETEASSUANCE: number;
-    SOCIETE_PATIENT: string;
-    ORdonnacementAffichage: number;
+    Datepaiementcaisse?: Date;
+    HeurePaiement?: string;
+    PayéPar?: string;
+    CompterenduValidépar?: string;
+    CompteRenduValidéA?: string;
+    compterenduValidéLe?: Date;
+    MedecinExécutant?: string;
+    IDFACTURATION?: number;
+    IDSOCIETEASSURANCE?: number;
+    SOCIETE_PATIENT?: string;
+    ORdonnacementAffichage?: number;
+
 }

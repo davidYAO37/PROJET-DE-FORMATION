@@ -4,11 +4,11 @@ import { Card, Row, Col, Form } from "react-bootstrap";
 type ResumeMontantsProps = {
     surplus: number;
     partAssurance: number;
-    partPatient: number;
+    Partassure: number;
     totalPatient: number;
 };
 
-export default function ResumeMontants({ surplus, partAssurance, partPatient, totalPatient }: ResumeMontantsProps) {
+export default function ResumeMontants({ surplus, partAssurance, Partassure, totalPatient }: ResumeMontantsProps) {
     return (
         <Card className="p-4 mb-3 shadow-sm" style={{ 
             background: "linear-gradient(135deg, #fff3cd 0%, #ffe69c 100%)",
@@ -53,7 +53,7 @@ export default function ResumeMontants({ surplus, partAssurance, partPatient, to
                     <Form.Control 
                         className="bg-info bg-opacity-10 border-info fw-bold text-info text-end" 
                         type="text" 
-                        value={`${Math.round(partPatient)} FCFA`}
+                        value={`${Math.round(Partassure)} FCFA`}
                         readOnly 
                         size="lg"
                     />

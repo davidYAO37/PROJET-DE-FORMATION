@@ -8,7 +8,7 @@ export interface FactureRecap {
     FinF?: Date;
     DateSaisie?: Date;
     FactureAssur?: string; // ObjectId as string
-    Assuance?: string;
+    Assurance?: string;
     CreePar?: string;
     NCC?: string;
 }

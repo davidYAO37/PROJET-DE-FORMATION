@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Consultation } from "@/models/consultation";
 import { Medecin } from "@/models/medecin";        // ✅ Ajout important
-import { Patient } from "@/models/patient";        // ✅ Pour le populate IDPARTIENT
+import { Patient } from "@/models/patient";        // ✅ Pour le populate IdPatient
 import { db } from "@/db/mongoConnect";
 
 export async function GET(req: NextRequest) {
@@ -33,7 +33,7 @@ export async function GET(req: NextRequest) {
 
         const consultations = await Consultation.find(filter)
             .populate({
-                path: 'IDPARTIENT',
+                path: 'IdPatient',
                 select: 'Nom Prenoms',
                 model: 'Patient'
             })
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
         const result = consultations.map((c: any) => ({
             id: c._id,
             code: c.Code_Prestation || "N/A",
-            patient: c.PatientP || (c.IDPARTIENT ? `${c.IDPARTIENT?.Nom || ''} ${c.IDPARTIENT?.Prenoms || ''}`.trim() : "Patient inconnu"),
+            patient: c.PatientP || (c.IdPatient ? `${c.IdPatient?.Nom || ''} ${c.IdPatient?.Prenoms || ''}`.trim() : "Patient inconnu"),
             designation: c.designationC || "Consultation",
             // Calcul du montant selon la logique WLanguage: tiket_moderateur + ReliquatPatient
             montant: Number((c.tiket_moderateur || 0) + (c.ReliquatPatient || 0)),

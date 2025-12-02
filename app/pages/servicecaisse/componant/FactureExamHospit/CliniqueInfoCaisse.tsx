@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Spinner } from 'react-bootstrap';
+import { Card, Form, Row, Spinner } from 'react-bootstrap';
 import { ExamenHospitalisationForm } from '@/types/examenHospitalisation';
 import { IMedecin } from '@/models/medecin';
 import { getMedecins } from '@/app/pages/services/medecinService';
@@ -9,6 +9,9 @@ interface CliniqueInfoProps {
     setFormData: React.Dispatch<React.SetStateAction<ExamenHospitalisationForm>>;
     hasActesMedecin: boolean;
 }
+
+
+
 
 export default function CliniqueInfoCaisse({ formData, setFormData, hasActesMedecin }: CliniqueInfoProps) {
     const [medecinExecutant, setMedecinExecutant] = useState<IMedecin[]>([]);
@@ -50,52 +53,54 @@ export default function CliniqueInfoCaisse({ formData, setFormData, hasActesMede
     };
 
     return (
-        <Card className="mb-3">
-            <Card.Header>Renseignements Cliniques</Card.Header>
-            <Card.Body>
-                <Form.Group className="mb-3">
-                    <Form.Label>Médecin Exécutant</Form.Label>
-                    {loading ? (
-                        <div className="text-center">
-                            <Spinner animation="border" size="sm" />
-                            <span className="ms-2">Chargement des médecins...</span>
-                        </div>
-                    ) : (
-                        <Form.Select
-                            value={formData.medecinId || ''}
-                            onChange={handleMedecinExecutantChange}
-                            required
-                            disabled={!hasActesMedecin || loading}
-                            title={!hasActesMedecin ? "Aucun acte médical nécessitant un médecin exécutant" : undefined}
-                        >
-                            <option value="">
-                                {!hasActesMedecin
-                                    ? "Ajoutez d'abord un acte médical nécessitant un médecin exécutant"
-                                    : "Ajouter un médecin exécutant"}
-                            </option>
-                            {medecinExecutant.map((medecin) => {
-                                const medecinId = medecin._id?.toString() || '';
-                                return (
-                                    <option key={medecinId} value={medecinId}>
-                                        {medecin.nom} {medecin.prenoms} {medecin.specialite ? `(${medecin.specialite})` : ''}
-                                    </option>
-                                );
-                            })}
-                        </Form.Select>
-                    )}
+        <Card>
+            <Card.Header> Clinique Info</Card.Header>
+            <Card.Body className=" justify-content-between align-items-center ">
+                <div className="d-flex justify-content-between align-items-center mb-2">
+                    <Form.Group className="col-6 me-4 ">
+                        <Form.Label>Renseignements Cliniques</Form.Label>
+                        <Form.Control
+                            as="textarea"
+                            rows={2}
+                            value={formData.renseignementclinique}
+                            onChange={(e) => setFormData({ ...formData, renseignementclinique: e.target.value })}
+                        />
+                    </Form.Group>
 
-                </Form.Group>
-
-                <Form.Group className="mb-3">
-                    <Form.Label>Renseignements Cliniques</Form.Label>
-                    <Form.Control
-                        as="textarea"
-                        rows={3}
-                        value={formData.renseignementclinique}
-                        onChange={(e) => setFormData({ ...formData, renseignementclinique: e.target.value })}
-                    />
-                </Form.Group>
+                    <Form.Group className="col-6 px-3 me-4">
+                        <Form.Label>Médecin Exécutant</Form.Label>
+                        {loading ? (
+                            <div className="text-center">
+                                <Spinner animation="border" size="sm" />
+                                <span className="ms-2">Chargement des médecins...</span>
+                            </div>
+                        ) : (
+                            <Form.Select
+                                value={formData.medecinId || ''}
+                                onChange={handleMedecinExecutantChange}
+                                required
+                                disabled={!hasActesMedecin || loading}
+                                title={!hasActesMedecin ? "Aucun acte médical nécessitant un médecin exécutant" : undefined}
+                            >
+                                <option value="">
+                                    {!hasActesMedecin
+                                        ? "Ajoutez d'abord un acte médical nécessitant un médecin exécutant"
+                                        : "Ajouter un médecin exécutant"}
+                                </option>
+                                {medecinExecutant.map((medecin) => {
+                                    const medecinId = medecin._id?.toString() || '';
+                                    return (
+                                        <option key={medecinId} value={medecinId}>
+                                            {medecin.nom} {medecin.prenoms} {medecin.specialite ? `(${medecin.specialite})` : ''}
+                                        </option>
+                                    );
+                                })}
+                            </Form.Select>
+                        )}
+                    </Form.Group>
+                </div>
             </Card.Body>
         </Card>
+
     );
 }

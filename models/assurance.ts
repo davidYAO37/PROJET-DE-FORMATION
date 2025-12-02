@@ -2,6 +2,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 
 export interface IAssurance extends Document {
+  _id: mongoose.Types.ObjectId | string;
   desiganationassurance: string;
   codeassurance: string;
   telephone: string;

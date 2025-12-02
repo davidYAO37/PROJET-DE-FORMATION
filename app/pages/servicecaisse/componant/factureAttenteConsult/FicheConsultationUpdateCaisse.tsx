@@ -42,7 +42,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
 
     const [surplus, setSurplus] = useState<number>(0);
     const [partAssurance, setPartAssurance] = useState<number>(0);
-    const [partPatient, setPartPatient] = useState<number>(0);
+    const [Partassure, setPartassure] = useState<number>(0);
     const [totalPatient, setTotalPatient] = useState<number>(0);
 
     const [numBon, setNumBon] = useState("");
@@ -161,7 +161,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
 
         setSurplus(surplusCalc);
         setPartAssurance(partAssur);
-        setPartPatient(partPat);
+        setPartassure(partPat);
         setTotalPatient(partPat + surplusCalc);
     }, [montantClinique, montantAssurance, taux]);
 
@@ -244,7 +244,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                     Souscripteur: souscripteur,
                     SOCIETE_PATIENT: societePatient,
                     Recupar: recuPar,
-                    IDPARTIENT: currentConsultation.IDPARTIENT,
+                    IdPatient: currentConsultation.IdPatient,
                     Code_dossier: currentConsultation.Code_dossier,
                     Code_Prestation: currentConsultation.Code_Prestation,
 
@@ -350,7 +350,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             <ResumeMontantsUpdateCaisse
                 surplus={surplus}
                 partAssurance={partAssurance}
-                partPatient={partPatient}
+                Partassure={Partassure}
                 totalPatient={totalPatient}
                 montantEncaisse={montantEncaisse}
                 setMontantEncaisse={setMontantEncaisse}

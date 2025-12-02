@@ -25,11 +25,11 @@ export interface ConsultationType {
     numero_carte: string;
     NumBon: string;
 
-    IDPARTIENT: string;
+    IdPatient: string;
     Souscripteur: string;
     PatientP: string;
     SOCIETE_PATIENT: string;
-    IDSOCIETEASSUANCE: string;
+    IDSOCIETEASSURANCE: string;
 
     Medecin: string;
     IDMEDECIN: string;

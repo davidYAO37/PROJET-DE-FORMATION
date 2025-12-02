@@ -10,7 +10,7 @@ export interface IFactureRecap extends Document {
     FinF?: Date;
     DateSaisie?: Date;
     FactureAssur?: Types.ObjectId;
-    Assuance?: string;
+    Assurance?: string;
     CreePar?: string;
     NCC?: string;
 }
@@ -25,7 +25,7 @@ const FactureRecapSchema = new Schema<IFactureRecap>({
     FinF: { type: Date },
     DateSaisie: { type: Date },
     FactureAssur: { type: Schema.Types.ObjectId, ref: 'FactureAssur' },
-    Assuance: { type: String, maxlength: 50 },
+    Assurance: { type: String, maxlength: 50 },
     CreePar: { type: String, maxlength: 50 },
     NCC: { type: String, maxlength: 100 },
 }, { timestamps: true });

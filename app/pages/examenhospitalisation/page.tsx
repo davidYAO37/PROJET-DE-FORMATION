@@ -286,7 +286,7 @@ export default function HospitalisationPage() {
                                                         // Montants
                                                         factureTotal: data.Montanttotal || 0,
                                                         partAssurance: data.PartAssuranceP || 0,
-                                                        partPatient: data.Partassure || 0,
+                                                        Partassure: data.Partassure || 0,
                                                         resteAPayer: data.Restapayer || 0,
                                                         surplus: data.TotalSurplus || 0,
                                                     }));
@@ -363,10 +363,10 @@ export default function HospitalisationPage() {
                                                         typeacte: value,
                                                         factureTotal: 0,
                                                         partAssurance: 0,
-                                                        partPatient: 0,
+                                                        Partassure: 0,
                                                         surplus: 0,
                                                         resteAPayer: 0,
-                                                        renseignementclinique :"",
+                                                        renseignementclinique: "",
                                                         // Garder AssuranceInfo (déjà chargé depuis la consultation)
                                                         // Garder dateEntree et dateSortie (déjà initialisés à aujourd'hui)
                                                     }));
@@ -390,7 +390,7 @@ export default function HospitalisationPage() {
                                                     totalSurplus: 0,
                                                     montantExecutant: 0,
                                                     montantARegler: 0,
-                                                  
+
                                                 });
 
                                                 setFormData((prev) => ({
@@ -398,10 +398,10 @@ export default function HospitalisationPage() {
                                                     typeacte: value,
                                                     factureTotal: 0,
                                                     partAssurance: 0,
-                                                    partPatient: 0,
+                                                    Partassure: 0,
                                                     surplus: 0,
                                                     resteAPayer: 0,
-                                                    renseignementclinique :"",
+                                                    renseignementclinique: "",
                                                 }));
                                             }
                                         } catch (error) {
@@ -462,7 +462,7 @@ export default function HospitalisationPage() {
                                     ...prev,
                                     factureTotal: s.montantTotal,
                                     partAssurance: s.partAssurance,
-                                    partPatient: s.partAssure,
+                                    Partassure: s.partAssure,
                                     surplus: s.totalSurplus,
                                     resteAPayer: s.montantARegler,
                                 }));
@@ -520,16 +520,16 @@ export default function HospitalisationPage() {
                             }
 
                             // Construire le header pour ExamenHospitalisation
-                    
+
                             const header = {
                                 _id: modeModification ? examenHospitId : undefined,
                                 Code_Prestation: codePrestation || formData.patientId, // fallback si besoin
                                 Rclinique: formData.renseignementclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
-                                Assurance:formData.assurance || "",
+                                Assurance: formData.assurance || "",
                                 Souscripteur: formData.assurance.adherent || "",
                                 Taux: formData.assurance.taux || 0,
-                                IDPARTIENT: formData.patientId,
+                                IdPatient: formData.patientId,
                                 Numcarte: formData.assurance.matricule || "",
                                 NumBon: formData.assurance.numeroBon || "",
                                 IDTYPE_ACTE: formData.typeacte || "",
@@ -543,11 +543,11 @@ export default function HospitalisationPage() {
                                 Restapayer: formData.resteAPayer || 0,
                                 TotaleTaxe: 0,
                                 Montanttotal: formData.factureTotal || 0,
-                                Partassure: formData.partPatient || 0,
+                                Partassure: formData.Partassure || 0,
                                 PartAssuranceP: formData.partAssurance || 0,
                                 SOCIETE_PATIENT: formData.societePatient || "",
                                 medecinId: formData.medecinId || "",
-                                medecinPrescripteur:formData.medecinPrescripteur || "",
+                                medecinPrescripteur: formData.medecinPrescripteur || "",
                             };
 
                             // Utiliser les lignes actuelles du composant ActesTable
@@ -556,7 +556,7 @@ export default function HospitalisationPage() {
                             const resp = await fetch('/api/examenhospitalisation', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ header, lignes: lignesValides,Recupar: recuPar }),
+                                body: JSON.stringify({ header, lignes: lignesValides, Recupar: recuPar }),
                             });
                             const out = await resp.json();
 
@@ -580,9 +580,9 @@ export default function HospitalisationPage() {
                             console.log("✅ Enregistrement réussi:", out);
                             alert(out?.message || 'Facture enregistrée avec succès');
                         }}
-                      /*   onSuccess={() => {
-                             onClose?.(); // 👈 ferme automatiquement le modal
-                        }} */
+                    /*   onSuccess={() => {
+                           onClose?.(); // 👈 ferme automatiquement le modal
+                      }} */
                     />
                 </Col>
             </Row>

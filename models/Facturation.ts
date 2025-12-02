@@ -1,6 +1,7 @@
 import mongoose, { Schema, model, Document, Types, Model } from 'mongoose';
 
 export interface IFacturation extends Document {
+    _id: Types.ObjectId | string;
     Code_Prestation?: string;
     NomMed?: string;
     PatientP?: string;
@@ -8,23 +9,21 @@ export interface IFacturation extends Document {
     SaisiPar?: string;
     Rclinique?: string;
     Montanttotal?: number;
-    TotalPaye?: number;
-    TotaleTaxe?: number;
+    TotalPaye?: number;  //----
+    TotaleTaxe?: number;//----
     MontantRecu?: number;
     reduction?: number;
-    tauxreduction?: number;
+    // tauxreduction?: number; a retirer
     MotifRemise?: string;
     Restapayer?: number;
     TotalapayerPatient?: number;
     SocieteP?: string;
     PartAssuranceP?: number;
     Partassure?: number;
-    Assuance?: string;
     Taux?: string;
     Assurance?: Types.ObjectId;
-    IDTYPE_ACTE?: number;
+    IDTYPE_ACTE?: string
     FacturePar?: string;
-    Patient?: Types.ObjectId;
     CompteClient?: boolean;
     ModifierPar?: string;
     DateModif?: Date;
@@ -44,7 +43,7 @@ export interface IFacturation extends Document {
     Medecin?: Types.ObjectId;
     Statumed?: string;
     BanqueC?: string;
-    NumChèque?: string;
+    NumCheque?: string;
     Modepaiement?: string;
     TotalReliquatPatient?: number;
     CautionPatient?: number;
@@ -79,7 +78,7 @@ export interface IFacturation extends Document {
     CachetMedecin?: Buffer;
     Externe_Interne?: string;
     factureannule?: boolean;
-    StatuPrescriptionMedecin?: number;
+    StatutPrescriptionMedecin?: number;
     Fichedesuivipatient?: string;
     AnnulOrdonnerPar?: string;
     AnnulationOrdonneLe?: Date;
@@ -89,11 +88,15 @@ export interface IFacturation extends Document {
     MotifRetour?: string;
     MotifAnnulationFacture?: string;
     DateFacturation?: Date;
-    IDHOSPITALISATION?: Types.ObjectId;
+    idHospitalisation?: Types.ObjectId;
     IDPRESCRIPTION?: Types.ObjectId;
     typefacture?: string;
-    IDSOCIETEASSUANCE?: Types.ObjectId;
+    IDSOCIETEASSURANCE?: Types.ObjectId;
     SOCIETE_PATIENT?: string;
+    IdPatient?: Types.ObjectId;
+    IDASSURANCE?: Types.ObjectId;
+    IDMEDECIN?: Types.ObjectId;
+
 }
 
 const FacturationSchema = new Schema<IFacturation>(
@@ -109,19 +112,17 @@ const FacturationSchema = new Schema<IFacturation>(
         TotaleTaxe: { type: Number },
         MontantRecu: { type: Number },
         reduction: { type: Number },
-        tauxreduction: { type: Number },
+        // tauxreduction: { type: Number },
         MotifRemise: { type: String, maxlength: 100 },
         Restapayer: { type: Number },
         TotalapayerPatient: { type: Number },
         SocieteP: { type: String, maxlength: 100 },
         PartAssuranceP: { type: Number },
         Partassure: { type: Number },
-        Assuance: { type: String, maxlength: 50 },
         Taux: { type: String, maxlength: 4 },
         Assurance: { type: Schema.Types.ObjectId, ref: 'Assurance' },
-        IDTYPE_ACTE: { type: Number },
+        IDTYPE_ACTE: { type: String },
         FacturePar: { type: String, maxlength: 50 },
-        Patient: { type: Schema.Types.ObjectId, ref: 'Patient' },
         CompteClient: { type: Boolean },
         ModifierPar: { type: String, maxlength: 50 },
         DateModif: { type: Date },
@@ -141,7 +142,7 @@ const FacturationSchema = new Schema<IFacturation>(
         Medecin: { type: Schema.Types.ObjectId, ref: 'Medecin' },
         Statumed: { type: String, maxlength: 5 },
         BanqueC: { type: String, maxlength: 50 },
-        NumChèque: { type: String, maxlength: 50 },
+        NumCheque: { type: String, maxlength: 50 },
         Modepaiement: { type: String, maxlength: 50 },
         TotalReliquatPatient: { type: Number },
         CautionPatient: { type: Number },
@@ -176,7 +177,7 @@ const FacturationSchema = new Schema<IFacturation>(
         CachetMedecin: { type: Buffer },
         Externe_Interne: { type: String, maxlength: 15 },
         factureannule: { type: Boolean },
-        StatuPrescriptionMedecin: { type: Number },
+        StatutPrescriptionMedecin: { type: Number },
         Fichedesuivipatient: { type: String },
         AnnulOrdonnerPar: { type: String, maxlength: 50 },
         AnnulationOrdonneLe: { type: Date },
@@ -186,11 +187,14 @@ const FacturationSchema = new Schema<IFacturation>(
         MotifRetour: { type: String, maxlength: 500 },
         MotifAnnulationFacture: { type: String, maxlength: 500 },
         DateFacturation: { type: Date },
-        IDHOSPITALISATION: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation' },
+        idHospitalisation: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation' },
         IDPRESCRIPTION: { type: Schema.Types.ObjectId, ref: 'Prescription' },
         typefacture: { type: String, maxlength: 2 },
-        IDSOCIETEASSUANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
+        IDSOCIETEASSURANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
+        IdPatient: { type: Schema.Types.ObjectId, ref: 'Patient' },
+        IDASSURANCE: { type: Schema.Types.ObjectId, ref: 'Assurance' },
+        IDMEDECIN: { type: Schema.Types.ObjectId, ref: 'Medecin' },
     },
     { timestamps: true }
 );

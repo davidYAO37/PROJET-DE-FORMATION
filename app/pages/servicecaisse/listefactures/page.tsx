@@ -59,17 +59,28 @@ export default function PageListeApayer() {
 
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState<string>("");
-    
+
     // État pour la gestion des modales
     const [showModal, setShowModal] = useState(false);
     const [selectedItem, setSelectedItem] = useState<RowItemBase | null>(null);
-    
+    const [selectedRow, setSelectedRow] = useState<any>(null);
+
+    const hospitalisationId =
+        selectedRow?.idHospitalisation ||
+        selectedRow?.IdHospitalisation ||
+        selectedRow?.idHospitalisation ||
+        selectedRow?.id ||
+        selectedRow?._id ||
+        null;
+
     // Fonction pour gérer l'ouverture de la modale appropriée
-    const handleOpenModal = (item: RowItemBase) => {
-        setSelectedItem(item);
+
+    const handleOpenModal = (r: RowItemBase, row: any) => {
+        setSelectedItem(r);
         setShowModal(true);
+        setSelectedRow(row);
     };
-    
+
     // Fonction pour fermer la modale
     const handleCloseModal = () => {
         setShowModal(false);
@@ -267,14 +278,14 @@ export default function PageListeApayer() {
                                 <td>{r.assure ?? "-"}</td>
                                 <td>
                                     <div className="d-flex gap-1 justify-content-center">
-                                        <Button 
+                                        <Button
                                             variant="outline-warning"
                                             size="sm"
-                                            onClick={() => handleOpenModal(r)}
+                                            onClick={() => handleOpenModal(r, r.raw)}
                                         >
                                             Facturer
                                         </Button>
-                                                 
+
                                     </div>
                                 </td>
                             </tr>
@@ -305,7 +316,7 @@ export default function PageListeApayer() {
             <Row className="mb-3">
                 <Col md={8}>
                     <Form.Control placeholder="Rechercher par code / patient / medecin ..." value={search} onChange={(e) => setSearch(e.target.value)} />
-                </Col>                
+                </Col>
             </Row>
 
             {anyLoading && (
@@ -323,11 +334,11 @@ export default function PageListeApayer() {
 
 
             {error && <div className="text-danger mt-2">{error}</div>}
-            
+
             {/* Modal pour les consultations */}
             {selectedItem?.type === "CONSULTATION" && (
-                <Modal 
-                    show={showModal} 
+                <Modal
+                    show={showModal}
                     onHide={handleCloseModal}
                     size="xl"
                     backdrop="static"
@@ -341,19 +352,23 @@ export default function PageListeApayer() {
                     </Modal.Body>
                 </Modal>
             )}
-            
+
             {/* Modal pour les prestations */}
             {selectedItem?.type === "PRESTATION" && (
                 <ExamenHospitalisationModalCaisse
                     show={showModal}
-                    onHide={handleCloseModal}
+                    onHide={() => setShowModal(false)}
+                    Code_Prestation={selectedRow?.Code_Prestation || selectedRow?.code}
+                    Designationtypeacte={selectedRow?.Designationtypeacte || selectedRow?.designation}
+                    PatientP={selectedRow?.PatientP || selectedRow?.patient}
+                    examenHospitId={hospitalisationId ?? undefined}
                 />
             )}
-            
+
             {/* Modal pour les prescriptions */}
             {selectedItem?.type === "PRESCRIPTION" && (
-                <Modal 
-                    show={showModal} 
+                <Modal
+                    show={showModal}
                     onHide={handleCloseModal}
                     size="lg"
                 >
@@ -365,7 +380,7 @@ export default function PageListeApayer() {
                             <h5>Facturation pour la prescription #{selectedItem.code}</h5>
                             <p>Patient: {selectedItem.patient}</p>
                             <p>Montant: {selectedItem.montant.toLocaleString()} FCFA</p>
-                            
+
                             <div className="mt-3">
                                 <h6>Options de facturation</h6>
                                 <Form>
@@ -378,18 +393,18 @@ export default function PageListeApayer() {
                                             <option>Chèque</option>
                                         </Form.Select>
                                     </Form.Group>
-                                    
+
                                     <Form.Group className="mb-3">
                                         <Form.Label>Montant reçu</Form.Label>
-                                        <Form.Control 
-                                            type="number" 
+                                        <Form.Control
+                                            type="number"
                                             placeholder="Entrez le montant reçu"
                                             min={0}
                                             max={selectedItem.montant}
                                             defaultValue={selectedItem.montant}
                                         />
                                     </Form.Group>
-                                    
+
                                     <div className="d-flex justify-content-end gap-2">
                                         <Button variant="secondary" onClick={handleCloseModal}>
                                             Annuler

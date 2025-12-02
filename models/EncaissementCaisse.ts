@@ -8,12 +8,12 @@ export interface IEncaissementCaisse extends Document {
     Totalacte: number;
     Taux: number;
     PartAssurance: number;
-    PartPatient: number;
+    Partassure: number;
     REMISE: number;
     TotalPaye: number;
     Restapayer: number;
     Medecin: string;
-    IDHOSPITALISATION: number;
+    idHospitalisation: number;
     Utilisateur: string;
     DateEncaissement: Date;
     Montantencaisse: number;
@@ -28,7 +28,7 @@ export interface IEncaissementCaisse extends Document {
     restapayerBilan: string;
     TotalapayerPatient: number;
     Assuré: string;
-    IDPARTIENT: number;
+    IdPatient: number;
     AnnulationOrdonneLe: Date;
     annulationOrdonnepar: string;
     Nompatient: string;
@@ -42,12 +42,12 @@ const EncaissementCaisseSchema: Schema = new Schema({
     Totalacte: { type: Number },
     Taux: { type: Number },
     PartAssurance: { type: Number },
-    PartPatient: { type: Number },
+    Partassure: { type: Number },
     REMISE: { type: Number },
     TotalPaye: { type: Number },
     Restapayer: { type: Number },
     Medecin: { type: String },
-    IDHOSPITALISATION: { type: Number },
+    idHospitalisation: { type: Number },
     Utilisateur: { type: String },
     DateEncaissement: { type: Date },
     Montantencaisse: { type: Number },
@@ -62,7 +62,7 @@ const EncaissementCaisseSchema: Schema = new Schema({
     restapayerBilan: { type: String },
     TotalapayerPatient: { type: Number },
     Assuré: { type: String },
-    IDPARTIENT: { type: Number },
+    IdPatient: { type: Number },
     AnnulationOrdonneLe: { type: Date },
     annulationOrdonnepar: { type: String },
     Nompatient: { type: String },

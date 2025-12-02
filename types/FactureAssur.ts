@@ -13,7 +13,7 @@ export interface FactureAssur {
     PartAssurance?: number;
     DebutF?: Date;
     FinF?: Date;
-    Assuance?: string;
+    Assurance?: string;
     TYPEACTE?: string;
     TotalPaye?: number;
     Restapayer?: number;

@@ -6,7 +6,7 @@ export interface EncaissementCaisse {
     Totalacte: number;
     Taux: number;
     PartAssurance: number;
-    PartPatient: number;
+    Partassure: number;
     REMISE: number;
     TotalPaye: number;
     Restapayer: number;
@@ -26,7 +26,7 @@ export interface EncaissementCaisse {
     restapayerBilan: string;
     TotalapayerPatient: number;
     Assuré: string;
-    IDPARTIENT: number;
+    IdPatient: number;
     AnnulationOrdonneLe: Date;
     annulationOrdonnepar: string;
     Nompatient: string;

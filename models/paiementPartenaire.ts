@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Types, Model } from 'mongoose';
 
 export interface IPaiementPartenaire extends Document {
-    Assuance?: string;
+    Assurance?: string;
     DatePaiement?: Date;
     Recupar?: string;
     MontantRecu?: number;
@@ -14,7 +14,7 @@ export interface IPaiementPartenaire extends Document {
 }
 
 const PaiementPartenaireSchema = new Schema<IPaiementPartenaire>({
-    Assuance: { type: String, maxlength: 50 },
+    Assurance: { type: String, maxlength: 50 },
     DatePaiement: { type: Date },
     Recupar: { type: String, maxlength: 50 },
     MontantRecu: { type: Number },

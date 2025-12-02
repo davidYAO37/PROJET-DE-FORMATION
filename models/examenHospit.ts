@@ -27,7 +27,7 @@ export interface IExamenHospitalisation extends Document {
     IDASSURANCE?: Types.ObjectId;
     IDTYPE_ACTE?: String;
     FacturePar?: string;
-    idPatient?: Types.ObjectId;
+    IdPatient?: Types.ObjectId;
     CompteClient?: boolean;
     ModifierPar?: string;
     HeureModif?: string;
@@ -46,7 +46,7 @@ export interface IExamenHospitalisation extends Document {
     idMedecin?: Types.ObjectId;
     Statumed?: string;
     BanqueC?: string;
-    NumChèque?: string;
+    NumCheque?: string;
     Modepaiement?: string;
     TotalReliquatPatient?: number;
     CautionPatient?: number;
@@ -85,9 +85,10 @@ export interface IExamenHospitalisation extends Document {
     StatutLaboratoire?: number;
     ObservationHospitalisation?: string;
     IDCHAMBRE?: Types.ObjectId;
-    IDSOCIETEASSUANCE?: Types.ObjectId;
+    IDSOCIETEASSURANCE?: Types.ObjectId;
     SOCIETE_PATIENT?: string;
-    statutPrescriptionMedecin?:number;
+    statutPrescriptionMedecin?: number;
+
 }
 
 const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
@@ -116,7 +117,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         IDASSURANCE: { type: Schema.Types.ObjectId, ref: 'Assurance' },
         IDTYPE_ACTE: { type: String },
         FacturePar: { type: String, maxlength: 50 },
-        idPatient: { type: Schema.Types.ObjectId, ref: 'Patient' },
+        IdPatient: { type: Schema.Types.ObjectId, ref: 'Patient' },
         CompteClient: { type: Boolean },
         ModifierPar: { type: String, maxlength: 50 },
         HeureModif: { type: String, maxlength: 10 },
@@ -135,7 +136,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         idMedecin: { type: Schema.Types.ObjectId, ref: 'Medecin' },
         Statumed: { type: String, maxlength: 5 },
         BanqueC: { type: String, maxlength: 50 },
-        NumChèque: { type: String, maxlength: 50 },
+        NumCheque: { type: String, maxlength: 50 },
         Modepaiement: { type: String, maxlength: 50 },
         TotalReliquatPatient: { type: Number },
         CautionPatient: { type: Number },
@@ -174,9 +175,9 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         factureannule: { type: Boolean },
         ObservationHospitalisation: { type: String },
         IDCHAMBRE: { type: Schema.Types.ObjectId, ref: 'Chambre' },
-        IDSOCIETEASSUANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
+        IDSOCIETEASSURANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
-        statutPrescriptionMedecin:{type:Number},
+        statutPrescriptionMedecin: { type: Number },
     },
     { timestamps: true }
 );

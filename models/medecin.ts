@@ -1,19 +1,20 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IMedecin extends Document {
+  _id: mongoose.Types.ObjectId | string;
   nom: string;
   prenoms: string;
-  specialite: string;
-  TauxHonoraire: number;
-  TauxPrescription:number;
-  TauxExecution:number;
+  specialite?: string;
+  TauxHonoraire?: number;
+  TauxPrescription?: number;
+  TauxExecution?: number;
 }
 
 const MedecinSchema = new Schema<IMedecin>(
   {
     nom: { type: String, required: true },
     prenoms: { type: String, required: true },
-    specialite: { type: String},
+    specialite: { type: String },
     TauxHonoraire: { type: Number },
     TauxPrescription: { type: Number },
     TauxExecution: { type: Number },

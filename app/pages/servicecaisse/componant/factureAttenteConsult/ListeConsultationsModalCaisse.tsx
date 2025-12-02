@@ -15,7 +15,7 @@ interface Consultation {
     Code_Prestation: string;
     Medecin?: string;
     StatutC?: boolean;
-    IDPARTIENT?: string;
+    IdPatient?: string;
 }
 
 interface ListeConsultationsModalProps {

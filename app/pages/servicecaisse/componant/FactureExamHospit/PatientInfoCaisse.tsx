@@ -8,13 +8,21 @@ type Props = {
     formData: ExamenHospitalisationForm;
     setFormData: React.Dispatch<React.SetStateAction<ExamenHospitalisationForm>>;
     onCodePrestationChange?: (code: string) => void;
+    initialPatientP?: string;
 };
 
-export default function PatientInfoCaisse({ formData, setFormData, onCodePrestationChange }: Props) {
-    const [codePrestation, setCodePrestation] = useState("");
-    const [patientNom, setPatientNom] = useState("");
+export default function PatientInfoCaisse({ formData, setFormData, onCodePrestationChange, initialPatientP }: Props) {
+    const [codePrestation, setCodePrestation] = useState(formData.Code_Prestation || "");
+    const [patientNom, setPatientNom] = useState(initialPatientP || "");
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // Initialiser le code prestation et charger les données si la prop Code_Prestation est fournie
+    useEffect(() => {
+        if (formData.Code_Prestation && formData.Code_Prestation !== codePrestation) {
+            setCodePrestation(formData.Code_Prestation);
+        }
+    }, [formData.Code_Prestation]);
 
     // Fonction pour vider complètement le formulaire
     const resetForm = () => {
@@ -45,7 +53,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
 
                 setErrorMessage(null);
                 setInfoMessage(data.info || null);
-                
+
                 // Masquer le message info après 10 secondes
                 if (data.info) {
                     setTimeout(() => {
@@ -59,7 +67,8 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                 // Charger les données de la consultation
                 setFormData((prev) => ({
                     ...prev,
-                    patientId: data.patient._id || prev.patientId,
+                    patientId: data.patientId || data.patient || prev.patientId,
+                    PatientP: data.patient || "",
                     Assure: data.Assuré || data.assure || prev.Assure,
                     medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
                     renseignementclinique: data.designationC || prev.renseignementclinique,
@@ -91,7 +100,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                 <Form.Group className="mb-1">
                     <Form.Label>N° Prestation</Form.Label>
                     <Form.Control
-                        value={codePrestation}
+                        value={codePrestation || formData.Code_Prestation}
                         onChange={(e) => {
                             const v = e.target.value;
                             setCodePrestation(v);
@@ -99,6 +108,8 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                         }}
                         placeholder="Saisir le code prestation"
                         isInvalid={!!errorMessage}
+                        readOnly={!!initialPatientP}
+                        style={initialPatientP ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : {}}
                     />
                     {errorMessage && <div className="invalid-feedback d-block">{errorMessage}</div>}
                 </Form.Group>
