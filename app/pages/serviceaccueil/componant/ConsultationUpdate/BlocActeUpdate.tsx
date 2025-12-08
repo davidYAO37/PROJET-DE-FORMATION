@@ -16,7 +16,7 @@ type BlocActeUpdateProps = {
     selectedMedecin: string;
     setSelectedMedecin: (val: string) => void;
     assure: string;
-    codePrestation: string;
+    CodePrestation: string;
     setCodePrestation: (val: string) => void;
     onLoadConsultation: () => void;
 };
@@ -33,7 +33,7 @@ export default function BlocActeUpdate({
     selectedMedecin,
     setSelectedMedecin,
     assure,
-    codePrestation,
+    CodePrestation,
     setCodePrestation,
     onLoadConsultation,
 }: BlocActeUpdateProps) {
@@ -64,18 +64,18 @@ export default function BlocActeUpdate({
                             <Form.Control
                                 type="text"
                                 placeholder="Entrez le code prestation..."
-                                value={codePrestation}
+                                value={CodePrestation}
                                 onChange={(e) => setCodePrestation(e.target.value)}
                                 onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && codePrestation.trim()) {
+                                    if (e.key === 'Enter' && CodePrestation.trim()) {
                                         onLoadConsultation();
                                     }
                                 }}
                             />
-                            <Button 
-                                variant="primary" 
+                            <Button
+                                variant="primary"
                                 onClick={onLoadConsultation}
-                                disabled={!codePrestation.trim()}
+                                disabled={!CodePrestation.trim()}
                                 title="Charger la consultation"
                             >
                                 <FaSearch className="me-2" />
@@ -100,8 +100,8 @@ export default function BlocActeUpdate({
                         <i className="bi bi-list-check me-1"></i>
                         Choisir la prestation
                     </Form.Label>
-                    <Form.Select 
-                        value={selectedActe} 
+                    <Form.Select
+                        value={selectedActe}
                         onChange={e => setSelectedActe(e.target.value)}
                         size="lg"
                     >

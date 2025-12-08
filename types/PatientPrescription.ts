@@ -10,7 +10,7 @@ export interface PatientPrescription {
     nomMedicament: string;
     partAssurance: number;
     partAssure: number;
-    codePrestation: string;
+    CodePrestation: string;
     medicament: string;
     priseCharge?: number;
     reference?: string;

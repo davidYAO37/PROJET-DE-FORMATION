@@ -50,10 +50,10 @@ export async function GET(req: NextRequest) {
   try {
     await db();
     const { searchParams } = new URL(req.url);
-    const codePrestation = searchParams.get("codePrestation");
+    const CodePrestation = searchParams.get("CodePrestation");
     const typeActe = searchParams.get("typeActe");
 
-    if (!codePrestation || !typeActe) {
+    if (!CodePrestation || !typeActe) {
       return NextResponse.json(
         { error: "Paramètres manquants", message: "Code prestation et type acte requis" },
         { status: 400 }
@@ -61,7 +61,7 @@ export async function GET(req: NextRequest) {
     }
 
     const examen = await ExamenHospitalisation.findOne({
-      Code_Prestation: codePrestation,
+      CodePrestation: CodePrestation,
       Designationtypeacte: typeActe,
     }).lean();
 

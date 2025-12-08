@@ -11,7 +11,7 @@ export interface Prescription {
     nomMedicament?: string;
     PartAssurance?: number;
     Partassuré?: number;
-    Code_Prestation?: string;
+    CodePrestation?: string;
     Medicament?: string;
     IDpriseCharge?: number;
     Reference?: string;

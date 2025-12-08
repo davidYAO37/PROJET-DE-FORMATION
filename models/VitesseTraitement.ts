@@ -7,7 +7,7 @@ export interface IVitesseTraitement extends Document {
     unite: string;
     dateVitesse: Date;
     status: string;
-    Code_Prestation: string;
+    CodePrestation: string;
     IDFAMILLE_ACTE_BIOLOGIE: Schema.Types.ObjectId;
     CodeAscii: number;
     ValeurMaxNormale: number;
@@ -22,7 +22,7 @@ const VitesseTraitementSchema = new Schema<IVitesseTraitement>({
     unite: String,
     dateVitesse: Date,
     status: String,
-    Code_Prestation: String,
+    CodePrestation: String,
     IDFAMILLE_ACTE_BIOLOGIE: { type: Schema.Types.ObjectId, ref: "FamilleActeBiologie" },
     CodeAscii: Number,
     ValeurMaxNormale: Number,

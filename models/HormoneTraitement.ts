@@ -8,7 +8,7 @@ export interface IHormoneTraitement extends Document {
     numPatient: string;
     article: string;
     echantillon: string;
-    Code_Prestation: string;
+    CodePrestation: string;
     IDFAMILLE_ACTE_BIOLOGIE?: Schema.Types.ObjectId;
     plagehormone: string;
     resultathor: string;
@@ -28,7 +28,7 @@ const HormoneTraitementSchema = new Schema<IHormoneTraitement>({
     numPatient: String,
     article: String,
     echantillon: String,
-    Code_Prestation: String,
+    CodePrestation: String,
     IDFAMILLE_ACTE_BIOLOGIE: { type: Schema.Types.ObjectId, ref: "FamilleActeBiologie" },
     plagehormone: String,
     resultathor: String,

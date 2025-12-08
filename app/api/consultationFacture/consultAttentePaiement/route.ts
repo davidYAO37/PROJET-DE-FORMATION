@@ -12,20 +12,20 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const statut = searchParams.get('statut');
         const paye = searchParams.get('paye');
-        
+
         // Filtre initial selon la logique WLanguage
         // - StatutC: false (consultation non clôturée)
         // - StatutPrescriptionMedecin: 2 (non facturé)
-        const filter: any = { 
+        const filter: any = {
             StatutC: false,
             StatuPrescriptionMedecin: 2 // 2 = non facturé
         };
-        
+
         // Si un statut spécifique est fourni dans la requête
         if (statut) {
             filter.StatuPrescriptionMedecin = parseInt(statut);
         }
-        
+
         // Filtre supplémentaire si paye est spécifié
         if (paye !== null) {
             filter.StatutPaiement = paye === 'true' ? 'Payé' : 'En cours de Paiement';
@@ -47,7 +47,7 @@ export async function GET(req: NextRequest) {
 
         const result = consultations.map((c: any) => ({
             id: c._id,
-            code: c.Code_Prestation || "N/A",
+            code: c.CodePrestation || "N/A",
             patient: c.PatientP || (c.IdPatient ? `${c.IdPatient?.Nom || ''} ${c.IdPatient?.Prenoms || ''}`.trim() : "Patient inconnu"),
             designation: c.designationC || "Consultation",
             // Calcul du montant selon la logique WLanguage: tiket_moderateur + ReliquatPatient
@@ -65,10 +65,10 @@ export async function GET(req: NextRequest) {
         const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
         console.error("Erreur lors du chargement des consultations:", error);
         return NextResponse.json(
-            { 
+            {
                 error: "Une erreur est survenue lors du chargement des consultations",
                 details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
-            }, 
+            },
             { status: 500 }
         );
     }

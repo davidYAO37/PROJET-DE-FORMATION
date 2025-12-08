@@ -5,12 +5,12 @@ import { Consultation } from "@/models/consultation";
 
 export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
-    const codePrestation = searchParams.get("Code_Prestation");
+    const CodePrestation = searchParams.get("CodePrestation");
 
     await db();
 
-    // Recherche la consultation par Code_Prestation
-    const consultation = await Consultation.findOne({ Code_Prestation: codePrestation }).lean();
+    // Recherche la consultation par CodePrestation
+    const consultation = await Consultation.findOne({ CodePrestation: CodePrestation }).lean();
     if (!consultation) {
         return NextResponse.json({ error: "Code non valide" }, { status: 404 });
     }

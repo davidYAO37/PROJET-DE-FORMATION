@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
 export interface ILignePrestation extends Document {
     _id: Types.ObjectId | string;
-    codePrestation: string;
+    CodePrestation: string;
     codeConsultation?: string;
     dateLignePrestation: Date;
     prestation: string;
@@ -74,7 +74,7 @@ export interface ILignePrestation extends Document {
 
 const LignePrestationSchema = new Schema<ILignePrestation>(
     {
-        codePrestation: { type: String, required: true },
+        CodePrestation: { type: String, required: true },
         codeConsultation: { type: String },
         dateLignePrestation: { type: Date },
         prestation: { type: String, required: true },

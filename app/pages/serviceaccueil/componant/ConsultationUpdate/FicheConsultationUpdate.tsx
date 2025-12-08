@@ -47,7 +47,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
 
     const [numBon, setNumBon] = useState("");
     const [recuPar, setRecuPar] = useState("");
-    const [codePrestation, setCodePrestation] = useState("");
+    const [CodePrestation, setCodePrestation] = useState("");
 
     useEffect(() => {
         const nom = localStorage.getItem("nom_utilisateur");
@@ -79,7 +79,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             console.log("Chargement des données de consultation:", currentConsultation);
 
             // Remplir automatiquement tous les champs avec les données de la consultation
-            setCodePrestation(currentConsultation.Code_Prestation || "");
+            setCodePrestation(currentConsultation.CodePrestation || "");
 
             // Déterminer le type d'assuré depuis la consultation
             if (currentConsultation.Assuré === "NON ASSURE") {
@@ -206,9 +206,9 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         setTotalPatient(partPat + surplusCalc);
     }, [montantClinique, montantAssurance, taux]);
 
-    // Fonction pour charger une consultation par son Code_Prestation
+    // Fonction pour charger une consultation par son CodePrestation
     const loadConsultationByCode = async () => {
-        if (!codePrestation.trim()) {
+        if (!CodePrestation.trim()) {
             setError("Veuillez entrer un code prestation");
             return;
         }
@@ -218,7 +218,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         setSuccess("");
 
         try {
-            const res = await fetch(`/api/consultation/code?Code_Prestation=${encodeURIComponent(codePrestation.trim())}`);
+            const res = await fetch(`/api/consultation/code?CodePrestation=${encodeURIComponent(CodePrestation.trim())}`);
             const data = await res.json();
 
             if (!res.ok) throw new Error(data.error || "Consultation introuvable");
@@ -230,7 +230,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             const consultation = data[0];
             setCurrentConsultation(consultation);
             setConsultationLoaded(true);
-            setSuccess(`✅ Consultation ${codePrestation} chargée avec succès`);
+            setSuccess(`✅ Consultation ${CodePrestation} chargée avec succès`);
         } catch (e: any) {
             setError(e.message || "Erreur lors du chargement de la consultation");
             setConsultationLoaded(false);
@@ -297,14 +297,14 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                     Recupar: recuPar,
                     IdPatient: currentConsultation.IdPatient,
                     Code_dossier: currentConsultation.Code_dossier,
-                    Code_Prestation: currentConsultation.Code_Prestation,
+                    CodePrestation: currentConsultation.CodePrestation,
                 }),
             });
 
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Erreur lors de la modification");
 
-            setSuccess(`✅ Consultation ${codePrestation} modifiée avec succès`);
+            setSuccess(`✅ Consultation ${CodePrestation} modifiée avec succès`);
             setSaved(true);
         } catch (e: any) {
             setError(e.message || "Erreur inconnue");
@@ -332,14 +332,14 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             <InfosPatientUpdate assure={assure} setAssure={setAssure} />
 
             {/* Affichage du Code Prestation si consultation chargée */}
-            {consultationLoaded && codePrestation && (
+            {consultationLoaded && CodePrestation && (
                 <Card className="mb-3 p-3 bg-info bg-opacity-10 border-info">
                     <Row>
                         <Col md={6}>
                             <Form.Label className="fw-bold">N° Prestation</Form.Label>
                             <Form.Control
                                 type="text"
-                                value={codePrestation}
+                                value={CodePrestation}
                                 readOnly
                                 className="bg-white fw-bold"
                             />

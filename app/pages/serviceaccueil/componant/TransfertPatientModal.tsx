@@ -9,14 +9,14 @@ interface TransfertPatientModalProps {
 
 interface ConsultationData {
     _id: string;
-    Code_Prestation: string;
+    CodePrestation: string;
     PatientP: string;
     Medecin: string;
     IDMEDECIN: string;
 }
 
 export default function TransfertPatientModal({ show, onHide }: TransfertPatientModalProps) {
-    const [codePrestation, setCodePrestation] = useState('');
+    const [CodePrestation, setCodePrestation] = useState('');
     const [consultation, setConsultation] = useState<ConsultationData | null>(null);
     const [medecins, setMedecins] = useState<Medecin[]>([]);
     const [selectedMedecinId, setSelectedMedecinId] = useState('');
@@ -42,7 +42,7 @@ export default function TransfertPatientModal({ show, onHide }: TransfertPatient
     };
 
     const handleSearchConsultation = async () => {
-        if (!codePrestation.trim()) {
+        if (!CodePrestation.trim()) {
             setError('Veuillez saisir un code prestation');
             return;
         }
@@ -53,7 +53,7 @@ export default function TransfertPatientModal({ show, onHide }: TransfertPatient
         setSelectedMedecinId('');
 
         try {
-            const response = await fetch(`/api/consultation/code?Code_Prestation=${encodeURIComponent(codePrestation)}`);
+            const response = await fetch(`/api/consultation/code?CodePrestation=${encodeURIComponent(CodePrestation)}`);
             const data = await response.json();
 
             if (response.ok && data && data._id) {
@@ -87,7 +87,7 @@ export default function TransfertPatientModal({ show, onHide }: TransfertPatient
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    codePrestation: consultation.Code_Prestation,
+                    CodePrestation: consultation.CodePrestation,
                     nouveauMedecinId: selectedMedecinId,
                     transfererPar: utilisateur,
                 }),
@@ -128,12 +128,12 @@ export default function TransfertPatientModal({ show, onHide }: TransfertPatient
 
                 <Row className="mb-3">
                     <Col md={8}>
-                        <Form.Group controlId="codePrestation">
+                        <Form.Group controlId="CodePrestation">
                             <Form.Label>Code Prestation</Form.Label>
                             <Form.Control
                                 type="text"
                                 placeholder="Saisir le code prestation"
-                                value={codePrestation}
+                                value={CodePrestation}
                                 onChange={(e) => setCodePrestation(e.target.value)}
                                 onKeyDown={(e) => e.key === 'Enter' && handleSearchConsultation()}
                             />

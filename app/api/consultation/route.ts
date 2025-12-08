@@ -5,6 +5,30 @@ import { Assurance } from "@/models/assurance";
 import { Medecin } from "@/models/medecin";
 import { db } from "@/db/mongoConnect";
 
+
+export async function GET(req: NextRequest) {
+    await db();
+    try {
+        const { searchParams } = new URL(req.url);
+        const patientId = searchParams.get("patientId");
+
+        let query: any = {};
+        if (patientId) {
+            query.IdPatient = patientId;
+        }
+
+        const consultations = await Consultation.find(query)
+            .populate("IDASSURANCE", "desiganationassurance")
+            .populate("IdPatient", "Nom Prenoms")
+            .populate("IDMEDECIN", "nom prenoms");
+
+        return NextResponse.json(consultations);
+    } catch (error: any) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
+
+
 export async function POST(req: NextRequest) {
     await db();
 
@@ -82,7 +106,7 @@ export async function POST(req: NextRequest) {
             ReliquatPatient: Math.round(surplus),
 
             Code_dossier: patient.Code_dossier, // Toujours le code dossier du patient
-            // Code_Prestation: généré automatiquement par le modèle
+            // CodePrestation: généré automatiquement par le modèle
             Date_consultation: data.Date_consultation || new Date(),
             Heure_Consultation: data.Heure_Consultation || new Date().toLocaleTimeString(),
 
@@ -111,31 +135,9 @@ export async function POST(req: NextRequest) {
             AttenteAccueil: false, // Par défaut, le patient est en attente d'accueil
             attenteMedecin: 0, // Par défaut, le patient n'a pas encore vu le médecin
         });
-
         await consultation.save();
 
         return NextResponse.json({ success: true, consultation });
-    } catch (error: any) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-}
-export async function GET(req: NextRequest) {
-    await db();
-    try {
-        const { searchParams } = new URL(req.url);
-        const patientId = searchParams.get("patientId");
-
-        let query: any = {};
-        if (patientId) {
-            query.IdPatient = patientId;
-        }
-
-        const consultations = await Consultation.find(query)
-            .populate("IDASSURANCE", "desiganationassurance")
-            .populate("IdPatient", "Nom Prenoms")
-            .populate("IDMEDECIN", "nom prenoms");
-
-        return NextResponse.json(consultations);
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }

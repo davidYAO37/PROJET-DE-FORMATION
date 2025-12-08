@@ -63,7 +63,7 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <div>
-                    <div style={styles.bold}>RECU N° {consultation.Code_Prestation || ''}</div>
+                    <div style={styles.bold}>RECU N° {consultation.CodePrestation || ''}</div>
                     <div style={styles.info}>Dossier N° {consultation.Code_dossier} &nbsp; Patient : <b>{consultation.PatientP}</b></div>
                     <div style={styles.info}>N°carte {consultation.numero_carte || ''} &nbsp; Taux(%) {consultation.tauxAssurance || 0}</div>
                     <div style={styles.info}>Assurance : {consultation.assurance} &nbsp; N°Bon {consultation.NumBon || ''}</div>

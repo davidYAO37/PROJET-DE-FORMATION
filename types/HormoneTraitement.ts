@@ -6,7 +6,7 @@ export interface HormoneTraitement {
     numPatient: string;
     article: string;
     echantillon: string;
-    Code_Prestation: string;
+    CodePrestation: string;
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     plagehormone: string;
     resultathor: string;

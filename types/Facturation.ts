@@ -1,5 +1,5 @@
 export interface Facturation {
-    Code_Prestation?: string;
+    CodePrestation?: string;
     NomMed?: string;
     PatientP?: string;
     DatePres?: Date;

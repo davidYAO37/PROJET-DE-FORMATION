@@ -16,7 +16,7 @@ export interface NfsTraitement {
     NFS_resultat?: string;
     NFS_plageRef?: string;
     NFS_id?: number;
-    Code_Prestation?: string;
+    CodePrestation?: string;
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     CodeAscii?: number;
     ValeurMaxNormale?: number;

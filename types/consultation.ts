@@ -6,7 +6,7 @@ export interface ConsultationType {
     PrixClinique: number;
     Restapayer: number;
     Code_dossier: string;
-    Code_Prestation: string;
+    CodePrestation: string;
     Date_consulation: Date;
     Heure_Consultation: string;
     NCC?: string;

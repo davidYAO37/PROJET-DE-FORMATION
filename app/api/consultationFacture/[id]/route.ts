@@ -84,7 +84,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.ReliquatPatient = surplus;
 
         consultation.Code_dossier = data.Code_dossier;
-        consultation.Code_Prestation = data.Code_Prestation;
+        consultation.CodePrestation = data.CodePrestation;
         consultation.Date_consulation = data.Date_consulation || consultation.Date_consulation;
         consultation.Heure_Consultation = data.Heure_Consultation || consultation.Heure_Consultation;
 

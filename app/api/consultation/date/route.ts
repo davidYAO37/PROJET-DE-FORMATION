@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
             Heure_Consultation: c.Heure_Consultation,
             MedecinNom: c.Medecin || 'Inconnu',
             PatientNom: c.PatientP || 'Inconnu',
-            Code_Prestation: c.Code_Prestation,
+            CodePrestation: c.CodePrestation,
             designationC: c.designationC,
         }));
 

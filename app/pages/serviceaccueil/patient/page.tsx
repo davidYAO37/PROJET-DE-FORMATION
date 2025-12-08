@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaPlus, FaPlusCircle } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaPlusCircle, FaHospitalUser } from 'react-icons/fa';
 import AjouterPatient from './AjouterPatient';
 import { Patient } from '@/types/patient';
 import { BiSolidBookAdd } from 'react-icons/bi';
@@ -13,6 +13,7 @@ import ListeConsultationsModal from '../componant/ListeConsultationsModal';
 import ExamenHospitalisationModal from '../componant/ExamenHospitModal';
 import ModifierPatient from './ModifierPatient';
 import FicheConsultation from '../componant/ConsultationAdd/FicheConsultation';
+import ListeExamenHospitModalAccueil from '../componant/ListeExamenHospitModalAccueil';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -40,6 +41,10 @@ export default function Page() {
     setShowToast(true);
     setTimeout(() => setShowToast(false), 3000);
   };
+
+  // États pour le modal des examens d'hospitalisation
+  const [showListeExamenHospitModal, setShowListeExamenHospitModal] = useState(false);
+  const [patientIdExamenHospitModal, setPatientIdExamenHospitModal] = useState<string | null>(null);
 
   // ✅ Charger les patients depuis MongoDB via API
   useEffect(() => {
@@ -205,7 +210,7 @@ export default function Page() {
                     <td>{patient.sexe}</td>
                     <td>{patient.Contact}</td>
                     <td>{patient.Code_dossier}</td>
-                    <td className="bg-secondary bg-opacity-10">
+                    <td className="bg-secondary bg-opacity-10 ">
                       <Button
                         variant="outline-primary"
                         title="Nouvelle Consultation ou visite"
@@ -222,20 +227,19 @@ export default function Page() {
                                 const date = dayjs(c.Date_consulation);
                                 return date.isSame(today, 'day');
                               });
-                              if (found && found.Code_Prestation) {
-                                setConsultationJour(found.Code_Prestation);
+                              if (found && found.CodePrestation) {
+                                setConsultationJour(found.CodePrestation);
                                 setShowConsultationModal(true);
                                 return;
                               }
                             }
                           } catch (e) {
-                           // console.error("Erreur vérification consultation", e);
+                            // console.error("Erreur vérification consultation", e);
                           }
                           // sinon -> pas de consultation aujourd’hui, ouvrir la fiche
                           setConsultationJour(null);
                           setShowConsultationModal(true);
                         }}
-
                       >
                         <BiSolidBookAdd />
                       </Button>
@@ -244,6 +248,7 @@ export default function Page() {
                         variant="outline-success"
                         title="Liste des consultations ou visites du patient"
                         size="sm"
+                         className="me-4"
                         onClick={() => {
                           setPatientIdConsultModal(patient._id || '');
                           setShowListeConsultModal(true);
@@ -257,6 +262,24 @@ export default function Page() {
                         onHide={() => setShowListeConsultModal(false)}
                         patientId={patientIdConsultModal || ''}
                       />
+                      <Button
+                          variant="outline-info"
+                          title="Voir les examens ,hospitalisation et autres actes"
+                          size="sm"
+                          className="me-4"
+                          onClick={() => {
+                            setPatientIdExamenHospitModal(patient._id || '');
+                            setShowListeExamenHospitModal(true);
+                          }}
+                        >
+                          <FaHospitalUser />
+                        </Button>
+                        {/* Modal liste des examens d'hospitalisation */}
+                        <ListeExamenHospitModalAccueil
+                          show={showListeExamenHospitModal}
+                          onHide={() => setShowListeExamenHospitModal(false)}
+                          patientId={patientIdExamenHospitModal || ''}
+                        />
                     </td>
 
                     <td className="bg-primary bg-opacity-10">
@@ -340,7 +363,7 @@ export default function Page() {
         patient={selectedPatient}
         onUpdate={handleSavePatient}
       />
-      {/* on vérifie si le patient selection a un Code_Prestation pour la journée */}
+      {/* on vérifie si le patient selection a un CodePrestation pour la journée */}
 
 
       <Modal

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaHospitalUser } from 'react-icons/fa';
 
 import { Patient } from '@/types/patient';
 import { CgAbstract, CgUserList } from 'react-icons/cg';
@@ -10,6 +10,8 @@ import { Modal } from 'react-bootstrap';
 import ModifierPatientCaisse from './ModifierPatientCaisse';
 import ListeConsultationsModalCaisse from '../componant/factureAttenteConsult/ListeConsultationsModalCaisse';
 import FicheConsultationUpdateCaisse from '../componant/factureAttenteConsult/FicheConsultationUpdateCaisse';
+import ListeExamenHospitModalCaisse from '../componant/FactureExamHospit/ListeExamenHospitModalCaisse';
+
 
 const ITEMS_PER_PAGE = 10;
 
@@ -27,6 +29,10 @@ export default function Page() {
   const [toastVariant, setToastVariant] = useState<'success' | 'info' | 'danger'>('info');
   const [showListeConsultModal, setShowListeConsultModal] = useState(false);
   const [patientIdConsultModal, setPatientIdConsultModal] = useState<string | null>(null);
+  
+  // États pour le modal des examens d'hospitalisation
+  const [showListeExamenHospitModal, setShowListeExamenHospitModal] = useState(false);
+  const [patientIdExamenHospitModal, setPatientIdExamenHospitModal] = useState<string | null>(null);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
     setToastMessage(message);
@@ -195,17 +201,23 @@ export default function Page() {
                         patientId={patientIdConsultModal || ''}
                       />
                       <Button
-                        variant="outline-secondary"
-                        title="Examens-Hospitalisation ..."
+                        variant="outline-info"
+                        title="Voir les examens d'hospitalisation"
                         size="sm"
                         className="me-4"
                         onClick={() => {
-                          setPatientIdConsultModal(patient._id || '');
-                          setShowListeConsultModal(true);
+                          setPatientIdExamenHospitModal(patient._id || '');
+                          setShowListeExamenHospitModal(true);
                         }}
                       >
-                        <CgAbstract />
+                        <FaHospitalUser />
                       </Button>
+                      {/* Modal liste des examens d'hospitalisation */}
+                      <ListeExamenHospitModalCaisse
+                        show={showListeExamenHospitModal}
+                        onHide={() => setShowListeExamenHospitModal(false)}
+                        patientId={patientIdExamenHospitModal || ''}
+                      />
                     </td>
 
                     <td className="bg-primary bg-opacity-10">
@@ -281,7 +293,7 @@ export default function Page() {
         patient={selectedPatient}
         onUpdate={handleSavePatient}
       />
-      {/* on vérifie si le patient selection a un Code_Prestation pour la journée */}
+      {/* on vérifie si le patient selection a un CodePrestation pour la journée */}
 
 
       <Modal

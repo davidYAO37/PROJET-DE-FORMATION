@@ -13,7 +13,7 @@ export interface IConsultation extends Document {
   ReliquatPatient: number;
 
   Code_dossier: string;
-  Code_Prestation: string;
+  CodePrestation: string;
   Date_consulation: Date;
   Heure_Consultation: string;
 
@@ -80,7 +80,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     ReliquatPatient: { type: Number, default: 0 },
 
     Code_dossier: { type: String, required: false },
-    Code_Prestation: { type: String, required: false },
+    CodePrestation: { type: String, required: false },
     Date_consulation: { type: Date, default: Date.now },
     Heure_Consultation: { type: String },
 
@@ -132,7 +132,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
 );
 
 // ---------------------------
-// 🔹 Génération automatique Code_Prestation
+// 🔹 Génération automatique CodePrestation
 // ---------------------------
 ConsultationSchema.pre<IConsultation>("save", async function (next) {
   if (!this.isNew) return next(); // Ne régénère pas en modification
@@ -143,7 +143,7 @@ ConsultationSchema.pre<IConsultation>("save", async function (next) {
     const patient: any = await PatientModel.findById(this.IdPatient).lean();
 
     if (!patient) {
-      return next(new Error("Patient introuvable pour générer le Code_Prestation"));
+      return next(new Error("Patient introuvable pour générer le CodePrestation"));
     }
 
     // Compter toutes les consultations déjà enregistrées pout tous les patients
@@ -159,7 +159,7 @@ ConsultationSchema.pre<IConsultation>("save", async function (next) {
     // Générer le code prestation (ex: AB001)
     const numero = (countConsultations + 1).toString().padStart(3, "0");
 
-    this.Code_Prestation = `${initials}${numero}`;
+    this.CodePrestation = `${initials}${numero}`;
 
     next();
   } catch (err) {

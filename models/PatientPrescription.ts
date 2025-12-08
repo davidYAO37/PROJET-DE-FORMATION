@@ -12,7 +12,7 @@ export interface IPatientPrescription extends Document {
     nomMedicament: string;
     partAssurance: number;
     partAssure: number;
-    codePrestation: string;
+    CodePrestation: string;
     medicament: mongoose.Types.ObjectId; // ref Medicament
     priseCharge?: number;
     reference?: string;
@@ -40,7 +40,7 @@ const PatientPrescriptionSchema = new Schema<IPatientPrescription>({
     nomMedicament: String,
     partAssurance: Number,
     partAssure: Number,
-    codePrestation: String,
+    CodePrestation: String,
     medicament: { type: Schema.Types.ObjectId, ref: "Medicament" },
     priseCharge: Number,
     reference: String,

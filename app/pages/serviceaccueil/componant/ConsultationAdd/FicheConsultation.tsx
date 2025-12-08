@@ -188,10 +188,10 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Erreur enregistrement");
 
-            const codePrestation = data.consultation?.Code_Prestation;
+            const CodePrestation = data.consultation?.CodePrestation;
             setSuccess(
-                codePrestation
-                    ? `Consultation enregistrée avec succès ✅\nCode Prestation : ${codePrestation}`
+                CodePrestation
+                    ? `Consultation enregistrée avec succès ✅\nCode Prestation : ${CodePrestation}`
                     : "Consultation enregistrée avec succès ✅"
             );
             setSaved(true); // ✅ consultation validée

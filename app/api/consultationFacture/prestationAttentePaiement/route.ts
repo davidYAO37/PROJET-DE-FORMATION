@@ -10,13 +10,13 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const statut = searchParams.get('statut');
-        
+
         // Filtre initial : non payé et statut 2 (non facturé)
-        const filter: any = { 
+        const filter: any = {
             Payeoupas: false,
             statutPrescriptionMedecin: 2 // Statut 2 = non facturé
         };
-        
+
         // Si un statut spécifique est fourni dans la requête
         if (statut) {
             filter.statutPrescriptionMedecin = parseInt(statut);
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
 
         const result = prestations.map((p: any) => ({
             id: p._id,
-            code: p.Code_Prestation || "N/A",
+            code: p.CodePrestation || "N/A",
             patient: p.PatientP || (p.IdPatient ? `${p.IdPatient.Nom || ''} ${p.IdPatient.Prenoms || ''}`.trim() : "Patient inconnu"),
             designation: p.Designationtypeacte || "Prestation sans désignation",
             // Calcul du montant selon la logique WLanguage: Partassure + TotalReliquatPatient
@@ -54,10 +54,10 @@ export async function GET(req: NextRequest) {
         const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';
         console.error("Erreur lors du chargement des prestations:", error);
         return NextResponse.json(
-            { 
+            {
                 error: "Une erreur est survenue lors du chargement des prestations",
-                details: process.env.NODE_ENV === 'development' ? errorMessage : undefined 
-            }, 
+                details: process.env.NODE_ENV === 'development' ? errorMessage : undefined
+            },
             { status: 500 }
         );
     }

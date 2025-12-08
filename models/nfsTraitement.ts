@@ -18,7 +18,7 @@ export interface INfsTraitement extends Document {
     NFS_resultat?: string;
     NFS_plageRef?: string;
     NFS_id?: number;
-    Code_Prestation?: string;
+    CodePrestation?: string;
     IDFAMILLE_ACTE_BIOLOGIE?: Types.ObjectId;
     CodeAscii?: number;
     ValeurMaxNormale?: number;
@@ -44,7 +44,7 @@ const NfsTraitementSchema = new Schema<INfsTraitement>({
     NFS_resultat: { type: String, maxlength: 50 },
     NFS_plageRef: { type: String, maxlength: 50 },
     NFS_id: { type: Number },
-    Code_Prestation: { type: String, maxlength: 50 },
+    CodePrestation: { type: String, maxlength: 50 },
     IDFAMILLE_ACTE_BIOLOGIE: { type: Schema.Types.ObjectId, ref: 'FamilleActe' },
     CodeAscii: { type: Number },
     ValeurMaxNormale: { type: Number },

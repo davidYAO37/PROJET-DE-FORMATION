@@ -12,17 +12,17 @@ type Props = {
 };
 
 export default function PatientInfoCaisse({ formData, setFormData, onCodePrestationChange, initialPatientP }: Props) {
-    const [codePrestation, setCodePrestation] = useState(formData.Code_Prestation || "");
+    const [CodePrestation, setCodePrestation] = useState(formData.CodePrestation || "");
     const [patientNom, setPatientNom] = useState(initialPatientP || "");
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-    // Initialiser le code prestation et charger les données si la prop Code_Prestation est fournie
+    // Initialiser le code prestation et charger les données si la prop CodePrestation est fournie
     useEffect(() => {
-        if (formData.Code_Prestation && formData.Code_Prestation !== codePrestation) {
-            setCodePrestation(formData.Code_Prestation);
+        if (formData.CodePrestation && formData.CodePrestation !== CodePrestation) {
+            setCodePrestation(formData.CodePrestation);
         }
-    }, [formData.Code_Prestation]);
+    }, [formData.CodePrestation]);
 
     // Fonction pour vider complètement le formulaire
     const resetForm = () => {
@@ -33,12 +33,12 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
     };
 
     useEffect(() => {
-        if (codePrestation.trim() === "") {
+        if (CodePrestation.trim() === "") {
             resetForm();
             return;
         }
 
-        fetch(`/api/codeconsultation?Code_Prestation=${encodeURIComponent(codePrestation)}`)
+        fetch(`/api/codeconsultation?CodePrestation=${encodeURIComponent(CodePrestation)}`)
             .then(async (res) => {
                 const data = await res.json();
                 if (!res.ok) {
@@ -89,7 +89,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                 resetForm();
                 setErrorMessage("Impossible de récupérer les informations, veuillez réessayer.");
             });
-    }, [codePrestation, setFormData]);
+    }, [CodePrestation, setFormData]);
 
 
     return (
@@ -100,7 +100,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                 <Form.Group className="mb-1">
                     <Form.Label>N° Prestation</Form.Label>
                     <Form.Control
-                        value={codePrestation || formData.Code_Prestation}
+                        value={CodePrestation || formData.CodePrestation}
                         onChange={(e) => {
                             const v = e.target.value;
                             setCodePrestation(v);

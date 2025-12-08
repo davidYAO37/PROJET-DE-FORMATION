@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { LignePrestation } from "@/models/lignePrestation";
 
-// GET /api/ligneprestation?codePrestation=XXX&idHospitalisation=YYY
+// GET /api/ligneprestation?CodePrestation=XXX&idHospitalisation=YYY
 // OU GET /api/ligneprestation?id=XXX (pour récupérer une seule ligne)
 // Récupère les lignes de prestation liées à une hospitalisation donnée ou une ligne spécifique
 export async function GET(req: NextRequest) {
@@ -10,13 +10,13 @@ export async function GET(req: NextRequest) {
         await db();
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
-        const codePrestation = searchParams.get("codePrestation") || searchParams.get("Code_Prestation") || "";
+        const CodePrestation = searchParams.get("CodePrestation") || searchParams.get("CodePrestation") || "";
         const idHospitalisation = searchParams.get("idHospitalisation") || searchParams.get("idHospitalisation") || "";
 
         // Si un ID est fourni, récupérer une seule ligne
         if (id) {
             const ligne = await LignePrestation.findById(id).lean();
-            
+
             if (!ligne) {
                 return NextResponse.json(
                     { error: "Ligne non trouvée", message: "La ligne de prestation n'existe pas" },
@@ -31,15 +31,15 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // Sinon, récupérer les lignes par codePrestation
-        if (!codePrestation) {
+        // Sinon, récupérer les lignes par CodePrestation
+        if (!CodePrestation) {
             return NextResponse.json(
                 { error: "Paramètre manquant", message: "Le code de prestation ou l'ID est requis" },
                 { status: 400 }
             );
         }
 
-        const query: any = { codePrestation };
+        const query: any = { CodePrestation };
         if (idHospitalisation) {
             query.idHospitalisation = idHospitalisation;
         }
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
 
         // Validation des champs requis
-        if (!body.codePrestation) {
+        if (!body.CodePrestation) {
             return NextResponse.json(
                 { error: "Code prestation manquant", message: "Le code de prestation est requis" },
                 { status: 400 }
@@ -186,20 +186,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { LignePrestation } from "@/models/lignePrestation";
 
-// GET /api/ligneprestation?codePrestation=XXX&idHospitalisation=YYY
+// GET /api/ligneprestation?CodePrestation=XXX&idHospitalisation=YYY
 // Récupère les lignes de prestation liées à une hospitalisation donnée
 export async function GET(req: NextRequest) {
     try {
         await db();
         const { searchParams } = new URL(req.url);
-        const codePrestation = searchParams.get("codePrestation") || searchParams.get("Code_Prestation") || "";
+        const CodePrestation = searchParams.get("CodePrestation") || searchParams.get("CodePrestation") || "";
         const idHospitalisation = searchParams.get("idHospitalisation") || searchParams.get("idHospitalisation") || "";
 
-        if (!codePrestation) {
-            return NextResponse.json({ error: "codePrestation requis" }, { status: 400 });
+        if (!CodePrestation) {
+            return NextResponse.json({ error: "CodePrestation requis" }, { status: 400 });
         }
 
-        const query: any = { codePrestation };
+        const query: any = { CodePrestation };
         if (idHospitalisation) {
             query.idHospitalisation = idHospitalisation;
         }

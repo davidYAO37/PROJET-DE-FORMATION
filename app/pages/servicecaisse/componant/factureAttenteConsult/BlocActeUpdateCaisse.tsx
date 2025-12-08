@@ -16,7 +16,7 @@ type BlocActeUpdateProps = {
     selectedMedecin: string;
     setSelectedMedecin: (val: string) => void;
     assure: string;
-    codePrestation: string;
+    CodePrestation: string;
     setCodePrestation: (val: string) => void;
     onLoadConsultation: () => void;
 };
@@ -33,7 +33,7 @@ export default function BlocActeUpdateCaisse({
     selectedMedecin,
     setSelectedMedecin,
     assure,
-    codePrestation,
+    CodePrestation,
     setCodePrestation,
     onLoadConsultation,
 }: BlocActeUpdateProps) {
@@ -64,10 +64,10 @@ export default function BlocActeUpdateCaisse({
                             <Form.Control
                                 type="text"
                                 placeholder="Entrez le code prestation..."
-                                value={codePrestation}
+                                value={CodePrestation}
                                 onChange={(e) => setCodePrestation(e.target.value)}
                                 onKeyPress={(e) => {
-                                    if (e.key === 'Enter' && codePrestation.trim()) {
+                                    if (e.key === 'Enter' && CodePrestation.trim()) {
                                         onLoadConsultation();
                                     }
                                 }}
@@ -75,7 +75,7 @@ export default function BlocActeUpdateCaisse({
                             <Button
                                 variant="primary"
                                 onClick={onLoadConsultation}
-                                disabled={!codePrestation.trim()}
+                                disabled={!CodePrestation.trim()}
                                 title="Charger la consultation"
                             >
                                 <FaSearch className="me-2" />

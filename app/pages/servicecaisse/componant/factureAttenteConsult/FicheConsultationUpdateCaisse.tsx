@@ -47,7 +47,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
 
     const [numBon, setNumBon] = useState("");
     const [recuPar, setRecuPar] = useState("");
-    const [codePrestation, setCodePrestation] = useState("");
+    const [CodePrestation, setCodePrestation] = useState("");
 
     // Nouveaux champs facturation
     const [montantEncaisse, setMontantEncaisse] = useState<number>(0);
@@ -76,7 +76,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
 
     useEffect(() => {
         if (currentConsultation && consultationLoaded) {
-            setCodePrestation(currentConsultation.Code_Prestation || "");
+            setCodePrestation(currentConsultation.CodePrestation || "");
             if (currentConsultation.Assuré === "NON ASSURE") setAssure("non");
             else if (currentConsultation.Assuré === "TARIF MUTUALISTE") setAssure("mutualiste");
             else setAssure("preferentiel");
@@ -166,7 +166,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
     }, [montantClinique, montantAssurance, taux]);
 
     const loadConsultationByCode = async () => {
-        if (!codePrestation.trim()) {
+        if (!CodePrestation.trim()) {
             setError("Veuillez entrer un code prestation");
             return;
         }
@@ -175,13 +175,13 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         setSuccess("");
 
         try {
-            const res = await fetch(`/api/consultationFacture/code?Code_Prestation=${encodeURIComponent(codePrestation.trim())}`);
+            const res = await fetch(`/api/consultationFacture/code?CodePrestation=${encodeURIComponent(CodePrestation.trim())}`);
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Consultation introuvable");
             if (data.length === 0) throw new Error("Aucune consultation trouvée avec ce code");
             setCurrentConsultation(data[0]);
             setConsultationLoaded(true);
-            setSuccess(`✅ Consultation ${codePrestation} chargée avec succès`);
+            setSuccess(`✅ Consultation ${CodePrestation} chargée avec succès`);
         } catch (e: any) {
             setError(e.message || "Erreur lors du chargement de la consultation");
             setConsultationLoaded(false);
@@ -246,7 +246,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                     Recupar: recuPar,
                     IdPatient: currentConsultation.IdPatient,
                     Code_dossier: currentConsultation.Code_dossier,
-                    Code_Prestation: currentConsultation.Code_Prestation,
+                    CodePrestation: currentConsultation.CodePrestation,
 
                     // Nouveaux champs facturation
                     Toutencaisse: toutEncaisse,
@@ -261,7 +261,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Erreur lors de la modification");
 
-            setSuccess(`✅ Consultation ${codePrestation} modifiée avec succès`);
+            setSuccess(`✅ Consultation ${CodePrestation} modifiée avec succès`);
             setSaved(true);
         } catch (e: any) {
             setError(e.message || "Erreur inconnue");
@@ -285,12 +285,12 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
 
             <InfosPatientUpdateCaisse assure={assure} setAssure={setAssure} />
 
-            {consultationLoaded && codePrestation && (
+            {consultationLoaded && CodePrestation && (
                 <Card className="mb-3 p-3 bg-info bg-opacity-10 border-info">
                     <Row>
                         <Col md={6}>
                             <Form.Label className="fw-bold">N° Prestation</Form.Label>
-                            <Form.Control type="text" value={codePrestation} readOnly className="bg-white fw-bold" />
+                            <Form.Control type="text" value={CodePrestation} readOnly className="bg-white fw-bold" />
                         </Col>
                     </Row>
                 </Card>

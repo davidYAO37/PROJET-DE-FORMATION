@@ -2,7 +2,7 @@ import mongoose, { Schema, model, Document, Types, Model } from 'mongoose';
 
 export interface IFacturation extends Document {
     _id: Types.ObjectId | string;
-    Code_Prestation?: string;
+    CodePrestation?: string;
     NomMed?: string;
     PatientP?: string;
     DatePres?: Date;
@@ -101,7 +101,7 @@ export interface IFacturation extends Document {
 
 const FacturationSchema = new Schema<IFacturation>(
     {
-        Code_Prestation: { type: String, maxlength: 50 },
+        CodePrestation: { type: String, maxlength: 50 },
         NomMed: { type: String, maxlength: 50 },
         PatientP: { type: String, maxlength: 50 },
         DatePres: { type: Date },

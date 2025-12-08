@@ -66,7 +66,7 @@ export default function PageListeApayer() {
     const [selectedRow, setSelectedRow] = useState<any>(null);
 
     const hospitalisationId =
-        selectedRow?.idHospitalisation ||
+        selectedRow?.IDHOSPITALISATION ||
         selectedRow?.IdHospitalisation ||
         selectedRow?.idHospitalisation ||
         selectedRow?.id ||
@@ -106,7 +106,7 @@ export default function PageListeApayer() {
                 const items: RowItemBase[] = Array.isArray(data)
                     ? data.map((d: any) => ({
                         id: d.id ?? d._id,
-                        code: d.code ?? d.Code_Prestation ?? "",
+                        code: d.code ?? d.CodePrestation ?? "",
                         patient: d.patient ?? d.PatientP ?? d.nom ?? "Inconnu",
                         designation: d.designation ?? d.designationC ?? "Consultation",
                         montant: Number((d.montant ?? 0)),
@@ -135,7 +135,7 @@ export default function PageListeApayer() {
                 const items: RowItemBase[] = Array.isArray(data)
                     ? data.map((d: any) => ({
                         id: d.id ?? d._id,
-                        code: d.code ?? d.Code_Prestation ?? "",
+                        code: d.code ?? d.CodePrestation ?? "",
                         patient: d.patient ?? d.PatientP ?? "Inconnu",
                         designation: d.designation ?? d.Designationtypeacte ?? "Prestation",
                         montant: Number(d.montant ?? 0),
@@ -164,7 +164,7 @@ export default function PageListeApayer() {
                 const items: RowItemBase[] = Array.isArray(data)
                     ? data.map((d: any) => ({
                         id: d.id ?? d._id,
-                        code: d.code ?? d.Code_Prestation ?? "",
+                        code: d.code ?? d.CodePrestation ?? "",
                         patient: d.patient ?? d.PatientP ?? "Inconnu",
                         designation: d.designation ?? "PHARMACIE",
                         montant: Number(d.montant ?? 0),
@@ -358,7 +358,7 @@ export default function PageListeApayer() {
                 <ExamenHospitalisationModalCaisse
                     show={showModal}
                     onHide={() => setShowModal(false)}
-                    Code_Prestation={selectedRow?.Code_Prestation || selectedRow?.code}
+                    CodePrestation={selectedRow?.CodePrestation || selectedRow?.code}
                     Designationtypeacte={selectedRow?.Designationtypeacte || selectedRow?.designation}
                     PatientP={selectedRow?.PatientP || selectedRow?.patient}
                     examenHospitId={hospitalisationId ?? undefined}

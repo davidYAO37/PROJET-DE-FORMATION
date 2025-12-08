@@ -13,7 +13,7 @@ export interface IObservationHospit extends Document {
     Glycemie?: string;
     TailleCons?: string;
     Code_dossier?: string;
-    Code_Prestation?: string;
+    CodePrestation?: string;
 }
 
 const ObservationHospitSchema = new Schema<IObservationHospit>(
@@ -30,7 +30,7 @@ const ObservationHospitSchema = new Schema<IObservationHospit>(
         Glycemie: { type: String, maxlength: 12 },
         TailleCons: { type: String, maxlength: 10 },
         Code_dossier: { type: String, maxlength: 50 },
-        Code_Prestation: { type: String, maxlength: 50 },
+        CodePrestation: { type: String, maxlength: 50 },
     },
     { timestamps: true }
 );

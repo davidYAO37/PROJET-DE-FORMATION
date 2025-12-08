@@ -5,7 +5,7 @@ export interface VitesseTraitement {
     unite: string;
     dateVitesse: Date;
     status: string;
-    Code_Prestation: string;
+    CodePrestation: string;
     IDFAMILLE_ACTE_BIOLOGIE: string;
     CodeAscii: number;
     ValeurMaxNormale: number;

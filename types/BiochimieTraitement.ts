@@ -17,5 +17,5 @@ export interface BiochimieTraitement {
     plage: string;
     data: string;
     id_biochimie: string;
-    Code_Prestation: string;
+    CodePrestation: string;
 }

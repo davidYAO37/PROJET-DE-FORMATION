@@ -16,7 +16,7 @@ const SalleConstantePreview: FC = () => {
     {
       _id: '507f1f77bcf86cd799439011',
       IDCONSULTATION: 'CONS001',
-      Code_Prestation: 'PREST2024001',
+      CodePrestation: 'PREST2024001',
       PatientP: 'KOUAME Jean',
       PatientNom: 'KOUAME Jean',
       Medecin: 'Dr. TRAORE Marie',
@@ -25,7 +25,7 @@ const SalleConstantePreview: FC = () => {
     {
       _id: '507f1f77bcf86cd799439013',
       IDCONSULTATION: 'CONS002',
-      Code_Prestation: 'PREST2024002',
+      CodePrestation: 'PREST2024002',
       PatientP: 'DIALLO Fatou',
       PatientNom: 'DIALLO Fatou',
       Medecin: 'Dr. KONE Ibrahim',
@@ -53,7 +53,7 @@ const SalleConstantePreview: FC = () => {
               </div>
 
               <h5 className="mb-3">📝 Scénarios de test (selon la logique demandée) :</h5>
-              
+
               <Row className="g-3">
                 <Col md={6}>
                   <Card className="h-100 border-success">
@@ -62,10 +62,10 @@ const SalleConstantePreview: FC = () => {
                       <p className="small text-muted mb-3">
                         Clic sur "Salle d'attente" → Sélection d'une consultation → "Ajouter Constante"
                       </p>
-                      
+
                       <div className="d-grid gap-2">
-                        <Button 
-                          variant="success" 
+                        <Button
+                          variant="success"
                           size="sm"
                           onClick={() => {
                             setSelectedConsultation(mockConsultations[0]);
@@ -74,9 +74,9 @@ const SalleConstantePreview: FC = () => {
                         >
                           ✅ Nouvelle saisie (depuis SalleAttente)
                         </Button>
-                        
-                        <Button 
-                          variant="info" 
+
+                        <Button
+                          variant="info"
                           size="sm"
                           onClick={() => {
                             setSelectedConsultation({
@@ -100,10 +100,10 @@ const SalleConstantePreview: FC = () => {
                       <p className="small text-muted mb-3">
                         Clic sur "Constantes" → Saisie du code prestation → Recherche
                       </p>
-                      
+
                       <div className="d-grid gap-2">
-                        <Button 
-                          variant="primary" 
+                        <Button
+                          variant="primary"
                           size="sm"
                           onClick={() => {
                             setSelectedConsultation(null);
@@ -112,9 +112,9 @@ const SalleConstantePreview: FC = () => {
                         >
                           🔍 Recherche par code prestation
                         </Button>
-                        
-                        <Button 
-                          variant="outline-secondary" 
+
+                        <Button
+                          variant="outline-secondary"
                           size="sm"
                           onClick={() => setShowTransfert(true)}
                         >
@@ -153,7 +153,7 @@ const SalleConstantePreview: FC = () => {
               <div className="mt-3 p-3 border border-warning rounded bg-warning bg-opacity-10">
                 <h6 className="text-warning mb-2">⚠️ Note importante :</h6>
                 <p className="small mb-0">
-                  Cette prévisualisation utilise des données mockées. En production, les appels API réels seront effectués 
+                  Cette prévisualisation utilise des données mockées. En production, les appels API réels seront effectués
                   vers <code>/api/consultation/code</code> et <code>/api/consultation/constantes</code>.
                 </p>
               </div>

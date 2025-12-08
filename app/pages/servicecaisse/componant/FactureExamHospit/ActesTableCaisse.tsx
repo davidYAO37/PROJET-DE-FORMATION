@@ -1,3 +1,4 @@
+
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
@@ -61,7 +62,7 @@ export interface ILignePrestation {
     Refuser: number;
     Accepter: number;
     IDLignePrestation: string;
-    StatutPrescriptionMedecin: number;
+    Statutprescription: number;
     CoefClinique: number;
     forfaitclinique: number;
     ordonnancementAffichage?: number;
@@ -273,7 +274,7 @@ const emptyLigne = (): ILignePrestation => ({
     Refuser: 0,
     Accepter: 0,
     IDLignePrestation: generateLineId(),
-    StatutPrescriptionMedecin: 2,
+    Statutprescription: 2,
     CoefClinique: 1,
     forfaitclinique: 0,
     ordonnancementAffichage: 0,
@@ -288,6 +289,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
     const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [nomUtilisateur, setNomUtilisateur] = useState<string>("");
     const [totaux, setTotaux] = useState({
         montantTotal: 0,
         partAssurance: 0,
@@ -297,6 +299,11 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         montantExecutant: 0,
         montantARegler: 0
     });
+
+    useEffect(() => {
+        const nom = localStorage.getItem("nom_utilisateur");
+        if (nom) setNomUtilisateur(nom);
+    }, []);
 
     useEffect(() => {
         // Charger actes cliniques depuis /api/actesclinique (paginé)
@@ -331,7 +338,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         }
         fetch(`/api/tarifs/${assuranceDbId}`)
             .then((r) => {
-                if (!r.ok) throw new Error("Pas de tarif pour l'assurance");
+                if (!r.ok) throw new Error("no tarifs for assurance");
                 return r.json();
             })
             .then((list) => {
@@ -757,18 +764,19 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         };
 
         for (const l of lignes) {
-            // Ne prendre en compte que les lignes marquées comme "Payé"
-            if (l.AFacturer === "Payé") {
-                s.montantTotal += Number(l.PrixTotal || 0);
-                s.partAssurance += Number(l.PartAssurance || 0);
-                s.partAssure += Number(l.PartAssure || 0);
-                s.totalTaxe += Number(l.TAXE || 0);
-                s.totalSurplus += Number((l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0));
-                s.montantExecutant += Number(l.Montant_MedExecutant || 0);
+            if (l.AFacturer !== "Payé") {
+                continue;
             }
+            s.montantTotal += Number(l.PrixTotal || 0);
+            s.partAssurance += Number(l.PartAssurance || 0);
+            s.partAssure += Number(l.PartAssure || 0);
+            s.totalTaxe += Number(l.TAXE || 0);
+            s.totalSurplus += Number((l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0));
+            s.montantExecutant += Number(l.Montant_MedExecutant || 0);
         }
 
         s.montantARegler = s.totalSurplus + s.partAssure;
+        // SAI_Reste_à_payer = SAI_Montant_a_régler
         setTotaux(s);
         if (onTotalsChange) onTotalsChange(s);
     }
@@ -881,7 +889,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                 copy.Exclusion = "Accepter";
                 copy.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
                 if (!copy.QteP || copy.QteP === 0) copy.QteP = 1;
-                copy.StatutPrescriptionMedecin = 2;
+                copy.Statutprescription = 2;
                 copy.Refuser = acte.Prix || 0;
                 copy.ordonnancementAffichage = acte.ORdonnacementAffichage || 0;
                 // Initialiser les champs de paiement
@@ -935,9 +943,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                         // Mettre à jour les informations de paiement
                         copy.datePaiementCaisse = now.toISOString().split('T')[0];
                         copy.heurePaiement = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                        // Ici, vous devriez récupérer l'utilisateur connecté
-                        // Pour l'instant, on met une valeur par défaut
-                        copy.payePar = 'Utilisateur'; // À remplacer par le nom de l'utilisateur connecté
+                        copy.payePar = nomUtilisateur || 'Utilisateur';
                     } else {
                         // Réinitialiser les informations de paiement
                         copy.datePaiementCaisse = '';
@@ -999,8 +1005,8 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     </thead>
                     <tbody>
                         {lignes.map((l) => {
-                            // Vérifier si la ligne est modifiable (StatutPrescriptionMedecin < 3)
-                            const isEditable = (l.StatutPrescriptionMedecin ?? 2) < 3;
+                            // Vérifier si la ligne est modifiable (statutPrescriptionMedecin < 3)
+                            const isEditable = (l.Statutprescription ?? 2) < 3;
                             const rowStyle = !isEditable ? { backgroundColor: '#f8f9fa', opacity: 0.7 } : {};
 
                             return (

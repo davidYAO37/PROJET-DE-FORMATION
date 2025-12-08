@@ -2,24 +2,32 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { LignePrestation } from "@/models/lignePrestation";
 
-// GET /api/ligneprestationFacture?codePrestation=XXX&idHospitalisation=YYY
+// GET /api/ligneprestationFacture?CodePrestation=XXX&idHospitalisation=YYY
 // OU GET /api/ligneprestation?id=XXX (pour récupérer une seule ligne)
 // Récupère les lignes de prestation liées à une hospitalisation donnée ou une ligne spécifique
+// GET /api/ligneprestationFacture
 export async function GET(req: NextRequest) {
     try {
         await db();
         const { searchParams } = new URL(req.url);
+
         const id = searchParams.get("id");
-        const codePrestation = searchParams.get("codePrestation") || searchParams.get("Code_Prestation") || "";
-        const idHospitalisation = searchParams.get("idHospitalisation") || searchParams.get("idHospitalisation") || "";
+        const CodePrestation = searchParams.get("CodePrestation") || searchParams.get("CodePrestation") || "";
+        const idHospitalisation = searchParams.get("idHospitalisation") || "";
+
+        // 📌 FILTRE GLOBAL
+        const baseFilter = { statutPrescriptionMedecin: { $lt: 3 } };
 
         // Si un ID est fourni, récupérer une seule ligne
         if (id) {
-            const ligne = await LignePrestation.findById(id).lean();
+            const ligne = await LignePrestation.findOne({
+                _id: id,
+                ...baseFilter
+            }).lean();
 
             if (!ligne) {
                 return NextResponse.json(
-                    { error: "Ligne non trouvée", message: "La ligne de prestation n'existe pas" },
+                    { error: "Ligne non trouvée", message: "Aucune ligne correspondante ou statut >= 3" },
                     { status: 404 }
                 );
             }
@@ -31,17 +39,19 @@ export async function GET(req: NextRequest) {
             });
         }
 
-        // Sinon, récupérer les lignes par codePrestation ou idHospitalisation
-        if (!codePrestation && !idHospitalisation) {
+        // Si aucun paramètre clé → erreur
+        if (!CodePrestation && !idHospitalisation) {
             return NextResponse.json(
-                { error: "Paramètre manquant", message: "Le code de prestation, l'ID ou idHospitalisation est requis" },
+                { error: "Paramètre manquant", message: "Le CodePrestation ou idHospitalisation est requis" },
                 { status: 400 }
             );
         }
 
-        const query: any = {};
-        if (codePrestation) {
-            query.codePrestation = codePrestation;
+        // Construction de la requête
+        const query: any = { ...baseFilter };
+
+        if (CodePrestation) {
+            query.CodePrestation = CodePrestation;
         }
         if (idHospitalisation) {
             query.idHospitalisation = idHospitalisation;
@@ -53,8 +63,9 @@ export async function GET(req: NextRequest) {
             success: true,
             data,
             total: data.length,
-            message: `${data.length} ligne(s) de prestation trouvée(s)`,
+            message: `${data.length} ligne(s) trouvée(s)`,
         });
+
     } catch (e: any) {
         console.error("Erreur GET /api/ligneprestationFacture:", e);
         return NextResponse.json(
@@ -64,6 +75,7 @@ export async function GET(req: NextRequest) {
     }
 }
 
+
 // POST /api/ligneprestation - Créer une nouvelle ligne de prestation
 export async function POST(req: NextRequest) {
     try {
@@ -71,7 +83,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
 
         // Validation des champs requis
-        if (!body.codePrestation) {
+        if (!body.CodePrestation) {
             return NextResponse.json(
                 { error: "Code prestation manquant", message: "Le code de prestation est requis" },
                 { status: 400 }

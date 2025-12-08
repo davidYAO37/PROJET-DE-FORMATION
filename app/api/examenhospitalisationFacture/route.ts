@@ -10,10 +10,10 @@ export async function GET(req: NextRequest) {
     try {
         await db();
         const { searchParams } = new URL(req.url);
-        const codePrestation = searchParams.get("codePrestation");
+        const CodePrestation = searchParams.get("CodePrestation");
         const typeActe = searchParams.get("typeActe");
 
-        if (!codePrestation || !typeActe) {
+        if (!CodePrestation || !typeActe) {
             console.log("Examen trouve avec le code")
             return NextResponse.json(
                 { error: "Paramètres manquants", message: "Code prestation et type acte requis" },
@@ -23,7 +23,7 @@ export async function GET(req: NextRequest) {
 
         // Rechercher l'examen avec le code prestation et le type d'acte
         const examen = await ExamenHospitalisation.findOne({
-            Code_Prestation: codePrestation,
+            CodePrestation: CodePrestation,
             Designationtypeacte: typeActe
         }).lean();
 
@@ -47,27 +47,27 @@ export async function GET(req: NextRequest) {
 // Utilitaire pour transformer différents formats d'ID en ObjectId
 function toObjectId(value: any) {
     if (!value) return null;
-    
+
     try {
         // Si c'est déjà un ObjectId
         if (value instanceof mongoose.Types.ObjectId) return value;
-        
+
         // Si c'est une chaîne
         if (typeof value === 'string') {
             // Si la chaîne est vide ou ne contient que des espaces
             if (!value.trim()) return null;
             return new mongoose.Types.ObjectId(value);
         }
-        
+
         // Si c'est un objet avec une propriété _id
         if (value._id) return toObjectId(value._id);
-        
+
         // Si c'est un objet avec une propriété id
         if (value.id) return toObjectId(value.id);
-        
+
         // Si c'est un objet avec une propriété $oid (format BSON)
         if (value.$oid) return new mongoose.Types.ObjectId(value.$oid);
-        
+
         return null;
     } catch (error) {
         console.error('Erreur de conversion en ObjectId:', { value, error });
@@ -118,9 +118,9 @@ export async function POST(req: NextRequest) {
 
         // Récupérer les informations de la consultation si disponible
         let consultationData: any = {};
-        if (header.Code_Prestation) {
+        if (header.CodePrestation) {
             const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
-            consultationData = await Consultation.findOne({ Code_Prestation: header.Code_Prestation }).lean() || {};
+            consultationData = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean() || {};
             console.log("📋 Données de la consultation récupérées:", {
                 IdPatient: consultationData.IdPatient,
                 PatientP: consultationData.PatientP,
@@ -158,39 +158,34 @@ export async function POST(req: NextRequest) {
             }),
         };
 
-        // Utiliser une session/transaction pour garantir atomiticité : examen + facturation + lignes
-        const session = await mongoose.startSession();
+        // Création ou mise à jour de l'examen
         let factureSaved: any = null;
         let saved: any = null;
         const isUpdate = Boolean(header._id);
         let hospId: any = null;
-        try {
-            session.startTransaction();
 
-            // Création ou mise à jour de l'examen dans la session
+        try {
+            // Création ou mise à jour de l'examen
             if (isUpdate) {
-                saved = await ExamenHospitalisation.findByIdAndUpdate(header._id, examenData, { new: true, session });
+                saved = await ExamenHospitalisation.findByIdAndUpdate(header._id, examenData, { new: true });
                 if (!saved) {
-                    await session.abortTransaction();
-                    session.endSession();
                     return NextResponse.json(
                         { error: "Examen introuvable", message: "L'examen à mettre à jour n'existe pas" },
                         { status: 404 }
                     );
                 }
             } else {
-                // create with session
-                const created = await ExamenHospitalisation.create([examenData], { session });
-                saved = Array.isArray(created) ? created[0] : created;
+                const created = await ExamenHospitalisation.create(examenData);
+                saved = created;
             }
 
             hospId = saved._id;
 
-            // Construire facturation à partir du header (noms conformes au schéma Facturation)
+            // Construire facturation à partir du header (noms conformes au schéma Facturation) Medecin et PatientP sont obligatoires
             const factData: any = {
-                Code_Prestation: header.Code_Prestation || "",
-                NomMed: header.medecinPrescripteur?.nom || header.NomMed || "",
-                PatientP: header.PatientP || "",
+                CodePrestation: header.CodePrestation || "",
+                NomMed: consultationData.Medecin || header.NomMed || "Non renseigné",
+                PatientP: consultationData.PatientP || header.PatientP || "Non renseigné",
                 DatePres: header.DatePres ? new Date(header.DatePres) : currentDate,
                 SaisiPar: Recupar || header.SaisiPar || "",
                 Rclinique: header.Rclinique || "",
@@ -215,8 +210,8 @@ export async function POST(req: NextRequest) {
                 IdPatient: header.IdPatient || header.IdPatient || undefined,
                 Numcarte: header.Numcarte || "",
                 IDTYPE_ACTE: header.IDTYPE_ACTE || undefined,
-                Entrele: header.Entrele ? new mongoose.Types.ObjectId(header.Entrele) : undefined,
-                SortieLe: header.SortieLe ? new mongoose.Types.ObjectId(header.SortieLe) : undefined,
+                Entrele: header.Entrele ? new Date(header.Entrele) : undefined,
+                SortieLe: header.SortieLe ? new Date(header.SortieLe) : undefined,
                 DureeE: header.DureeE || 0,
                 Designationtypeacte: header.Designationtypeacte || header.typeacte || "",
                 Assure: typeof header.Assuré === 'boolean' ? (header.Assuré ? 'Oui' : 'Non') : header.Assure || '',
@@ -243,18 +238,11 @@ export async function POST(req: NextRequest) {
                 }
             }
 
-            // Créer la facturation dans la session
-            const createdFact = await Facturation.create([factData], { session });
-            factureSaved = Array.isArray(createdFact) ? createdFact[0] : createdFact;
+            // Créer la facturation
+            const createdFact = await Facturation.create(factData);
+            factureSaved = createdFact;
         } catch (err) {
             console.error("Erreur création Facturation :", err);
-            // Annuler la transaction et fermer la session avant de renvoyer l'erreur
-            try {
-                await session.abortTransaction();
-            } catch (abErr) {
-                console.error('Erreur abort transaction après échec facturation:', abErr);
-            }
-            session.endSession();
             return NextResponse.json(
                 { error: "Erreur création facture", message: String(err) },
                 { status: 500 }
@@ -263,16 +251,16 @@ export async function POST(req: NextRequest) {
 
         // Récupérer l'IdPatient depuis la consultation s'il n'est pas fourni
         let patientId = header.IdPatient;
-        if (!patientId && header.Code_Prestation) {
+        if (!patientId && header.CodePrestation) {
             const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
-            const consultation: any = await Consultation.findOne({ Code_Prestation: header.Code_Prestation }).lean();
+            const consultation: any = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean();
             if (consultation) {
                 patientId = consultation.IdPatient || consultation.IdPatient;
                 console.log("✅ IdPatient récupéré depuis la consultation:", patientId);
             }
         }
 
-        // Mise à jour ou insertion des lignes de prestation (dans la même transaction)
+        // Mise à jour ou insertion des lignes de prestation
         console.log("📋 Nombre de lignes à enregistrer:", lignes.length);
 
         const results = await Promise.allSettled(
@@ -291,7 +279,7 @@ export async function POST(req: NextRequest) {
 
                     const doc: any = {
                         ...l,
-                        codePrestation: header.Code_Prestation,
+                        CodePrestation: header.CodePrestation,
                         idHospitalisation: hospId,
                         IdPatient: patientId || l.IdPatient,
                         qte: l.QteP || 1,
@@ -332,7 +320,10 @@ export async function POST(req: NextRequest) {
                     if (l.IDFAMILLE && l.IDFAMILLE.trim() !== "") doc.idFamilleActeBiologie = l.IDFAMILLE;
 
                     // Gestion paiement / facturation
-                    const isPaid = (l.AFacturer && String(l.AFacturer).toLowerCase().includes('pay')) || (l.Statutprescription === 3) || (l.payé === true);
+                    /* const isPaid = (l.AFacturer && String(l.AFacturer).toLowerCase().includes('payé')) || (l.Statutprescription === 3) || (l.payé === true);
+                    if (isPaid) {
+                        if (factureSaved && factureSaved._id) doc.idFacturation = factureSaved._id; */
+                    const isPaid = l.AFacturer && String(l.AFacturer).trim().toLowerCase() === 'payé';
                     if (isPaid) {
                         if (factureSaved && factureSaved._id) doc.idFacturation = factureSaved._id;
                         doc.datePaiementCaisse = l.datePaiementCaisse ? new Date(l.datePaiementCaisse) : new Date();
@@ -341,12 +332,13 @@ export async function POST(req: NextRequest) {
                         doc.statutPrescriptionMedecin = 3;
                         doc.actePayeCaisse = 'Payé';
                     } else {
+                        // Ligne non payée : forcer statutPrescriptionMedecin = 1 et actePayeCaisse = 'Non Payé'
                         doc.idFacturation = undefined;
                         doc.datePaiementCaisse = undefined;
                         doc.heurePaiement = '';
                         doc.payePar = '';
-                        doc.statutPrescriptionMedecin = l.Statutprescription || 1;
-                        doc.actePayeCaisse = l.AFacturer || 'Non Payé';
+                        doc.statutPrescriptionMedecin = 1; // Forcé à 1 pour les lignes non payées
+                        doc.actePayeCaisse = 'Non Payé'; // Forcé à 'Non Payé' pour les lignes non payées
                     }
 
                     let result: any;
@@ -354,16 +346,14 @@ export async function POST(req: NextRequest) {
 
                     if (isValidObjectId) {
                         console.log(`✏️ Mise à jour ligne ${index + 1} avec ObjectId:`, l.IDLignePrestation);
-                        result = await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, doc, { new: true, session });
+                        result = await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, doc, { new: true });
                         if (!result) {
                             console.log(`⚠️ Ligne non trouvée, création d'une nouvelle ligne ${index + 1}`);
-                            const created = await LignePrestation.create([doc], { session });
-                            result = Array.isArray(created) ? created[0] : created;
+                            result = await LignePrestation.create(doc);
                         }
                     } else {
                         console.log(`➕ Création nouvelle ligne ${index + 1} (ID invalide ou absent: ${l.IDLignePrestation})`);
-                        const created = await LignePrestation.create([doc], { session });
-                        result = Array.isArray(created) ? created[0] : created;
+                        result = await LignePrestation.create(doc);
                     }
                     console.log(`✅ Ligne ${index + 1} enregistrée avec succès, ID:`, result._id);
                     return result;
@@ -378,13 +368,6 @@ export async function POST(req: NextRequest) {
         const failures = results.filter((r) => r.status === "rejected");
         if (failures.length > 0) {
             console.error("❌ Erreurs lors de l'enregistrement des lignes:", failures);
-            // Annuler la transaction
-            try {
-                await session.abortTransaction();
-            } catch (abErr) {
-                console.error('Erreur abort transaction:', abErr);
-            }
-            session.endSession();
 
             const errorDetails = failures.map((f: any, idx) => {
                 const reason = f.reason;
@@ -408,10 +391,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        // Tout est bon -> valider la transaction
-        await session.commitTransaction();
-        session.endSession();
-
+        // Tout est bon -> retourner le succès
         return NextResponse.json({
             success: true,
             message: isUpdate ? "Examen mis à jour avec succès" : "Examen créé avec succès",

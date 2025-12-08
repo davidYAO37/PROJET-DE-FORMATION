@@ -14,7 +14,7 @@ interface Consultation {
     Heure_Consultation: string;
     MedecinNom: string;
     PatientNom: string;
-    Code_Prestation: string;
+    CodePrestation: string;
     designationC: string;
 }
 
@@ -116,7 +116,7 @@ export default function SalleAttenteModal({ show, onHide }: SalleAttenteModalPro
                                         <td>{c.Heure_Consultation || '--:--'}</td>
                                         <td>{c.PatientNom}</td>
                                         <td>{c.MedecinNom}</td>
-                                        <td>{c.Code_Prestation}</td>
+                                        <td>{c.CodePrestation}</td>
                                         <td>{c.designationC}</td>
                                         <td>
                                             <Button

@@ -11,7 +11,7 @@ interface Consultation {
     PrixClinique?: number;
     Date_consulation: string;
     Recupar: string;
-    Code_Prestation: string;
+    CodePrestation: string;
     Medecin?: string;
     StatutC?: boolean;
     IdPatient?: string;
@@ -112,14 +112,13 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                                 ) : (
                                     filtered.map(c => (
                                         <tr key={c._id} className="text-center align-middle">
-                                            <td>{c.Code_Prestation}</td>
+                                            <td>{c.CodePrestation}</td>
                                             <td>{c.designationC}</td>
                                             <td>{c.montantapayer ?? c.PrixClinique ?? 0} FCFA</td>
                                             <td>{new Date(c.Date_consulation).toLocaleDateString()}</td>
                                             <td>{c.Recupar}</td>
                                             <td>{c.Medecin || '-'}</td>
-                                            <td>
-                                                {c.StatutC ? (
+                                            <td>{c.StatutC ? (
                                                     <Badge bg="success">✅ Facturée</Badge>
                                                 ) : (
                                                     <Badge bg="warning" text="dark">⏳ En attente</Badge>
@@ -131,8 +130,7 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                                                         size="sm"
                                                         variant="outline-primary"
                                                         onClick={() => { setSelectedConsult(c); setShowRecu(true); }}
-                                                        title="Voir le reçu"
-                                                    >
+                                                        title="Voir le reçu"                                                    >
                                                         <FaEye />
                                                     </Button>
 
@@ -202,7 +200,7 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
             <Modal show={showUpdate} onHide={handleCloseUpdate} size="xl" centered scrollable>
                 <Modal.Header closeButton>
                     <Modal.Title>
-                        📝 Modifier la consultation - {selectedConsult?.Code_Prestation}
+                        📝 Modifier la consultation - {selectedConsult?.CodePrestation}
                     </Modal.Title>
                 </Modal.Header>
                 <Modal.Body>

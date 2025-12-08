@@ -3,7 +3,7 @@ import mongoose, { Schema, model, Document, Types, Model } from 'mongoose';
 
 export interface IExamenHospitalisation extends Document {
     _id: string
-    Code_Prestation?: string;
+    CodePrestation?: string;
     NomMed?: string;
     PatientP?: string;
     DatePres?: Date;
@@ -93,7 +93,7 @@ export interface IExamenHospitalisation extends Document {
 
 const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
     {
-        Code_Prestation: { type: String, maxlength: 50 },
+        CodePrestation: { type: String, maxlength: 50 },
         NomMed: { type: String, maxlength: 50 },
         PatientP: { type: String, maxlength: 50 },
         DatePres: { type: Date },

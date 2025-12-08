@@ -12,7 +12,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const statut = searchParams.get('statut');
         const paye = searchParams.get('paye');
-        
+
         // Filtre initial selon la logique WLanguage
         // - Payéoupas: false (non payé) ou lignes non facturées si déjà payé
         // - StatuPrescriptionMedecin: 2 (non facturé)
@@ -30,7 +30,7 @@ export async function GET(req: NextRequest) {
                 }
             ]
         };
-        
+
         // Si paye est spécifié, on filtre en conséquence
         if (paye === 'true') {
             filter.$or = [
@@ -38,7 +38,7 @@ export async function GET(req: NextRequest) {
             ];
         } else if (paye === 'false' || paye === null) {
             filter.$or = [
-                { 
+                {
                     $or: [
                         { Payele: { $ne: true } },
                         { Payele: { $exists: false } }
@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
             })
             .populate({
                 path: 'Prescription',
-                select: 'Code_Prestation designation',
+                select: 'CodePrestation designation',
                 model: 'Prescription'
             })
             .populate({
@@ -69,7 +69,7 @@ export async function GET(req: NextRequest) {
 
         const result = prescriptions.map((p: any) => ({
             id: p._id,
-            code: p.Code_Prestation || (p.Prescription?.Code_Prestation) || "N/A",
+            code: p.CodePrestation || (p.Prescription?.CodePrestation) || "N/A",
             patient: p.PatientP || (p.PatientRef ? `${p.PatientRef.Nom || ''} ${p.PatientRef.Prenoms || ''}`.trim() : "Patient inconnu"),
             designation: p.Prescription?.designation || "Ordonnance",
             // Calcul du montant selon la logique WLanguage: Partassuré
@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
     } catch (err) {
         console.error("Erreur lors du chargement des prescriptions:", err);
         return NextResponse.json(
-            { error: "Une erreur est survenue lors du chargement des prescriptions" }, 
+            { error: "Une erreur est survenue lors du chargement des prescriptions" },
             { status: 500 }
         );
     }

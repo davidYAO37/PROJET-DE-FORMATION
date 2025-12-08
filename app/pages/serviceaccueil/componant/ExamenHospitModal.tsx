@@ -1,21 +1,52 @@
 
 import React from "react";
 import { Modal } from "react-bootstrap";
-import HospitalisationPage from "../../examenhospitalisation/page";
+import dynamic from 'next/dynamic';
 
 interface ExamenHospitalisationModalProps {
     show: boolean;
     onHide: () => void;
+    CodePrestation?: string;
+    Designationtypeacte?: string;
+    PatientP?: string;
+    examenHospitId?: string;
+    onSuccess?: () => void;
 }
 
-export default function ExamenHospitalisationModal({ show, onHide }: ExamenHospitalisationModalProps) {
+// Chargement dynamique du wrapper pour éviter les erreurs de SSR
+const HospitalisationWrapper = dynamic(
+    () => import("@/app/pages/examenhospitalisation/HospitalisationWrapper"),
+    { ssr: false }
+);
+
+export default function ExamenHospitalisationModal({ 
+    show, 
+    onHide, 
+    CodePrestation = "", 
+    examenHospitId = "",
+    onSuccess
+}: ExamenHospitalisationModalProps) {
+
+    const handleSuccess = () => {
+        if (onSuccess) {
+            onSuccess();
+        }
+        onHide();
+    };
+
     return (
         <Modal show={show} onHide={onHide} size="xl" centered scrollable>
             <Modal.Header closeButton className="bg-primary text-white">
-                <Modal.Title >Fiche de saisie Labo-Radio-Chir-Accouch... ou Hospitalisation</Modal.Title>
+                <Modal.Title>
+                    {examenHospitId ? 'Modifier la prestation' : 'Nouvelle prestation'}
+                </Modal.Title>
             </Modal.Header>
             <Modal.Body>
-                <HospitalisationPage />
+                <HospitalisationWrapper 
+                    codePrestation={CodePrestation}
+                    examenHospitId={examenHospitId}
+                    onSuccess={handleSuccess}
+                />
             </Modal.Body>
         </Modal>
     );

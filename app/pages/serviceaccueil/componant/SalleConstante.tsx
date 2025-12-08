@@ -34,7 +34,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
     });
 
     const [medecins, setMedecins] = useState<any[]>([]);
-    const [codePrestation, setCodePrestation] = useState<string>("");
+    const [CodePrestation, setCodePrestation] = useState<string>("");
     const [consultationTrouvee, setConsultationTrouvee] = useState<any>(null);
     const [constantesChargees, setConstantesChargees] = useState(false);
     const [searchError, setSearchError] = useState<string>("");
@@ -94,14 +94,14 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
         // Si aucune consultation n'est passée, rien à faire
         if (!consultation) return;
 
-        // Si la consultation a un Code_Prestation, l'afficher
-        if (consultation.Code_Prestation && codePrestation === "") {
-            setCodePrestation(consultation.Code_Prestation);
+        // Si la consultation a un CodePrestation, l'afficher
+        if (consultation.CodePrestation && CodePrestation === "") {
+            setCodePrestation(consultation.CodePrestation);
         }
 
         // Deux cas possibles:
         // 1. Consultation complète avec ID (depuis SalleAttenteModal)
-        // 2. Consultation avec seulement Code_Prestation (nécessite recherche)
+        // 2. Consultation avec seulement CodePrestation (nécessite recherche)
 
         const consultationId = consultation._id || consultation.IDCONSULTATION;
 
@@ -132,12 +132,12 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                 }
             })();
         }
-        // Cas 2: Consultation avec seulement Code_Prestation
-        else if (consultation.Code_Prestation && !consultationTrouvee) {
-            // Rechercher la consultation par Code_Prestation
+        // Cas 2: Consultation avec seulement CodePrestation
+        else if (consultation.CodePrestation && !consultationTrouvee) {
+            // Rechercher la consultation par CodePrestation
             (async () => {
                 try {
-                    const res = await fetch(`/api/consultation/code?Code_Prestation=${encodeURIComponent(consultation.Code_Prestation)}`);
+                    const res = await fetch(`/api/consultation/code?CodePrestation=${encodeURIComponent(consultation.CodePrestation)}`);
                     if (res.ok) {
                         const data = await res.json();
                         setConsultationTrouvee(data);
@@ -173,7 +173,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                 }
             })();
         }
-    }, [consultation, codePrestation, consultationTrouvee]);
+    }, [consultation, CodePrestation, consultationTrouvee]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -185,11 +185,11 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
         if (formData.poids && formData.taille) {
             const poidsNum = parseFloat(formData.poids);
             const tailleNum = parseFloat(formData.taille) / 100; // Convertir cm en m
-            
+
             if (poidsNum > 0 && tailleNum > 0) {
                 const imcCalcule = poidsNum / (tailleNum * tailleNum);
                 setImc(imcCalcule.toFixed(2));
-                
+
                 // Interprétation de l'IMC
                 if (imcCalcule < 18.5) {
                     setImcInterpretation("Insuffisance pondérale");
@@ -214,7 +214,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
     useEffect(() => {
         if (formData.glycemie) {
             const glycemieNum = parseFloat(formData.glycemie);
-            
+
             if (glycemieNum > 0) {
                 if (glycemieNum < 0.7) {
                     setGlycemieInterpretation("Hypoglycémie (trop basse)");
@@ -235,27 +235,27 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        
+
         // Validation des champs requis
         if (!formData.temperature || !formData.tension || !formData.taille || !formData.poids || !formData.medecin) {
             alert("Veuillez remplir tous les champs obligatoires (Température, Tension, Taille, Poids, Médecin)");
             return;
         }
-        
+
         try {
             console.log('consultation prop:', consultation);
             console.log('consultationTrouvee:', consultationTrouvee);
-            
+
             // Correction : accepter aussi IDCONSULTATION comme identifiant si _id absent
             // Vérifier d'abord consultationTrouvee, puis consultation
             let consultationId = undefined;
-            
+
             if (consultationTrouvee) {
                 consultationId = consultationTrouvee._id || consultationTrouvee.IDCONSULTATION;
             } else if (consultation) {
                 consultationId = consultation._id || consultation.IDCONSULTATION;
             }
-            
+
             if (!consultationId) {
                 alert("Aucune consultation sélectionnée ! Veuillez rechercher une consultation par N° prestation.");
                 return;
@@ -273,7 +273,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                 attenteAccueil: 1,
                 attenteMedecin: 1,
             };
-            
+
             console.log('Payload envoyé:', payload);
 
             const res = await fetch(`/api/consultation/constantes/${consultationId}`, {
@@ -299,21 +299,21 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
 
     // Recherche consultation par code prestation
     const handleCodePrestationSearch = async () => {
-        if (!codePrestation.trim()) {
+        if (!CodePrestation.trim()) {
             setSearchError("Veuillez saisir un code prestation");
             return;
         }
-        
+
         setSearchError("");
         setSearchSuccess("");
-        
+
         try {
-            const res = await fetch(`/api/consultation/code?Code_Prestation=${encodeURIComponent(codePrestation)}`);
+            const res = await fetch(`/api/consultation/code?CodePrestation=${encodeURIComponent(CodePrestation)}`);
             if (res.ok) {
                 const data = await res.json();
                 setConsultationTrouvee(data);
                 setSearchSuccess("Consultation trouvée avec succès !");
-                
+
                 // Charger les constantes si consultation trouvée
                 const consultationId = data._id || data.IDCONSULTATION;
                 if (consultationId) {
@@ -369,7 +369,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                             <div className="d-flex gap-2">
                                 <Form.Control
                                     type="text"
-                                    value={codePrestation}
+                                    value={CodePrestation}
                                     onChange={e => {
                                         setCodePrestation(e.target.value);
                                         setSearchError("");
@@ -463,13 +463,12 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                                         placeholder="Ex: 1.05"
                                     />
                                     {glycemieInterpretation && (
-                                        <Form.Text className={`d-block mt-1 ${
-                                            glycemieInterpretation.includes("normale") ? "text-success" :
+                                        <Form.Text className={`d-block mt-1 ${glycemieInterpretation.includes("normale") ? "text-success" :
                                             glycemieInterpretation.includes("élevée") ? "text-warning" :
-                                            "text-danger"
-                                        }`}>
+                                                "text-danger"
+                                            }`}>
                                             {glycemieInterpretation.includes("normale") ? "✅" :
-                                             glycemieInterpretation.includes("élevée") ? "⚠️" : "❌"} {glycemieInterpretation}
+                                                glycemieInterpretation.includes("élevée") ? "⚠️" : "❌"} {glycemieInterpretation}
                                         </Form.Text>
                                     )}
                                 </Form.Group>
@@ -477,12 +476,11 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                                 {imc && (
                                     <div className="alert alert-info p-2 mb-3">
                                         <small>
-                                            <strong>📊 IMC calculé :</strong> {imc} kg/m² 
-                                            <span className={`ms-2 ${
-                                                imcInterpretation === "Poids normal" ? "text-success" :
+                                            <strong>📊 IMC calculé :</strong> {imc} kg/m²
+                                            <span className={`ms-2 ${imcInterpretation === "Poids normal" ? "text-success" :
                                                 imcInterpretation === "Surpoids" ? "text-warning" :
-                                                "text-danger"
-                                            }`}>
+                                                    "text-danger"
+                                                }`}>
                                                 ({imcInterpretation})
                                             </span>
                                         </small>
@@ -521,7 +519,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                                         <div className="alert alert-info p-2 mb-2">
                                             <strong>📋 Consultation trouvée</strong>
                                             <br />
-                                            <small>Code prestation : <b>{codePrestation}</b></small>
+                                            <small>Code prestation : <b>{CodePrestation}</b></small>
                                             {consultationTrouvee.PatientNom && (
                                                 <>
                                                     <br />

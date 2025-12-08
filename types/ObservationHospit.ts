@@ -11,5 +11,5 @@ export interface ObservationHospit {
     Glycemie?: string;
     TailleCons?: string;
     Code_dossier?: string;
-    Code_Prestation?: string;
+    CodePrestation?: string;
 }

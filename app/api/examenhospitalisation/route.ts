@@ -9,10 +9,10 @@ export async function GET(req: NextRequest) {
     try {
         await db();
         const { searchParams } = new URL(req.url);
-        const codePrestation = searchParams.get("codePrestation");
+        const CodePrestation = searchParams.get("CodePrestation");
         const typeActe = searchParams.get("typeActe");
 
-        if (!codePrestation || !typeActe) {
+        if (!CodePrestation || !typeActe) {
             return NextResponse.json(
                 { error: "Paramètres manquants", message: "Code prestation et type acte requis" },
                 { status: 400 }
@@ -21,7 +21,7 @@ export async function GET(req: NextRequest) {
 
         // Rechercher l'examen avec le code prestation et le type d'acte
         const examen = await ExamenHospitalisation.findOne({
-            Code_Prestation: codePrestation,
+            CodePrestation: CodePrestation,
             Designationtypeacte: typeActe
         }).lean();
 
@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
     try {
         await db();
         const body = await req.json();
-        const { header, lignes,Recupar } = body || {};
+        const { header, lignes, Recupar } = body || {};
 
         // Validation du payload
         if (!header) {
@@ -74,7 +74,7 @@ export async function POST(req: NextRequest) {
 
         const currentDate = new Date();
         let assuranceName = '';
-        
+
         // Si un ID d'assurance est fourni, récupérer le nom de l'assurance
         if (header.assurance?.assuranceId) {
             try {
@@ -87,9 +87,9 @@ export async function POST(req: NextRequest) {
 
         // Récupérer les informations de la consultation si disponible
         let consultationData: any = {};
-        if (header.Code_Prestation) {
+        if (header.CodePrestation) {
             const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
-            consultationData = await Consultation.findOne({ Code_Prestation: header.Code_Prestation }).lean() || {};
+            consultationData = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean() || {};
             console.log("📋 Données de la consultation récupérées:", {
                 IdPatient: consultationData.IdPatient,
                 PatientP: consultationData.PatientP,
@@ -103,27 +103,27 @@ export async function POST(req: NextRequest) {
             ...header,
             // Utiliser le médecin du formulaire, de l'assurance ou celui de la consultation
             NomMed: header.assuranceInfo?.medecinPrescripteur.nom || header.medecinPrescripteur.nom || consultationData.Medecin || "",
-            idMedecin: header.medecinPrescripteur ? 
+            idMedecin: header.medecinPrescripteur ?
                 (consultationData.IDMEDECIN ? new mongoose.Types.ObjectId(consultationData.IDMEDECIN) : null) : null,
-            
+
             // Utiliser les informations patient de la consultation
-            IdPatient: consultationData.IdPatient ? 
+            IdPatient: consultationData.IdPatient ?
                 new mongoose.Types.ObjectId(consultationData.IdPatient) : null,
             PatientP: consultationData.PatientP || header.PatientP || "",
 
             //StatutPrescription
-            statutPrescriptionMedecin: header.Statutprescription || 2,            
-            
+            statutPrescriptionMedecin: header.Statutprescription || 2,
+
             // Informations de suivi
-            SaisiPar: Recupar,  
-            
+            SaisiPar: Recupar,
+
             // Date de prescription (uniquement à la création)
             ...(!header._id && { DatePres: currentDate }),
-            
+
             // Informations d'assurance
             Assurance: assuranceName,
-            ...(header.assurance?.assuranceId && { 
-                IDASSURANCE: new mongoose.Types.ObjectId(header.assurance.assuranceId) 
+            ...(header.assurance?.assuranceId && {
+                IDASSURANCE: new mongoose.Types.ObjectId(header.assurance.assuranceId)
             }),
         };
 
@@ -147,9 +147,9 @@ export async function POST(req: NextRequest) {
 
         // Récupérer l'IdPatient depuis la consultation s'il n'est pas fourni
         let patientId = header.IdPatient;
-        if (!patientId && header.Code_Prestation) {
+        if (!patientId && header.CodePrestation) {
             const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
-            const consultation: any = await Consultation.findOne({ Code_Prestation: header.Code_Prestation }).lean();
+            const consultation: any = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean();
             if (consultation) {
                 patientId = consultation.IdPatient || consultation.IdPatient;
                 console.log("✅ IdPatient récupéré depuis la consultation:", patientId);
@@ -158,7 +158,7 @@ export async function POST(req: NextRequest) {
 
         // Mise à jour ou insertion des lignes de prestation
         console.log("📋 Nombre de lignes à enregistrer:", lignes.length);
-        
+
         const results = await Promise.allSettled(
             lignes.map(async (l: any, index: number) => {
                 try {
@@ -175,7 +175,7 @@ export async function POST(req: NextRequest) {
 
                     const doc: any = {
                         ...l,
-                        codePrestation: header.Code_Prestation,
+                        CodePrestation: header.CodePrestation,
                         idHospitalisation: hospId,
                         IdPatient: patientId || l.IdPatient,
                         qte: l.QteP || 1,
@@ -223,10 +223,10 @@ export async function POST(req: NextRequest) {
 
                     let result;
                     // Vérifier si l'ID est un ObjectId MongoDB valide (24 caractères hexadécimaux)
-                    const isValidObjectId = l.IDLignePrestation && 
-                                           l.IDLignePrestation.length === 24 && 
-                                           /^[0-9a-fA-F]{24}$/.test(l.IDLignePrestation);
-                    
+                    const isValidObjectId = l.IDLignePrestation &&
+                        l.IDLignePrestation.length === 24 &&
+                        /^[0-9a-fA-F]{24}$/.test(l.IDLignePrestation);
+
                     if (isValidObjectId) {
                         console.log(`✏️ Mise à jour ligne ${index + 1} avec ObjectId:`, l.IDLignePrestation);
                         result = await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, doc, { new: true });
@@ -253,7 +253,7 @@ export async function POST(req: NextRequest) {
         const failures = results.filter((r) => r.status === "rejected");
         if (failures.length > 0) {
             console.error("❌ Erreurs lors de l'enregistrement des lignes:", failures);
-            
+
             // Extraire les détails des erreurs
             const errorDetails = failures.map((f: any, idx) => {
                 const reason = f.reason;
@@ -264,9 +264,9 @@ export async function POST(req: NextRequest) {
                     name: reason?.name
                 };
             });
-            
+
             console.error("📊 Détails des erreurs:", errorDetails);
-            
+
             return NextResponse.json(
                 {
                     error: "Erreur partielle",

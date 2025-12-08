@@ -102,13 +102,13 @@ export default function ActionsButtonsCaisse({
         Taux: formData.assurance.taux || 0,
         NumBon: formData.assurance.numeroBon || "",
         medecinPrescripteur: { nom: formData.medecinPrescripteur },
-        Code_Prestation: formData.Code_Prestation,
+        CodePrestation: formData.CodePrestation,
         reduction: formData.reduction || 0,
         MotifRemise: formData.MotifRemise || "",
         tauxreduction: formData.tauxreduction || 0,
         TotaleTaxe: formData.TotaleTaxe || 0,
         Numcarte: formData.assurance.numero || "",
-        IDTYPE_ACTE: formData.Code_Prestation,
+        IDTYPE_ACTE: formData.CodePrestation,
         Entrele: formData.dateEntree,
         SortieLe: formData.dateSortie,
         Heure_Facturation: new Date().toLocaleTimeString("fr-FR"),
@@ -143,7 +143,7 @@ export default function ActionsButtonsCaisse({
 
       // 1️⃣ Vérifier ExamenHospitalisation
       const examenResponse = await fetch(
-        `/api/examenhospitalisationFacture?codePrestation=${encodeURIComponent(formData.Code_Prestation || "")}&typeActe=${encodeURIComponent(formData.typeacte || "")}`,
+        `/api/examenhospitalisationFacture?CodePrestation=${encodeURIComponent(formData.CodePrestation || "")}&typeActe=${encodeURIComponent(formData.typeacte || "")}`,
         { method: "GET" }
       );
 
@@ -201,7 +201,7 @@ export default function ActionsButtonsCaisse({
 
       ////////////////////////////////// facture fields
 
-      Code_Prestation: formData.Code_Prestation || "",
+      CodePrestation: formData.CodePrestation || "",
       PatientP: formData.PatientP || "",
       DatePres: formData.dateEntree || new Date().toISOString(),
       Montanttotal: formData.factureTotal || 0,
@@ -312,6 +312,13 @@ export default function ActionsButtonsCaisse({
       setErrorMessage("");
       setSuccessMessage("");
       setIsSubmitting(true);
+
+      // Si onSubmit est fourni, l'utiliser directement (les validations sont faites dans onSubmit)
+      if (onSubmit) {
+        await onSubmit({});
+        setIsSubmitting(false);
+        return;
+      }
 
       if (!validateForm()) return;
       if (!showConfirmation()) return;

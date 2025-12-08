@@ -6,17 +6,17 @@ export async function GET(req: NextRequest) {
     await db();
     try {
         const { searchParams } = new URL(req.url);
-        const codePrestation = searchParams.get("Code_Prestation");
+        const CodePrestation = searchParams.get("CodePrestation");
 
-        if (!codePrestation) {
+        if (!CodePrestation) {
             return NextResponse.json({ error: "Code Prestation requis" }, { status: 400 });
         }
 
         const consultation = await Consultation.findOne({
-            Code_Prestation: { $regex: `^${codePrestation.trim()}$`, $options: "i" }
+            CodePrestation: { $regex: `^${CodePrestation.trim()}$`, $options: "i" }
         })
-        .populate("IdPatient", "Nom Prenoms")     // ✅ avec majuscules
-        .populate("IDMEDECIN", "nom prenoms");     // ✅ avec minuscules
+            .populate("IdPatient", "Nom Prenoms")     // ✅ avec majuscules
+            .populate("IDMEDECIN", "nom prenoms");     // ✅ avec minuscules
 
         if (!consultation) {
             return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });

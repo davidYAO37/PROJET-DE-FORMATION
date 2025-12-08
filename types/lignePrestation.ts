@@ -1,5 +1,5 @@
 export interface LignePrestation {
-    Code_Prestation: string;
+    CodePrestation: string;
     Code_consultation: string;
     Date_ligne_prestaion: Date;
     Prestation: string;

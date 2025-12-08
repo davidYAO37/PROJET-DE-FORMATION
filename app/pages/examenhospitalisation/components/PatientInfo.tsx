@@ -11,7 +11,7 @@ type Props = {
 };
 
 export default function PatientInfo({ formData, setFormData, onCodePrestationChange }: Props) {
-    const [codePrestation, setCodePrestation] = useState("");
+    const [CodePrestation, setCodePrestation] = useState("");
     const [patientNom, setPatientNom] = useState("");
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,12 +25,12 @@ export default function PatientInfo({ formData, setFormData, onCodePrestationCha
     };
 
     useEffect(() => {
-        if (codePrestation.trim() === "") {
+        if (CodePrestation.trim() === "") {
             resetForm();
             return;
         }
 
-        fetch(`/api/codeconsultation?Code_Prestation=${encodeURIComponent(codePrestation)}`)
+        fetch(`/api/codeconsultation?CodePrestation=${encodeURIComponent(CodePrestation)}`)
             .then(async (res) => {
                 const data = await res.json();
                 if (!res.ok) {
@@ -45,7 +45,7 @@ export default function PatientInfo({ formData, setFormData, onCodePrestationCha
 
                 setErrorMessage(null);
                 setInfoMessage(data.info || null);
-                
+
                 // Masquer le message info après 10 secondes
                 if (data.info) {
                     setTimeout(() => {
@@ -80,7 +80,7 @@ export default function PatientInfo({ formData, setFormData, onCodePrestationCha
                 resetForm();
                 setErrorMessage("Impossible de récupérer les informations, veuillez réessayer.");
             });
-    }, [codePrestation, setFormData]);
+    }, [CodePrestation, setFormData]);
 
 
     return (
@@ -91,7 +91,7 @@ export default function PatientInfo({ formData, setFormData, onCodePrestationCha
                 <Form.Group className="mb-1">
                     <Form.Label>N° Prestation</Form.Label>
                     <Form.Control
-                        value={codePrestation}
+                        value={CodePrestation}
                         onChange={(e) => {
                             const v = e.target.value;
                             setCodePrestation(v);

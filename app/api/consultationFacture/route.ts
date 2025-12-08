@@ -82,7 +82,7 @@ export async function POST(req: NextRequest) {
             ReliquatPatient: Math.round(surplus),
 
             Code_dossier: patient.Code_dossier, // Toujours le code dossier du patient
-            // Code_Prestation: généré automatiquement par le modèle
+            // CodePrestation: généré automatiquement par le modèle
             Date_consultation: data.Date_consultation || new Date(),
             Heure_Consultation: data.Heure_Consultation || new Date().toLocaleTimeString(),
 
