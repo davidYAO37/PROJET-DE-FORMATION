@@ -15,26 +15,26 @@ import { ReadonlyURLSearchParams } from 'next/navigation';
 
 // Définition des paramètres de l'URL
 interface PageProps {
-  params: {
-    id: string;
-    CodePrestation?: string;
-    Designationtypeacte?: string;
-    PatientP?: string;
-    examenHospitId?: string;
-    [key: string]: string | string[] | undefined;
-  };
-  searchParams: { [key: string]: string | string[] | undefined };
+    params: {
+        id: string;
+        CodePrestation?: string;
+        Designationtypeacte?: string;
+        PatientP?: string;
+        examenHospitId?: string;
+        [key: string]: string | string[] | undefined;
+    };
+    searchParams: { [key: string]: string | string[] | undefined };
 }
 
 // Type pour les props du composant
 type HospitalisationPageCaisseProps = {
-  params: PageProps['params'];
-  searchParams: PageProps['searchParams'];
+    params: PageProps['params'];
+    searchParams: PageProps['searchParams'];
 };
 
 export default function HospitalisationPageCaisse({
-  params,
-  searchParams
+    params,
+    searchParams
 }: HospitalisationPageCaisseProps) {
 
     const {
@@ -355,7 +355,7 @@ export default function HospitalisationPageCaisse({
                                         }
 
                                         try {
-                                            const res = await fetch(`/api/examenhospitalisationFacture?codePrestation=${encodeURIComponent(codePrestation)}&typeActe=${encodeURIComponent(value)}`);
+                                            const res = await fetch(`/api/examenhospitalisationFacture?CodePrestation=${encodeURIComponent(codePrestation)}&typeActe=${encodeURIComponent(value)}`);
 
                                             if (res.ok) {
                                                 const data = await res.json();

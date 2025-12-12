@@ -81,10 +81,76 @@ export default function PageListeApayer() {
         setSelectedRow(row);
     };
 
-    // Fonction pour fermer la modale
+    // Fonction pour fermer la modale et rafraîchir la liste
     const handleCloseModal = () => {
         setShowModal(false);
         setSelectedItem(null);
+        // Rafraîchir les données après fermeture de la modale
+        refetchData();
+    };
+
+    // Fonction pour rafraîchir toutes les données
+    const refetchData = async () => {
+        try {
+            setError(null);
+
+            // Recharger Consultations
+            const consultRes = await fetch("/api/consultationFacture/consultAttentePaiement");
+            const consultData = await consultRes.json();
+            const consultItems: RowItemBase[] = Array.isArray(consultData)
+                ? consultData.map((d: any) => ({
+                    id: d.id ?? d._id,
+                    code: d.code ?? d.CodePrestation ?? "",
+                    patient: d.patient ?? d.PatientP ?? d.nom ?? "Inconnu",
+                    designation: d.designation ?? d.designationC ?? "Consultation",
+                    montant: Number((d.montant ?? 0)),
+                    medecin: d.medecin ?? d.Medecin ?? "",
+                    assure: d.assure ?? d.Assuré ?? "",
+                    type: "CONSULTATION",
+                    raw: d,
+                }))
+                : [];
+            setConsultations(consultItems);
+
+            // Recharger Prestations
+            const prestRes = await fetch("/api/consultationFacture/prestationAttentePaiement");
+            const prestData = await prestRes.json();
+            const prestItems: RowItemBase[] = Array.isArray(prestData)
+                ? prestData.map((d: any) => ({
+                    id: d.id ?? d._id,
+                    code: d.code ?? d.CodePrestation ?? "",
+                    patient: d.patient ?? d.PatientP ?? "Inconnu",
+                    designation: d.designation ?? d.Designationtypeacte ?? "Prestation",
+                    montant: Number(d.montant ?? 0),
+                    medecin: d.medecin ?? d.NomMed ?? "",
+                    assure: d.assure ?? d.Assure ?? "",
+                    type: "PRESTATION",
+                    raw: d,
+                }))
+                : [];
+            setPrestations(prestItems);
+
+            // Recharger Prescriptions
+            const prescRes = await fetch("/api/consultationFacture/prescriptionAttentePaiement");
+            const prescData = await prescRes.json();
+            const prescItems: RowItemBase[] = Array.isArray(prescData)
+                ? prescData.map((d: any) => ({
+                    id: d.id ?? d._id,
+                    code: d.code ?? d.CodePrestation ?? "",
+                    patient: d.patient ?? d.PatientP ?? "Inconnu",
+                    designation: d.designation ?? "PHARMACIE",
+                    montant: Number(d.montant ?? 0),
+                    medecin: d.medecin ?? d.NomMed ?? d.PayéPar ?? "",
+                    assure: d.assure ?? "",
+                    type: "PRESCRIPTION",
+                    raw: d,
+                }))
+                : [];
+            setPrescriptions(prescItems);
+        } catch (e: any) {
+            console.error("Erreur lors du rafraîchissement des données", e);
+            setError("Erreur lors du rafraîchissement des données");
+        }
     };
 
     // UI state
@@ -357,7 +423,7 @@ export default function PageListeApayer() {
             {selectedItem?.type === "PRESTATION" && (
                 <ExamenHospitalisationModalCaisse
                     show={showModal}
-                    onHide={() => setShowModal(false)}
+                    onHide={handleCloseModal}
                     CodePrestation={selectedRow?.CodePrestation || selectedRow?.code}
                     Designationtypeacte={selectedRow?.Designationtypeacte || selectedRow?.designation}
                     PatientP={selectedRow?.PatientP || selectedRow?.patient}

@@ -15,7 +15,7 @@ type FicheConsultationUpdateProps = {
     consultationId?: string;
 };
 
-export default function FicheConsultationUpdate({ patient, onClose, consultationId }: FicheConsultationUpdateProps) {
+export default function FicheConsultationUpdateCaisse({ patient, onClose, consultationId }: FicheConsultationUpdateProps) {
     const [loading, setLoading] = useState(false);
     const [loadingConsultation, setLoadingConsultation] = useState(false);
     const [error, setError] = useState("");

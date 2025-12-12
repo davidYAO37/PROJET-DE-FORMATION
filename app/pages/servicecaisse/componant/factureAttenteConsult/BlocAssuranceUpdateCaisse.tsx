@@ -1,6 +1,6 @@
 "use client";
-import { useState } from "react";
-import { Card, Row, Col, Form, Button } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Card, Row, Col, Form, Button, Alert, Spinner } from "react-bootstrap";
 import { Assurance } from "@/types/assurance";
 import SocietePatientModal from "@/components/SocietePatientModal";
 
@@ -37,20 +37,51 @@ export default function BlocAssuranceUpdateCaisse({
     societePatient,
     setSocietePatient
 }: BlocAssuranceProps) {
+    // États pour la gestion du chargement et des erreurs
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [initialLoad, setInitialLoad] = useState(true);
+    
     // Modal société patient
     const [showSocieteModal, setShowSocieteModal] = useState(false);
+    const [modalLoading, setModalLoading] = useState(false);
+    const [modalError, setModalError] = useState<string | null>(null);
 
     // Callback pour sélection société
     const handleSelectSociete = (societe: { _id: string; societe: string }) => {
-        setSocietePatient(societe.societe);
+        try {
+            setSocietePatient(societe.societe);
+            setModalError(null);
+        } catch (err) {
+            console.error("Erreur lors de la sélection de la société:", err);
+            setModalError("Erreur lors de la sélection de la société");
+        }
     };
 
-    // Ouvrir le modal quand on sélectionne une assurance
+    // Gestion du changement d'assurance
     const handleAssuranceChange = (value: string) => {
-        setSelectedAssurance(value);
-        if (value) {
-            setShowSocieteModal(true);
+        try {
+            setSelectedAssurance(value);
+            setSocietePatient(""); // Réinitialiser la société sélectionnée
+            setModalError(null);
+            
+            if (value) {
+                setModalLoading(true);
+                setShowSocieteModal(true);
+            }
+        } catch (err) {
+            console.error("Erreur lors du changement d'assurance:", err);
+            setError("Erreur lors du changement d'assurance");
+        } finally {
+            setModalLoading(false);
         }
+    };
+
+    // Gestion de la fermeture du modal
+    const handleModalClose = () => {
+        setShowSocieteModal(false);
+        setModalError(null);
+        setModalLoading(false);
     };
 
     return (
@@ -165,10 +196,26 @@ export default function BlocAssuranceUpdateCaisse({
             {/* Modal Société Patient */}
             <SocietePatientModal
                 show={showSocieteModal}
-                onHide={() => setShowSocieteModal(false)}
+                onHide={handleModalClose}
                 onSelect={handleSelectSociete}
                 assuranceId={selectedAssurance}
             />
+            
+            {error && (
+                <Alert variant="danger" className="mt-3" onClose={() => setError(null)} dismissible>
+                    <Alert.Heading>Erreur</Alert.Heading>
+                    <p>{error}</p>
+                </Alert>
+            )}
+            
+            {modalLoading && (
+                <div className="text-center my-3">
+                    <Spinner animation="border" role="status">
+                        <span className="visually-hidden">Chargement...</span>
+                    </Spinner>
+                    <p className="mt-2">Chargement des sociétés...</p>
+                </div>
+            )}
         </>
     );
 }
