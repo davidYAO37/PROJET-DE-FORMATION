@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Card, Row, Col, Form, Button, Alert, Spinner } from "react-bootstrap";
+import { useState } from "react";
+import { Card, Row, Col, Form, Button } from "react-bootstrap";
 import { Assurance } from "@/types/assurance";
 import SocietePatientModal from "@/components/SocietePatientModal";
 
@@ -37,51 +37,28 @@ export default function BlocAssuranceUpdateCaisse({
     societePatient,
     setSocietePatient
 }: BlocAssuranceProps) {
-    // États pour la gestion du chargement et des erreurs
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [initialLoad, setInitialLoad] = useState(true);
-    
     // Modal société patient
     const [showSocieteModal, setShowSocieteModal] = useState(false);
-    const [modalLoading, setModalLoading] = useState(false);
-    const [modalError, setModalError] = useState<string | null>(null);
 
     // Callback pour sélection société
     const handleSelectSociete = (societe: { _id: string; societe: string }) => {
-        try {
-            setSocietePatient(societe.societe);
-            setModalError(null);
-        } catch (err) {
-            console.error("Erreur lors de la sélection de la société:", err);
-            setModalError("Erreur lors de la sélection de la société");
-        }
+        setSocietePatient(societe.societe);
     };
 
-    // Gestion du changement d'assurance
+    // Gérer le changement d'assurance
     const handleAssuranceChange = (value: string) => {
-        try {
-            setSelectedAssurance(value);
-            setSocietePatient(""); // Réinitialiser la société sélectionnée
-            setModalError(null);
-            
-            if (value) {
-                setModalLoading(true);
-                setShowSocieteModal(true);
-            }
-        } catch (err) {
-            console.error("Erreur lors du changement d'assurance:", err);
-            setError("Erreur lors du changement d'assurance");
-        } finally {
-            setModalLoading(false);
+        setSelectedAssurance(value);
+        // Réinitialiser les champs liés à l'assurance
+        if (!value) {
+            setMatricule('');
+            setTaux('');
+            setNumBon('');
+            setSouscripteur('');
+            setSocietePatient('');
+        } else {
+            // Ouvrir le modal pour sélectionner une société
+            setShowSocieteModal(true);
         }
-    };
-
-    // Gestion de la fermeture du modal
-    const handleModalClose = () => {
-        setShowSocieteModal(false);
-        setModalError(null);
-        setModalLoading(false);
     };
 
     return (
@@ -106,6 +83,7 @@ export default function BlocAssuranceUpdateCaisse({
                                 value={selectedAssurance}
                                 onChange={e => handleAssuranceChange(e.target.value)}
                                 size="lg"
+                                disabled={assure === "non"}
                             >
                                 <option value="">-- Sélectionner --</option>
                                 {assurances.map(a => (
@@ -123,6 +101,8 @@ export default function BlocAssuranceUpdateCaisse({
                                 value={matricule}
                                 onChange={e => setMatricule(e.target.value)}
                                 size="lg"
+                                disabled={!selectedAssurance}
+                                placeholder={!selectedAssurance ? "Sélectionnez d'abord une assurance" : ""}
                             />
                         </Col>
                         <Col md={3}>
@@ -136,6 +116,9 @@ export default function BlocAssuranceUpdateCaisse({
                                 onChange={e => setTaux(e.target.value)}
                                 size="lg"
                                 className="text-end fw-bold"
+                                disabled={!selectedAssurance}
+                                min="0"
+                                max="100"
                             />
                         </Col>
                     </Row>
@@ -151,6 +134,7 @@ export default function BlocAssuranceUpdateCaisse({
                                 value={numBon}
                                 onChange={e => setNumBon(e.target.value)}
                                 size="lg"
+                                disabled={!selectedAssurance}
                             />
                         </Col>
                         <Col md={5}>
@@ -163,6 +147,7 @@ export default function BlocAssuranceUpdateCaisse({
                                 value={souscripteur}
                                 onChange={e => setSouscripteur(e.target.value)}
                                 size="lg"
+                                disabled={!selectedAssurance}
                             />
                         </Col>
                         <Col md={4}>
@@ -196,26 +181,10 @@ export default function BlocAssuranceUpdateCaisse({
             {/* Modal Société Patient */}
             <SocietePatientModal
                 show={showSocieteModal}
-                onHide={handleModalClose}
+                onHide={() => setShowSocieteModal(false)}
                 onSelect={handleSelectSociete}
                 assuranceId={selectedAssurance}
             />
-            
-            {error && (
-                <Alert variant="danger" className="mt-3" onClose={() => setError(null)} dismissible>
-                    <Alert.Heading>Erreur</Alert.Heading>
-                    <p>{error}</p>
-                </Alert>
-            )}
-            
-            {modalLoading && (
-                <div className="text-center my-3">
-                    <Spinner animation="border" role="status">
-                        <span className="visually-hidden">Chargement...</span>
-                    </Spinner>
-                    <p className="mt-2">Chargement des sociétés...</p>
-                </div>
-            )}
         </>
     );
 }

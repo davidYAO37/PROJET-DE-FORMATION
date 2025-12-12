@@ -75,28 +75,52 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
     }, [consultationId]);
 
     useEffect(() => {
-        if (currentConsultation && consultationLoaded) {
+        if (currentConsultation) {
             setCodePrestation(currentConsultation.CodePrestation || "");
-            if (currentConsultation.Assuré === "NON ASSURE") setAssure("non");
-            else if (currentConsultation.Assuré === "TARIF MUTUALISTE") setAssure("mutualiste");
-            else setAssure("preferentiel");
-
+            
+            // Mettre à jour l'état assure en fonction de la valeur de Assuré
+            const nouvelAssure = currentConsultation.Assuré === "NON ASSURE" 
+                ? "non" 
+                : currentConsultation.Assuré === "TARIF MUTUALISTE" 
+                    ? "mutualiste" 
+                    : "preferentiel";
+            
+            setAssure(nouvelAssure);
+            
+            // Mettre à jour les autres états
             setSelectedActe(String(currentConsultation.IDACTE || ""));
             setSelectedMedecin(String(currentConsultation.IDMEDECIN || ""));
             setMontantClinique(Math.round(currentConsultation.PrixClinique || 0));
             setMontantAssurance(Math.round(currentConsultation.Prix_Assurance || 0));
-            setSelectedAssurance(String(currentConsultation.IDASSURANCE || ""));
-            setMatricule(currentConsultation.numero_carte || "");
-            setTaux(currentConsultation.tauxAssurance || "");
-            setNumBon(currentConsultation.NumBon || "");
-            setSouscripteur(currentConsultation.Souscripteur || "");
-            setSocietePatient(currentConsultation.SOCIETE_PATIENT || "");
+            
+            // Mettre à jour les champs d'assurance en fonction de l'état assure
+            if (nouvelAssure !== "non") {
+                setSelectedAssurance(String(currentConsultation.IDASSURANCE || ""));
+                setMatricule(currentConsultation.numero_carte || "");
+                setTaux(currentConsultation.tauxAssurance || "");
+                setNumBon(currentConsultation.NumBon || "");
+                setSouscripteur(currentConsultation.Souscripteur || "");
+                setSocietePatient(currentConsultation.SOCIETE_PATIENT || "");
+            } else {
+                setSelectedAssurance("");
+                setMatricule("");
+                setTaux("");
+                setNumBon("");
+                setSouscripteur("");
+                setSocietePatient("");
+            }
+            
             setMontantEncaisse(currentConsultation.Montantencaisse || 0);
             setModePaiement(currentConsultation.Modepaiement || "Espèce");
+            
+            // Marquer comme chargé après avoir tout mis à jour
+            setConsultationLoaded(true);
         }
     }, [currentConsultation, consultationLoaded]);
 
     useEffect(() => {
+        if (consultationLoaded) return; // Ne pas écraser les données chargées
+        
         if (assure === "non") {
             setSelectedAssurance("");
             setMatricule("");
@@ -104,7 +128,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
             setNumBon("");
             setSouscripteur("");
             setSocietePatient("");
-        } else if (!consultationLoaded && patient) {
+        } else if (patient) {
             setSelectedAssurance(patient.IDASSURANCE || "");
             setMatricule(patient.Matricule || "");
             setTaux(patient.Taux ?? "");

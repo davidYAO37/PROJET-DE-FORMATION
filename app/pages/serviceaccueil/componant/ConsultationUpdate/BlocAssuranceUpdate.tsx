@@ -45,10 +45,18 @@ export default function BlocAssuranceUpdate({
         setSocietePatient(societe.societe);
     };
 
-    // Ouvrir le modal quand on sélectionne une assurance
+    // Gérer le changement d'assurance
     const handleAssuranceChange = (value: string) => {
         setSelectedAssurance(value);
-        if (value) {
+        // Réinitialiser les champs liés à l'assurance
+        if (!value) {
+            setMatricule('');
+            setTaux('');
+            setNumBon('');
+            setSouscripteur('');
+            setSocietePatient('');
+        } else {
+            // Ouvrir le modal pour sélectionner une société
             setShowSocieteModal(true);
         }
     };
@@ -75,6 +83,7 @@ export default function BlocAssuranceUpdate({
                             value={selectedAssurance} 
                             onChange={e => handleAssuranceChange(e.target.value)}
                             size="lg"
+                            disabled={assure === "non"}
                         >
                             <option value="">-- Sélectionner --</option>
                             {assurances.map(a => (
@@ -92,6 +101,8 @@ export default function BlocAssuranceUpdate({
                             value={matricule} 
                             onChange={e => setMatricule(e.target.value)}
                             size="lg"
+                            disabled={!selectedAssurance}
+                            placeholder={!selectedAssurance ? "Sélectionnez d'abord une assurance" : ""}
                         />
                     </Col>
                     <Col md={3}>
@@ -102,9 +113,17 @@ export default function BlocAssuranceUpdate({
                         <Form.Control 
                             type="number" 
                             value={taux} 
-                            onChange={e => setTaux(e.target.value)}
+                            onChange={e => {
+                                const value = e.target.value;
+                                if (value === '' || (Number(value) >= 0 && Number(value) <= 100)) {
+                                    setTaux(value);
+                                }
+                            }}
                             size="lg"
                             className="text-end fw-bold"
+                            disabled={!selectedAssurance}
+                            min="0"
+                            max="100"
                         />
                     </Col>
                 </Row>
@@ -120,6 +139,7 @@ export default function BlocAssuranceUpdate({
                             value={numBon} 
                             onChange={e => setNumBon(e.target.value)}
                             size="lg"
+                            disabled={!selectedAssurance}
                         />
                     </Col>
                     <Col md={5}>
@@ -132,6 +152,7 @@ export default function BlocAssuranceUpdate({
                             value={souscripteur}
                             onChange={e => setSouscripteur(e.target.value)}
                             size="lg"
+                            disabled={!selectedAssurance}
                         />
                     </Col>
                     <Col md={4}>
