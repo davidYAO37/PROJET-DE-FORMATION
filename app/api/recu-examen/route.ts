@@ -196,7 +196,7 @@ export async function GET(request: Request) {
         Prix: ligne.Prix || 0,
         PrixTotal: ligne.PrixTotal || 0,
         PartAssurance: ligne.PartAssurance || 0,
-        Partassuré_LI: ligne.Partassuré || 0,
+        PartAssure_LI: ligne.PartAssure || 0,
         totalsurplus: ligne.totalsurplus || 0,
         Designation: typeActe?.Designation || ''
       };

@@ -68,7 +68,7 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
     if (type === 'number') val = value === '' ? undefined : Number(value);
     setForm((prev: any) => {
       let updatedForm = { ...prev, [name]: val };
-      if (name === "TarifPatient" && value === "Non Assuré") {
+      if (name === "TarifPatient" && value === "Non Assure") {
         updatedForm.IDASSURANCE = '';
         updatedForm.Taux = '';
         updatedForm.Matricule = '';
@@ -103,7 +103,7 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
     if (!validateForm()) return;
     try {
       let payload = { ...form };
-      if (payload.TarifPatient === "Non Assuré") {
+      if (payload.TarifPatient === "Non Assure") {
         payload.IDASSURANCE = undefined;
         payload.Taux = undefined;
         payload.Matricule = '';
@@ -231,14 +231,14 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
                   required
                 >
                   <option value="">-- Sélectionner --</option>
-                  <option value="Non Assuré">Non Assuré</option>
+                  <option value="Non Assure">Non Assure</option>
                   <option value="Mutualiste">Mutualiste</option>
                   <option value="Préférentiel">Préférentiel</option>
                 </Form.Select>
               </Form.Group>
             </Col>
           </Row>
-          {form.TarifPatient !== "Non Assuré" && (
+          {form.TarifPatient !== "Non Assure" && (
             <>
               <Form.Group className="mb-3">
                 <Form.Label>Assurance</Form.Label>

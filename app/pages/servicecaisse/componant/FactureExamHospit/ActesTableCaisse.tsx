@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
 
-type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
+type AssuranceId = number; // 1: Non Assure, 2: Mutualiste, 3: Préférentiel
 
 // Type du document ActeClinique (adapté depuis ton modèle mongoose)
 export interface IActeClinique {
@@ -203,7 +203,7 @@ function SearchableActeSelect({ actes, selectedId, onSelect }: SearchableActeSel
                                         )}
                                         {acte.PrixAssure && (
                                             <span className="searchable-acte-badge-assure">
-                                                🛡️ Assuré: {acte.PrixAssure} FCFA
+                                                🛡️ Assure: {acte.PrixAssure} FCFA
                                             </span>
                                         )}
                                     </div>
@@ -444,7 +444,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         ligne.Coef_ASSUR = 0;
         ligne.CoefClinique = ligne.Coefficient;
 
-        // selon SEL_Assuré (selAssure)
+        // selon SEL_Assure (selAssure)
         if (selAssure === 1) {
             tarifActeClinique(ligne, acte, selAssure);
             return;
@@ -484,7 +484,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
             return;
         }
 
-        // Case 3 (Assuré)
+        // Case 3 (Assure)
         if (selAssure === 3) {
             const tPrix = tarif.PrixAssure ?? 0;
             const aPrix = acte.PrixAssure ?? 0;
@@ -568,7 +568,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
             return;
         }
 
-        // Case 3 (Assuré)
+        // Case 3 (Assure)
         if (selAssure === 3) {
             const tPrix = tarif.PrixAssure ?? 0;
             const aPrix = acte.PrixAssure ?? 0;

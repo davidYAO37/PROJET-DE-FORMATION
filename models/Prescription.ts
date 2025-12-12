@@ -12,7 +12,7 @@ export interface IPatientPrescription extends Document {
     PrixTotal?: number;
     nomMedicament?: string;
     PartAssurance?: number;
-    Partassuré?: number;
+    PartAssure?: number;
     CodePrestation?: string;
     Medicament?: Types.ObjectId;
     IDpriseCharge?: number;
@@ -43,7 +43,7 @@ const PatientPrescriptionSchema = new Schema<IPatientPrescription>(
         PrixTotal: { type: Number },
         nomMedicament: { type: String, maxlength: 50 },
         PartAssurance: { type: Number },
-        Partassuré: { type: Number },
+        PartAssure: { type: Number },
         CodePrestation: { type: String, maxlength: 50 },
         Medicament: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
         IDpriseCharge: { type: Number },

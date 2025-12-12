@@ -105,7 +105,7 @@ export default function PageListeApayer() {
                     designation: d.designation ?? d.designationC ?? "Consultation",
                     montant: Number((d.montant ?? 0)),
                     medecin: d.medecin ?? d.Medecin ?? "",
-                    assure: d.assure ?? d.Assuré ?? "",
+                    assure: d.assure ?? d.Assure ?? "",
                     type: "CONSULTATION",
                     raw: d,
                 }))
@@ -177,7 +177,7 @@ export default function PageListeApayer() {
                         designation: d.designation ?? d.designationC ?? "Consultation",
                         montant: Number((d.montant ?? 0)),
                         medecin: d.medecin ?? d.Medecin ?? "",
-                        assure: d.assure ?? d.Assuré ?? "",
+                        assure: d.assure ?? d.Assure ?? "",
                         type: "CONSULTATION",
                         raw: d,
                     }))
@@ -317,7 +317,7 @@ export default function PageListeApayer() {
                         <th>Désignation</th>
                         <th className="text-end">Montant (FCFA)</th>
                         <th>Médecin</th>
-                        <th>Assuré</th>
+                        <th>Assure</th>
                         <th>Actions</th>
                     </tr>
                 </thead>

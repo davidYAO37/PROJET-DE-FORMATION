@@ -87,8 +87,7 @@ export type ExamenHospitalisationForm = {
     tauxreduction?: number;
     Modepaiement?: string;
     MontantMedecinExécutant?: number;
-    TotaleTaxe?: number;
-    Assuré?: boolean;
+    TotaleTaxe?: number;   
     IDMEDECIN?: string;
 
 };

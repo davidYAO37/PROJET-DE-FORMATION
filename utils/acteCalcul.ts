@@ -42,7 +42,7 @@ function tarifActeClinique(acte: Acte, prestation: Prestation, selAssure: number
     prestation.coefficient = acte.coefficientActe || 1;
 
     switch (selAssure) {
-        case 1: // Non assuré
+        case 1: // Non Assure
             prestation.prixUnitaire = prestation.prixTotal = acte.prixClinique;
             prestation.reliquat = prestation.partAssurance = 0;
             break;
@@ -50,7 +50,7 @@ function tarifActeClinique(acte: Acte, prestation: Prestation, selAssure: number
             prestation.prixUnitaire = prestation.prixTotal = acte.prixMutuel;
             prestation.reliquat = prestation.partAssurance = 0;
             break;
-        case 3: // Tarif assuré
+        case 3: // Tarif Assure
             prestation.prixUnitaire = prestation.prixTotal = acte.prixAssure;
             prestation.reliquat = prestation.partAssurance = 0;
             break;

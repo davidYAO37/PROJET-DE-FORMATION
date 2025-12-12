@@ -44,7 +44,7 @@ export async function GET(req: NextRequest) {
             // Calcul du montant selon la logique WLanguage: Partassure + TotalReliquatPatient
             montant: Number((p.Partassure || 0) + (p.TotalReliquatPatient || 0)),
             medecin: p.NomMed || (p.idMedecin ? p.idMedecin.nom : ""),
-            assure: p.Assure || "Non assuré",
+            assure: p.Assure || "Non Assure",
             statut: p.statutPrescriptionMedecin || 0,
             date: p.DatePres ? new Date(p.DatePres).toLocaleDateString() : "Date inconnue"
         }));

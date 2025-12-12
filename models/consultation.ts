@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 export interface IConsultation extends Document {
   designationC: string;
   assurance: string;
-  Assuré: string;                       // "NON ASSURE" | "TARIF MUTUALISTE" | "TARIF ASSURE"
+  Assure: string;                       // "NON ASSURE" | "TARIF MUTUALISTE" | "TARIF ASSURE"
   IDASSURANCE?: mongoose.Types.ObjectId;
 
   Prix_Assurance: number;
@@ -70,7 +70,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
   {
     designationC: { type: String, required: true },
     assurance: { type: String, required: true },
-    Assuré: { type: String, required: true },
+    Assure: { type: String, required: true },
     IDASSURANCE: { type: Schema.Types.ObjectId, ref: "Assurance" },
 
     Prix_Assurance: { type: Number, default: 0 },

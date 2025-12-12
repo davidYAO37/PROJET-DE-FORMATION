@@ -98,7 +98,7 @@ export default function RecuExamenPage({ params }: any) {
                 <td style={td}>{l.Qte}</td>
                 <td style={td}>{l.Prix}</td>
                 <td style={td}>{l.PrixTotal}</td>
-                <td style={td}>{l.Partassuré_LI}</td>
+                <td style={td}>{l.PartAssure_LI}</td>
                 <td style={td}>{l.totalsurplus}</td>
               </tr>
             ))}

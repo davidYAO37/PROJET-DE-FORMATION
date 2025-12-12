@@ -9,7 +9,7 @@ export interface LignePrestation {
     tauxAssurance: number;
     IdPatient: number;
     IDHOSPITALISATION: number;
-    Partassuré: number;
+    PartAssure: number;
     PrixTotal: number;
     CoefficientActe: number;
     ReliquatCoefAssurance: number;

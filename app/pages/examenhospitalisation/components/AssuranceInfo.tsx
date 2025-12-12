@@ -117,7 +117,7 @@ export default function AssuranceInfo({ formData, setFormData, currentLignes = [
     return (
         <>
             <Card className="mb-1 shadow-sm">
-                <Card.Header className="bg-light">Assuré ?</Card.Header>
+                <Card.Header className="bg-light">Assure ?</Card.Header>
                 <Card.Body>
                     {/* Type Patient (valeur brute du modèle Consultation) */}
                     <Form.Group className="mb-3">

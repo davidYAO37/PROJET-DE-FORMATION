@@ -53,7 +53,7 @@ export async function GET(req: NextRequest) {
             // Calcul du montant selon la logique WLanguage: tiket_moderateur + ReliquatPatient
             montant: Number((c.tiket_moderateur || 0) + (c.ReliquatPatient || 0)),
             medecin: c.Medecin || (c.IDMEDECIN ? c.IDMEDECIN?.nom : ""),
-            assure: c.Assuré || "Non assuré",
+            assure: c.Assure || "Non Assure",
             statut: c.StatutPaiement || "En attente",
             statutPrescription: c.StatuPrescriptionMedecin || 0,
             date: c.Date_consulation ? new Date(c.Date_consulation).toLocaleDateString() : "Date inconnue"

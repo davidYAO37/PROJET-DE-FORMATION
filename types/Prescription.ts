@@ -10,7 +10,7 @@ export interface Prescription {
     PrixTotal?: number;
     nomMedicament?: string;
     PartAssurance?: number;
-    Partassuré?: number;
+    PartAssure?: number;
     CodePrestation?: string;
     Medicament?: string;
     IDpriseCharge?: number;

@@ -27,7 +27,7 @@ export interface IEncaissementCaisse extends Document {
     IDCONSULTATION: number;
     restapayerBilan: string;
     TotalapayerPatient: number;
-    Assuré: string;
+    Assure: string;
     IdPatient: number;
     AnnulationOrdonneLe: Date;
     annulationOrdonnepar: string;
@@ -61,7 +61,7 @@ const EncaissementCaisseSchema: Schema = new Schema({
     IDCONSULTATION: { type: Number },
     restapayerBilan: { type: String },
     TotalapayerPatient: { type: Number },
-    Assuré: { type: String },
+    Assure: { type: String },
     IdPatient: { type: Number },
     AnnulationOrdonneLe: { type: Date },
     annulationOrdonnepar: { type: String },

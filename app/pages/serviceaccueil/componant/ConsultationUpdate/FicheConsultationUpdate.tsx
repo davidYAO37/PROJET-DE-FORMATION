@@ -74,65 +74,33 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
     }, [consultationId]);
 
     // Charger les données de la consultation dans les champs quand elle est chargée
+
+useEffect(() => {
+    if (currentConsultation && consultationLoaded) {
+        // Ne plus rien faire ici, tout est géré dans loadConsultationById
+        console.log("Données de consultation chargées:", currentConsultation);
+    }
+}, [currentConsultation, consultationLoaded]);
+
+    // Effet pour vider ou afficher les champs selon le type d'Assure
     useEffect(() => {
-        if (currentConsultation && consultationLoaded) {
-            console.log("Chargement des données de consultation:", currentConsultation);
-
-            // Remplir automatiquement tous les champs avec les données de la consultation
-            setCodePrestation(currentConsultation.CodePrestation || "");
-
-            // Déterminer le type d'assuré depuis la consultation
-            if (currentConsultation.Assuré === "NON ASSURE") {
-                setAssure("non");
-            } else if (currentConsultation.Assuré === "TARIF MUTUALISTE") {
-                setAssure("mutualiste");
-            } else {
-                setAssure("preferentiel");
-            }
-
-            // Remplir les champs d'acte - Convertir ObjectId en string
-            const idActe = currentConsultation.IDACTE ? String(currentConsultation.IDACTE) : "";
-            const idMedecin = currentConsultation.IDMEDECIN ? String(currentConsultation.IDMEDECIN) : "";
-
-            setSelectedActe(idActe);
-            setSelectedMedecin(idMedecin);
-            setMontantClinique(Math.round(currentConsultation.PrixClinique || 0));
-            setMontantAssurance(Math.round(currentConsultation.Prix_Assurance || 0));
-
-            // Remplir les champs d'assurance - Convertir ObjectId en string
-            const idAssurance = currentConsultation.IDASSURANCE ? String(currentConsultation.IDASSURANCE) : "";
-            setSelectedAssurance(idAssurance);
-            setMatricule(currentConsultation.numero_carte || "");
-            setTaux(currentConsultation.tauxAssurance || "");
-            setNumBon(currentConsultation.NumBon || "");
-            setSouscripteur(currentConsultation.Souscripteur || "");
-            setSocietePatient(currentConsultation.SOCIETE_PATIENT || "");
-
-            console.log("Données chargées - Acte:", idActe, "Médecin:", idMedecin, "Assurance:", idAssurance);
-        }
-    }, [currentConsultation, consultationLoaded]);
-
-    // Effet pour vider ou afficher les champs selon le type d'assuré
-    useEffect(() => {
-        if (assure === "non") {
-            setSelectedAssurance("");
-            setMatricule("");
-            setTaux("");
-            setNumBon("");
-            setSouscripteur("");
-            setSocietePatient("");
-        } else {
-            // Si une consultation est chargée, garder ses valeurs
-            // Sinon, pré-remplir avec les données du patient
-            if (!consultationLoaded && patient) {
-                setSelectedAssurance(patient.IDASSURANCE || "");
-                setMatricule(patient.Matricule || "");
-                setTaux(patient.Taux ?? "");
-                setSouscripteur(patient.Souscripteur || "");
-                setSocietePatient(patient.SOCIETE_PATIENT || "");
-            }
-        }
-    }, [assure, patient, consultationLoaded]);
+    // Ne vider les champs que si on n'est pas en train de charger une consultation
+    if (assure === "non" && !loadingConsultation) {
+        setSelectedAssurance("");
+        setMatricule("");
+        setTaux("");
+        setNumBon("");
+        setSouscripteur("");
+        setSocietePatient("");
+    } else if (!consultationLoaded && !loadingConsultation && patient) {
+        // Pré-remplir avec les données du patient uniquement si aucune consultation n'est chargée
+        setSelectedAssurance(patient.IDASSURANCE || "");
+        setMatricule(patient.Matricule || "");
+        setTaux(patient.Taux ?? "");
+        setSouscripteur(patient.Souscripteur || "");
+        setSocietePatient(patient.SOCIETE_PATIENT || "");
+    }
+}, [assure, patient, consultationLoaded, loadingConsultation]);
 
     useEffect(() => {
         if (!selectedActe) return;
@@ -181,7 +149,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                     else if (assure === "preferentiel") setMontantAssurance(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
                 });
         } else {
-            // console.log("Pas d'assurance ou patient non assuré, montant assurance = montant clinique");
+            // console.log("Pas d'assurance ou patient non Assure, montant assurance = montant clinique");
             setMontantAssurance(Math.round(acte.prixClinique ?? 0));
         }
     }, [selectedActe, assure, actes, selectedAssurance]);
@@ -240,28 +208,51 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         }
     };
 
-    // Fonction pour charger une consultation par son ID
-    const loadConsultationById = async (id: string) => {
-        setLoadingConsultation(true);
-        setError("");
+    // Fonction pour charger une consultation par son ID  
+const loadConsultationById = async (id: string) => {
+    setLoadingConsultation(true);
+    setError("");
 
-        try {
-            const res = await fetch(`/api/consultation/${id}`);
-            const consultation = await res.json();
+    try {
+        const res = await fetch(`/api/consultation/${id}`);
+        const consultation = await res.json();
 
-            if (!res.ok) throw new Error("Consultation introuvable");
+        if (!res.ok) throw new Error("Consultation introuvable");
 
-            setCurrentConsultation(consultation);
-            setConsultationLoaded(true);
-        } catch (e: any) {
-            setError(e.message || "Erreur lors du chargement");
-            setConsultationLoaded(false);
-            setCurrentConsultation(null);
-        } finally {
-            setLoadingConsultation(false);
+        // Mettre à jour l'état en une seule fois
+        setCurrentConsultation(consultation);
+        setConsultationLoaded(true);
+        
+        // Mettre à jour les états nécessaires
+        setCodePrestation(consultation.CodePrestation || "");
+        
+        // Mettre à jour le type d'Assure
+        if (consultation.Assure === "NON ASSURE") {
+            setAssure("non");
+        } else if (consultation.Assure === "TARIF MUTUALISTE") {
+            setAssure("mutualiste");
+        } else {
+            setAssure("preferentiel");
         }
-    };
 
+        // Mettre à jour les champs d'assurance
+        if (consultation.IDASSURANCE) {
+            setSelectedAssurance(String(consultation.IDASSURANCE));
+            setMatricule(consultation.numero_carte || "");
+            setTaux(consultation.tauxAssurance || "");
+            setNumBon(consultation.NumBon || "");
+            setSouscripteur(consultation.Souscripteur || "");
+            setSocietePatient(consultation.SOCIETE_PATIENT || "");
+        }
+
+    } catch (e: any) {
+        setError(e.message || "Erreur lors du chargement");
+        setConsultationLoaded(false);
+        setCurrentConsultation(null);
+    } finally {
+        setLoadingConsultation(false);
+    }
+};
     const handleSave = async () => {
         if (!currentConsultation?._id) {
             setError("Aucune consultation chargée. Veuillez d'abord charger une consultation.");
@@ -424,22 +415,32 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                 </Row>
             </Card>
 
-            <BlocAssuranceUpdate
-                assure={assure}
-                assurances={assurances}
-                selectedAssurance={selectedAssurance}
-                setSelectedAssurance={setSelectedAssurance}
-                matricule={matricule}
-                setMatricule={setMatricule}
-                taux={taux}
-                setTaux={setTaux}
-                numBon={numBon}
-                setNumBon={setNumBon}
-                souscripteur={souscripteur}
-                setSouscripteur={setSouscripteur}
-                societePatient={societePatient}
-                setSocietePatient={setSocietePatient}
-            />
+            {/* Remplacer la section existante par : */}
+            {loadingConsultation ? (
+                <Card className="p-3 mb-3">
+                    <div className="text-center py-4">
+                        <Spinner animation="border" variant="primary" />
+                        <div className="mt-2">Chargement des informations d'assurance...</div>
+                    </div>
+                </Card>
+            ) : (
+                <BlocAssuranceUpdate
+                    assure={assure}
+                    assurances={assurances}
+                    selectedAssurance={selectedAssurance}
+                    setSelectedAssurance={setSelectedAssurance}
+                    matricule={matricule}
+                    setMatricule={setMatricule}
+                    taux={taux}
+                    setTaux={setTaux}
+                    numBon={numBon}
+                    setNumBon={setNumBon}
+                    souscripteur={souscripteur}
+                    setSouscripteur={setSouscripteur}
+                    societePatient={societePatient}
+                    setSocietePatient={setSocietePatient}
+                />
+            )}
 
             <ResumeMontantsUpdate
                 surplus={surplus}

@@ -25,7 +25,7 @@ export interface EncaissementCaisse {
     IDCONSULTATION: number;
     restapayerBilan: string;
     TotalapayerPatient: number;
-    Assuré: string;
+    Assure: string;
     IdPatient: number;
     AnnulationOrdonneLe: Date;
     annulationOrdonnepar: string;

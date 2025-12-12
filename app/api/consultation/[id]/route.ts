@@ -71,7 +71,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         // Mise à jour consultation
         consultation.designationC = data.selectedActeDesignation;
         consultation.assurance = assurance?.desiganationassurance || "NON ASSURE";
-        consultation.Assuré = data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE";
+        consultation.Assure = data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE";
 
         consultation.IDASSURANCE = assurance?._id ? new mongoose.Types.ObjectId(String(assurance._id)) : undefined;
         consultation.IdPatient = patient?._id ? new mongoose.Types.ObjectId(String(patient._id)) : undefined;
@@ -104,7 +104,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({
             success: true,
             consultation,
-            assure: consultation.Assuré,          // Type visiteur
+            assure: consultation.Assure,          // Type visiteur
             patient: {
                 _id: patient?._id,
                 Nom: patient?.Nom,
