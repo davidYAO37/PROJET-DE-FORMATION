@@ -37,17 +37,21 @@ export async function GET(req: NextRequest) {
             .lean();
 
         const result = prestations.map((p: any) => ({
-            id: p._id,
-            code: p.CodePrestation || "N/A",
-            patient: p.PatientP || (p.IdPatient ? `${p.IdPatient.Nom || ''} ${p.IdPatient.Prenoms || ''}`.trim() : "Patient inconnu"),
-            designation: p.Designationtypeacte || "Prestation sans désignation",
-            // Calcul du montant selon la logique WLanguage: Partassure + TotalReliquatPatient
-            montant: Number((p.Partassure || 0) + (p.TotalReliquatPatient || 0)),
-            medecin: p.NomMed || (p.idMedecin ? p.idMedecin.nom : ""),
-            assure: p.Assure || "Non Assure",
-            statut: p.statutPrescriptionMedecin || 0,
-            date: p.DatePres ? new Date(p.DatePres).toLocaleDateString() : "Date inconnue"
-        }));
+    id: p._id,
+    code: p.CodePrestation || "N/A",
+    patient: p.PatientP || (p.IdPatient ? `${p.IdPatient.Nom || ''} ${p.IdPatient.Prenoms || ''}`.trim() : "Patient inconnu"),
+    designation: p.Designationtypeacte || "Prestation sans désignation",
+    montant: Number((p.Partassure || 0) + (p.TotalReliquatPatient || 0)),
+    medecin: p.NomMed || (p.idMedecin ? p.idMedecin.nom : ""),
+    assure: p.Assure || "Non assuré",
+    statut: p.statutPrescriptionMedecin || 0,
+    date: p.DatePres ? new Date(p.DatePres).toLocaleDateString() : "Date inconnue",
+    // Ajout des champs manquants
+    Entrele: p.Entrele ? new Date(p.Entrele).toISOString() : null,
+    SortieLe: p.SortieLe ? new Date(p.SortieLe).toISOString() : null,
+    Rclinique: p.Rclinique || "",
+    nombreDeJours: p.nombreDeJours || 1
+}));
 
         return NextResponse.json(result);
     } catch (error) {

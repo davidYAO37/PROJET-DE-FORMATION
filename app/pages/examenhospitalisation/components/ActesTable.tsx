@@ -4,7 +4,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
 
-type AssuranceId = number; // 1: Non Assure, 2: Mutualiste, 3: Préférentiel
+type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
 // Type du document ActeClinique (adapté depuis ton modèle mongoose)
 export interface IActeClinique {
@@ -199,7 +199,7 @@ function SearchableActeSelect({ actes, selectedId, onSelect }: SearchableActeSel
                                         )}
                                         {acte.PrixAssure && (
                                             <span className="searchable-acte-badge-assure">
-                                                🛡️ Assure: {acte.PrixAssure} FCFA
+                                                🛡️ Assuré: {acte.PrixAssure} FCFA
                                             </span>
                                         )}
                                     </div>
@@ -430,7 +430,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
         ligne.Coef_ASSUR = 0;
         ligne.CoefClinique = ligne.Coefficient;
 
-        // selon SEL_Assure (selAssure)
+        // selon SEL_Assuré (selAssure)
         if (selAssure === 1) {
             tarifActeClinique(ligne, acte, selAssure);
             return;
@@ -470,7 +470,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
             return;
         }
 
-        // Case 3 (Assure)
+        // Case 3 (Assuré)
         if (selAssure === 3) {
             const tPrix = tarif.PrixAssure ?? 0;
             const aPrix = acte.PrixAssure ?? 0;
@@ -554,7 +554,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
             return;
         }
 
-        // Case 3 (Assure)
+        // Case 3 (Assuré)
         if (selAssure === 3) {
             const tPrix = tarif.PrixAssure ?? 0;
             const aPrix = acte.PrixAssure ?? 0;
@@ -1104,7 +1104,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                         <strong>Part assurance:</strong> {totaux.partAssurance.toFixed(2)}
                     </Col>
                     <Col>
-                        <strong>Part Assure:</strong> {totaux.partAssure.toFixed(2)}
+                        <strong>Part assuré:</strong> {totaux.partAssure.toFixed(2)}
                     </Col>
                     <Col>
                         <strong>Montant exécutant:</strong> {totaux.montantExecutant.toFixed(2)}

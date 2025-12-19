@@ -25,7 +25,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     Age_partient: 0,
     sexe: 'Masculin',
     Contact: '',
-    TarifPatient: 'Non Assure',
+    TarifPatient: 'Non Assuré',
     Code_dossier: `P00${nextId}`,
     Matricule: '',
     Date_naisse: '',
@@ -73,7 +73,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         Age_partient: 0,
         sexe: 'Masculin',
         Contact: '',
-        TarifPatient: 'Non Assure',
+        TarifPatient: 'Non Assuré',
         Code_dossier: `P00${nextId}`,
         Matricule: '',
         Date_naisse: '',
@@ -111,7 +111,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         newData.Date_naisse = birthDate.toISOString().split('T')[0];
       }
       // Logique TarifPatient
-      if (name === "TarifPatient" && value === "Non Assure") {
+      if (name === "TarifPatient" && value === "Non Assuré") {
         newData.IDASSURANCE = '';
         newData.Taux = '';
         newData.Matricule = '';
@@ -168,7 +168,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     try {
       let payload = { ...formData };
 
-      if (payload.TarifPatient === "Non Assure") {
+      if (payload.TarifPatient === "Non Assuré") {
         payload.IDASSURANCE = undefined;
         payload.Taux = undefined;
         payload.Matricule = '';
@@ -241,7 +241,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                     value={formData.TarifPatient}
                     onChange={handleChange}
                   >
-                    <option value="Non Assure">Non Assure</option>
+                    <option value="Non Assuré">Non Assuré</option>
                     <option value="Mutualiste">Mutualiste</option>
                     <option value="Préférentiel">Préférentiel</option>
                   </Form.Select>
@@ -323,7 +323,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
             </Form.Group>
 
             {/* Assurance + Société + infos complémentaires */}
-            {formData.TarifPatient !== 'Non Assure' && (
+            {formData.TarifPatient !== 'Non Assuré' && (
               <div className="border p-3 rounded bg-light">
                 <Row>
                   <Form.Group className="mb-3">

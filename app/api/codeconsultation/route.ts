@@ -43,7 +43,7 @@ export async function GET(request: Request) {
         souscripteur: consultation.Souscripteur,
         idApporteur: consultation.IDAPPORTEUR,
         Assure: consultation.Assure,
-        assure: consultation.Assure,
+       // assure: consultation.Assuré,
         Code_dossier: consultation.Code_dossier,
         info: infoMessage,
     };

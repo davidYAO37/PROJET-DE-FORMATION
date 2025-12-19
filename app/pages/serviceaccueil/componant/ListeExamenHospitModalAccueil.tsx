@@ -2,7 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { Modal, Table, Button, Form, Spinner, Badge } from 'react-bootstrap';
 import { FaEdit, FaEye, FaFilePdf, FaPencilAlt } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
-import ExamenHospitalisationModal from './ExamenHospitModal';
+import ExamenHospitalisationModalUpdate from '../../ExamenHospitUpdate/component/ExamenHospitModalUpdate';
 
 
 export interface ExamenHospit {
@@ -206,7 +206,7 @@ export default function ListeExamenHospitModalAccueil({
 
             {/* Modal de modification */}
             {selectedExamen && selectedPatient && (
-                <ExamenHospitalisationModal
+                <ExamenHospitalisationModalUpdate
                     show={showEditModal}
                     onHide={() => setShowEditModal(false)}
                     CodePrestation={selectedExamen.codePrestation || ''}

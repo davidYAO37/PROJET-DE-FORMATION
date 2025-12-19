@@ -9,6 +9,10 @@ interface ExamenHospitalisationModalProps {
     Designationtypeacte?: string;
     PatientP?: string;
     examenHospitId?: string;
+    dateEntree?: string | null;
+    dateSortie?: string | null;
+    nombreDeJours?: number;
+    renseignementclinique?: string;
 }
 
 export default function ExamenHospitalisationModalCaisse({
@@ -17,7 +21,11 @@ export default function ExamenHospitalisationModalCaisse({
     CodePrestation = "",
     Designationtypeacte = "",
     PatientP = "",
-    examenHospitId = ""
+    examenHospitId = "",
+    dateEntree = null,
+    dateSortie = null,
+    nombreDeJours = 1,
+    renseignementclinique = ""
 }: ExamenHospitalisationModalProps) {
 
     const [key, setKey] = useState(0);
@@ -59,11 +67,15 @@ export default function ExamenHospitalisationModalCaisse({
                 <HospitalisationPageCaisse
                     key={`${key}-${CodePrestation}`}
                     params={{
-                        id: examenHospitId || "",     // ✅ Correction MAJEURE
+                        id: examenHospitId || "",
                         CodePrestation,
                         Designationtypeacte,
                         PatientP,
-                        examenHospitId
+                        examenHospitId,
+                        dateEntree: dateEntree || undefined,
+                        dateSortie: dateSortie || undefined,
+                        nombreDeJours,
+                        renseignementclinique
                     }}
                     searchParams={{}}
                 />

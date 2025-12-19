@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
         const consultation = new Consultation({
             designationC: data.selectedActeDesignation,
             assurance: assurance?.desiganationassurance || "NON ASSURE",
-            Assure: data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE",
+            Assuré: data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE",
             IDASSURANCE: assurance?._id,
 
 

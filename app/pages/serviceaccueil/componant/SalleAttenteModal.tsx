@@ -26,10 +26,21 @@ export default function SalleAttenteModal({ show, onHide }: SalleAttenteModalPro
     const [selectedConsultation, setSelectedConsultation] = useState<Consultation | null>(null);
     const [user, setUser] = useState<string>('');
 
-    // Charger les consultations du jour à l’ouverture du modal
+    // Charger les consultations du jour à l'ouverture du modal et configurer le rafraîchissement automatique
     useEffect(() => {
         if (show) {
             fetchConsultations();
+            const userData = localStorage.getItem('profil');
+            if (userData) {
+                const parsedUser = JSON.parse(userData);
+                setUser(parsedUser.nom_utilisateur);
+            }
+            
+            // Configurer le rafraîchissement automatique toutes les 30 secondes
+            const intervalId = setInterval(fetchConsultations, 30000);
+            
+            // Nettoyer l'intervalle lors de la fermeture du modal
+            return () => clearInterval(intervalId);
         }
     }, [show]);
 

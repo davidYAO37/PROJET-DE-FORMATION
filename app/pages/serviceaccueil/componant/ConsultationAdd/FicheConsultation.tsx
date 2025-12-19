@@ -64,7 +64,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
 
     useEffect(() => {
         if (!patient) return;
-        if (patient.TarifPatient === "Non Assure") setAssure("non");
+        if (patient.TarifPatient === "Non Assuré") setAssure("non");
         else if (patient.TarifPatient === "Mutualiste") setAssure("mutualiste");
         else setAssure("preferentiel");
 
@@ -75,7 +75,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
         setSocietePatient(patient.SOCIETE_PATIENT || "");
     }, [patient]);
 
-    // Effet pour vider ou afficher les champs selon le type d'Assure
+    // Effet pour vider ou afficher les champs selon le type d'assuré
     useEffect(() => {
         if (assure === "non") {
             setSelectedAssurance("");

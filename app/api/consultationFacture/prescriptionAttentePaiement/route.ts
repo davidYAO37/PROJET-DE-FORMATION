@@ -72,10 +72,10 @@ export async function GET(req: NextRequest) {
             code: p.CodePrestation || (p.Prescription?.CodePrestation) || "N/A",
             patient: p.PatientP || (p.PatientRef ? `${p.PatientRef.Nom || ''} ${p.PatientRef.Prenoms || ''}`.trim() : "Patient inconnu"),
             designation: p.Prescription?.designation || "Ordonnance",
-            // Calcul du montant selon la logique WLanguage: PartAssure
-            montant: Number(p.PartAssure || 0),
+            // Calcul du montant selon la logique WLanguage: Partassuré
+            montant: Number(p.Partassuré || 0),
             medecin: p.NomMed || (p.IDMEDECIN?.nom) || "",
-            assure: p.SocieteAssurance || "Non Assure",
+            assure: p.SocieteAssurance || "Non assuré",
             statut: p.StatuPrescriptionMedecin || 0,
             date: p.DatePrescription ? new Date(p.DatePrescription).toLocaleDateString() : "Date inconnue",
             type: "PRESCRIPTION"

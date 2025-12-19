@@ -282,7 +282,7 @@ export default function HospitalisationPage() {
                                                         // Dates
                                                         dateEntree: data.Entrele ? new Date(data.Entrele).toISOString().split('T')[0] : prev.dateEntree,
                                                         dateSortie: data.SortieLe ? new Date(data.SortieLe).toISOString().split('T')[0] : prev.dateSortie,
-                                                        nombreDeJours: data.DureeE || prev.nombreDeJours,
+                                                        nombreDeJours: data.nombreDeJours || prev.nombreDeJours,
                                                         // Montants
                                                         factureTotal: data.Montanttotal || 0,
                                                         partAssurance: data.PartAssuranceP || 0,
@@ -535,7 +535,7 @@ export default function HospitalisationPage() {
                                 IDTYPE_ACTE: formData.typeacte || "",
                                 Entrele: formData.dateEntree || undefined,
                                 SortieLe: formData.dateSortie || undefined,
-                                DureeE: formData.nombreDeJours || 0,
+                                nombreDeJours: formData.nombreDeJours || 0,
                                 Designationtypeacte: formData.typeacte || "",
                                 Modepaiement: undefined,
                                 Assure: formData.Assure,

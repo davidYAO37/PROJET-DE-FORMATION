@@ -30,7 +30,7 @@ export interface Facturation {
     Entrele?: Date;
     SortieLe?: Date;
     Chambre?: string;
-    DureeE?: number;
+    nombreDeJours?: number;
     Numcarte?: string;
     Designationtypeacte?: string;
     StatutFacture?: boolean;

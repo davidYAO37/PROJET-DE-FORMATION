@@ -40,3 +40,40 @@ export async function POST(req: NextRequest) {
         );
     }
 }
+
+
+export async function GET() {
+    try {
+        await db();
+
+        // Aujourd'hui à minuit
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const tomorrow = new Date(today);
+        tomorrow.setDate(today.getDate() + 1);
+
+        // Nombre total de consultations du jour
+        const totalConsultations = await Consultation.countDocuments({
+            Date_consulation: { $gte: today, $lt: tomorrow },
+        });
+
+        // Nombre de patients en salle d'attente
+        const waitingRoomCount = await Consultation.countDocuments({
+            Date_consulation: { $gte: today, $lt: tomorrow },
+            AttenteAccueil: false,
+            StatutC: false,
+        });
+
+        return NextResponse.json({
+            totalConsultations,
+            waitingRoomCount,
+        });
+    } catch (error) {
+        console.error('Erreur lors de la récupération des statistiques:', error);
+        return NextResponse.json(
+            { message: 'Erreur serveur', error: (error as Error).message },
+            { status: 500 }
+        );
+    }
+}

@@ -16,7 +16,7 @@ export default function InfosPatient({ assure, setAssure }: InfosPatientProps) {
             <div className="d-flex justify-content-around flex-wrap gap-3">
                 <Form.Check 
                     inline 
-                    label="Non Assure" 
+                    label="Non Assuré" 
                     type="radio" 
                     name="typePatient"
                     id="radio-non-assure"

@@ -3,60 +3,15 @@
 import { useState, useEffect } from "react";
 import { Container, Row, Col, Form } from "react-bootstrap";
 import { defaultFormData, ExamenHospitalisationForm } from "@/types/examenHospitalisation";
-import PatientInfoCaisse from "./PatientInfoCaisse";
-import AssuranceInfoCaisse from "./AssuranceInfoCaisse";
-import TablePrestationsCaisse from "./ActesTableCaisse";
-import CliniqueInfoCaisse from "./CliniqueInfoCaisse";
-import ActionsButtonsCaisse from "./ActionsButtonsCaisse";
-import PaiementInfoCaisse from "./PaiementInfoCaisse";
+import PatientInfoUpdate from "./component/PatientInfoUpdate";
+import AssuranceInfoUpdate from "./component/AssuranceInfoUpdate";
+import TablePrestationsUpdate from "./component/ActesTableUpdate";
+import CliniqueInfoUpdate from "./component/CliniqueInfoUpdate";
+import PaiementInfoUpdate from "./component/PaiementInfoUpdate";
+import ActionsButtonsUpdate from "./component/ActionsButtonsUpdate";
 
-
-// Définition des paramètres de l'URL
-interface PageProps {
-    params: {
-        id: string;
-        CodePrestation?: string;
-        Designationtypeacte?: string;
-        PatientP?: string;
-        examenHospitId?: string;
-        dateEntree?: string;
-        dateSortie?: string;
-        nombreDeJours?: number;
-        renseignementclinique?: string;
-        
-        [key: string]: string | string[] | number | undefined;
-    };
-    searchParams: { [key: string]: string | string[] | undefined };
-}
-
-// Type pour les props du composant
-type HospitalisationPageCaisseProps = {
-    params: PageProps['params'];
-    searchParams: PageProps['searchParams'];
-};
-
-export default function HospitalisationPageCaisse({
-    params,
-    searchParams
-}: HospitalisationPageCaisseProps) {
-
-    const {
-        id,
-        CodePrestation = "",
-        Designationtypeacte = "",
-        PatientP = "",
-        examenHospitId: propExamenHospitId = "",
-        dateEntree = "",
-        dateSortie = "",
-        nombreDeJours = 0,
-        renseignementclinique = ""
-    } = params || {};
-
-    const [formData, setFormData] = useState<ExamenHospitalisationForm>({
-        ...defaultFormData,
-        CodePrestation: CodePrestation || "",
-        typeacte: Designationtypeacte || ""
-    });
+export default function HospitalisationPage() {
+    const [formData, setFormData] = useState<ExamenHospitalisationForm>(defaultFormData);
 
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [typesActe, setTypesActe] = useState<{ _id: string; Designation: string }[]>([]);
@@ -70,111 +25,28 @@ export default function HospitalisationPageCaisse({
         montantARegler: 0,
     });
     const [resetKey, setResetKey] = useState(0);
-    const [codePrestation, setCodePrestation] = useState("");
+    const [CodePrestation, setCodePrestation] = useState("");
     const [presetLines, setPresetLines] = useState<any[] | undefined>(undefined);
     const [currentLignes, setCurrentLignes] = useState<any[]>([]);
     const [triggerRecalculation, setTriggerRecalculation] = useState(0);
     const [modeModification, setModeModification] = useState(false);
-    const [examenHospitId, setExamenHospitId] = useState<string | undefined>(propExamenHospitId || undefined);
-    const [modePaiement, setModePaiement] = useState<string>("");
-    const [montantEncaisse, setMontantEncaisse] = useState<number>(0);
+    const [examenHospitId, setExamenHospitId] = useState<string | undefined>(undefined);
     const [recuPar, setRecuPar] = useState("");
-    const [initialPatientP, setInitialPatientP] = useState(PatientP || "");
-
-     useEffect(() => {
-        const nom = localStorage.getItem("nom_utilisateur");
-        if (nom) setRecuPar(nom);
-
-        // Charger les données de la prestation si un code est fourni
-        setExamenHospitId(propExamenHospitId || undefined);
-        setCodePrestation(CodePrestation || "");
-        setModePaiement("");
-        setMontantEncaisse(0);
-        if (CodePrestation) {
-            loadLignesFromPrestation(CodePrestation, propExamenHospitId);
-        } else {
-            setPresetLines(undefined);
-            setModeModification(false);
-        }
-    }, [CodePrestation, propExamenHospitId]); 
-    /*useEffect(() => {
-        setExamenHospitId(propExamenHospitId || undefined);
-        setCodePrestation(CodePrestation || "");
-
-        // ❌ NE PAS toucher aux dates ici
-        if (CodePrestation) {
-            loadLignesFromPrestation(CodePrestation, propExamenHospitId);
-        } else {
-            setPresetLines(undefined);
-            setModeModification(false);
-        }
-    }, [CodePrestation, propExamenHospitId]);*/
-
-//initialisation 
-useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    console.log("Initializing form data with:", {
-        dateEntree,
-        dateSortie,
-        nombreDeJours,
-        renseignementclinique
-    });
-    
-    setFormData(prev => ({
-        ...prev,
-        dateEntree: dateEntree ? new Date(dateEntree).toISOString().split('T')[0] : today,
-        dateSortie: dateSortie ? new Date(dateSortie).toISOString().split('T')[0] : today,
-        nombreDeJours: Number(nombreDeJours) > 0 ? Number(nombreDeJours) : 1,
-        renseignementclinique: renseignementclinique || prev.renseignementclinique || ''
-    }));
-
-    if (CodePrestation) {
-        loadLignesFromPrestation(CodePrestation, examenHospitId);
-    } else {
-        setPresetLines(undefined);
-        setModeModification(false);
-    }
-}, [CodePrestation, examenHospitId, dateEntree, dateSortie, nombreDeJours, renseignementclinique]);
 
     useEffect(() => {
-        const reduction = formData.reduction || 0;
-        const montantRegle = Math.max(0, (totaux.montantARegler || 0) - reduction);
-        let encaisse = Math.max(0, montantEncaisse);
+        const nom = localStorage.getItem("nom_utilisateur");
+        if (nom) setRecuPar(nom);
+    }, []);
 
-        if (encaisse > montantRegle && montantEncaisse !== montantRegle) {
-            setMontantEncaisse(montantRegle);
-            encaisse = montantRegle;
-        }
 
-        const reste = Math.max(0, montantRegle - encaisse);
-
-        setFormData((prev) => {
-            if (prev.resteAPayer === reste && prev.TotalapayerPatient === montantRegle) {
-                return prev;
-            }
-            return {
-                ...prev,
-                resteAPayer: reste,
-                TotalapayerPatient: montantRegle,
-            };
-        });
-    }, [totaux.montantARegler, formData.reduction, montantEncaisse]);
-
-    async function loadLignesFromPrestation(code: string, idHospitalisation?: string) {
+    async function loadLignesFromPrestation(code: string) {
         if (!code) {
             setPresetLines(undefined);
             setModeModification(false);
             return;
         }
         try {
-            // Construire l'URL avec les paramètres et statut prescription < 3
-            let url = `/api/ligneprestationFacture?codePrestation=${encodeURIComponent(code)}`;
-            if (idHospitalisation) {
-                url += `&idHospitalisation=${encodeURIComponent(idHospitalisation)} `;
-            }
-
-            const res = await fetch(url);
+            const res = await fetch(`/api/ligneprestation?CodePrestation=${encodeURIComponent(code)}`);
             if (!res.ok) throw new Error("load lignes failed");
             const payload = await res.json();
             const rawLines = Array.isArray(payload?.data) ? payload.data : [];
@@ -214,10 +86,6 @@ useEffect(() => {
                 CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
                 forfaitclinique: 0,
                 ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
-                AFacturer: (l.actePayeCaisse === 'Payé' || l.statutPrescriptionMedecin === 3) ? 'Payé' : 'Non Payé',
-                datePaiementCaisse: l.datePaiementCaisse ? new Date(l.datePaiementCaisse).toISOString().split('T')[0] : '',
-                heurePaiement: l.heurePaiement || '',
-                payePar: l.payePar || '',
                 Action: "",
             }));
 
@@ -228,26 +96,6 @@ useEffect(() => {
             setPresetLines(undefined);
             setModeModification(false);
             setResetKey((k) => k + 1);
-            setModePaiement("");
-            setMontantEncaisse(0);
-            setTotaux({
-                montantTotal: 0,
-                partAssurance: 0,
-                partAssure: 0,
-                totalTaxe: 0,
-                totalSurplus: 0,
-                montantExecutant: 0,
-                montantARegler: 0,
-            });
-            setFormData((prev) => ({
-                ...prev,
-                factureTotal: 0,
-                partAssurance: 0,
-                partPatient: 0,
-                surplus: 0,
-                resteAPayer: 0,
-                TotalapayerPatient: 0,
-            }));
         }
     }
 
@@ -261,54 +109,48 @@ useEffect(() => {
             .catch(() => setTypesActe([]));
     }, []);
 
-        
     // Gestion des dates
     const handleDateChange = (field: "dateEntree" | "dateSortie", value: string) => {
         setFormData((prev) => {
-            let nombreDeJours = prev.nombreDeJours || 1;
-            let dateEntree = prev.dateEntree || '';
-            let dateSortie = prev.dateSortie || '';
-            let error = null;
+            let nombreDeJours = prev.nombreDeJours;
+            let dateEntree = prev.dateEntree;
+            let dateSortie = prev.dateSortie;
+
+            setErrorMessage(null);
 
             if (field === "dateEntree") {
                 dateEntree = value;
                 const dEntree = new Date(value);
-                
-                if (dateSortie) {
-                    const dSortie = new Date(dateSortie);
-                    if (!isNaN(dEntree.getTime()) && !isNaN(dSortie.getTime())) {
-                        if (dSortie < dEntree) {
-                            error = "❌ La date de sortie ne peut pas être avant la date d'entrée.";
-                            dateSortie = value;
-                            nombreDeJours = 1;
-                        } else {
-                            const diffTime = Math.abs(dSortie.getTime() - dEntree.getTime());
-                            nombreDeJours = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                        }
+                const dSortie = new Date(dateSortie);
+
+                if (!isNaN(dEntree.getTime()) && !isNaN(dSortie.getTime())) {
+                    if (dSortie < dEntree) {
+                        setErrorMessage("❌ La date de sortie ne peut pas être avant la date d’entrée.");
+                        dateSortie = "";
+                        nombreDeJours = 0;
+                    } else {
+                        nombreDeJours =
+                            Math.ceil((dSortie.getTime() - dEntree.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                     }
                 }
             }
 
             if (field === "dateSortie") {
                 dateSortie = value;
+                const dEntree = new Date(dateEntree);
                 const dSortie = new Date(value);
-                
-                if (dateEntree) {
-                    const dEntree = new Date(dateEntree);
-                    if (!isNaN(dEntree.getTime()) && !isNaN(dSortie.getTime())) {
-                        if (dSortie < dEntree) {
-                            error = "❌ La date de sortie ne peut pas être avant la date d'entrée.";
-                            dateSortie = '';
-                            nombreDeJours = 0;
-                        } else {
-                            const diffTime = Math.abs(dSortie.getTime() - dEntree.getTime());
-                            nombreDeJours = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
-                        }
+
+                if (!isNaN(dEntree.getTime()) && !isNaN(dSortie.getTime())) {
+                    if (dSortie < dEntree) {
+                        setErrorMessage("❌ La date de sortie ne peut pas être avant la date d’entrée.");
+                        dateSortie = "";
+                        nombreDeJours = 0;
+                    } else {
+                        nombreDeJours =
+                            Math.ceil((dSortie.getTime() - dEntree.getTime()) / (1000 * 60 * 60 * 24)) + 1;
                     }
                 }
             }
-
-            setErrorMessage(error);
 
             return {
                 ...prev,
@@ -319,7 +161,7 @@ useEffect(() => {
         });
     };
 
-  /*   const handleNombreJoursChange = (value: number) => {
+    const handleNombreJoursChange = (value: number) => {
         setFormData((prev) => {
             let dateSortie = prev.dateSortie;
             const dEntree = new Date(prev.dateEntree);
@@ -336,31 +178,7 @@ useEffect(() => {
                 dateSortie,
             };
         });
-    }; */
-    const handleNombreJoursChange = (value: number) => {
-        const jours = Math.max(1, Math.floor(value || 1));
-        
-        setFormData((prev) => {
-            if (!prev.dateEntree) {
-                return { ...prev, nombreDeJours: jours };
-            }
-
-            const dEntree = new Date(prev.dateEntree);
-            if (isNaN(dEntree.getTime())) {
-                return { ...prev, nombreDeJours: jours };
-            }
-
-            const dSortie = new Date(dEntree);
-            dSortie.setDate(dEntree.getDate() + jours - 1);
-
-            return {
-                ...prev,
-                nombreDeJours: jours,
-                dateSortie: dSortie.toISOString().split('T')[0],
-            };
-        });
     };
-
 
     return (
         <Container fluid className="p-3">
@@ -370,10 +188,9 @@ useEffect(() => {
 
             <Row>
                 <Col md={3}>
-                    <PatientInfoCaisse
+                    <PatientInfoUpdate
                         formData={formData}
                         setFormData={setFormData}
-                        //initialPatientP={initialPatientP}
                         onCodePrestationChange={(code) => {
                             setCodePrestation(code);
 
@@ -384,7 +201,6 @@ useEffect(() => {
                                 dateEntree: today,
                                 dateSortie: today,
                                 nombreDeJours: 1,
-                                TotalapayerPatient: 0,
                             }));
 
                             // Réinitialiser le mode modification
@@ -392,32 +208,9 @@ useEffect(() => {
                             setExamenHospitId(undefined);
                             setPresetLines([]);
                             setResetKey((k) => k + 1);
-                            setModePaiement("");
-                            setMontantEncaisse(0);
-                        }} 
-                       /* onCodePrestationChange={(code) => {
-                            setCodePrestation(code);
-
-                            // ✅ UNIQUEMENT en mode création
-                            if (!modeModification) {
-                                const today = new Date().toISOString().split('T')[0];
-                                setFormData((prev) => ({
-                                ...prev,
-                                dateEntree: today,
-                                dateSortie: today,
-                                nombreDeJours: 1,
-                                TotalapayerPatient: 0,
-                                }));
-                            }
-
-                            setPresetLines([]);
-                            setResetKey((k) => k + 1);
-                            setModePaiement("");
-                            setMontantEncaisse(0);
-                        }} */
-
+                        }}
                     />
-                    <AssuranceInfoCaisse
+                    <AssuranceInfoUpdate
                         formData={formData}
                         setFormData={setFormData}
                         currentLignes={currentLignes}
@@ -434,7 +227,7 @@ useEffect(() => {
                             <Col xs={12} md={6} lg={4} className="mb-2">
                                 <Form.Label>Nature Acte</Form.Label>
                                 <Form.Select
-                                    value={formData.typeacte || formData.Designationtypeacte}
+                                    value={formData.typeacte || ""}
                                     onChange={async (e) => {
                                         const value = e.target.value;
 
@@ -446,13 +239,13 @@ useEffect(() => {
                                         // Mettre à jour le type d'acte
                                         setFormData((prev) => ({ ...prev, typeacte: value }));
 
-                                        // 2. Rechercher l'examen avec Code_Prestation ET Designationtypeacte
-                                        if (!codePrestation) {
+                                        // 2. Rechercher l'examen avec CodePrestation ET Designationtypeacte
+                                        if (!CodePrestation) {
                                             return;
                                         }
 
                                         try {
-                                            const res = await fetch(`/api/examenhospitalisationFacture?CodePrestation=${encodeURIComponent(codePrestation)}&typeActe=${encodeURIComponent(value)}`);
+                                            const res = await fetch(`/api/examenhospitalisation?CodePrestation=${encodeURIComponent(CodePrestation)}&typeActe=${encodeURIComponent(value)}`);
 
                                             if (res.ok) {
                                                 const data = await res.json();
@@ -496,14 +289,10 @@ useEffect(() => {
                                                         Partassure: data.Partassure || 0,
                                                         resteAPayer: data.Restapayer || 0,
                                                         surplus: data.TotalSurplus || 0,
-                                                        TotalapayerPatient: data.TotalapayerPatient ?? data.Restapayer ?? 0,
                                                     }));
 
-                                                    setModePaiement(data.Modepaiement || "");
-                                                    setMontantEncaisse(data.MontantRecu ?? 0);
-
                                                     // Charger les lignes prestation liées à cet examen
-                                                    const resLignes = await fetch(`/api/ligneprestationFacture?codePrestation=${encodeURIComponent(codePrestation)}&idHospitalisation=${encodeURIComponent(data._id)}`);
+                                                    const resLignes = await fetch(`/api/ligneprestation?CodePrestation=${encodeURIComponent(CodePrestation)}&idHospitalisation=${encodeURIComponent(data._id)}`);
                                                     if (resLignes.ok) {
                                                         const payload = await resLignes.json();
                                                         const rawLines = Array.isArray(payload?.data) ? payload.data : [];
@@ -540,10 +329,6 @@ useEffect(() => {
                                                             CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
                                                             forfaitclinique: 0,
                                                             ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
-                                                            AFacturer: (l.actePayeCaisse === 'Payé' || l.statutPrescriptionMedecin === 3) ? 'Payé' : 'Non Payé',
-                                                            datePaiementCaisse: l.datePaiementCaisse ? new Date(l.datePaiementCaisse).toISOString().split('T')[0] : '',
-                                                            heurePaiement: l.heurePaiement || '',
-                                                            payePar: l.payePar || '',
                                                             Action: "",
                                                         }));
 
@@ -560,8 +345,6 @@ useEffect(() => {
                                                     setPresetLines([]);
                                                     setCurrentLignes([]);
                                                     setResetKey((k) => k + 1);
-                                                    setModePaiement("");
-                                                    setMontantEncaisse(0);
 
                                                     // Réinitialiser les totaux
                                                     setTotaux({
@@ -583,7 +366,6 @@ useEffect(() => {
                                                         Partassure: 0,
                                                         surplus: 0,
                                                         resteAPayer: 0,
-                                                        TotalapayerPatient: 0,
                                                         renseignementclinique: "",
                                                         // Garder AssuranceInfo (déjà chargé depuis la consultation)
                                                         // Garder dateEntree et dateSortie (déjà initialisés à aujourd'hui)
@@ -599,8 +381,7 @@ useEffect(() => {
                                                 setPresetLines([]);
                                                 setCurrentLignes([]);
                                                 setResetKey((k) => k + 1);
-                                                setModePaiement("");
-                                                setMontantEncaisse(0);
+
                                                 setTotaux({
                                                     montantTotal: 0,
                                                     partAssurance: 0,
@@ -609,6 +390,7 @@ useEffect(() => {
                                                     totalSurplus: 0,
                                                     montantExecutant: 0,
                                                     montantARegler: 0,
+
                                                 });
 
                                                 setFormData((prev) => ({
@@ -616,10 +398,9 @@ useEffect(() => {
                                                     typeacte: value,
                                                     factureTotal: 0,
                                                     partAssurance: 0,
-                                                    partPatient: 0,
+                                                    Partassure: 0,
                                                     surplus: 0,
                                                     resteAPayer: 0,
-                                                    TotalapayerPatient: 0,
                                                     renseignementclinique: "",
                                                 }));
                                             }
@@ -668,7 +449,7 @@ useEffect(() => {
                         {errorMessage && <div className="alert alert-danger mt-2">{errorMessage}</div>}
                     </Form>
                     <Row>
-                        <TablePrestationsCaisse
+                        <TablePrestationsUpdate
                             key={`actes-${resetKey}-${triggerRecalculation}`}
                             assuranceId={formData.Assure === "NON ASSURE" ? 1 : formData.Assure === "TARIF MUTUALISTE" ? 2 : 3}
                             saiTaux={formData.assurance.taux || 0}
@@ -677,15 +458,14 @@ useEffect(() => {
                             presetLines={presetLines}
                             onTotalsChange={(s) => {
                                 setTotaux(s);
-                                setFormData((prev) => {
-                                    return {
-                                        ...prev,
-                                        factureTotal: s.montantTotal,
-                                        partAssurance: s.partAssurance,
-                                        Partassure: s.partAssure,
-                                        surplus: s.totalSurplus,
-                                    };
-                                });
+                                setFormData((prev) => ({
+                                    ...prev,
+                                    factureTotal: s.montantTotal,
+                                    partAssurance: s.partAssurance,
+                                    Partassure: s.partAssure,
+                                    surplus: s.totalSurplus,
+                                    resteAPayer: s.montantARegler,
+                                }));
                             }}
                             onLinesChange={(lignes) => {
                                 setCurrentLignes(lignes);
@@ -693,69 +473,32 @@ useEffect(() => {
                         />
                     </Row>
                     <Row>
-                        <Col>
-                            <CliniqueInfoCaisse
+                        <Col md={5}>
+                            <CliniqueInfoUpdate
                                 formData={formData}
                                 setFormData={setFormData}
                                 hasActesMedecin={currentLignes.some(ligne => ligne.StatutMedecinActe === "OUI")}
                             />
                         </Col>
-                    </Row>
-                    <Row className="mt-2">
-                        <Col>
-                            <PaiementInfoCaisse
-                                formData={formData}
-                                setFormData={setFormData}
-                                modePaiement={modePaiement}
-                                setModePaiement={setModePaiement}
-                                montantEncaisse={montantEncaisse}
-                                setMontantEncaisse={setMontantEncaisse}
-                            />
+                        <Col md={7}>
+                            <PaiementInfoUpdate formData={formData} setFormData={setFormData} />
                         </Col>
                     </Row>
 
-                    <ActionsButtonsCaisse
+                    <ActionsButtonsUpdate
                         disabled={!!errorMessage}
-                        formData={formData}
-                        lignes={currentLignes}
-                        modeModification={modeModification}
-                        examenHospitId={examenHospitId}
                         onSubmit={async () => {
                             // validations principales
-                            if (!codePrestation) {
+                            if (!CodePrestation) {
                                 alert("Code prestation manquant. Veuillez vérifier la consultation.");
                                 return;
                             }
-                            const assureLabel = (formData.Assure || "").toUpperCase();
-                            const assuranceSelected =
-                                Boolean(formData.assurance.assuranceId) ||
-                                (formData.assurance.taux ?? 0) > 0;
-                            if (assureLabel === "NON ASSURE" && assuranceSelected) {
-                                alert("Veuillez vérifier le type et l'assurance du patient");
-                                return;
-                            }
-
-                            const societeValue = (formData.assurance.societe || formData.societePatient || "").trim();
-                            if (assureLabel !== "NON ASSURE" && societeValue === "") {
-                                alert("Merci d'ajouter la société du patient avant cette action ");
-                                return;
-                            }
-
                             if (!formData.typeacte) {
                                 alert("Associer la nature de l'acte SVP");
                                 return;
                             }
-                            const modePaiementValue = modePaiement.trim();
-                            if (!modePaiementValue) {
-                                alert("Veuillez sélectionner le mode paiement SVP");
-                                return;
-                            }
                             if (!formData.dateEntree || !formData.dateSortie) {
                                 alert("Veuillez saisir la date d'entrée et de sortie SVP");
-                                return;
-                            }
-                            if (!(formData.medecinPrescripteur || "").toString().trim()) {
-                                alert("Merci de préciser le médecin prescripteur");
                                 return;
                             }
 
@@ -776,32 +519,11 @@ useEffect(() => {
                                 return;
                             }
 
-                            const lignesAvecMedecin = lignesValides.filter(
-                                (l) => (l.StatutMedecinActe || "").toUpperCase() === "OUI"
-                            );
-                            if (lignesAvecMedecin.length > 0 && !(formData.medecinId || "").toString().trim()) {
-                                alert("Merci de choisir le médecin exécutant");
-                                return;
-                            }
-
-                            const lignesPayees = lignesValides.filter((l) => l.AFacturer === "Payé");
-                            if (lignesPayees.length === 0) {
-                                alert("Merci de régler une facture avant cette action ");
-                                return;
-                            }
-
-                            if (formData.reduction !== 0 && !(formData.MotifRemise || "").trim()) {
-                                alert("Veuillez saisir le motif de la remise SVP");
-                                return;
-                            }
-
                             // Construire le header pour ExamenHospitalisation
-
-                            const medecinExecutantId = lignesAvecMedecin.length > 0 ? (formData.medecinId || "").toString().trim() : "";
 
                             const header = {
                                 _id: modeModification ? examenHospitId : undefined,
-                                CodePrestation: codePrestation || formData.patientId, // fallback si besoin
+                                CodePrestation: CodePrestation || formData.patientId, // fallback si besoin
                                 Rclinique: formData.renseignementclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
                                 Assurance: formData.assurance || "",
@@ -815,30 +537,23 @@ useEffect(() => {
                                 SortieLe: formData.dateSortie || undefined,
                                 nombreDeJours: formData.nombreDeJours || 0,
                                 Designationtypeacte: formData.typeacte || "",
-                                Modepaiement: modePaiementValue,
+                                Modepaiement: undefined,
                                 Assure: formData.Assure,
-                                Payeoupas: true,
+                                Payeoupas: false,
                                 Restapayer: formData.resteAPayer || 0,
-                                TotaleTaxe: totaux.totalTaxe || 0,
+                                TotaleTaxe: 0,
                                 Montanttotal: formData.factureTotal || 0,
                                 Partassure: formData.Partassure || 0,
                                 PartAssuranceP: formData.partAssurance || 0,
-                                TotalapayerPatient: formData.TotalapayerPatient || 0,
-                                TotalReliquatPatient: formData.surplus || 0,
-                                SOCIETE_PATIENT: societeValue || "",
-                                medecinId: medecinExecutantId || "",
-                                medecinPrescripteur: (formData.medecinPrescripteur || "").toString().trim(),
-                                MontantRecu: Number.isFinite(montantEncaisse) ? montantEncaisse : 0,
-                                reduction: formData.reduction || 0,
-                                MotifRemise: formData.MotifRemise || "",
-                                StatutPrescriptionMedecin: 3,
-                                StatutPaiement: "Facture Payée",
+                                SOCIETE_PATIENT: formData.societePatient || "",
+                                medecinId: formData.medecinId || "",
+                                medecinPrescripteur: formData.medecinPrescripteur || "",
                             };
 
                             // Utiliser les lignes actuelles du composant ActesTable
                             console.log("📤 Envoi des données:", { header, lignesCount: lignesValides.length });
 
-                            const resp = await fetch('/api/examenhospitalisationFacture', {
+                            const resp = await fetch('/api/examenhospitalisation', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ header, lignes: lignesValides, Recupar: recuPar }),
@@ -861,10 +576,13 @@ useEffect(() => {
                                 }
                                 return;
                             }
+
                             console.log("✅ Enregistrement réussi:", out);
                             alert(out?.message || 'Facture enregistrée avec succès');
                         }}
-
+                    /*   onSuccess={() => {
+                           onClose?.(); // 👈 ferme automatiquement le modal
+                      }} */
                     />
                 </Col>
             </Row>

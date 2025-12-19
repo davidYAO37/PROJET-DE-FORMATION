@@ -78,7 +78,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
         if (currentConsultation) {
             setCodePrestation(currentConsultation.CodePrestation || "");
             
-            // Mettre à jour l'état assure en fonction de la valeur de Assure
+            // Mettre à jour l'état assure en fonction de la valeur de Assuré
             const nouvelAssure = currentConsultation.Assure === "NON ASSURE" 
                 ? "non" 
                 : currentConsultation.Assure === "TARIF MUTUALISTE" 

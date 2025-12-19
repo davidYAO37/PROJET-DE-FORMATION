@@ -76,7 +76,7 @@ export async function POST(req: Request) {
       delete body.IDASSURANCE;
     }
 
-    if (body.TarifPatient === "Non Assure") {
+    if (body.TarifPatient === "Non Assuré") {
       body.IDASSURANCE = undefined;
       body.Taux = undefined;
       body.Matricule = "";

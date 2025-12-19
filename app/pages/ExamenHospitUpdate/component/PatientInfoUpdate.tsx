@@ -10,7 +10,7 @@ type Props = {
     onCodePrestationChange?: (code: string) => void;
 };
 
-export default function PatientInfo({ formData, setFormData, onCodePrestationChange }: Props) {
+export default function PatientInfoUpdate({ formData, setFormData, onCodePrestationChange }: Props) {
     const [CodePrestation, setCodePrestation] = useState("");
     const [patientNom, setPatientNom] = useState("");
     const [infoMessage, setInfoMessage] = useState<string | null>(null);

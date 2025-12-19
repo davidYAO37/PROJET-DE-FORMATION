@@ -1,16 +1,20 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Table, Button, Form, Spinner, Badge } from 'react-bootstrap';
-import { FaEye, FaFilePdf } from 'react-icons/fa';
+import { FaEdit, FaEye, FaFileContract, FaFilePdf, FaList } from 'react-icons/fa';
+import ExamenHospitalisationModalCaisse from './ExamenHospitModalCaisse';
 
 export interface ExamenHospit {
     _id: string;
     designation: string;
     montant: number;
-    date: string;
+    date: string | Date;
     statut: boolean;
     patientId: string;
     codePrestation: string;
     designationTypeActe: string;
+    Entrele?: string | Date;
+    SortieLe?: string | Date;
+    Rclinique?: string;
 }
 
 interface ListeExamenHospitModalProps {
@@ -28,6 +32,8 @@ export default function ListeExamenHospitModalCaisse({
     const [loading, setLoading] = useState(false);
     const [search, setSearch] = useState('');
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
+    const [showFactureModal, setShowFactureModal] = useState(false);
+    const [selectedExamen, setSelectedExamen] = useState<ExamenHospit | null>(null);
 
     useEffect(() => {
         if (!show || !patientId) return;
@@ -47,7 +53,16 @@ export default function ListeExamenHospitModalCaisse({
                 const examData = await examRes.json();
                 const patientData = await patientRes.json();
                 
-                setExamens(Array.isArray(examData) ? examData : []);
+                // Formater les données des examens pour inclure les champs manquants
+                const formattedExams = examData.map((exam: any) => ({
+                    ...exam,
+                    date: exam.date ? new Date(exam.date) : new Date(),
+                    Entrele: exam.Entrele ? new Date(exam.Entrele) : null,
+                    SortieLe: exam.SortieLe ? new Date(exam.SortieLe) : null,
+                    Rclinique: exam.Rclinique || ''
+                }));
+                
+                setExamens(Array.isArray(formattedExams) ? formattedExams : []);
                 setSelectedPatient(patientData);
             } catch (error) {
                 console.error('Erreur:', error);
@@ -65,9 +80,14 @@ export default function ListeExamenHospitModalCaisse({
         examen.designationTypeActe?.toLowerCase().includes(search.toLowerCase())
     );
 
-    const handleVoirDetails = (examen: ExamenHospit) => {
-        // Implémenter la logique pour afficher les détails de l'examen
-        console.log('Voir détails de l\'examen:', examen._id);
+    const handleFacturer = (examen: ExamenHospit) => {
+        setSelectedExamen(examen);
+        setShowFactureModal(true);
+    };
+
+    const handleCloseFactureModal = () => {
+        setShowFactureModal(false);
+        setSelectedExamen(null);
     };
 
     return (
@@ -121,25 +141,23 @@ export default function ListeExamenHospitModalCaisse({
                                                 {examen.statut ? 'Validé' : 'En attente'}
                                             </Badge>
                                         </td>
-                                        <td>
+                                        <td className="text-center">
                                             <Button 
-                                                variant="outline-primary" 
-                                                size="sm" 
-                                                className="me-2"
-                                                onClick={() => handleVoirDetails(examen)}
-                                                title="Voir les détails"
-                                            >
-                                                <FaEye />
-                                            </Button>
-                                            <Button
-                                                variant="outline-danger"
+                                                variant="outline-warning"                                                
                                                 size="sm"
-                                                disabled={!examen.statut}
-                                                onClick={() => window.open(`/api/recu-examen?id=${examen._id}`, "_blank")}
-                                            >
-                                                <FaFilePdf />
+                                                className='me-2'
+                                                disabled={examen.statut}
+                                                onClick={() => handleFacturer(examen)}
+                                                title="Facturer La Prestation"                                           >
+                                                <FaFileContract />
                                             </Button>
-
+                                            <Button 
+                                                variant="outline-secondary"                                                
+                                                size="sm"
+                                                onClick={() => window.open(`/api/recu-examen?id=${examen._id}`, "_blank")}
+                                                title="Liste Fact"                                           >
+                                                <FaList />
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}
@@ -154,6 +172,28 @@ export default function ListeExamenHospitModalCaisse({
                     Fermer
                 </Button>
             </Modal.Footer>
+            
+            {/* Modal de facturation */}
+            {selectedExamen && (
+                <ExamenHospitalisationModalCaisse
+                    show={showFactureModal}
+                    onHide={handleCloseFactureModal}
+                    CodePrestation={selectedExamen.codePrestation}
+                    Designationtypeacte={selectedExamen.designationTypeActe}
+                    PatientP={selectedPatient ? `${selectedPatient.Nom} ${selectedPatient.Prenoms}` : ''}
+                    examenHospitId={selectedExamen._id}
+                    dateEntree={selectedExamen.Entrele 
+                        ? new Date(selectedExamen.Entrele).toISOString().split('T')[0] 
+                        : null}
+                    dateSortie={selectedExamen.SortieLe 
+                        ? new Date(selectedExamen.SortieLe).toISOString().split('T')[0] 
+                        : null}
+                    nombreDeJours={selectedExamen.Entrele && selectedExamen.SortieLe 
+                        ? Math.ceil((new Date(selectedExamen.SortieLe).getTime() - new Date(selectedExamen.Entrele).getTime()) / (1000 * 60 * 60 * 24))
+                        : 1}
+                    renseignementclinique={selectedExamen.Rclinique || ''}
+                />
+            )}
         </Modal>
     );
 }

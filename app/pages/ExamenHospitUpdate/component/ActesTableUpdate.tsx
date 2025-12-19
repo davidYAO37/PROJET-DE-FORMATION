@@ -35,7 +35,6 @@ export interface ITarifAssurance {
 }
 
 export interface ILignePrestation {
-    AFacturer: "Non Payé" | "Payé";
     DATE: string;
     Acte: string; // affichage (Designation)
     Lettre_Cle: string;
@@ -67,9 +66,6 @@ export interface ILignePrestation {
     forfaitclinique: number;
     ordonnancementAffichage?: number;
     Action?: string;
-    datePaiementCaisse?: string;
-    heurePaiement?: string;
-    payePar?: string;
 }
 // utilise Assurance et le taux de assurance info
 
@@ -92,11 +88,11 @@ function SearchableActeSelect({ actes, selectedId, onSelect }: SearchableActeSel
     const displayValue = selectedActe ? selectedActe.Designation || "" : "";
 
     // Filtrer les actes selon la recherche - Si pas de recherche, afficher tous les actes
-    const filteredActes = searchTerm
-        ? actes.filter(a =>
+    const filteredActes = searchTerm 
+        ? actes.filter(a => 
             a.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             a.LettreCle?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
+          )
         : actes; // Afficher tous les actes si pas de recherche
 
     // Calculer la position du dropdown
@@ -143,15 +139,15 @@ function SearchableActeSelect({ actes, selectedId, onSelect }: SearchableActeSel
                     setShowDropdown(true);
                 }}
                 onFocus={() => setShowDropdown(true)}
-                style={{
-                    resize: 'none',
+                style={{ 
+                    resize: 'none', 
                     overflow: 'hidden',
                     fontSize: '13px',
                     lineHeight: '1.3'
                 }}
             />
             {showDropdown && (
-                <div
+                <div 
                     ref={dropdownRef}
                     className="searchable-acte-dropdown"
                     style={{
@@ -247,7 +243,6 @@ function generateLineId(): string {
 }
 
 const emptyLigne = (): ILignePrestation => ({
-    AFacturer: "Non Payé",
     DATE: new Date().toISOString().split("T")[0],
     Acte: "",
     Lettre_Cle: "",
@@ -278,18 +273,14 @@ const emptyLigne = (): ILignePrestation => ({
     CoefClinique: 1,
     forfaitclinique: 0,
     ordonnancementAffichage: 0,
-    Action: "",
-    datePaiementCaisse: "",
-    heurePaiement: "",
-    payePar: ""
+    Action: ""
 });
 
-export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, assuranceDbId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
+export default function TablePrestationsUpdate({ assuranceId = 1, saiTaux = 0, assuranceDbId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
     const [actes, setActes] = useState<IActeClinique[]>([]);
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
     const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
-    const [nomUtilisateur, setNomUtilisateur] = useState<string>("");
     const [totaux, setTotaux] = useState({
         montantTotal: 0,
         partAssurance: 0,
@@ -299,11 +290,6 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         montantExecutant: 0,
         montantARegler: 0
     });
-
-    useEffect(() => {
-        const nom = localStorage.getItem("nom_utilisateur");
-        if (nom) setNomUtilisateur(nom);
-    }, []);
 
     useEffect(() => {
         // Charger actes cliniques depuis /api/actesclinique (paginé)
@@ -764,9 +750,6 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         };
 
         for (const l of lignes) {
-            if (l.AFacturer !== "Payé") {
-                continue;
-            }
             s.montantTotal += Number(l.PrixTotal || 0);
             s.partAssurance += Number(l.PartAssurance || 0);
             s.partAssure += Number(l.PartAssure || 0);
@@ -808,8 +791,8 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         if (isValidObjectId) {
             try {
                 // Vérifier si la ligne existe en base de données
-                const checkRes = await fetch(`/api/ligneprestationFacture?id=${encodeURIComponent(id)}`);
-
+                const checkRes = await fetch(`/api/ligneprestation?id=${encodeURIComponent(id)}`);
+                
                 if (checkRes.ok) {
                     const data = await checkRes.json();
                     const ligneDB = data.data;
@@ -821,7 +804,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     }
 
                     // SINON HSupprime(LIGNE_PRESTATION)
-                    const deleteRes = await fetch(`/api/ligneprestationFacture?id=${encodeURIComponent(id)}`, {
+                    const deleteRes = await fetch(`/api/ligneprestation?id=${encodeURIComponent(id)}`, {
                         method: 'DELETE'
                     });
 
@@ -879,7 +862,6 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                 const copy = { ...l };
 
                 // Remplissages d'après ton WLangage
-                copy.AFacturer = "Non Payé";
                 copy.Acte = acte.Designation || ""; // ✅ Remplir le nom de l'acte
                 copy.Lettre_Cle = acte.LettreCle || "";
                 copy.DATE = new Date().toISOString().split("T")[0];
@@ -892,10 +874,6 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                 copy.Statutprescription = 2;
                 copy.Refuser = acte.Prix || 0;
                 copy.ordonnancementAffichage = acte.ORdonnacementAffichage || 0;
-                // Initialiser les champs de paiement
-                copy.datePaiementCaisse = '';
-                copy.heurePaiement = '';
-                copy.payePar = '';
 
                 // Selon COMBO_Assurance (prop assuranceId)
                 if (assuranceId === 1) {
@@ -936,22 +914,6 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                 if (l.IDLignePrestation !== lineId) return l;
                 const copy = { ...l, [field]: value };
 
-                // Gestion du statut de paiement
-                if (field === 'AFacturer') {
-                    const now = new Date();
-                    if (value === 'Payé') {
-                        // Mettre à jour les informations de paiement
-                        copy.datePaiementCaisse = now.toISOString().split('T')[0];
-                        copy.heurePaiement = now.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
-                        copy.payePar = nomUtilisateur || 'Utilisateur';
-                    } else {
-                        // Réinitialiser les informations de paiement
-                        copy.datePaiementCaisse = '';
-                        copy.heurePaiement = '';
-                        copy.payePar = '';
-                    }
-                }
-
                 // Recalculs importants si changement sur quantité, exclusion, accepter/refuser, prix unitaire
                 const acte = findActeById(copy.IDACTE);
                 // si acte existe, appliquer prixActe (en fonction de assuranceId et tarifs)
@@ -977,7 +939,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
     return (
         <div>
             <Row className="mb-2">
-
+                
                 <Col className="text-end">
                     <Button variant="primary" size="sm" onClick={addLigne}>
                         + Ajouter Ligne
@@ -992,13 +954,12 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
                         <tr>
                             {/* Colonnes visibles */}
-                            <th style={{ width: '120px' }}>Payé/NonPayé</th>
                             <th style={{ width: '120px' }}>Date</th>
                             <th style={{ minWidth: '220px' }}>Acte</th>
-                            <th style={{ width: '80px' }}>Coeffi</th>
-                            <th style={{ width: '70px' }}>Qtité</th>
+                            <th style={{ width: '80px' }}>Coef</th>
+                            <th style={{ width: '70px' }}>Qté</th>
                             <th style={{ width: '120px' }}>Prix unitaire</th>
-                            <th style={{ width: '120px' }}>Montant Total</th>
+                            <th style={{ width: '120px' }}>Prix Total</th>
                             <th style={{ width: '120px' }}>Exclusion</th>
                             <th style={{ width: '60px', textAlign: 'center' }}>🗑️</th>
                         </tr>
@@ -1008,164 +969,162 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                             // Vérifier si la ligne est modifiable (statutPrescriptionMedecin < 3)
                             const isEditable = (l.Statutprescription ?? 2) < 3;
                             const rowStyle = !isEditable ? { backgroundColor: '#f8f9fa', opacity: 0.7 } : {};
-
+                            
                             return (
+                            <tr key={l.IDLignePrestation} style={rowStyle}>
+                                {/* Date */}
+                                <td style={{ padding: '4px' }}>
+                                    <Form.Control
+                                        size="sm"
+                                        type="date"
+                                        value={l.DATE}
+                                        onChange={(e) => onChangeField(l.IDLignePrestation, "DATE", e.target.value)}
+                                        style={{ fontSize: '13px' }}
+                                        disabled={!isEditable}
+                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                    />
+                                </td>
 
-                                <tr key={l.IDLignePrestation} style={rowStyle}>
-                                    {/* Mentionner payé ou pas */}
-
-
-                                    <td style={{ padding: '4px' }}>
-                                        <Form.Select
-                                            size="sm"
-                                            value={l.AFacturer}
-                                            onChange={(e) =>
-                                                onFieldChangeAndRecalc(
-                                                    l.IDLignePrestation,
-                                                    "AFacturer",
-                                                    e.target.value
-                                                )
-                                            }
-                                            style={{
-                                                fontSize: '13px',
-                                                backgroundColor: l.AFacturer === 'Payé' ? '#d4edda' : 'inherit',
-                                                color: l.AFacturer === 'Payé' ? '#155724' : 'inherit'
-                                            }}
-                                            disabled={!isEditable}
-                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                        >
-                                            <option value="Non Payé">✗ Non Payé</option>
-                                            <option value="Payé">✓ Payé</option>
-                                        </Form.Select>
-                                        {l.AFacturer === 'Payé' && l.datePaiementCaisse && (
-                                            <div style={{ fontSize: '10px', color: '#28a745' }}>
-                                                {l.datePaiementCaisse} {l.heurePaiement}
-                                                {l.payePar && ` par ${l.payePar}`}
-                                            </div>
-                                        )}
-                                    </td>
-                                    {/* Date */}
-                                    <td style={{ padding: '4px' }}>
-                                        <Form.Control
-                                            size="sm"
-                                            type="date"
-                                            value={l.DATE}
-                                            onChange={(e) => onChangeField(l.IDLignePrestation, "DATE", e.target.value)}
-                                            style={{ fontSize: '13px' }}
-                                            disabled={!isEditable}
-                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                {/* Acte */}
+                                <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                    {isEditable ? (
+                                        <SearchableActeSelect
+                                            actes={actes}
+                                            selectedId={l.IDACTE || ""}
+                                            onSelect={(acteId: string) => onSelectActe(l.IDLignePrestation, acteId)}
                                         />
-                                    </td>
+                                    ) : (
+                                        <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">
+                                            {l.Acte}
+                                        </div>
+                                    )}
+                                </td>
 
-                                    {/* Acte */}
-                                    <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
-                                        {isEditable ? (
-                                            <SearchableActeSelect
-                                                actes={actes}
-                                                selectedId={l.IDACTE || ""}
-                                                onSelect={(acteId: string) => onSelectActe(l.IDLignePrestation, acteId)}
-                                            />
-                                        ) : (
-                                            <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">
-                                                {l.Acte}
-                                            </div>
-                                        )}
-                                    </td>
+                                {/* Coefficient */}
+                                <td style={{ padding: '4px' }}>
+                                    <Form.Control
+                                        size="sm"
+                                        type="number"
+                                        step="1"
+                                        value={l.Coefficient}
+                                        onChange={(e) =>
+                                            onFieldChangeAndRecalc(l.IDLignePrestation, "Coefficient", parseInt(e.target.value) || 0)
+                                        }
+                                        style={{ fontSize: '13px', textAlign: 'center' }}
+                                        disabled={!isEditable}
+                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                    />
+                                </td>
 
-                                    {/* Coefficient */}
-                                    <td style={{ padding: '4px' }}>
+                                {/* QtéP */}
+                                <td style={{ padding: '4px' }}>
+                                    <Form.Control
+                                        size="sm"
+                                        type="number"
+                                        step="1"
+                                        value={l.QteP}
+                                        onChange={(e) =>
+                                            onFieldChangeAndRecalc(l.IDLignePrestation, "QteP", parseInt(e.target.value) || 0)
+                                        }
+                                        style={{ fontSize: '13px', textAlign: 'center' }}
+                                        disabled={!isEditable}
+                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                    />
+                                </td>
+
+                                {/* Prixunitaire */}
+                                <td style={{ padding: '4px' }}>
+                                    <InputGroup size="sm">
                                         <Form.Control
-                                            size="sm"
                                             type="number"
                                             step="1"
-                                            value={l.Coefficient}
+                                            value={l.Prixunitaire}
                                             onChange={(e) =>
-                                                onFieldChangeAndRecalc(l.IDLignePrestation, "Coefficient", parseInt(e.target.value) || 0)
+                                                onFieldChangeAndRecalc(l.IDLignePrestation, "Prixunitaire", parseInt(e.target.value) || 0)
                                             }
-                                            style={{ fontSize: '13px', textAlign: 'center' }}
+                                            style={{ fontSize: '13px', textAlign: 'right' }}
                                             disabled={!isEditable}
                                             title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
                                         />
-                                    </td>
+                                    </InputGroup>
+                                </td>
 
-                                    {/* QtéP */}
-                                    <td style={{ padding: '4px' }}>
-                                        <Form.Control
-                                            size="sm"
-                                            type="number"
-                                            step="1"
-                                            value={l.QteP}
-                                            onChange={(e) =>
-                                                onFieldChangeAndRecalc(l.IDLignePrestation, "QteP", parseInt(e.target.value) || 0)
-                                            }
-                                            style={{ fontSize: '13px', textAlign: 'center' }}
-                                            disabled={!isEditable}
-                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                        />
-                                    </td>
+                                {/* PrixTotal */}
+                                <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '8px', fontSize: '13px' }}>
+                                    {Math.round(Number(l.PrixTotal || 0)).toLocaleString('fr-FR')}
+                                </td>
 
-                                    {/* Prixunitaire */}
-                                    <td style={{ padding: '4px' }}>
-                                        <InputGroup size="sm">
-                                            <Form.Control
-                                                type="number"
-                                                step="1"
-                                                value={l.Prixunitaire}
-                                                onChange={(e) =>
-                                                    onFieldChangeAndRecalc(l.IDLignePrestation, "Prixunitaire", parseInt(e.target.value) || 0)
-                                                }
-                                                style={{ fontSize: '13px', textAlign: 'right' }}
-                                                disabled={!isEditable}
-                                                title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                            />
-                                        </InputGroup>
-                                    </td>
+                                {/* Exclusion */}
+                                <td style={{ padding: '4px' }}>
+                                    <Form.Select
+                                        size="sm"
+                                        value={l.Exclusion}
+                                        onChange={(e) =>
+                                            onFieldChangeAndRecalc(
+                                                l.IDLignePrestation,
+                                                "Exclusion",
+                                                e.target.value === "Accepter" ? "Accepter" : "Refuser"
+                                            )
+                                        }
+                                        style={{ fontSize: '13px' }}
+                                        disabled={!isEditable}
+                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                    >
+                                        <option value="Accepter">✓Accepter</option>
+                                        <option value="Refuser">✗Refuser</option>
+                                    </Form.Select>
+                                </td>
 
-                                    {/* PrixTotal */}
-                                    <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '8px', fontSize: '13px' }}>
-                                        {Math.round(Number(l.PrixTotal || 0)).toLocaleString('fr-FR')}
-                                    </td>
-
-                                    {/* Exclusion */}
-                                    <td style={{ padding: '4px' }}>
-                                        <Form.Select
-                                            size="sm"
-                                            value={l.Exclusion}
-                                            onChange={(e) =>
-                                                onFieldChangeAndRecalc(
-                                                    l.IDLignePrestation,
-                                                    "Exclusion",
-                                                    e.target.value === "Accepter" ? "Accepter" : "Refuser"
-                                                )
-                                            }
-                                            style={{ fontSize: '13px' }}
-                                            disabled={!isEditable}
-                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                        >
-                                            <option value="Accepter">✓Accepter</option>
-                                            <option value="Refuser">✗Refuser</option>
-                                        </Form.Select>
-                                    </td>
-
-                                    {/* Action */}
-                                    <td style={{ textAlign: 'center', padding: '4px' }}>
-                                        <Button
-                                            variant="outline-danger"
-                                            size="sm"
-                                            onClick={() => removeLigne(l.IDLignePrestation)}
-                                            style={{ padding: '4px 8px', border: 'none' }}
-                                            title={!isEditable ? "Acte déjà facturé - suppression impossible" : "Supprimer cette ligne"}
-                                            disabled={!isEditable}
-                                        >
-                                            🗑️
-                                        </Button>
-                                    </td>
-                                </tr>
+                                {/* Action */}
+                                <td style={{ textAlign: 'center', padding: '4px' }}>
+                                    <Button 
+                                        variant="outline-danger" 
+                                        size="sm" 
+                                        onClick={() => removeLigne(l.IDLignePrestation)}
+                                        style={{ padding: '4px 8px', border: 'none' }}
+                                        title={!isEditable ? "Acte déjà facturé - suppression impossible" : "Supprimer cette ligne"}
+                                        disabled={!isEditable}
+                                    >
+                                        🗑️
+                                    </Button>
+                                </td>
+                            </tr>
                             );
                         })}
                     </tbody>
                 </Table>
             </div>
+
+            {/*  <div className="mt-3">
+                <Row>
+                    <Col>
+                        <strong>Montant total:</strong> {totaux.montantTotal.toFixed(2)}
+                    </Col>
+                    <Col>
+                        <strong>Part assurance:</strong> {totaux.partAssurance.toFixed(2)}
+                    </Col>
+                    <Col>
+                        <strong>Part assuré:</strong> {totaux.partAssure.toFixed(2)}
+                    </Col>
+                    <Col>
+                        <strong>Montant exécutant:</strong> {totaux.montantExecutant.toFixed(2)}
+                    </Col>
+                    <Col className="text-end">
+                        <Button
+                            size="sm"
+                            variant="success"
+                            onClick={() => {
+                                // action sauvegarde ou print — ici on renvoit l'état console
+                                console.log("Lignes:", lignes);
+                                console.log("Totaux:", totaux);
+                                alert("Données prêtes (voir console).");
+                            }}
+                        >
+                            Enregistrer / Vérifier (console)
+                        </Button>
+                    </Col>
+                </Row>
+            </div> */}
         </div>
     );
 }

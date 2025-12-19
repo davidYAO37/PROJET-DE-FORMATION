@@ -32,7 +32,10 @@ export async function GET(req: NextRequest) {
             patientId: examen.IdPatient?._id?.toString(),
             codePrestation: examen.CodePrestation || "",
             designationTypeActe: examen.Designationtypeacte || "",
-            Numfacture: examen.Numfacture || ""
+            Numfacture: examen.Numfacture || "",
+            Entrele: examen.Entrele,
+            SortieLe: examen.SortieLe,
+            Rclinique: examen.Rclinique
         }));
 
         return NextResponse.json(formatted);

@@ -32,7 +32,7 @@ export interface IFacturation extends Document {
     Entrele?: Date;
     SortieLe?: Date;
     Chambre?: string;
-    DureeE?: number;
+    nombreDeJours?: number;
     Numcarte?: string;
     Designationtypeacte?: string;
     StatutFacture?: boolean;
@@ -131,7 +131,7 @@ const FacturationSchema = new Schema<IFacturation>(
         Entrele: { type: Date },
         SortieLe: { type: Date },
         Chambre: { type: String, maxlength: 50 },
-        DureeE: { type: Number },
+        nombreDeJours: { type: Number },
         Numcarte: { type: String, maxlength: 50 },
         Designationtypeacte: { type: String, maxlength: 100 },
         StatutFacture: { type: Boolean },

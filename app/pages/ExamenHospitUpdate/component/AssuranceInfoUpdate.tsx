@@ -13,7 +13,7 @@ type Props = {
     onRecalculateLines?: () => void;
 };
 
-export default function AssuranceInfo({ formData, setFormData, currentLignes = [], onRecalculateLines }: Props) {
+export default function AssuranceInfoUpdate({ formData, setFormData, currentLignes = [], onRecalculateLines }: Props) {
     const [medecins, setMedecins] = useState<{ nom: string; prenoms: string; _id: string }[]>([]);
     const [assurances, setAssurances] = useState<Assurance[]>([]);
     const previousAssureStatus = useRef(formData.Assure);

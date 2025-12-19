@@ -44,7 +44,12 @@ type RowItemBase = {
     medecin?: string;
     assure?: string;
     type: "CONSULTATION" | "PRESTATION" | "PRESCRIPTION";
-    raw?: any; // objet original si besoin pour détails/modals
+    raw?: any;
+    // Ajoutez ces champs optionnels
+    dateEntree?: string | Date;
+    dateSortie?: string | Date;
+    nombreDeJours?: number;
+    renseignementclinique?: string;
 };
 
 /* -------------------- Composant -------------------- */
@@ -75,11 +80,17 @@ export default function PageListeApayer() {
 
     // Fonction pour gérer l'ouverture de la modale appropriée
 
-    const handleOpenModal = (r: RowItemBase, row: any) => {
-        setSelectedItem(r);
-        setShowModal(true);
-        setSelectedRow(row);
-    };
+   const handleOpenModal = (r: RowItemBase, row: any) => {
+    console.log("Selected Row Data:", {
+        ...row,
+        dateEntree: row.dateEntree,
+        dateSortie: row.dateSortie,
+        renseignementclinique: row.renseignementclinique || row.Rclinique
+    });
+    setSelectedItem(r);
+    setSelectedRow(row);
+    setShowModal(true);
+};
 
     // Fonction pour fermer la modale et rafraîchir la liste
     const handleCloseModal = () => {
@@ -105,7 +116,7 @@ export default function PageListeApayer() {
                     designation: d.designation ?? d.designationC ?? "Consultation",
                     montant: Number((d.montant ?? 0)),
                     medecin: d.medecin ?? d.Medecin ?? "",
-                    assure: d.assure ?? d.Assure ?? "",
+                    assure: d.assure ?? d.Assuré ?? "",
                     type: "CONSULTATION",
                     raw: d,
                 }))
@@ -115,19 +126,24 @@ export default function PageListeApayer() {
             // Recharger Prestations
             const prestRes = await fetch("/api/consultationFacture/prestationAttentePaiement");
             const prestData = await prestRes.json();
-            const prestItems: RowItemBase[] = Array.isArray(prestData)
-                ? prestData.map((d: any) => ({
-                    id: d.id ?? d._id,
-                    code: d.code ?? d.CodePrestation ?? "",
-                    patient: d.patient ?? d.PatientP ?? "Inconnu",
-                    designation: d.designation ?? d.Designationtypeacte ?? "Prestation",
-                    montant: Number(d.montant ?? 0),
-                    medecin: d.medecin ?? d.NomMed ?? "",
-                    assure: d.assure ?? d.Assure ?? "",
-                    type: "PRESTATION",
-                    raw: d,
-                }))
-                : [];
+           const prestItems: RowItemBase[] = Array.isArray(prestData)
+            ? prestData.map((d: any) => ({
+                id: d.id ?? d._id,
+                code: d.code ?? d.CodePrestation ?? "",
+                patient: d.patient ?? d.PatientP ?? "Inconnu",
+                designation: d.designation ?? d.Designationtypeacte ?? "Prestation",
+                montant: Number(d.montant ?? 0),
+                medecin: d.medecin ?? d.NomMed ?? "",
+                assure: d.assure ?? d.Assure ?? "",
+                type: "PRESTATION",
+                // Ajoutez ces champs
+                dateEntree:  d.Entrele ?? null,
+                dateSortie:  d.SortieLe ?? null,
+                nombreDeJours: d.nombreDeJours ?? 1,
+                renseignementclinique: d.Rclinique ?? "",
+                raw: d,
+            }))
+            : [];
             setPrestations(prestItems);
 
             // Recharger Prescriptions
@@ -177,7 +193,7 @@ export default function PageListeApayer() {
                         designation: d.designation ?? d.designationC ?? "Consultation",
                         montant: Number((d.montant ?? 0)),
                         medecin: d.medecin ?? d.Medecin ?? "",
-                        assure: d.assure ?? d.Assure ?? "",
+                        assure: d.assure ?? d.Assuré ?? "",
                         type: "CONSULTATION",
                         raw: d,
                     }))
@@ -317,7 +333,7 @@ export default function PageListeApayer() {
                         <th>Désignation</th>
                         <th className="text-end">Montant (FCFA)</th>
                         <th>Médecin</th>
-                        <th>Assure</th>
+                        <th>Assuré</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -347,8 +363,7 @@ export default function PageListeApayer() {
                                         <Button
                                             variant="outline-warning"
                                             size="sm"
-                                            onClick={() => handleOpenModal(r, r.raw)}
-                                        >
+                                            onClick={() => handleOpenModal(r, r.raw)}                                         >
                                             Facturer
                                         </Button>
 
@@ -422,12 +437,16 @@ export default function PageListeApayer() {
             {/* Modal pour les prestations */}
             {selectedItem?.type === "PRESTATION" && (
                 <ExamenHospitalisationModalCaisse
-                    show={showModal}
+                    show={showModal && selectedItem?.type === "PRESTATION"}
                     onHide={handleCloseModal}
-                    CodePrestation={selectedRow?.CodePrestation || selectedRow?.code}
-                    Designationtypeacte={selectedRow?.Designationtypeacte || selectedRow?.designation}
-                    PatientP={selectedRow?.PatientP || selectedRow?.patient}
-                    examenHospitId={hospitalisationId ?? undefined}
+                    CodePrestation={selectedRow?.CodePrestation || selectedRow?.code || ""}
+                    Designationtypeacte={selectedRow?.Designationtypeacte || selectedRow?.designation || ""}
+                    PatientP={selectedRow?.PatientP || selectedRow?.patient || ""}
+                    examenHospitId={selectedRow?._id || selectedRow?.id || ""}
+                    dateEntree={selectedRow?.dateEntree || selectedRow?.Entrele || null}
+                    dateSortie={selectedRow?.dateSortie || selectedRow?.SortieLe || null}
+                    nombreDeJours={selectedRow?.nombreDeJours || 1}
+                    renseignementclinique={selectedRow?.renseignementclinique || selectedRow?.Rclinique || ""}
                 />
             )}
 
