@@ -60,13 +60,13 @@ export default function PatientInfoUpdate({ formData, setFormData, onCodePrestat
                 setFormData((prev) => ({
                     ...prev,
                     patientId: data.patient._id || prev.patientId,
-                    Assure: data.Assuré || data.assure || prev.Assure,
+                    Assure: data.Assure || data.assure || prev.Assure,
                     medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
                     renseignementclinique: data.designationC || prev.renseignementclinique,
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
                     assurance: {
                         assuranceId: data.idAssurance || prev.assurance.assuranceId,
-                        type: data.Assuré || data.assure || prev.assurance.type,
+                        type: data.Assure || data.assure || prev.assurance.type,
                         taux: data.tauxAssurance ?? data.taux ?? prev.assurance.taux,
                         matricule: data.matricule || prev.assurance.matricule,
                         numeroBon: data.NumBon || data.numeroBon || prev.assurance.numeroBon,

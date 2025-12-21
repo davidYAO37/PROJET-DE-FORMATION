@@ -214,7 +214,7 @@ export async function POST(req: NextRequest) {
                 SortieLe: header.SortieLe ? new Date(header.SortieLe) : undefined,
                 nombreDeJours: header.nombreDeJours || 0,
                 Designationtypeacte: header.Designationtypeacte || header.typeacte || "",
-                Assure: typeof header.Assuré === 'boolean' ? (header.Assuré ? 'Oui' : 'Non') : header.Assure || '',
+                Assure: typeof header.Assure === 'boolean' ? (header.Assure ? 'Oui' : 'Non') : header.Assure || '',
                 Payeoupas: true,
                 StatutLaboratoire: header.StatutLaboratoire || 1,
                 TotalReliquatPatient: header.TotalReliquatPatient || header.surplus || 0,

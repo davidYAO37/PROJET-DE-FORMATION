@@ -444,7 +444,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         ligne.Coef_ASSUR = 0;
         ligne.CoefClinique = ligne.Coefficient;
 
-        // selon SEL_Assuré (selAssure)
+        // selon SEL_Assure(selAssure)
         if (selAssure === 1) {
             tarifActeClinique(ligne, acte, selAssure);
             return;
