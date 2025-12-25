@@ -53,11 +53,11 @@ export default function ExamenHospitalisationModalCaisse({
             >
                 <Modal.Title>
                     {CodePrestation
-                        ? `Facturation - ${Designationtypeacte || 'Prestation'}`
+                        ? `FACTURATION - ${Designationtypeacte || 'Prestation'}`
                         : 'Nouvelle facture'}
                     {examenHospitId && (
                         <span className="ms-2 small fst-italic text-light">
-                            (ID: {examenHospitId})
+                            (CODE PRESTATION: {CodePrestation})
                         </span>
                     )}
                 </Modal.Title>

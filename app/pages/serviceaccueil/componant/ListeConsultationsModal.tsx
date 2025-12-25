@@ -1,8 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Modal, Table, Button, Form, Spinner, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { FaPencilAlt, FaEye } from 'react-icons/fa';
+import { FaPencilAlt, FaEye, FaCircle } from 'react-icons/fa';
 import RecuConsultationPrint from './RecuConsultationPrint';
 import FicheConsultationUpdate from './ConsultationUpdate/FicheConsultationUpdate';
+import { SlLogin } from 'react-icons/sl';
+
 
 interface Consultation {
     _id: string;
@@ -15,6 +17,7 @@ interface Consultation {
     Medecin?: string;
     StatutC?: boolean;
     IdPatient?: string;
+     statutPrescriptionMedecin?: number;  // Ajout de cette ligne
 }
 
 interface ListeConsultationsModalProps {
@@ -76,6 +79,36 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
         c.designationC?.toLowerCase().includes(search.toLowerCase()) ||
         c.Recupar?.toLowerCase().includes(search.toLowerCase())
     );
+    const handleSendToCashier = async (consultationId: string) => {
+    if (!window.confirm('Êtes-vous sûr de vouloir envoyer cette consultation à la caisse ?')) {
+        return; // Annuler si l'utilisateur clique sur Annuler
+    }
+
+    try {
+        const response = await fetch(`/api/consnonFacture/${consultationId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                statutPrescriptionMedecin: 2
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error('Erreur lors de l\'envoi à la caisse');
+        }
+
+        // Message de succès
+        alert('La consultation a été envoyée à la caisse avec succès !');
+         // Rafraîchir la liste des consultations
+        onHide();
+      
+    } catch (error) {
+        console.error('Erreur:', error);
+        alert('Une erreur est survenue lors de l\'envoi à la caisse');
+    }
+};
 
     return (
         <>
@@ -132,6 +165,15 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
                                                         onClick={() => { setSelectedConsult(c); setShowRecu(true); }}
                                                         title="Voir le reçu"                                                    >
                                                         <FaEye />
+                                                    </Button>
+                                                     <Button
+                                                        size="sm"
+                                                        variant="outline-primary"
+                                                        onClick={() => handleSendToCashier(c._id)}
+                                                        title="Renvoyer à la caisse"
+                                                        disabled={c.statutPrescriptionMedecin === 2}
+                                                    >
+                                                        <SlLogin />
                                                     </Button>
 
                                                     {c.StatutC ? (

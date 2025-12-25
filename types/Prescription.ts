@@ -16,7 +16,7 @@ export interface Prescription {
     IDpriseCharge?: number;
     Reference?: string;
     ExclusionActae?: string;
-    StatuPrescriptionMedecin?: number;
+    statutPrescriptionMedecin?: number;
     ACTEPAYECAISSE?: string;
     Payele?: Date;
     PayéPar?: string;

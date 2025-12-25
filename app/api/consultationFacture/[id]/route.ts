@@ -95,9 +95,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.NumBon = data.NumBon;
         consultation.Recupar = data.Recupar;
         consultation.IDACTE = data.selectedActe;
-        consultation.PatientP = patient?.Nom || "";
+        consultation.PatientP = patient?.Nom + " " + patient?.Prenoms || "";
         consultation.Medecin = medecin ? `${medecin.nom} ${medecin.prenoms}` : "";
-
+        console.log("PatientP:", consultation.PatientP);
         // Calcul Toutencaisse
         const resteAPayer = totalPatient - (data.Montantencaisse || 0);
         consultation.Restapayer = resteAPayer >= 0 ? resteAPayer : 0;
@@ -105,7 +105,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         // Mise à jour consultation apres paiement
         consultation.Toutencaisse = toutEncaisse; // True si Restapayer = 0
-        consultation.StatuPrescriptionMedecin = 3;
+        consultation.statutPrescriptionMedecin = 3;
         consultation.DateFacturation = data.DateFacturation || new Date();
         consultation.FacturéPar = data.FacturéPar || data.Recupar || "";
         consultation.Modepaiement = data.Modepaiement || "Espèce";
@@ -132,7 +132,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             societe: assurance?.societes || "",
             numeroBon: data.NumBon || "",
             taux: tauxNum,
-            info: `Patient trouvé : ${patient?.Nom || ""}`,
+            info: `Patient trouvé : ${patient?.Nom || patient?.Prenoms || ""}`,
         });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

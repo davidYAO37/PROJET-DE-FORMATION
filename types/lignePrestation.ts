@@ -47,7 +47,7 @@ export interface LignePrestation {
     Externe_Interne: string;
     NIdentificationExamen: string;
     Acte_Exécuter: boolean;
-    StatuPrescriptionMedecin: number;
+    statutPrescriptionMedecin: number;
     ActeFacturé: boolean;
     resultatManuel: string;
     StatutHonoraireMedecin: number;

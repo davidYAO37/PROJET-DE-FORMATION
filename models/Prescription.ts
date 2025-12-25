@@ -18,7 +18,7 @@ export interface IPatientPrescription extends Document {
     IDpriseCharge?: number;
     Reference?: string;
     ExclusionActae?: string;
-    StatuPrescriptionMedecin?: number;
+    statutPrescriptionMedecin?: number;
     ACTEPAYECAISSE?: string;
     Payele?: Date;
     PayéPar?: string;
@@ -49,7 +49,7 @@ const PatientPrescriptionSchema = new Schema<IPatientPrescription>(
         IDpriseCharge: { type: Number },
         Reference: { type: String, maxlength: 30 },
         ExclusionActae: { type: String, maxlength: 50 },
-        StatuPrescriptionMedecin: { type: Number },
+        statutPrescriptionMedecin: { type: Number },
         ACTEPAYECAISSE: { type: String, maxlength: 10 },
         Payele: { type: Date },
         PayéPar: { type: String, maxlength: 50 },

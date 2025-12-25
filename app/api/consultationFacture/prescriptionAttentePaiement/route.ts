@@ -15,18 +15,18 @@ export async function GET(req: NextRequest) {
 
         // Filtre initial selon la logique WLanguage
         // - Payéoupas: false (non payé) ou lignes non facturées si déjà payé
-        // - StatuPrescriptionMedecin: 2 (non facturé)
+        // - statutPrescriptionMedecin: 2 (non facturé)
         const filter: any = {
             $or: [
                 // Cas 1: Non payé et statut 2
                 {
                     Payele: { $ne: true },
-                    StatuPrescriptionMedecin: statut ? parseInt(statut) : 2
+                    statutPrescriptionMedecin: statut ? parseInt(statut) : 2
                 },
                 // Cas 2: Payé mais avec des lignes non facturées (géré dans la logique du frontend)
                 {
                     Payele: true,
-                    StatuPrescriptionMedecin: statut ? parseInt(statut) : 2
+                    statutPrescriptionMedecin: statut ? parseInt(statut) : 2
                 }
             ]
         };
@@ -34,7 +34,7 @@ export async function GET(req: NextRequest) {
         // Si paye est spécifié, on filtre en conséquence
         if (paye === 'true') {
             filter.$or = [
-                { Payele: true, StatuPrescriptionMedecin: statut ? parseInt(statut) : 2 }
+                { Payele: true, statutPrescriptionMedecin: statut ? parseInt(statut) : 2 }
             ];
         } else if (paye === 'false' || paye === null) {
             filter.$or = [
@@ -43,7 +43,7 @@ export async function GET(req: NextRequest) {
                         { Payele: { $ne: true } },
                         { Payele: { $exists: false } }
                     ],
-                    StatuPrescriptionMedecin: statut ? parseInt(statut) : 2
+                    statutPrescriptionMedecin: statut ? parseInt(statut) : 2
                 }
             ];
         }
@@ -76,7 +76,7 @@ export async function GET(req: NextRequest) {
             montant: Number(p.Partassuré || 0),
             medecin: p.NomMed || (p.IDMEDECIN?.nom) || "",
             assure: p.SocieteAssurance || "Non assuré",
-            statut: p.StatuPrescriptionMedecin || 0,
+            statut: p.statutPrescriptionMedecin || 0,
             date: p.DatePrescription ? new Date(p.DatePrescription).toLocaleDateString() : "Date inconnue",
             type: "PRESCRIPTION"
         }));

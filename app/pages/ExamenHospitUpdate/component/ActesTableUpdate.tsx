@@ -797,7 +797,7 @@ export default function TablePrestationsUpdate({ assuranceId = 1, saiTaux = 0, a
                     const data = await checkRes.json();
                     const ligneDB = data.data;
 
-                    // SI LIGNE_PRESTATION.StatutPrescriptionMedecin=3 ALORS
+                    // SI LIGNE_PRESTATION.statutPrescriptionMedecin=3 ALORS
                     if (ligneDB && ligneDB.statutPrescriptionMedecin === 3) {
                         alert("Acte déjà facturé");
                         return;

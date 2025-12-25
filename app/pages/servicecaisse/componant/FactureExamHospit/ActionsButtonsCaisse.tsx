@@ -119,7 +119,7 @@ export default function ActionsButtonsCaisse({
         Payéoupas: true,
         StatutLaboratoire: 1,
         TotalReliquatPatient: formData.surplus || 0,
-        StatutPrescriptionMedecin: 3,
+        statutPrescriptionMedecin: 3,
         StatutPaiement: "Facture Payée",
         CompteClient: formData.Modepaiement === "Caution",
         CautionPatient: formData.Modepaiement === "Caution" ? formData.TotalapayerPatient : 0,
@@ -257,7 +257,7 @@ export default function ActionsButtonsCaisse({
       const lignePayload = {
         ...ligneSansId,
         IDHOSPO: examenId, // Utiliser le paramètre examenId
-        StatutPrescriptionMedecin: ligne.AFacturer === 'Payé' ? 3 : 1, // 3 = Payé, 1 = Non payé
+        statutPrescriptionMedecin: ligne.AFacturer === 'Payé' ? 3 : 1, // 3 = Payé, 1 = Non payé
         datePaiementCaisse: ligne.AFacturer === 'Payé' ? new Date().toISOString() : null,
         payePar: ligne.AFacturer === 'Payé' ? localStorage.getItem("nom_utilisateur") || 'Système' : null
       };

@@ -6,6 +6,7 @@ import { Card, Row, Col, Table, Spinner, Button, Form, Nav, Tab, Badge, Modal } 
 // Import des composants de modales
 import FicheConsultationUpdateCaisse from "../componant/factureAttenteConsult/FicheConsultationUpdateCaisse";
 import ExamenHospitalisationModalCaisse from "../componant/FactureExamHospit/ExamenHospitModalCaisse";
+import { FaRegWindowClose } from "react-icons/fa";
 
 /**
  * PageListeApayer.tsx
@@ -53,7 +54,7 @@ type RowItemBase = {
 };
 
 /* -------------------- Composant -------------------- */
-export default function PageListeApayer() {
+const PageListeApayer = () => {
     const [consultations, setConsultations] = useState<RowItemBase[]>([]);
     const [prestations, setPrestations] = useState<RowItemBase[]>([]);
     const [prescriptions, setPrescriptions] = useState<RowItemBase[]>([]);
@@ -80,17 +81,134 @@ export default function PageListeApayer() {
 
     // Fonction pour gérer l'ouverture de la modale appropriée
 
-   const handleOpenModal = (r: RowItemBase, row: any) => {
-    console.log("Selected Row Data:", {
-        ...row,
-        dateEntree: row.dateEntree,
-        dateSortie: row.dateSortie,
-        renseignementclinique: row.renseignementclinique || row.Rclinique
-    });
-    setSelectedItem(r);
-    setSelectedRow(row);
-    setShowModal(true);
-};
+    const handleOpenModal = (r: RowItemBase, row: any) => {
+        console.log("Selected Row Data:", {
+            ...row,
+            dateEntree: row.dateEntree,
+            dateSortie: row.dateSortie,
+            renseignementclinique: row.renseignementclinique || row.Rclinique
+        });
+        setSelectedItem(r);
+        setSelectedRow(row);
+        setShowModal(true);
+    };
+    const handleMarkAsNotBilled = async (row: any) => {
+        console.log('handleMarkAsNotBilled appelé avec:', row);
+
+        // Récupérer l'ID MongoDB (vérifier d'abord row.id puis row._id)
+        const examenId = row.id || row._id;
+        console.log('ID extrait:', { id: row.id, _id: row._id, examenId });
+
+        if (!examenId) {
+            console.error('ID non trouvé dans row:', row);
+            alert("Erreur : Impossible d'identifier l'acte.");
+            return;
+        }
+
+        const isConfirmed = window.confirm(
+            'Voulez-vous retirer cet acte de la liste de paiement ?'
+        );
+        if (!isConfirmed) return;
+
+        try {
+            let endpoint = '';
+            let typeActe = '';
+            let method = 'PUT';
+
+            console.log("Type de l'acte:", row.type);
+            console.log("ID Mongo:", examenId);
+
+            // Déterminer l'endpoint en fonction du type d'acte
+            switch (row.type) {
+                case 'CONSULTATION':
+                    endpoint = `/api/consnonFacture/${examenId}`;
+                    typeActe = 'la consultation';
+                    break;
+
+                case 'PRESTATION':
+                    endpoint = `/api/examenhospitalisationFacture/${examenId}`;
+                    typeActe = "l'examen";
+                    break;
+
+                case 'PRESCRIPTION':
+                    endpoint = `/api/patientPrescription/${examenId}`;
+                    typeActe = 'la prescription';
+                    break;
+
+                default:
+                    throw new Error(`Type d'acte non pris en charge : ${row.type}`);
+            }
+
+            console.log('Endpoint:', endpoint);
+
+            // Effectuer la requête
+            const response = await fetch(endpoint, {
+                method: method,
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ statutPrescriptionMedecin: 1 })
+            });
+
+            // Gérer la réponse en différenciant JSON et HTML (page d'erreur)
+            let data: any = null;
+            const contentType = response.headers.get('content-type') || '';
+            if (contentType.includes('application/json')) {
+                try {
+                    data = await response.json();
+                } catch (err) {
+                    console.error('Erreur parsing JSON:', err);
+                    const text = await response.text();
+                    console.error('Réponse serveur (text):', text);
+                    throw new Error('Réponse serveur invalide (JSON attendu)');
+                }
+            } else {
+                // Si ce n'est pas du JSON, lire le texte (probablement une page d'erreur HTML)
+                const text = await response.text();
+                console.error('Réponse non-JSON du serveur:', text);
+                throw new Error('Réponse serveur invalide (HTML reçu). Voir la console serveur pour plus de détails.');
+            }
+
+            // Vérifier la réponse
+            if (!response.ok) {
+                let errorMessage = `Échec de la mise à jour de ${typeActe}`;
+
+                if (data && data.error === 'INVALID_ID') {
+                    errorMessage = "ID d'acte invalide";
+                } else if (data && data.error === 'NOT_FOUND') {
+                    errorMessage = `${typeActe} introuvable`;
+                } else if (data && data.error === 'DATABASE_CONNECTION_ERROR') {
+                    errorMessage = 'Erreur de connexion à la base de données';
+                } else if (data && data.message) {
+                    errorMessage = data.message;
+                }
+
+                throw new Error(errorMessage);
+            }
+
+            if (!data || !data.success) {
+                throw new Error((data && data.message) || `Échec de la mise à jour de ${typeActe}`);
+            }
+
+            // Mise à jour réussie
+            alert(`${typeActe.charAt(0).toUpperCase() + typeActe.slice(1)} retirée de la liste de paiement avec succès`);
+
+            // Rafraîchir les données
+            await refetchData();
+
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour:', error);
+
+            // Afficher un message d'erreur approprié
+            if (error instanceof Error) {
+                if (error.message.includes('fetch failed')) {
+                    alert('Erreur de connexion au serveur. Veuillez vérifier votre connexion internet.');
+                } else {
+                    alert(`Erreur : ${error.message}`);
+                }
+            } else {
+                alert('Une erreur inattendue est survenue');
+            }
+        }
+    };
 
     // Fonction pour fermer la modale et rafraîchir la liste
     const handleCloseModal = () => {
@@ -116,7 +234,7 @@ export default function PageListeApayer() {
                     designation: d.designation ?? d.designationC ?? "Consultation",
                     montant: Number((d.montant ?? 0)),
                     medecin: d.medecin ?? d.Medecin ?? "",
-                    assure: d.assure ?? d.Assure?? "",
+                    assure: d.assure ?? d.Assure ?? "",
                     type: "CONSULTATION",
                     raw: d,
                 }))
@@ -126,24 +244,24 @@ export default function PageListeApayer() {
             // Recharger Prestations
             const prestRes = await fetch("/api/consultationFacture/prestationAttentePaiement");
             const prestData = await prestRes.json();
-           const prestItems: RowItemBase[] = Array.isArray(prestData)
-            ? prestData.map((d: any) => ({
-                id: d.id ?? d._id,
-                code: d.code ?? d.CodePrestation ?? "",
-                patient: d.patient ?? d.PatientP ?? "Inconnu",
-                designation: d.designation ?? d.Designationtypeacte ?? "Prestation",
-                montant: Number(d.montant ?? 0),
-                medecin: d.medecin ?? d.NomMed ?? "",
-                assure: d.assure ?? d.Assure ?? "",
-                type: "PRESTATION",
-                // Ajoutez ces champs
-                dateEntree:  d.Entrele ?? null,
-                dateSortie:  d.SortieLe ?? null,
-                nombreDeJours: d.nombreDeJours ?? 1,
-                renseignementclinique: d.Rclinique ?? "",
-                raw: d,
-            }))
-            : [];
+            const prestItems: RowItemBase[] = Array.isArray(prestData)
+                ? prestData.map((d: any) => ({
+                    id: d.id ?? d._id,
+                    code: d.code ?? d.CodePrestation ?? "",
+                    patient: d.patient ?? d.PatientP ?? "Inconnu",
+                    designation: d.designation ?? d.Designationtypeacte ?? "Prestation",
+                    montant: Number(d.montant ?? 0),
+                    medecin: d.medecin ?? d.NomMed ?? "",
+                    assure: d.assure ?? d.Assure ?? "",
+                    type: "PRESTATION",
+                    // Ajoutez ces champs
+                    dateEntree: d.Entrele ?? null,
+                    dateSortie: d.SortieLe ?? null,
+                    nombreDeJours: d.nombreDeJours ?? 1,
+                    renseignementclinique: d.Rclinique ?? "",
+                    raw: d,
+                }))
+                : [];
             setPrestations(prestItems);
 
             // Recharger Prescriptions
@@ -193,7 +311,7 @@ export default function PageListeApayer() {
                         designation: d.designation ?? d.designationC ?? "Consultation",
                         montant: Number((d.montant ?? 0)),
                         medecin: d.medecin ?? d.Medecin ?? "",
-                        assure: d.assure ?? d.Assure?? "",
+                        assure: d.assure ?? d.Assure ?? "",
                         type: "CONSULTATION",
                         raw: d,
                     }))
@@ -366,6 +484,25 @@ export default function PageListeApayer() {
                                             onClick={() => handleOpenModal(r, r.raw)}                                         >
                                             Facturer
                                         </Button>
+                                        <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            title="Ne pas Facturer"
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                console.log('Bouton cliqué, données de la ligne:', {
+                                                    id: r.id,
+                                                    type: r.type,
+                                                    patient: r.patient,
+                                                    montant: r.montant
+                                                });
+                                                handleMarkAsNotBilled(r);
+                                            }}
+                                            className="ms-1"
+                                        >
+                                            <FaRegWindowClose />
+                                        </Button>
 
                                     </div>
                                 </td>
@@ -506,4 +643,6 @@ export default function PageListeApayer() {
             )}
         </Card >
     );
-}
+};
+
+export default PageListeApayer;

@@ -140,7 +140,7 @@ export async function GET(request: Request) {
           { IDFACTURATION: idToSearch },
           { IDFACTURATION: idToSearch.toString() }
         ],
-        StatuPrescriptionMedecin: 3
+        statutPrescriptionMedecin: 3
       })
       .toArray();
       

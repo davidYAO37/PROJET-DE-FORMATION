@@ -274,7 +274,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
 
                     // Nouveaux champs facturation
                     Toutencaisse: toutEncaisse,
-                    StatutPrescriptionMedecin: 3,
+                    statutPrescriptionMedecin: 3,
                     DateFacturation: new Date(),
                     FacturéPar: recuPar,
                     Modepaiement: modePaiement,
@@ -283,9 +283,9 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
             });
 
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Erreur lors de la modification");
+            if (!res.ok) throw new Error(data.error || "Erreur lors de la Facturation");
 
-            setSuccess(`✅ Consultation ${CodePrestation} modifiée avec succès`);
+            setSuccess(`✅ Reçu ${CodePrestation} enregistré avec succès`);
             setSaved(true);
         } catch (e: any) {
             setError(e.message || "Erreur inconnue");
@@ -297,7 +297,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
     return (
         <Card className="p-3 shadow-lg">
             <h3 className="text-center text-white p-2 mb-3" style={{ background: "#FF6B35" }}>
-                MODIFICATION FICHE CONSULTATION-VISITE
+               FICHE  FACTURATION CONSULTATION-VISITE
             </h3>
 
             {loadingConsultation && (
@@ -387,7 +387,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
 
             <div className="d-flex gap-2">
                 <Button variant="warning" size="lg" className="w-100 fw-bold" disabled={loading || saved || !consultationLoaded} onClick={handleSave}>
-                    {loading ? "Modification en cours..." : "💾 Enregistrer les modifications"}
+                    {loading ? "Facturation en cours..." : "💾 Valider la Facture"}
                 </Button>
                 {onClose && (
                     <Button variant="secondary" size="lg" className="fw-bold" onClick={onClose}>

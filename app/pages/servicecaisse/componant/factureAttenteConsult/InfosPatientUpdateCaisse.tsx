@@ -7,6 +7,11 @@ type InfosPatientProps = {
 };
 
 export default function InfosPatientUpdateCaisse({ assure, setAssure }: InfosPatientProps) {
+    // Log des props reçues pour débogage
+    console.log("InfosPatientUpdateCaisse - Props reçues:", {
+        assure,
+        hasSetAssure: typeof setAssure === 'function'
+    });
     return (
         <Card className="p-3 mb-3 shadow-sm" style={{ background: "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)", border: "1px solid #dee2e6" }}>
             <h5 className="mb-3 text-primary">

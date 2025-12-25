@@ -10,7 +10,7 @@ import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/componan
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicecaisse/tcaisse', icon: <HouseDoorFill size={24} className="me-2" /> },
   { label: 'Factures en attente', path: '/pages/servicecaisse/listefactures', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Saisir une Facture', path:'#' , isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2" /> },
+  { label: 'Saisir une Facture Exam-Hospit...', path:'#' , isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2"/> },
   { label: 'Facturer une pharmacie', path: '/transfert-patient', icon: <ArrowRightCircleFill size={24} className="me-2" /> },
   { label: 'Caution Patient', path: '/salle-attente', icon: <PeopleFill size={24} className="me-2" /> },
   { label: 'Facture a solder', path: '/constantes', icon: <Clipboard2PulseFill size={24} className="me-2" /> },
@@ -22,7 +22,7 @@ export default function Sidebarcaisse() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState('');
   const [showFactureModal, setShowFactureModal] = useState(false);
-
+ 
 
   // Charger l'utilisateur connecté au montage
   useEffect(() => {
@@ -37,8 +37,6 @@ export default function Sidebarcaisse() {
 
 // ouvre le modal de saisir une facture
 const handleFactureClick = () => setShowFactureModal(true);
-
-
 
   return (
     <>
@@ -98,6 +96,7 @@ const handleFactureClick = () => setShowFactureModal(true);
         show={showFactureModal}
         onHide={() => setShowFactureModal(false)}
       />
+      
     </>
   );
 }

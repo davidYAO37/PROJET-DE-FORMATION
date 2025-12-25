@@ -33,7 +33,7 @@ export interface ConsultationType {
 
     Medecin: string;
     IDMEDECIN: string;
-    StatuPrescriptionMedecin: number;
+    statutPrescriptionMedecin: number;
 
     IDASSURANCE: string;
     assurance: string;

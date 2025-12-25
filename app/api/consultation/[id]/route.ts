@@ -116,7 +116,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             societe: assurance?.societes || "",
             numeroBon: data.NumBon || "",
             taux: tauxNum,
-            info: `Patient trouvé : ${patient?.Nom || ""}`,
+            info: `Patient trouvé : ${patient?.Nom || patient?.Prenoms || ""}`,
         });
     } catch (error: any) {
         return NextResponse.json({ error: error.message }, { status: 500 });

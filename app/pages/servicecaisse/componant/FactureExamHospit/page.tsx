@@ -23,7 +23,7 @@ interface PageProps {
         dateSortie?: string;
         nombreDeJours?: number;
         renseignementclinique?: string;
-        
+
         [key: string]: string | string[] | number | undefined;
     };
     searchParams: { [key: string]: string | string[] | undefined };
@@ -81,7 +81,7 @@ export default function HospitalisationPageCaisse({
     const [recuPar, setRecuPar] = useState("");
     const [initialPatientP, setInitialPatientP] = useState(PatientP || "");
 
-     useEffect(() => {
+    useEffect(() => {
         const nom = localStorage.getItem("nom_utilisateur");
         if (nom) setRecuPar(nom);
 
@@ -96,7 +96,7 @@ export default function HospitalisationPageCaisse({
             setPresetLines(undefined);
             setModeModification(false);
         }
-    }, [CodePrestation, propExamenHospitId]); 
+    }, [CodePrestation, propExamenHospitId]);
     /*useEffect(() => {
         setExamenHospitId(propExamenHospitId || undefined);
         setCodePrestation(CodePrestation || "");
@@ -110,32 +110,32 @@ export default function HospitalisationPageCaisse({
         }
     }, [CodePrestation, propExamenHospitId]);*/
 
-//initialisation 
-useEffect(() => {
-    const today = new Date().toISOString().split('T')[0];
-    
-    console.log("Initializing form data with:", {
-        dateEntree,
-        dateSortie,
-        nombreDeJours,
-        renseignementclinique
-    });
-    
-    setFormData(prev => ({
-        ...prev,
-        dateEntree: dateEntree ? new Date(dateEntree).toISOString().split('T')[0] : today,
-        dateSortie: dateSortie ? new Date(dateSortie).toISOString().split('T')[0] : today,
-        nombreDeJours: Number(nombreDeJours) > 0 ? Number(nombreDeJours) : 1,
-        renseignementclinique: renseignementclinique || prev.renseignementclinique || ''
-    }));
+    //initialisation 
+    useEffect(() => {
+        const today = new Date().toISOString().split('T')[0];
 
-    if (CodePrestation) {
-        loadLignesFromPrestation(CodePrestation, examenHospitId);
-    } else {
-        setPresetLines(undefined);
-        setModeModification(false);
-    }
-}, [CodePrestation, examenHospitId, dateEntree, dateSortie, nombreDeJours, renseignementclinique]);
+        console.log("Initializing form data with:", {
+            dateEntree,
+            dateSortie,
+            nombreDeJours,
+            renseignementclinique
+        });
+
+        setFormData(prev => ({
+            ...prev,
+            dateEntree: dateEntree ? new Date(dateEntree).toISOString().split('T')[0] : today,
+            dateSortie: dateSortie ? new Date(dateSortie).toISOString().split('T')[0] : today,
+            nombreDeJours: Number(nombreDeJours) > 0 ? Number(nombreDeJours) : 1,
+            renseignementclinique: renseignementclinique || prev.renseignementclinique || ''
+        }));
+
+        if (CodePrestation) {
+            loadLignesFromPrestation(CodePrestation, examenHospitId);
+        } else {
+            setPresetLines(undefined);
+            setModeModification(false);
+        }
+    }, [CodePrestation, examenHospitId, dateEntree, dateSortie, nombreDeJours, renseignementclinique]);
 
     useEffect(() => {
         const reduction = formData.reduction || 0;
@@ -261,7 +261,7 @@ useEffect(() => {
             .catch(() => setTypesActe([]));
     }, []);
 
-        
+
     // Gestion des dates
     const handleDateChange = (field: "dateEntree" | "dateSortie", value: string) => {
         setFormData((prev) => {
@@ -273,7 +273,7 @@ useEffect(() => {
             if (field === "dateEntree") {
                 dateEntree = value;
                 const dEntree = new Date(value);
-                
+
                 if (dateSortie) {
                     const dSortie = new Date(dateSortie);
                     if (!isNaN(dEntree.getTime()) && !isNaN(dSortie.getTime())) {
@@ -292,7 +292,7 @@ useEffect(() => {
             if (field === "dateSortie") {
                 dateSortie = value;
                 const dSortie = new Date(value);
-                
+
                 if (dateEntree) {
                     const dEntree = new Date(dateEntree);
                     if (!isNaN(dEntree.getTime()) && !isNaN(dSortie.getTime())) {
@@ -319,27 +319,27 @@ useEffect(() => {
         });
     };
 
-  /*   const handleNombreJoursChange = (value: number) => {
-        setFormData((prev) => {
-            let dateSortie = prev.dateSortie;
-            const dEntree = new Date(prev.dateEntree);
-
-            if (!isNaN(dEntree.getTime()) && value > 0) {
-                const dSortie = new Date(dEntree);
-                dSortie.setDate(dSortie.getDate() + value - 1);
-                dateSortie = dSortie.toISOString().split("T")[0];
-            }
-
-            return {
-                ...prev,
-                nombreDeJours: value,
-                dateSortie,
-            };
-        });
-    }; */
+    /*   const handleNombreJoursChange = (value: number) => {
+          setFormData((prev) => {
+              let dateSortie = prev.dateSortie;
+              const dEntree = new Date(prev.dateEntree);
+  
+              if (!isNaN(dEntree.getTime()) && value > 0) {
+                  const dSortie = new Date(dEntree);
+                  dSortie.setDate(dSortie.getDate() + value - 1);
+                  dateSortie = dSortie.toISOString().split("T")[0];
+              }
+  
+              return {
+                  ...prev,
+                  nombreDeJours: value,
+                  dateSortie,
+              };
+          });
+      }; */
     const handleNombreJoursChange = (value: number) => {
         const jours = Math.max(1, Math.floor(value || 1));
-        
+
         setFormData((prev) => {
             if (!prev.dateEntree) {
                 return { ...prev, nombreDeJours: jours };
@@ -394,27 +394,27 @@ useEffect(() => {
                             setResetKey((k) => k + 1);
                             setModePaiement("");
                             setMontantEncaisse(0);
-                        }} 
-                       /* onCodePrestationChange={(code) => {
-                            setCodePrestation(code);
+                        }}
+                    /* onCodePrestationChange={(code) => {
+                         setCodePrestation(code);
 
-                            // ✅ UNIQUEMENT en mode création
-                            if (!modeModification) {
-                                const today = new Date().toISOString().split('T')[0];
-                                setFormData((prev) => ({
-                                ...prev,
-                                dateEntree: today,
-                                dateSortie: today,
-                                nombreDeJours: 1,
-                                TotalapayerPatient: 0,
-                                }));
-                            }
+                         // ✅ UNIQUEMENT en mode création
+                         if (!modeModification) {
+                             const today = new Date().toISOString().split('T')[0];
+                             setFormData((prev) => ({
+                             ...prev,
+                             dateEntree: today,
+                             dateSortie: today,
+                             nombreDeJours: 1,
+                             TotalapayerPatient: 0,
+                             }));
+                         }
 
-                            setPresetLines([]);
-                            setResetKey((k) => k + 1);
-                            setModePaiement("");
-                            setMontantEncaisse(0);
-                        }} */
+                         setPresetLines([]);
+                         setResetKey((k) => k + 1);
+                         setModePaiement("");
+                         setMontantEncaisse(0);
+                     }} */
 
                     />
                     <AssuranceInfoCaisse
@@ -831,7 +831,7 @@ useEffect(() => {
                                 MontantRecu: Number.isFinite(montantEncaisse) ? montantEncaisse : 0,
                                 reduction: formData.reduction || 0,
                                 MotifRemise: formData.MotifRemise || "",
-                                StatutPrescriptionMedecin: 3,
+                                statutPrescriptionMedecin: 3,
                                 StatutPaiement: "Facture Payée",
                             };
 

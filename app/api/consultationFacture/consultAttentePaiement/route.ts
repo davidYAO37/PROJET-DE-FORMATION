@@ -15,15 +15,15 @@ export async function GET(req: NextRequest) {
 
         // Filtre initial selon la logique WLanguage
         // - StatutC: false (consultation non clôturée)
-        // - StatutPrescriptionMedecin: 2 (non facturé)
+        // - statutPrescriptionMedecin: 2 (non facturé)
         const filter: any = {
             StatutC: false,
-            StatuPrescriptionMedecin: 2 // 2 = non facturé
+            statutPrescriptionMedecin: 2 // 2 = non facturé
         };
 
         // Si un statut spécifique est fourni dans la requête
         if (statut) {
-            filter.StatuPrescriptionMedecin = parseInt(statut);
+            filter.statutPrescriptionMedecin = parseInt(statut);
         }
 
         // Filtre supplémentaire si paye est spécifié
@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
             medecin: c.Medecin || (c.IDMEDECIN ? c.IDMEDECIN?.nom : ""),
             assure: c.Assure|| "Non assuré",
             statut: c.StatutPaiement || "En attente",
-            statutPrescription: c.StatuPrescriptionMedecin || 0,
+            statutPrescription: c.statutPrescriptionMedecin || 0,
             date: c.Date_consulation ? new Date(c.Date_consulation).toLocaleDateString() : "Date inconnue"
         }));
 

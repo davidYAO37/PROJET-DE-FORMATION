@@ -76,7 +76,7 @@ export interface Facturation {
     CachetMedecin?: Buffer;
     Externe_Interne?: string;
     factureannule?: boolean;
-    StatuPrescriptionMedecin?: number;
+    statutPrescriptionMedecin?: number;
     Fichedesuivipatient?: string;
     AnnulOrdonnerPar?: string;
     AnnulationOrdonneLe?: Date;

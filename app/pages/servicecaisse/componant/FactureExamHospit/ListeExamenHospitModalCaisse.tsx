@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Table, Button, Form, Spinner, Badge } from 'react-bootstrap';
-import { FaEdit, FaEye, FaFileContract, FaFilePdf, FaList } from 'react-icons/fa';
+import { FaEdit, FaEye, FaFileContract, FaFilePdf, FaList, FaReceipt } from 'react-icons/fa';
 import ExamenHospitalisationModalCaisse from './ExamenHospitModalCaisse';
+import ListeFactureModal from './ListeFactureModal';
 
 export interface ExamenHospit {
     _id: string;
@@ -33,6 +34,7 @@ export default function ListeExamenHospitModalCaisse({
     const [search, setSearch] = useState('');
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
     const [showFactureModal, setShowFactureModal] = useState(false);
+    const [showListeFactureModal, setShowListeFactureModal] = useState(false);
     const [selectedExamen, setSelectedExamen] = useState<ExamenHospit | null>(null);
 
     useEffect(() => {
@@ -85,14 +87,29 @@ export default function ListeExamenHospitModalCaisse({
         setShowFactureModal(true);
     };
 
+    const handleAfficherFactures = (examen: ExamenHospit) => {
+        setSelectedExamen(examen);
+        setShowListeFactureModal(true);
+    };
+
     const handleCloseFactureModal = () => {
         setShowFactureModal(false);
         setSelectedExamen(null);
     };
 
+    const handleCloseListeFactureModal = () => {
+        setShowListeFactureModal(false);
+        setSelectedExamen(null);
+    };
+
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered scrollable>
-            <Modal.Header closeButton className="bg-primary text-white">
+        <Modal     show={show} 
+                   onHide={onHide} 
+                   size="xl" 
+                   centered 
+                   dialogClassName="modal-fullscreen-lg-down"
+                   style={{ maxWidth: '95vw', margin: 'auto' }}
+               >   <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>
                     Examens d'hospitalisation du patient : {selectedPatient ? `${selectedPatient.Nom} ${selectedPatient.Prenoms}` : patientId}
                 </Modal.Title>
@@ -110,11 +127,11 @@ export default function ListeExamenHospitModalCaisse({
                 {loading ? (
                     <div className="text-center my-4">
                         <Spinner animation="border" variant="primary" />
-                        <p>Chargement des examens d'hospitalisation...</p>
+                        <p>Chargement des actes du patient...</p>
                     </div>
                 ) : filteredExamens.length === 0 ? (
                     <div className="text-center my-4">
-                        <p>Aucun examen d'hospitalisation trouvé pour ce patient.</p>
+                        <p>Aucun acte trouvé pour ce patient.</p>
                     </div>
                 ) : (
                     <div className="table-responsive">
@@ -152,11 +169,13 @@ export default function ListeExamenHospitModalCaisse({
                                                 <FaFileContract />
                                             </Button>
                                             <Button 
-                                                variant="outline-secondary"                                                
+                                                variant="outline-info"                                                
                                                 size="sm"
-                                                onClick={() => window.open(`/api/recu-examen?id=${examen._id}`, "_blank")}
-                                                title="Liste Fact"                                           >
-                                                <FaList />
+                                                onClick={() => handleAfficherFactures(examen)}
+                                                title="Liste des factures"
+                                                className="ms-2"
+                                            >
+                                                <FaReceipt />
                                             </Button>
                                         </td>
                                     </tr>
@@ -192,6 +211,15 @@ export default function ListeExamenHospitModalCaisse({
                         ? Math.ceil((new Date(selectedExamen.SortieLe).getTime() - new Date(selectedExamen.Entrele).getTime()) / (1000 * 60 * 60 * 24))
                         : 1}
                     renseignementclinique={selectedExamen.Rclinique || ''}
+                />
+            )}
+            
+            {/* Modal de liste des factures */}
+            {selectedExamen && (
+                <ListeFactureModal
+                    show={showListeFactureModal}
+                    onHide={handleCloseListeFactureModal}
+                    idHospitalisation={selectedExamen._id}
                 />
             )}
         </Modal>

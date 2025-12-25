@@ -218,7 +218,7 @@ export async function POST(req: NextRequest) {
                 Payeoupas: true,
                 StatutLaboratoire: header.StatutLaboratoire || 1,
                 TotalReliquatPatient: header.TotalReliquatPatient || header.surplus || 0,
-                StatuPrescriptionMedecin: header.StatuPrescriptionMedecin || 3,
+                statutPrescriptionMedecin: header.statutPrescriptionMedecin || 3,
                 StatutPaiement: header.StatutPaiement || "Facture Payée",
                 CompteClient: header.CompteClient || false,
                 CautionPatient: header.CautionPatient || 0,
