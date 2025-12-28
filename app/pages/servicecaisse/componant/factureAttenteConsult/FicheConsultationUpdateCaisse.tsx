@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
-import { Button, Card, Alert, Spinner, Row, Col, Form } from "react-bootstrap";
+import { useState, useEffect, useRef } from "react";
+import { Button, Card, Alert, Spinner, Row, Col, Form, Modal } from "react-bootstrap";
+
 import type { Patient } from "@/types/patient";
 import type { Assurance } from "@/types/assurance";
 import type { Medecin } from "@/types/medecin";
@@ -8,6 +9,7 @@ import type { ConsultationType } from "@/types/consultation";
 import InfosPatientUpdateCaisse from "./InfosPatientUpdateCaisse";
 import BlocAssuranceUpdateCaisse from "./BlocAssuranceUpdateCaisse";
 import ResumeMontantsUpdateCaisse from "./ResumeMontantsUpdateCaisse";
+import RecuConsultationPrint from "@/app/pages/recusacte/RecuConsultationPrint";
 
 type FicheConsultationUpdateProps = {
     patient: Patient | null;
@@ -39,6 +41,10 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
 
     const [souscripteur, setSouscripteur] = useState("");
     const [societePatient, setSocietePatient] = useState("");
+    
+    // État pour la modale d'impression
+    const [showPrintModal, setShowPrintModal] = useState(false);
+    const recuRef = useRef<HTMLDivElement>(null);
 
     const [surplus, setSurplus] = useState<number>(0);
     const [partAssurance, setPartAssurance] = useState<number>(0);
@@ -285,8 +291,13 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
             const data = await res.json();
             if (!res.ok) throw new Error(data.error || "Erreur lors de la Facturation");
 
-            setSuccess(`✅ Reçu ${CodePrestation} enregistré avec succès`);
+            setSuccess(`✅ Reçu ${currentConsultation.CodePrestation} enregistré avec succès`);
             setSaved(true);
+            
+            // Afficher la modale d'impression après un court délai
+            setTimeout(() => {
+                setShowPrintModal(true);
+            }, 500);
         } catch (e: any) {
             setError(e.message || "Erreur inconnue");
         } finally {
@@ -395,6 +406,73 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                     </Button>
                 )}
             </div>
+
+          {/* Modal d'impression du reçu */}
+<Modal
+  show={showPrintModal}
+  onHide={() => setShowPrintModal(false)}
+  size="lg"
+  centered
+>
+        <Modal.Header closeButton>
+            <Modal.Title>Reçu de consultation</Modal.Title>
+        </Modal.Header>
+
+                <Modal.Body>
+                    {/* Zone imprimable */}
+                    <div ref={recuRef} className="print-area">
+                    {currentConsultation && (
+                        <RecuConsultationPrint
+                        consultation={{
+                            ...currentConsultation,
+                            designationC:
+                            actes.find(a => a._id === selectedActe)?.designationacte || "",
+                            Medecin:
+                            medecinPrescripteur.find(m => m._id === selectedMedecin)?.nom || "",
+                            Recupar: recuPar,
+                            CodePrestation: currentConsultation.CodePrestation || "",
+                            Code_dossier: currentConsultation.Code_dossier || "",
+                            PatientP: currentConsultation.PatientP|| "",
+                            assurance: selectedAssurance
+                            ? assurances.find(a => a._id === selectedAssurance)
+                                ?.desiganationassurance || "NON ASSURE"
+                            : "NON ASSURE",
+                            tauxAssurance: Number(taux) || 0,
+                            numero_carte: matricule,
+                            PrixClinique: montantClinique,
+                            montantapayer: totalPatient,
+                            PartAssurance: partAssurance,
+                            Date_consulation:
+                            currentConsultation.Date_consulation || new Date(),
+                            Restapayer: Math.max(0, totalPatient - montantEncaisse),
+                            NumBon: numBon,
+                        }}
+                        />
+                    )}
+                    </div>
+                </Modal.Body>
+
+                <Modal.Footer>
+                    <Button variant="primary" onClick={() => {
+                        if (recuRef.current) {
+                            const printContents = recuRef.current.innerHTML;
+                            const printWindow = window.open('', '', 'height=800,width=900');
+                            if (printWindow) {
+                                printWindow.document.write('<html><head><title>Reçu consultation</title></head><body>' + printContents + '</body></html>');
+                                printWindow.document.close();
+                                printWindow.focus();
+                                printWindow.print();
+                                printWindow.close();           
+                            }
+                        }
+                    }}>Imprimer</Button>
+                    <Button variant="secondary" onClick={() => setShowPrintModal(false)}>
+                    Fermer
+                    </Button>
+                </Modal.Footer>               
+                
+        </Modal>
+
         </Card>
     );
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Modal, Table, Button, Form, Spinner, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaPencilAlt, FaEye } from 'react-icons/fa';
-import RecuConsultationPrint from '../../../serviceaccueil/componant/RecuConsultationPrint';
+import RecuConsultationPrint from '@/app/pages/recusacte/RecuConsultationPrint';
 import FicheConsultationUpdateCaisse from './FicheConsultationUpdateCaisse';
 
 

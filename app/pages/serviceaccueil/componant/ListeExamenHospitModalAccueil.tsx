@@ -14,6 +14,7 @@ export interface ExamenHospit {
     patientId: string;
     codePrestation: string;
     designationTypeActe: string;
+    statutPrescriptionMedecin?: number;
 }
 
 interface ListeExamenHospitModalProps {

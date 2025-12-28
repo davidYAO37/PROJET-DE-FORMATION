@@ -45,12 +45,13 @@ const styles = {
     },
     bold: {
         fontWeight: 'bold' as const,
+        fontSize: 18,
     },
     footer: {
         marginTop: 10,
-        fontSize: 13,
-        textAlign: 'right' as const,
+        fontSize: 13,       
         fontStyle: 'italic' as const,
+        textAlign: 'center' as const,
     },
 };
 
@@ -59,24 +60,27 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
     return (
         <div ref={ref} style={styles.container}>
             <div style={styles.header}>
-                <div>CLINIQUE<br />ANDROLOGIE- UROLOGIE<br />SEXOLOGIE</div>
+                <div>CLINIQUE<br />ANDROLOGIE- UROLOGIE<br />SEXOLOGIE</div>                
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <div>
-                    <div style={styles.bold}>RECU N° {consultation.CodePrestation || ''}</div>
-                    <div style={styles.info}>Dossier N° {consultation.Code_dossier} &nbsp; Patient : <b>{consultation.PatientP}</b></div>
-                    <div style={styles.info}>N°carte {consultation.numero_carte || ''} &nbsp; Taux(%) {consultation.tauxAssurance || 0}</div>
-                    <div style={styles.info}>Assurance : {consultation.assurance} &nbsp; N°Bon {consultation.NumBon || ''}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                    <div>Imprimé par<br /><b>{consultation.Recupar}</b></div>
-                    <div>Le {new Date().toLocaleDateString()} &nbsp; A {new Date().toLocaleTimeString()}</div>
-                </div>
+                    <div className="d-flex space-between">
+                        <div className="me-5" style={styles.bold} >RECU N° {consultation.CodePrestation || ''}</div>
+                        <div style={styles.info}> Prescripteur : {consultation.Medecin} &nbsp; Admis(e) le : {consultation.Date_consulation ? new Date(consultation.Date_consulation).toLocaleDateString() : ''}</div>
+                    </div>
+                    <div  style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                        <div style={styles.info}>Dossier N° {consultation.Code_dossier}</div>
+                        <div style={styles.info}>Patient : <b>{consultation.PatientP}</b></div>
+                    </div>
+                    <div className="d-flex">
+                        <div style={styles.info}>Assurance : {consultation.assurance} &nbsp; N°carte {consultation.numero_carte || ''} &nbsp; Taux(%) {consultation.tauxAssurance || 0}  &nbsp; N°Bon {consultation.NumBon || ''}</div>
+                    </div>
+                </div>                
             </div>
-            <div style={styles.info}>Prescripteur : {consultation.Medecin}</div>
-            <div style={styles.info}>Facturé(e) par : {consultation.Recupar}</div>
-            <div style={styles.info}>Admis(e) le : {consultation.Date_consulation ? new Date(consultation.Date_consulation).toLocaleDateString() : ''}</div>
-            <div style={styles.info}>Mode de paiement : Espèce</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <div style={styles.info}>Mode de paiement : Espèce</div>
+                <div style={styles.info}>Facturé(e) par : {consultation.Recupar}</div>
+            </div>
             <table style={styles.table}>
                 <thead>
                     <tr>
@@ -96,7 +100,11 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
                 </tbody>
             </table>
             <div style={styles.info}>Surplus Patient {consultation.ReliquatPatient || 0} &nbsp; Reste à payer {consultation.Restapayer || 0} &nbsp; {consultation.assurance}</div>
-            <div style={styles.footer}><b>Valable pour 15 jours</b></div>
+            <div className="d-flex" style={styles.footer}>
+                <div>Imprimé par: {consultation.Recupar} Le {new Date().toLocaleDateString()} A {new Date().toLocaleTimeString()}</div>
+               &nbsp;&nbsp;&nbsp; <div><b>Valable pour 15 jours</b></div>  
+            </div>
+            
         </div>
     );
 });

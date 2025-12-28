@@ -43,7 +43,7 @@ export default function RecuExamenPage({ params }: any) {
       </div>
 
       {/* CONTENU DU RECU */}
-      <div id="recu" style={{ width: "800px", margin: "auto" }}>
+      <div id="recu" style={{ width: "auto", margin: "auto" }}>
 
         {/* TITRE */}
         <h2 style={{ textAlign: "center", margin: 0 }}>

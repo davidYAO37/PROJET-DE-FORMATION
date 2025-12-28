@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { Modal, Table, Button, Form, Spinner, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaPencilAlt, FaEye, FaCircle } from 'react-icons/fa';
-import RecuConsultationPrint from './RecuConsultationPrint';
 import FicheConsultationUpdate from './ConsultationUpdate/FicheConsultationUpdate';
 import { SlLogin } from 'react-icons/sl';
+import RecuConsultationPrint from '../../recusacte/RecuConsultationPrint';
 
 
 interface Consultation {
