@@ -1,6 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Table, Button, Spinner } from 'react-bootstrap';
 import { FaPrint, FaFilePdf } from 'react-icons/fa';
+import dynamic from 'next/dynamic';
+
+// Dynamically import RecuExamenPrint with SSR disabled
+const RecuExamenPrint = dynamic(
+  () => import('@/app/pages/recusacte/RecuExamenPrint'),
+  { ssr: false }
+);
 
 export interface Facture {
     _id: string;
@@ -31,6 +38,8 @@ export default function ListeFactureModal({
 }: ListeFactureModalProps) {
     const [factures, setFactures] = useState<Facture[]>([]);
     const [loading, setLoading] = useState(false);
+    const [showRecuModal, setShowRecuModal] = useState(false);
+    const [selectedFactureId, setSelectedFactureId] = useState<string | null>(null);
 
     useEffect(() => {
         if (!show || !idHospitalisation) return;
@@ -38,30 +47,24 @@ export default function ListeFactureModal({
         const fetchFactures = async () => {
             setLoading(true);
             try {
-                console.log('Fetching factures for idHospitalisation:', idHospitalisation);
-                const response = await fetch(`/api/facturesListe?idHospitalisation=${idHospitalisation}`);
+                  const response = await fetch(`/api/facturesListe?idHospitalisation=${idHospitalisation}`);
                 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
-                    console.error('Erreur API:', errorData);
-                    throw new Error(errorData.message || 'Erreur lors du chargement des factures');
+                     throw new Error(errorData.message || 'Erreur lors du chargement des factures');
                 }
                 
                 const responseData = await response.json();
-                console.log('Données brutes de l\'API:', responseData);
-                
+                 
                 // Gérer différents formats de réponse
                 const facturesData = Array.isArray(responseData) 
                     ? responseData 
                     : (responseData.data && Array.isArray(responseData.data) 
                         ? responseData.data 
                         : []);
-                
-                console.log('Factures formatées:', facturesData);
-                setFactures(facturesData);
+                 setFactures(facturesData);
             } catch (error) {
-                console.error('Erreur:', error);
-            } finally {
+                 } finally {
                 setLoading(false);
             }
         };
@@ -70,9 +73,13 @@ export default function ListeFactureModal({
     }, [show, idHospitalisation]);
 
     const handlePrintFacture = (factureId: string) => {
-        // Logique pour l'impression de la facture
-        console.log('Impression de la facture:', factureId);
-        // À implémenter : logique d'impression ou de téléchargement du PDF
+        setSelectedFactureId(factureId);
+        setShowRecuModal(true);
+    };
+
+    const handleCloseRecuModal = () => {
+        setShowRecuModal(false);
+        setSelectedFactureId(null);
     };
 
     return (
@@ -163,6 +170,29 @@ export default function ListeFactureModal({
                     Fermer
                 </Button>
             </Modal.Footer>
+            
+            {/* Modal pour l'aperçu du reçu */}
+            <Modal 
+                show={showRecuModal} 
+                onHide={handleCloseRecuModal}
+                size="xl"
+                centered
+                fullscreen="lg-down"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Reçu d'examen</Modal.Title>
+                </Modal.Header>
+                <Modal.Body style={{ minHeight: '80vh' }}>
+                    {selectedFactureId && (
+                        <RecuExamenPrint params={{ id: selectedFactureId }} />
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleCloseRecuModal}>
+                        Fermer
+                    </Button>
+                </Modal.Footer>
+            </Modal>
         </Modal>
     );
 }

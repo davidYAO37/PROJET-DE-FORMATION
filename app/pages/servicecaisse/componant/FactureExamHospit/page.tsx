@@ -80,6 +80,7 @@ export default function HospitalisationPageCaisse({
     const [montantEncaisse, setMontantEncaisse] = useState<number>(0);
     const [recuPar, setRecuPar] = useState("");
     const [initialPatientP, setInitialPatientP] = useState(PatientP || "");
+    const [initialHydrated, setInitialHydrated] = useState(false);
 
     useEffect(() => {
         const nom = localStorage.getItem("nom_utilisateur");
@@ -96,6 +97,7 @@ export default function HospitalisationPageCaisse({
             setPresetLines(undefined);
             setModeModification(false);
         }
+        setInitialHydrated(false);
     }, [CodePrestation, propExamenHospitId]);
     /*useEffect(() => {
         setExamenHospitId(propExamenHospitId || undefined);
@@ -319,24 +321,6 @@ export default function HospitalisationPageCaisse({
         });
     };
 
-    /*   const handleNombreJoursChange = (value: number) => {
-          setFormData((prev) => {
-              let dateSortie = prev.dateSortie;
-              const dEntree = new Date(prev.dateEntree);
-  
-              if (!isNaN(dEntree.getTime()) && value > 0) {
-                  const dSortie = new Date(dEntree);
-                  dSortie.setDate(dSortie.getDate() + value - 1);
-                  dateSortie = dSortie.toISOString().split("T")[0];
-              }
-  
-              return {
-                  ...prev,
-                  nombreDeJours: value,
-                  dateSortie,
-              };
-          });
-      }; */
     const handleNombreJoursChange = (value: number) => {
         const jours = Math.max(1, Math.floor(value || 1));
 
@@ -360,6 +344,196 @@ export default function HospitalisationPageCaisse({
             };
         });
     };
+
+    const resetCreationState = (typeActeValue: string) => {
+        const today = new Date().toISOString().split('T')[0];
+        setModeModification(false);
+        setExamenHospitId(undefined);
+        setPresetLines([]);
+        setCurrentLignes([]);
+        setResetKey((k) => k + 1);
+        setModePaiement("");
+        setMontantEncaisse(0);
+        setInitialHydrated(false);
+        setTotaux({
+            montantTotal: 0,
+            partAssurance: 0,
+            partAssure: 0,
+            totalTaxe: 0,
+            totalSurplus: 0,
+            montantExecutant: 0,
+            montantARegler: 0,
+        });
+
+        setFormData((prev) => ({
+            ...prev,
+            typeacte: typeActeValue,
+            Designationtypeacte: typeActeValue,
+            dateEntree: today,
+            dateSortie: today,
+            nombreDeJours: 1,
+            factureTotal: 0,
+            partAssurance: 0,
+            Partassure: 0,
+            surplus: 0,
+            resteAPayer: 0,
+            TotalapayerPatient: 0,
+            renseignementclinique: "",
+        }));
+    };
+
+    const hydrateFromExistingExamen = async (typeActeValue: string) => {
+        if (!codePrestation) {
+            resetCreationState(typeActeValue);
+            return;
+        }
+
+        const res = await fetch(`/api/examenhospitalisationFacture?CodePrestation=${encodeURIComponent(codePrestation)}&typeActe=${encodeURIComponent(typeActeValue)}`);
+
+        if (!res.ok) {
+            resetCreationState(typeActeValue);
+            return;
+        }
+
+        const data = await res.json();
+        if (!data || !data._id) {
+            resetCreationState(typeActeValue);
+            return;
+        }
+
+        // On est en mode MODIFICATION : on prend toujours les valeurs de la base
+        // et si elles sont absentes, on revient sur des valeurs neutres fixes (pas sur l'ancien examen)
+        const today = new Date().toISOString().split('T')[0];
+        const entre = data.Entrele
+            ? new Date(data.Entrele).toISOString().split('T')[0]
+            : today;
+        const sortie = data.SortieLe
+            ? new Date(data.SortieLe).toISOString().split('T')[0]
+            : entre;
+
+        setModeModification(true);
+        setExamenHospitId(data._id);
+
+        setFormData((prev) => ({
+            ...prev,
+            typeacte: typeActeValue,
+            Designationtypeacte: typeActeValue,
+            patientId: data.IdPatient || prev.patientId,
+            PatientP: data.PatientP || prev.PatientP,
+            CodePrestation: codePrestation || prev.CodePrestation,
+            Assure: data.Assure ?? prev.Assure,
+            assurance: {
+                ...prev.assurance,
+                assuranceId: data.IDASSURANCE || prev.assurance.assuranceId,
+                type: data.Assure ?? prev.assurance.type,
+                taux: data.Taux ?? prev.assurance.taux,
+                matricule: data.Numcarte ?? prev.assurance.matricule,
+                numeroBon: data.NumBon ?? prev.assurance.numeroBon,
+                societe: data.SOCIETE_PATIENT ?? prev.assurance.societe,
+                adherent: data.Souscripteur ?? prev.assurance.adherent,
+            },
+            medecinId: data.NummedecinExécutant || data.medecinId || prev.medecinId,
+            medecinPrescripteur: data.Medecin || data.medecinPrescripteur || prev.medecinPrescripteur,
+            // en mode modif on reflète strictement la base; si vide, on laisse vide
+            renseignementclinique: data.Rclinique ?? "",
+            societePatient: data.SOCIETE_PATIENT ?? prev.societePatient,
+            dateEntree: entre,
+            dateSortie: sortie,
+            nombreDeJours: Number(data.nombreDeJours) > 0 ? Number(data.nombreDeJours) : 1,
+            factureTotal: data.Montanttotal ?? prev.factureTotal,
+            partAssurance: data.PartAssuranceP ?? prev.partAssurance,
+            Partassure: data.Partassure ?? prev.Partassure,
+            resteAPayer: data.Restapayer ?? prev.resteAPayer,
+            surplus: data.TotalSurplus ?? prev.surplus,
+            TotalapayerPatient: data.TotalapayerPatient ?? data.Restapayer ?? prev.TotalapayerPatient,
+            Modepaiement: data.Modepaiement ?? prev.Modepaiement,
+        }));
+
+        setModePaiement(data.Modepaiement || "");
+        setMontantEncaisse(data.MontantRecu ?? data.TotalapayerPatient ?? 0);
+
+        const resLignes = await fetch(`/api/ligneprestationFacture?codePrestation=${encodeURIComponent(codePrestation)}&idHospitalisation=${encodeURIComponent(data._id)}`);
+        if (resLignes.ok) {
+            const payload = await resLignes.json();
+            const rawLines = Array.isArray(payload?.data) ? payload.data : [];
+            const mappedLines = rawLines.map((l: any) => ({
+                DATE: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+                Acte: l.prestation || "",
+                Lettre_Cle: l.lettreCle || "",
+                Coefficient: Number(l.coefficientActe ?? 1),
+                QteP: Number(l.qte ?? 1),
+                Coef_ASSUR: Number(l.reliquatCoefAssurance ?? 0),
+                SURPLUS: Number(l.totalSurplus ?? 0),
+                Prixunitaire: Number(l.prix ?? 0),
+                TAXE: Number(l.taxe ?? 0),
+                PrixTotal: Number(l.prixTotal ?? 0),
+                PartAssurance: Number(l.partAssurance ?? 0),
+                PartAssure: Number(l.partAssure ?? 0),
+                IDTYPE: String(l.idTypeActe || ""),
+                Reliquat: Number(l.reliquatPatient ?? 0),
+                TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
+                Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
+                StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
+                IDACTE: String(l.idActe || ""),
+                Exclusion: l.exclusionActe === "Refuser" ? "Refuser" : "Accepter",
+                COEFFICIENT_ASSURANCE: Number(l.coefficientAssur ?? 0),
+                TARIF_ASSURANCE: Number(l.tarifAssurance ?? 0),
+                IDHOSPO: String(l.idHospitalisation || ""),
+                IDFAMILLE: String(l.idFamilleActeBiologie || ""),
+                Refuser: Number(l.prixRefuse ?? 0),
+                Accepter: Number(l.prixAccepte ?? 0),
+                IDLignePrestation: String(l._id || ""),
+                Statutprescription: Number(l.statutPrescriptionMedecin ?? 2),
+                CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
+                forfaitclinique: 0,
+                ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
+                AFacturer: (l.actePayeCaisse === 'Payé' || l.statutPrescriptionMedecin === 3) ? 'Payé' : 'Non Payé',
+                datePaiementCaisse: l.datePaiementCaisse ? new Date(l.datePaiementCaisse).toISOString().split('T')[0] : '',
+                heurePaiement: l.heurePaiement || '',
+                payePar: l.payePar || '',
+                Action: "",
+            }));
+
+            setPresetLines(mappedLines);
+            setResetKey((k) => k + 1);
+        } else {
+            resetCreationState(typeActeValue);
+        }
+    };
+
+    const handleNatureActeChange = async (value: string) => {
+        if (!value) {
+            setFormData((prev) => ({ ...prev, typeacte: "" }));
+            return;
+        }
+
+        // Appliquer les conditions à chaque sélection : on force les valeurs par défaut
+        const today = new Date().toISOString().split('T')[0];
+        setFormData((prev) => ({
+            ...prev,
+            typeacte: value,
+            Designationtypeacte: value,
+            dateEntree: today,
+            dateSortie: today,
+            nombreDeJours: 1,
+            renseignementclinique: "",
+        }));
+
+        try {
+            await hydrateFromExistingExamen(value);
+        } catch (error) {
+            console.error("Erreur lors du chargement de l'examen:", error);
+            resetCreationState(value);
+        }
+    };
+
+    // Hydrater automatiquement quand on arrive depuis "facturer" avec un type d'acte déjà fourni
+    useEffect(() => {
+        const typeActeValue = formData.typeacte || Designationtypeacte;
+        if (!initialHydrated && codePrestation && typeActeValue) {
+            hydrateFromExistingExamen(typeActeValue).finally(() => setInitialHydrated(true));
+        }
+    }, [initialHydrated, codePrestation, Designationtypeacte, formData.typeacte]);
 
 
     return (
@@ -435,201 +609,7 @@ export default function HospitalisationPageCaisse({
                                 <Form.Label>Nature Acte</Form.Label>
                                 <Form.Select
                                     value={formData.typeacte || formData.Designationtypeacte}
-                                    onChange={async (e) => {
-                                        const value = e.target.value;
-
-                                        if (!value) {
-                                            setFormData((prev) => ({ ...prev, typeacte: "" }));
-                                            return;
-                                        }
-
-                                        // Mettre à jour le type d'acte
-                                        setFormData((prev) => ({ ...prev, typeacte: value }));
-
-                                        // 2. Rechercher l'examen avec Code_Prestation ET Designationtypeacte
-                                        if (!codePrestation) {
-                                            return;
-                                        }
-
-                                        try {
-                                            const res = await fetch(`/api/examenhospitalisationFacture?CodePrestation=${encodeURIComponent(codePrestation)}&typeActe=${encodeURIComponent(value)}`);
-
-                                            if (res.ok) {
-                                                const data = await res.json();
-
-                                                // 2.1 - SI TROUVÉ: Mode modification
-                                                if (data && data._id) {
-                                                    console.log("✅ Examen trouvé - Mode MODIFICATION", data._id);
-                                                    setModeModification(true);
-                                                    setExamenHospitId(data._id);
-
-                                                    // Charger les infos AssuranceInfo depuis examenHospit
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        typeacte: value,
-                                                        // Assurance
-                                                        Assure: data.Assure || prev.Assure,
-                                                        assurance: {
-                                                            ...prev.assurance,
-                                                            assuranceId: data.IDASSURANCE || prev.assurance.assuranceId,
-                                                            type: data.Assure || prev.assurance.type,
-                                                            taux: data.Taux || prev.assurance.taux,
-                                                            matricule: data.Numcarte || prev.assurance.matricule,
-                                                            numeroBon: data.NumBon || prev.assurance.numeroBon,
-                                                            societe: data.SocieteP || prev.assurance.societe,
-                                                            adherent: data.Souscripteur || prev.assurance.adherent,
-                                                        },
-                                                        // Médecin executant
-                                                        medecinId: data.NummedecinExécutant || prev.medecinId,
-                                                        medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
-                                                        // Renseignement clinique
-                                                        renseignementclinique: data.Rclinique || prev.renseignementclinique,
-                                                        // Société patient
-                                                        societePatient: data.SOCIETE_PATIENT || prev.societePatient,
-                                                        // Dates
-                                                        dateEntree: data.Entrele ? new Date(data.Entrele).toISOString().split('T')[0] : prev.dateEntree,
-                                                        dateSortie: data.SortieLe ? new Date(data.SortieLe).toISOString().split('T')[0] : prev.dateSortie,
-                                                        nombreDeJours: data.nombreDeJours || prev.nombreDeJours,
-                                                        // Montants
-                                                        factureTotal: data.Montanttotal || 0,
-                                                        partAssurance: data.PartAssuranceP || 0,
-                                                        Partassure: data.Partassure || 0,
-                                                        resteAPayer: data.Restapayer || 0,
-                                                        surplus: data.TotalSurplus || 0,
-                                                        TotalapayerPatient: data.TotalapayerPatient ?? data.Restapayer ?? 0,
-                                                    }));
-
-                                                    setModePaiement(data.Modepaiement || "");
-                                                    setMontantEncaisse(data.MontantRecu ?? 0);
-
-                                                    // Charger les lignes prestation liées à cet examen
-                                                    const resLignes = await fetch(`/api/ligneprestationFacture?codePrestation=${encodeURIComponent(codePrestation)}&idHospitalisation=${encodeURIComponent(data._id)}`);
-                                                    if (resLignes.ok) {
-                                                        const payload = await resLignes.json();
-                                                        const rawLines = Array.isArray(payload?.data) ? payload.data : [];
-
-                                                        // Mapper les lignes
-                                                        const mappedLines = rawLines.map((l: any) => ({
-                                                            DATE: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-                                                            Acte: l.prestation || "",
-                                                            Lettre_Cle: l.lettreCle || "",
-                                                            Coefficient: Number(l.coefficientActe ?? 1),
-                                                            QteP: Number(l.qte ?? 1),
-                                                            Coef_ASSUR: Number(l.reliquatCoefAssurance ?? 0),
-                                                            SURPLUS: Number(l.totalSurplus ?? 0),
-                                                            Prixunitaire: Number(l.prix ?? 0),
-                                                            TAXE: Number(l.taxe ?? 0),
-                                                            PrixTotal: Number(l.prixTotal ?? 0),
-                                                            PartAssurance: Number(l.partAssurance ?? 0),
-                                                            PartAssure: Number(l.partAssure ?? 0),
-                                                            IDTYPE: String(l.idTypeActe || ""),
-                                                            Reliquat: Number(l.reliquatPatient ?? 0),
-                                                            TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
-                                                            Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
-                                                            StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
-                                                            IDACTE: String(l.idActe || ""),
-                                                            Exclusion: l.exclusionActe === "Refuser" ? "Refuser" : "Accepter",
-                                                            COEFFICIENT_ASSURANCE: Number(l.coefficientAssur ?? 0),
-                                                            TARIF_ASSURANCE: Number(l.tarifAssurance ?? 0),
-                                                            IDHOSPO: String(l.idHospitalisation || ""),
-                                                            IDFAMILLE: String(l.idFamilleActeBiologie || ""),
-                                                            Refuser: Number(l.prixRefuse ?? 0),
-                                                            Accepter: Number(l.prixAccepte ?? 0),
-                                                            IDLignePrestation: String(l._id || ""),
-                                                            Statutprescription: Number(l.statutPrescriptionMedecin ?? 2),
-                                                            CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
-                                                            forfaitclinique: 0,
-                                                            ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
-                                                            AFacturer: (l.actePayeCaisse === 'Payé' || l.statutPrescriptionMedecin === 3) ? 'Payé' : 'Non Payé',
-                                                            datePaiementCaisse: l.datePaiementCaisse ? new Date(l.datePaiementCaisse).toISOString().split('T')[0] : '',
-                                                            heurePaiement: l.heurePaiement || '',
-                                                            payePar: l.payePar || '',
-                                                            Action: "",
-                                                        }));
-
-                                                        setPresetLines(mappedLines);
-                                                        setResetKey((k) => k + 1);
-                                                    }
-                                                } else {
-                                                    // 2.2 - SI NON TROUVÉ: Mode création - Vider ActesTable, PaiementInfo, CliniqueInfo
-                                                    console.log("ℹ️ Examen non trouvé - Mode CRÉATION");
-                                                    setModeModification(false);
-                                                    setExamenHospitId(undefined);
-
-                                                    // Vider uniquement les champs spécifiés
-                                                    setPresetLines([]);
-                                                    setCurrentLignes([]);
-                                                    setResetKey((k) => k + 1);
-                                                    setModePaiement("");
-                                                    setMontantEncaisse(0);
-
-                                                    // Réinitialiser les totaux
-                                                    setTotaux({
-                                                        montantTotal: 0,
-                                                        partAssurance: 0,
-                                                        partAssure: 0,
-                                                        totalTaxe: 0,
-                                                        totalSurplus: 0,
-                                                        montantExecutant: 0,
-                                                        montantARegler: 0,
-                                                    });
-
-                                                    // Réinitialiser les montants et infos cliniques/paiement
-                                                    setFormData((prev) => ({
-                                                        ...prev,
-                                                        typeacte: value,
-                                                        factureTotal: 0,
-                                                        partAssurance: 0,
-                                                        Partassure: 0,
-                                                        surplus: 0,
-                                                        resteAPayer: 0,
-                                                        TotalapayerPatient: 0,
-                                                        renseignementclinique: "",
-                                                        // Garder AssuranceInfo (déjà chargé depuis la consultation)
-                                                        // Garder dateEntree et dateSortie (déjà initialisés à aujourd'hui)
-                                                    }));
-                                                }
-                                            } else if (res.status === 404) {
-                                                // 2.2 - Examen non trouvé: Mode création
-                                                console.log("ℹ️ Examen non trouvé (404) - Mode CRÉATION");
-                                                setModeModification(false);
-                                                setExamenHospitId(undefined);
-
-                                                // Vider ActesTable, PaiementInfo, CliniqueInfo
-                                                setPresetLines([]);
-                                                setCurrentLignes([]);
-                                                setResetKey((k) => k + 1);
-                                                setModePaiement("");
-                                                setMontantEncaisse(0);
-                                                setTotaux({
-                                                    montantTotal: 0,
-                                                    partAssurance: 0,
-                                                    partAssure: 0,
-                                                    totalTaxe: 0,
-                                                    totalSurplus: 0,
-                                                    montantExecutant: 0,
-                                                    montantARegler: 0,
-                                                });
-
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    typeacte: value,
-                                                    factureTotal: 0,
-                                                    partAssurance: 0,
-                                                    partPatient: 0,
-                                                    surplus: 0,
-                                                    resteAPayer: 0,
-                                                    TotalapayerPatient: 0,
-                                                    renseignementclinique: "",
-                                                }));
-                                            }
-                                        } catch (error) {
-                                            console.error("Erreur lors de la recherche de l'examen:", error);
-                                            // En cas d'erreur, mode création par défaut
-                                            setModeModification(false);
-                                            setExamenHospitId(undefined);
-                                        }
-                                    }}
+                                    onChange={(e) => handleNatureActeChange(e.target.value)}
                                 >
                                     <option value="">--- Sélectionner ---</option>
                                     {typesActe.map((type) => (
@@ -800,7 +780,7 @@ export default function HospitalisationPageCaisse({
                             const medecinExecutantId = lignesAvecMedecin.length > 0 ? (formData.medecinId || "").toString().trim() : "";
 
                             const header = {
-                                _id: modeModification ? examenHospitId : undefined,
+                                _id: examenHospitId || undefined,
                                 CodePrestation: codePrestation || formData.patientId, // fallback si besoin
                                 Rclinique: formData.renseignementclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
@@ -863,6 +843,13 @@ export default function HospitalisationPageCaisse({
                             }
                             console.log("✅ Enregistrement réussi:", out);
                             alert(out?.message || 'Facture enregistrée avec succès');
+
+                            // Rafraîchir l'état depuis la base (mise à jour ou création)
+                            if (out?.id) {
+                                setExamenHospitId(out.id);
+                                setInitialHydrated(false);
+                                await hydrateFromExistingExamen(formData.typeacte || Designationtypeacte || "");
+                            }
                         }}
 
                     />

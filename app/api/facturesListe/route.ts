@@ -20,23 +20,17 @@ export async function GET(request: Request) {
         }
 
         // Récupérer les factures correspondantes
-        console.log('Recherche des factures pour idHospitalisation:', idHospitalisation);
-        
+            
         const factures = await Facturation.find({
             'idHospitalisation': idHospitalisation,
         })
         .sort({ date: -1 }) // Tri par date décroissante
         .lean();
 
-        console.log('Nombre de factures trouvées:', factures.length);
-        if (factures.length > 0) {
-            console.log('Première facture trouvée:', JSON.stringify(factures[0], null, 2));
-        }
 
         return NextResponse.json(factures);
 
     } catch (error) {
-        console.error('Erreur lors de la récupération des factures:', error);
         return NextResponse.json(
             { success: false, message: 'Erreur lors de la récupération des factures' },
             { status: 500 }
@@ -80,7 +74,6 @@ export async function POST(request: Request) {
         });
 
     } catch (error) {
-        console.error('Erreur lors de la création de la facture:', error);
         return NextResponse.json(
             { success: false, message: 'Erreur lors de la création de la facture' },
             { status: 500 }

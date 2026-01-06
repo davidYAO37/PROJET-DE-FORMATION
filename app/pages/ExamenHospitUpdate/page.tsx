@@ -32,72 +32,12 @@ export default function HospitalisationPage() {
     const [modeModification, setModeModification] = useState(false);
     const [examenHospitId, setExamenHospitId] = useState<string | undefined>(undefined);
     const [recuPar, setRecuPar] = useState("");
+    const [initialHydrated, setInitialHydrated] = useState(false);
 
     useEffect(() => {
         const nom = localStorage.getItem("nom_utilisateur");
         if (nom) setRecuPar(nom);
     }, []);
-
-
-    async function loadLignesFromPrestation(code: string) {
-        if (!code) {
-            setPresetLines(undefined);
-            setModeModification(false);
-            return;
-        }
-        try {
-            const res = await fetch(`/api/ligneprestation?CodePrestation=${encodeURIComponent(code)}`);
-            if (!res.ok) throw new Error("load lignes failed");
-            const payload = await res.json();
-            const rawLines = Array.isArray(payload?.data) ? payload.data : [];
-
-            // Si des lignes existent, on est en mode modification
-            setModeModification(rawLines.length > 0);
-
-            // Mapper les données de l'API vers le format attendu par ActesTable
-            const mappedLines = rawLines.map((l: any) => ({
-                DATE: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-                Acte: l.prestation || "",
-                Lettre_Cle: l.lettreCle || "",
-                Coefficient: Number(l.coefficientActe ?? 1),
-                QteP: Number(l.qte ?? 1),
-                Coef_ASSUR: Number(l.reliquatCoefAssurance ?? 0),
-                SURPLUS: Number(l.totalSurplus ?? 0),
-                Prixunitaire: Number(l.prix ?? 0),
-                TAXE: Number(l.taxe ?? 0),
-                PrixTotal: Number(l.prixTotal ?? 0),
-                PartAssurance: Number(l.partAssurance ?? 0),
-                PartAssure: Number(l.partAssure ?? 0),
-                IDTYPE: String(l.idTypeActe || ""),
-                Reliquat: Number(l.reliquatPatient ?? 0),
-                TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
-                Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
-                StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
-                IDACTE: String(l.idActe || ""),
-                Exclusion: l.exclusionActe === "Refuser" ? "Refuser" : "Accepter",
-                COEFFICIENT_ASSURANCE: Number(l.coefficientAssur ?? 0),
-                TARIF_ASSURANCE: Number(l.tarifAssurance ?? 0),
-                IDHOSPO: String(l.idHospitalisation || ""),
-                IDFAMILLE: String(l.idFamilleActeBiologie || ""),
-                Refuser: Number(l.prixRefuse ?? 0),
-                Accepter: Number(l.prixAccepte ?? 0),
-                IDLignePrestation: String(l._id || ""),
-                Statutprescription: Number(l.statutPrescriptionMedecin ?? 2),
-                CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
-                forfaitclinique: 0,
-                ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
-                Action: "",
-            }));
-
-            setPresetLines(mappedLines);
-            // Déclenche la réinit dans ActesTable et rechargement des lignes
-            setResetKey((k) => k + 1);
-        } catch (_) {
-            setPresetLines(undefined);
-            setModeModification(false);
-            setResetKey((k) => k + 1);
-        }
-    }
 
     // Charger les types actes
     useEffect(() => {
@@ -180,6 +120,167 @@ export default function HospitalisationPage() {
         });
     };
 
+    const resetCreationState = (typeActeValue: string) => {
+        const today = new Date().toISOString().split("T")[0];
+        setModeModification(false);
+        setExamenHospitId(undefined);
+        setPresetLines([]);
+        setCurrentLignes([]);
+        setInitialHydrated(false);
+
+        setTotaux({
+            montantTotal: 0,
+            partAssurance: 0,
+            partAssure: 0,
+            totalTaxe: 0,
+            totalSurplus: 0,
+            montantExecutant: 0,
+            montantARegler: 0,
+        });
+
+        setFormData((prev) => ({
+            ...prev,
+            typeacte: typeActeValue,
+            // dates par défaut
+            dateEntree: today,
+            dateSortie: today,
+            nombreDeJours: 1,
+            // montants
+            factureTotal: 0,
+            partAssurance: 0,
+            Partassure: 0,
+            surplus: 0,
+            resteAPayer: 0,
+            // clinique
+            renseignementclinique: "",
+        }));
+
+        // Reset complet de la table après préparation du mode création
+        setResetKey((k) => k + 1);
+    };
+
+    const hydrateFromExistingExamen = async (typeActeValue: string) => {
+        if (!CodePrestation) {
+            resetCreationState(typeActeValue);
+            return;
+        }
+
+        const res = await fetch(
+            `/api/examenhospitalisation?CodePrestation=${encodeURIComponent(
+                CodePrestation
+            )}&typeActe=${encodeURIComponent(typeActeValue)}`
+        );
+
+        if (!res.ok) {
+            resetCreationState(typeActeValue);
+            return;
+        }
+
+        const data = await res.json();
+        if (!data || !data._id) {
+            resetCreationState(typeActeValue);
+            return;
+        }
+
+        const today = new Date().toISOString().split("T")[0];
+        const entre = data.Entrele
+            ? new Date(data.Entrele).toISOString().split("T")[0]
+            : today;
+        const sortie = data.SortieLe
+            ? new Date(data.SortieLe).toISOString().split("T")[0]
+            : entre;
+
+        setModeModification(true);
+        setExamenHospitId(data._id);
+
+        setFormData((prev) => ({
+            ...prev,
+            typeacte: typeActeValue,
+            // Assurance
+            Assure: data.Assure || prev.Assure,
+            assurance: {
+                ...prev.assurance,
+                assuranceId: data.IDASSURANCE || prev.assurance.assuranceId,
+                type: data.Assure || prev.assurance.type,
+                taux: data.Taux || prev.assurance.taux,
+                matricule: data.Numcarte || prev.assurance.matricule,
+                numeroBon: data.NumBon || prev.assurance.numeroBon,
+                societe: data.SOCIETE_PATIENT || prev.assurance.societe,
+                adherent: data.Souscripteur || prev.assurance.adherent,
+            },
+            // Médecins
+            medecinId: data.NummedecinExécutant || prev.medecinId,
+            medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
+            // Clinique
+            renseignementclinique: data.Rclinique || "",
+            societePatient: data.SOCIETE_PATIENT || prev.societePatient,
+            // Dates
+            dateEntree: entre,
+            dateSortie: sortie,
+            nombreDeJours:
+                Number(data.nombreDeJours) > 0 ? Number(data.nombreDeJours) : 1,
+            // Montants
+            factureTotal: data.Montanttotal || 0,
+            partAssurance: data.PartAssuranceP || 0,
+            Partassure: data.Partassure || 0,
+            resteAPayer: data.Restapayer || 0,
+            surplus: data.TotalSurplus || 0,
+        }));
+
+        // Charger les lignes liées à cet examen
+        const resLignes = await fetch(
+            `/api/ligneprestation?CodePrestation=${encodeURIComponent(
+                CodePrestation
+            )}&idHospitalisation=${encodeURIComponent(data._id)}`
+        );
+
+        if (resLignes.ok) {
+            const payload = await resLignes.json();
+            const rawLines = Array.isArray(payload?.data) ? payload.data : [];
+
+            const mappedLines = rawLines.map((l: any) => ({
+                DATE: l.dateLignePrestation
+                    ? new Date(l.dateLignePrestation).toISOString().split("T")[0]
+                    : new Date().toISOString().split("T")[0],
+                Acte: l.prestation || "",
+                Lettre_Cle: l.lettreCle || "",
+                Coefficient: Number(l.coefficientActe ?? 1),
+                QteP: Number(l.qte ?? 1),
+                Coef_ASSUR: Number(l.reliquatCoefAssurance ?? 0),
+                SURPLUS: Number(l.totalSurplus ?? 0),
+                Prixunitaire: Number(l.prix ?? 0),
+                TAXE: Number(l.taxe ?? 0),
+                PrixTotal: Number(l.prixTotal ?? 0),
+                PartAssurance: Number(l.partAssurance ?? 0),
+                PartAssure: Number(l.partAssure ?? 0),
+                IDTYPE: String(l.idTypeActe || ""),
+                Reliquat: Number(l.reliquatPatient ?? 0),
+                TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
+                Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
+                StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
+                IDACTE: String(l.idActe || ""),
+                Exclusion: l.exclusionActe === "Refuser" ? "Refuser" : "Accepter",
+                COEFFICIENT_ASSURANCE: Number(l.coefficientAssur ?? 0),
+                TARIF_ASSURANCE: Number(l.tarifAssurance ?? 0),
+                IDHOSPO: String(l.idHospitalisation || ""),
+                IDFAMILLE: String(l.idFamilleActeBiologie || ""),
+                Refuser: Number(l.prixRefuse ?? 0),
+                Accepter: Number(l.prixAccepte ?? 0),
+                IDLignePrestation: String(l._id || ""),
+                Statutprescription: Number(l.statutPrescriptionMedecin ?? 2),
+                CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
+                forfaitclinique: 0,
+                ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
+                Action: "",
+            }));
+
+            setPresetLines(mappedLines);
+            setResetKey((k) => k + 1);
+        } else {
+            resetCreationState(typeActeValue);
+        }
+    };
+
     return (
         <Container fluid className="p-3">
             <h3 className={`text-center mb-3 ${modeModification ? 'text-warning' : 'text-primary'}`}>
@@ -193,21 +294,10 @@ export default function HospitalisationPage() {
                         setFormData={setFormData}
                         onCodePrestationChange={(code) => {
                             setCodePrestation(code);
-
-                            // 1. Initialiser les dates à aujourd'hui
-                            const today = new Date().toISOString().split('T')[0];
-                            setFormData((prev) => ({
-                                ...prev,
-                                dateEntree: today,
-                                dateSortie: today,
-                                nombreDeJours: 1,
-                            }));
-
-                            // Réinitialiser le mode modification
-                            setModeModification(false);
-                            setExamenHospitId(undefined);
+                            // Contexte neutre : on laisse hydrateFromExistingExamen décider
+                            setInitialHydrated(false);
                             setPresetLines([]);
-                            setResetKey((k) => k + 1);
+                            setCurrentLignes([]);
                         }}
                     />
                     <AssuranceInfoUpdate
@@ -227,6 +317,44 @@ export default function HospitalisationPage() {
                             <Col xs={12} md={6} lg={4} className="mb-2">
                                 <Form.Label>Nature Acte</Form.Label>
                                 <Form.Select
+                                    value={formData.typeacte || ""}
+                                    onChange={async (e) => {
+                                        const value = e.target.value;
+
+                                        if (!value) {
+                                            setFormData((prev) => ({ ...prev, typeacte: "" }));
+                                            return;
+                                        }
+
+                                        // À chaque sélection : on force le mode création par défaut
+                                        const today = new Date().toISOString().split("T")[0];
+                                        setFormData((prev) => ({
+                                            ...prev,
+                                            typeacte: value,
+                                            dateEntree: today,
+                                            dateSortie: today,
+                                            nombreDeJours: 1,
+                                            renseignementclinique: "",
+                                        }));
+
+                                        try {
+                                            // Laisse hydrateFromExistingExamen décider si on passe en modification
+                                            await hydrateFromExistingExamen(value);
+                                        } catch (error) {
+                                            console.error("Erreur lors de la recherche de l'examen:", error);
+                                            resetCreationState(value);
+                                        }
+                                    }}
+                                >
+                                    <option value="">--- Sélectionner ---</option>
+                                    {typesActe.map((type) => (
+                                        <option key={type._id} value={type.Designation}>
+                                            {type.Designation}
+                                        </option>
+                                    ))}
+                                </Form.Select>
+
+                                {/*  <Form.Select
                                     value={formData.typeacte || ""}
                                     onChange={async (e) => {
                                         const value = e.target.value;
@@ -418,7 +546,7 @@ export default function HospitalisationPage() {
                                             {type.Designation}
                                         </option>
                                     ))}
-                                </Form.Select>
+                                </Form.Select> */}
                             </Col>
                             <Col xs={12} sm={6} md={4} lg={3} className="mb-2">
                                 <Form.Label>Entrée le</Form.Label>

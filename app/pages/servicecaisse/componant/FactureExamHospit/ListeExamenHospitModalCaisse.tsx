@@ -67,7 +67,7 @@ export default function ListeExamenHospitModalCaisse({
                 setExamens(Array.isArray(formattedExams) ? formattedExams : []);
                 setSelectedPatient(patientData);
             } catch (error) {
-                console.error('Erreur:', error);
+             
             } finally {
                 setLoading(false);
             }
