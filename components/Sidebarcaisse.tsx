@@ -6,12 +6,13 @@ import { Nav } from 'react-bootstrap';
 import { HouseDoorFill, ArrowRightCircleFill, PeopleFill, Clipboard2PulseFill, CalendarFill, Calendar2CheckFill, ClockFill, PencilSquare, KeyFill } from 'react-bootstrap-icons';
 import { useEffect, useState } from 'react';
 import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/componant/FactureExamHospit/ExamenHospitModalCaisse';
+import PaiementPharmacieModal from '@/app/pages/servicecaisse/componant/PharmacieCaisse/PaiementPharmacieModal';
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicecaisse/tcaisse', icon: <HouseDoorFill size={24} className="me-2" /> },
   { label: 'Factures en attente', path: '/pages/servicecaisse/listefactures', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Saisir une Facture Exam-Hospit...', path:'#' , isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2"/> , style: { cursor: 'pointer' } },
-  { label: 'Facturer une pharmacie', path: '/transfert-patient', icon: <ArrowRightCircleFill size={24} className="me-2" /> },
+  { label: 'Saisir une Facture Exam-Hospit...', path: '#', isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2" />, style: { cursor: 'pointer' } },
+  { label: 'Facturer une pharmacie', path: '#', isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2" />, style: { cursor: 'pointer' } },
   { label: 'Caution Patient', path: '/salle-attente', icon: <PeopleFill size={24} className="me-2" /> },
   { label: 'Facture a solder', path: '/constantes', icon: <Clipboard2PulseFill size={24} className="me-2" /> },
   { label: 'Imprimer Facture', path: '/planning-medecin', icon: <CalendarFill size={24} className="me-2" /> },
@@ -22,7 +23,8 @@ export default function Sidebarcaisse() {
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState('');
   const [showFactureModal, setShowFactureModal] = useState(false);
- 
+  const [showPaiementPharmacieModal, setShowPaiementPharmacieModal] = useState(false);
+
 
   // Charger l'utilisateur connecté au montage
   useEffect(() => {
@@ -35,8 +37,11 @@ export default function Sidebarcaisse() {
   const handleLinkClick = () => setOpen(false);
 
 
-// ouvre le modal de saisir une facture
-const handleFactureClick = () => setShowFactureModal(true);
+  // ouvre le modal de saisir une facture
+  const handleFactureClick = () => setShowFactureModal(true);
+
+  // ouvre le modal de saisir une facture de pharmacie
+  const handlePaiementPharmacieClick = () => setShowPaiementPharmacieModal(true);
 
   return (
     <>
@@ -70,9 +75,9 @@ const handleFactureClick = () => setShowFactureModal(true);
           {menu.map((item, index) => (
             <Nav.Item key={index} className="mb-2" style={{ cursor: 'pointer' }}>
               {item.isModal ? (
-                <div 
+                <div
                   className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''} cursor-pointer`}
-                  onClick={handleFactureClick}
+                  onClick={item.label === 'Facturer une pharmacie' ? handlePaiementPharmacieClick : handleFactureClick}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -90,13 +95,19 @@ const handleFactureClick = () => setShowFactureModal(true);
           ))}
         </Nav>
       </aside>
-      
+
       {/* Modal pour la saisie de facture */}
       <ExamenHospitalisationModalCaisse
         show={showFactureModal}
         onHide={() => setShowFactureModal(false)}
       />
-      
+
+      {/* Modal pour la saisie de facture de pharmacie */}
+      <PaiementPharmacieModal
+        show={showPaiementPharmacieModal}
+        onHide={() => setShowPaiementPharmacieModal(false)}
+      />
+
     </>
   );
 }

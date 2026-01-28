@@ -2,7 +2,7 @@ import mongoose, { Model, Schema } from "mongoose";
 import { Types } from "mongoose";
 
 export interface IEntreeStock extends Document {
-    legacyId?: number;
+     _id:string;
     DateAppro?: Date;
     Quantite?: number;
     PrixAchat?: number;
@@ -13,16 +13,16 @@ export interface IEntreeStock extends Document {
     SaisiLe?: Date;
     Observations?: string;
     Reference?: string;
-    Approvisionnement?: Types.ObjectId | null;
+    IDAppro?: Types.ObjectId | null;
     PrixVente?: number;
     Medicament?: string;
+    IDMEDICAMENT?: Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;
 }
 
 
 const EntreeStockSchema = new Schema<IEntreeStock>({
-    legacyId: { type: Number },
     DateAppro: { type: Date },
     Quantite: { type: Number },
     PrixAchat: { type: Number },
@@ -33,8 +33,9 @@ const EntreeStockSchema = new Schema<IEntreeStock>({
     SaisiLe: { type: Date },
     Observations: { type: String, maxlength: 120 },
     Reference: { type: String, maxlength: 30 },
-    Approvisionnement: { type: Schema.Types.ObjectId, ref: 'Approvisionnement' },
+    IDAppro: { type: Schema.Types.ObjectId, ref: 'Approvisionnement' },
     PrixVente: { type: Number },
     Medicament: { type: String, maxlength: 250 },
+    IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
 }, { timestamps: true });
 export const EntreeStock: Model<IEntreeStock> = mongoose.models.EntreeStock || mongoose.model<IEntreeStock>("EntreeStock", EntreeStockSchema);

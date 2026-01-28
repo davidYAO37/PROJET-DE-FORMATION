@@ -6,7 +6,7 @@ import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "reac
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
-// Type du document ActeClinique (adapté depuis ton modèle mongoose)
+// Type du document ActeClinique
 export interface IActeClinique {
     _id: string;
     Designation?: string;
@@ -22,7 +22,7 @@ export interface IActeClinique {
     // ... autres champs si besoin
 }
 
-// Type TarifAssurance (approximation basée sur tes procédures)
+// Type TarifAssurance
 export interface ITarifAssurance {
     _id?: string;
     Designation: string;

@@ -6,6 +6,7 @@ export interface Stock {
     AuteurModif?: string;
     DateModif?: Date;
     Medicament?: string;
+    IDMEDICAMENT?:string;
     createdAt?: Date;
     updatedAt?: Date;
 }

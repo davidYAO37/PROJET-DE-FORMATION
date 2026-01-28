@@ -1,11 +1,12 @@
 import mongoose, { Model, Schema } from "mongoose";
 
 export interface IPatientPrescription extends Document {
-    IDPRESCRIPTION: number;
-    patient: mongoose.Types.ObjectId; // ref Patient
-    quantite: number;
+    _id?: string;
+    IDPRESCRIPTION: string;
+    PatientP: string
+    QteP: number;
     posologie: string;
-    datePres: Date;
+    DatePres: Date;
     heureFacturation?: string;
     prixUnitaire: number;
     prixTotal: number;
@@ -29,11 +30,12 @@ export interface IPatientPrescription extends Document {
 }
 
 const PatientPrescriptionSchema = new Schema<IPatientPrescription>({
-    IDPRESCRIPTION: Number,
-    patient: { type: Schema.Types.ObjectId, ref: "Patient" },
-    quantite: Number,
+    _id: { type: String },
+    IDPRESCRIPTION: { type: String },
+    PatientP: String,
+    QteP: Number,
     posologie: String,
-    datePres: Date,
+    DatePres: Date,
     heureFacturation: String,
     prixUnitaire: Number,
     prixTotal: Number,

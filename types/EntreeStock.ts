@@ -1,5 +1,5 @@
 export interface EntreeStock {
-    legacyId?: number;
+    _id?:String;
     DateAppro?: Date;
     Quantite?: number;
     PrixAchat?: number;
@@ -10,9 +10,10 @@ export interface EntreeStock {
     SaisiLe?: Date;
     Observations?: string;
     Reference?: string;
-    Approvisionnement?: string | null;
+    IDAppro?: string | null;
     PrixVente?: number;
     Medicament?: string;
+    IDMEDICAMENT?:string,
     createdAt?: Date;
     updatedAt?: Date;
 }

@@ -1,64 +1,77 @@
 import mongoose, { Model, Schema, Types } from "mongoose";
 
-export interface IPatientPrescription extends Document {
-    legacyId?: number;
-    Prescription?: Types.ObjectId;
-    PatientRef?: Types.ObjectId;
-    QtéP?: number;
-    Posologie?: string;
+export interface IPrescription extends Document {
+    _id?: string;
+    Designation?: string;
+    CodePrestation?: string;
+    PatientP?: string;
     DatePres?: Date;
-    Heure_Facturation?: string;
-    prixunitaire?: number;
-    PrixTotal?: number;
-    nomMedicament?: string;
+    SaisiPar?: string;
+    Rclinique?: string;
+    Montanttotal?: number;
+    Taux?: number;
     PartAssurance?: number;
     PartAssure?: number;
-    CodePrestation?: string;
-    Medicament?: Types.ObjectId;
-    IDpriseCharge?: number;
-    Reference?: string;
-    ExclusionActae?: string;
-    statutPrescriptionMedecin?: number;
-    ACTEPAYECAISSE?: string;
-    Payele?: Date;
-    PayéPar?: string;
-    DatePaiement?: Date;
-    Heure?: string;
-    Facturation?: Types.ObjectId;
-    SocieteAssurance?: Types.ObjectId;
+    Remise?: number;
+    MotifRemise?: string;
+    Assurance?:string;
+    IDASSURANCE?:Types.ObjectId;
+    MontantRecu?:number;
+    Restapayer?:number;
+    idMedecin?:Types.ObjectId;
+    NomMed?:string;
+    StatutFacture?:boolean;
+    Numfacture?:string;
+    NumBon?:string;
+    Modepaiement?:string;
+    Document?:Buffer;
+    ExtensionF?:string;
+    Souscripteur?:string;
+    StatutPaiement?:string;
+    Ordonnerlannulation?:number;
+    AnnulationOrdonneLe?:Date;
+    AnnulationOrdonnePar?:string;
+    IDSOCIETEASSURANCE?: Types.ObjectId;
     SOCIETE_PATIENT?: string;
+
+    
 }
 
 
-const PatientPrescriptionSchema = new Schema<IPatientPrescription>(
+const PatientPrescriptionSchema = new Schema<IPrescription>(
     {
-        legacyId: { type: Number },
-        Prescription: { type: Schema.Types.ObjectId, ref: 'Prescription' },
-        PatientRef: { type: Schema.Types.ObjectId, ref: 'Patient' },
-        QtéP: { type: Number },
-        Posologie: { type: String, maxlength: 50 },
-        DatePres: { type: Date },
-        Heure_Facturation: { type: String, maxlength: 10 },
-        prixunitaire: { type: Number },
-        PrixTotal: { type: Number },
-        nomMedicament: { type: String, maxlength: 50 },
-        PartAssurance: { type: Number },
-        PartAssure: { type: Number },
-        CodePrestation: { type: String, maxlength: 50 },
-        Medicament: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
-        IDpriseCharge: { type: Number },
-        Reference: { type: String, maxlength: 30 },
-        ExclusionActae: { type: String, maxlength: 50 },
-        statutPrescriptionMedecin: { type: Number },
-        ACTEPAYECAISSE: { type: String, maxlength: 10 },
-        Payele: { type: Date },
-        PayéPar: { type: String, maxlength: 50 },
-        DatePaiement: { type: Date },
-        Heure: { type: String, maxlength: 10 },
-        Facturation: { type: Schema.Types.ObjectId, ref: 'Facturation' },
-        SocieteAssurance: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
-        SOCIETE_PATIENT: { type: String, maxlength: 60 },
+    Designation: {Type: String, maxlength: 100},
+    CodePrestation: {Type: String, maxlength: 50},
+    PatientP: {Type: String, maxlength: 50},
+    DatePres: {Type: Date},
+    SaisiPar: {Type: String, maxlength: 60},
+    Rclinique: {Type: String, maxlength: 250},
+    Montanttotal: {type: Number},
+    Taux: {type: Number},
+    PartAssurance: {type: Number},
+    PartAssure: {type: Number},
+    Remise: {type: Number},
+    MotifRemise: {type: String},
+    Assurance:{type: String},
+    IDASSURANCE:{type: Types.ObjectId, ref: 'Assurance'},
+    MontantRecu:{type: Number},
+    Restapayer:{type: Number},
+    idMedecin:{type: Types.ObjectId, ref: 'Medecin'},
+    NomMed:{type: String},
+    StatutFacture: { type: Boolean },
+    Numfacture:{type: String},
+    NumBon:{type: String},
+    Modepaiement:{type: String},
+    Document:{type: Buffer},
+    ExtensionF:{type: String},
+    Souscripteur:{type: String},
+    StatutPaiement:{type: String},
+    Ordonnerlannulation:{type: Number},
+    AnnulationOrdonneLe:{type: Date},
+    AnnulationOrdonnePar:{type: String},
+    IDSOCIETEASSURANCE:{type: Types.ObjectId, ref: 'SocieteAssurance'},
+    SOCIETE_PATIENT:{type: String},
     },
     { timestamps: true }
 );
-export const PatientPrescription: Model<IPatientPrescription> = mongoose.models.PatientPrescription || mongoose.model<IPatientPrescription>('PatientPrescription', PatientPrescriptionSchema);
+export const Prescription: Model<IPrescription> = mongoose.models.Prescription || mongoose.model<IPrescription>('Prescription', PatientPrescriptionSchema);

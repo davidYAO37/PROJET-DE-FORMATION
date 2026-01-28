@@ -2,10 +2,10 @@ import mongoose, { Model, Schema } from "mongoose";
 
 
 export interface IPharmacie extends Document {
-    legacyId?: number;
+    _id?: string;
     Reference?: string;
     Designation: string;
-    Prix?: number;
+    PrixAchat?: number;
     PrixVente?: number;
     Ajouter?: Date;
 }
@@ -13,10 +13,9 @@ export interface IPharmacie extends Document {
 
 const PharmacieSchema = new Schema<IPharmacie>(
     {
-        legacyId: { type: Number },
         Reference: { type: String, maxlength: 30 },
         Designation: { type: String, maxlength: 500, required: true },
-        Prix: { type: Number },
+        PrixAchat: { type: Number },
         PrixVente: { type: Number },
         Ajouter: { type: Date },
     },

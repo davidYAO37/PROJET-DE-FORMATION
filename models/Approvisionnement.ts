@@ -1,22 +1,18 @@
 import mongoose, { Model, Schema } from "mongoose";
 
 export interface IApprovisionnement extends Document {
-    legacyId?: number;
-    DateAppro?: Date;
+    _id?: string;
+    DateAppro?: string | Date;
     PrixHT?: number;
     tVAApro?: number;
     Transport?: number;
     MontantTTC?: number;
     Observations?: string;
     SaisiPar?: string;
-    SaisiLe?: Date;
-    createdAt?: Date;
-    updatedAt?: Date;
+    SaisiLe?: string | Date;
 }
 
-
 const ApprovisionnementSchema = new Schema<IApprovisionnement>({
-    legacyId: { type: Number },
     DateAppro: { type: Date },
     PrixHT: { type: Number },
     tVAApro: { type: Number },

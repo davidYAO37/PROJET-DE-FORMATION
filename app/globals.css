@@ -512,4 +512,39 @@ body {
     left: 0;
     width: 100%;
   }
+
+
+  /* Style pour le dropdown de recherche  achat de medicament*/
+.position-relative {
+  position: relative;
+}
+
+.position-absolute {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+}
+
+.hover-bg-light:hover {
+  background-color: #f8f9fa;
+  cursor: pointer;
+}
+
+.cursor-pointer {
+  cursor: pointer;
+}
+
+/* Style pour le tableau */
+.table-responsive {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+/* Style pour les champs de formulaire */
+.form-control:focus {
+  border-color: #80bdff;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+  
 }

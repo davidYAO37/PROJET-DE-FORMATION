@@ -2,6 +2,7 @@ export interface SortieStock {
     legacyId?: number;
     DateSortie?: Date;
     Reference?: string;
+    MedicamentId?:string;
     Quantite?: number;
     Prix_unitaire?: number;
     Prix_TotalS?: number;
