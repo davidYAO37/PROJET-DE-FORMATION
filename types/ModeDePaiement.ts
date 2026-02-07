@@ -1,6 +1,6 @@
 export interface ModeDePaiement {
-    legacyId?: number;
-    Modepaiement: string;
+    _id?: string;
+    Modepaiement?: string;
     createdAt?: Date;
     updatedAt?: Date;
 }

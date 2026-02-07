@@ -1,13 +1,12 @@
-import mongoose, { Model, Schema } from "mongoose";
+import mongoose, { Model, Schema, Types } from "mongoose";
 
 export interface IModeDePaiement extends Document {
-    legacyId?: number;
-    Modepaiement: string;
+    _id?: Types.ObjectId | string;
+    Modepaiement?: string;
 }
 
 
 const ModeDePaiementSchema = new Schema<IModeDePaiement>({
-    legacyId: { type: Number },
     Modepaiement: { type: String, maxlength: 50, required: true },
 }, { timestamps: true });
 

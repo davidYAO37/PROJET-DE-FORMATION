@@ -2,12 +2,14 @@
 
 import { PrescriptionForm } from "@/types/Prescription";
 import { Card, Form } from "react-bootstrap";
+import { ModeDePaiement } from "@/types/ModeDePaiement";
+import { useState, useEffect } from "react";
 
 type Props = {
     formData: PrescriptionForm;
     setFormData: React.Dispatch<React.SetStateAction<PrescriptionForm>>;
-    modePaiement: string;
-    setModePaiement: (value: string) => void;
+    modePaiement: ModeDePaiement["Modepaiement"];
+    setModePaiement: React.Dispatch<React.SetStateAction<string>>;
     montantEncaisse: number;
     setMontantEncaisse: (value: number) => void;
 };
@@ -18,8 +20,24 @@ export default function ModePaiement({
     modePaiement,
     setModePaiement,
     montantEncaisse,
-    setMontantEncaisse
+    setMontantEncaisse,
 }: Props) {
+    const [modesPaiement, setModesPaiement] = useState<ModeDePaiement[]>([]);
+
+    // Récupérer les modes de paiement depuis l'API
+    useEffect(() => {
+        const fetchModesPaiement = async () => {
+            try {
+                const response = await fetch('/api/modepaiement');
+                const data = await response.json();
+                setModesPaiement(data);
+            } catch (error) {
+                console.error('Erreur lors de la récupération des modes de paiement:', error);
+            }
+        };
+
+        fetchModesPaiement();
+    }, []);
 
     return (
         <Card className="mt-3 shadow-sm">
@@ -128,10 +146,11 @@ export default function ModePaiement({
                                 className="border-info fw-bold"
                             >
                                 <option value="">-- Sélectionner --</option>
-                                <option value="Espèce">Espèce</option>
-                                <option value="Chèque">Chèque</option>
-                                <option value="Carte de crédit">Carte de crédit</option>
-                                <option value="Caution">Caution</option>
+                                {modesPaiement.map((mode) => (
+                                    <option key={mode._id} value={mode.Modepaiement}>
+                                        {mode.Modepaiement}
+                                    </option>
+                                ))}
                             </Form.Select>
                         </Form.Group>
                     </div>

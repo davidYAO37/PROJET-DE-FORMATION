@@ -1,5 +1,7 @@
 "use client";
 import { Card, Row, Col, Form } from "react-bootstrap";
+import { ModeDePaiement } from "@/types/ModeDePaiement";
+import { useState, useEffect } from "react";
 
 type ResumeMontantsProps = {
     surplus: number;
@@ -8,8 +10,8 @@ type ResumeMontantsProps = {
     totalPatient: number;
     montantEncaisse?: number;
     setMontantEncaisse?: (val: number) => void;
-    modePaiement?: string;
-    setModePaiement?: (val: string) => void;
+    modePaiement?: ModeDePaiement["Modepaiement"];
+    setModePaiement?: React.Dispatch<React.SetStateAction<string>>;
 };
 
 export default function ResumeMontantsUpdateCaisse({
@@ -22,7 +24,23 @@ export default function ResumeMontantsUpdateCaisse({
     modePaiement = "Espèce",
     setModePaiement,
 }: ResumeMontantsProps) {
+    const [modesPaiement, setModesPaiement] = useState<ModeDePaiement[]>([]);
     const resteAPayer = Math.max(0, totalPatient - montantEncaisse);
+
+    // Récupérer les modes de paiement depuis l'API
+    useEffect(() => {
+        const fetchModesPaiement = async () => {
+            try {
+                const response = await fetch('/api/modepaiement');
+                const data = await response.json();
+                setModesPaiement(data);
+            } catch (error) {
+                console.error('Erreur lors de la récupération des modes de paiement:', error);
+            }
+        };
+
+        fetchModesPaiement();
+    }, []);
 
     return (
         <Card
@@ -89,10 +107,11 @@ export default function ResumeMontantsUpdateCaisse({
                             value={modePaiement}
                             onChange={(e) => setModePaiement?.(e.target.value)}
                         >
-                            <option value="Espèce">Espèce</option>
-                            <option value="Chèque">Chèque</option>
-                            <option value="Carte de crédit">Carte de crédit</option>
-                            <option value="Caution">Caution</option>
+                            {modesPaiement.map((mode) => (
+                                <option key={mode._id} value={mode.Modepaiement}>
+                                    {mode.Modepaiement}
+                                </option>
+                            ))}
                         </Form.Select>
                     </Form.Group>
                 </Col>

@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { HouseDoorFill, PeopleFill, ClockFill, CalendarCheckFill, FileEarmarkTextFill, CalendarFill, ClipboardCheckFill, BarChartFill, KeyFill } from 'react-bootstrap-icons';
+import { useState, useEffect } from 'react';
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicemedecin/tmedecin', icon: <HouseDoorFill size={24} className="me-2" /> },
@@ -20,9 +21,35 @@ const menu = [
 
 export default function SidebarMedecin() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
+  const [user, setUser] = useState('');
+
+  // Charger l'utilisateur connecté au montage
+  useEffect(() => {
+    const storedUser = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || '';
+    setUser(storedUser);
+  }, []);
+  
+  // Ferme la sidebar quand on clique sur un lien (mobile)
+  const handleLinkClick = () => setOpen(false);
 
   return (
-    <aside className="sidebar-medical">
+    <>
+      {/* Bouton burger visible sur mobile */}
+      <button
+        className="sidebar-burger-medical d-md-none"
+        aria-label="Ouvrir le menu"
+        onClick={() => setOpen(true)}
+      >
+        <span className="sidebar-burger-bar"></span>
+        <span className="sidebar-burger-bar"></span>
+        <span className="sidebar-burger-bar"></span>
+      </button>
+
+      {/* Overlay mobile */}
+      {open && <div className="sidebar-overlay-medical" onClick={() => setOpen(false)}></div>}
+
+      <aside className={`sidebar-medical${open ? ' open' : ''}`}>
       {/* Logo médical moderne */}
       <div className="sidebar-logo-medical mb-4">
         <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
@@ -40,6 +67,7 @@ export default function SidebarMedecin() {
             <Link
               href={item.path}
               className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''}`}
+              onClick={handleLinkClick}
             >
               {item.icon}
               <span>{item.label}</span>
@@ -48,5 +76,6 @@ export default function SidebarMedecin() {
         ))}
       </Nav>
     </aside>
+    </>
   );
 }

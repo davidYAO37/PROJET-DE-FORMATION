@@ -232,6 +232,16 @@ export default function Sidebar() {
                     <FaUserShield className="me-2 text-primary" />Gestion Achats
                   </Link>
                 </li>
+                 <li>
+                  <Link href="/dashboard/parametres/modepaiement" className="sidebar-link-medical d-flex align-items-center">
+                    <FaUserShield className="me-2 text-primary" />Mode Paiement
+                  </Link>
+                </li>
+                 <li>
+                  <Link href="/dashboard/parametres/entreprise" className="sidebar-link-medical d-flex align-items-center">
+                    <FaUserShield className="me-2 text-primary" />Gestion entreprise
+                  </Link>
+                </li>
               </ul>
             </Accordion.Body>
           </Accordion.Item>
