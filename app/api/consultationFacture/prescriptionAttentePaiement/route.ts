@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
-import { PatientPrescription } from "@/models/PatientPrescription";
 import { Medecin } from "@/models/medecin";          // ✅ OBLIGATOIRE
 import { Patient } from "@/models/patient";          // ✅ pour PatientRef
+import { Prescription } from "@/models/Prescription";
 //import { Prescription } from "@/models/prescription"; // ✅ pour Prescription populate
 
 export async function GET(req: NextRequest) {
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
             ];
         }
 
-        const prescriptions = await PatientPrescription.find(filter)
+        const prescriptions = await Prescription.find(filter)
             .populate({
                 path: 'PatientRef',
                 select: 'Nom Prenoms',
@@ -74,7 +74,7 @@ export async function GET(req: NextRequest) {
             designation: p.Prescription?.designation || "Ordonnance",
             // Calcul du montant selon la logique WLanguage: Partassuré
             montant: Number(p.Partassuré || 0),
-            medecin: p.NomMed || (p.IDMEDECIN?.nom) || "",
+            NomMed: p.NomMed || (p.IDMEDECIN?.nom) || "",
             assure: p.SocieteAssurance || "Non assuré",
             statut: p.statutPrescriptionMedecin || 0,
             date: p.DatePrescription ? new Date(p.DatePrescription).toLocaleDateString() : "Date inconnue",

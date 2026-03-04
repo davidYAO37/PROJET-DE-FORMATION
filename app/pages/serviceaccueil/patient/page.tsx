@@ -14,6 +14,7 @@ import ExamenHospitalisationModal from '../componant/ExamenHospitModal';
 import ModifierPatient from './ModifierPatient';
 import FicheConsultation from '../componant/ConsultationAdd/FicheConsultation';
 import ListeExamenHospitModalAccueil from '../componant/ListeExamenHospitModalAccueil';
+import PharmacieModalPharmAccueil from '../../PharmacieAccueil/PharmacieModalPharmAccueil';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -34,6 +35,7 @@ export default function Page() {
   const [showListeConsultModal, setShowListeConsultModal] = useState(false);
   const [patientIdConsultModal, setPatientIdConsultModal] = useState<string | null>(null);
   const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
+  const [showPharmacieModalPharmAccueil, setShowPharmacieModalPharmAccueil] = useState(false);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
     setToastMessage(message);
@@ -147,7 +149,7 @@ export default function Page() {
             />
           </InputGroup>
         </Col>
-        <Col xs={12} md={4}>
+        <Col xs={12} md={2}>
           <Button
             variant="outline-warning"
             title="Ajouter examens ou hospitalisation"
@@ -160,6 +162,22 @@ export default function Page() {
           <ExamenHospitalisationModal
             show={showExamenHospitalisationModal}
             onHide={() => setShowExamenHospitalisationModal(false)}
+          />
+        </Col>
+        {/* Bouton pour ouvrir PharmacieAccueil */}
+         <Col xs={12} md={2}>
+          <Button
+            variant="outline-warning"
+            title="Ajouter une ordonnance"
+            size="sm"
+            onClick={() => setShowPharmacieModalPharmAccueil(true)}
+          >
+            Ajouter une ordonnance
+          </Button>
+          {/* Modal ajouter examens*hospit ... */}
+          <PharmacieModalPharmAccueil
+            show={showPharmacieModalPharmAccueil}
+            onHide={() => setShowPharmacieModalPharmAccueil(false)}
           />
         </Col>
         <Col xs={12} md={2} className="mt-2 mt-md-0 text-md-end text-start">

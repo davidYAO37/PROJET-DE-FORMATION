@@ -20,7 +20,7 @@ export interface ILigneInventaire extends Document {
 const LigneInventaireSchema = new Schema<ILigneInventaire>(
     {
         legacyIdInventaire: { type: Number },
-        Reference: { type: String, maxlength: 30 },
+        Reference: { type: String, maxlength: 100 },
         FAMILLEC: { type: String, maxlength: 60 },
         LibeleProduit: { type: String, maxlength: 50 },
         StockMachine: { type: Number },

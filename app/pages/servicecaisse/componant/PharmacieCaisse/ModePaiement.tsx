@@ -12,6 +12,13 @@ type Props = {
     setModePaiement: React.Dispatch<React.SetStateAction<string>>;
     montantEncaisse: number;
     setMontantEncaisse: (value: number) => void;
+    totaux?: {
+        montantTotal: number;
+        partAssurance: number;
+        partAssure: number;
+        montantRecu: number;
+        resteAPayer: number;
+    };
 };
 
 export default function ModePaiement({
@@ -21,6 +28,7 @@ export default function ModePaiement({
     setModePaiement,
     montantEncaisse,
     setMontantEncaisse,
+    totaux
 }: Props) {
     const [modesPaiement, setModesPaiement] = useState<ModeDePaiement[]>([]);
 
@@ -39,111 +47,107 @@ export default function ModePaiement({
         fetchModesPaiement();
     }, []);
 
+    // Synchroniser les totaux quand ils changent
+    useEffect(() => {
+        if (totaux) {
+            console.log('ModePaiement - Totaux reçus:', totaux);
+        }
+    }, [totaux]);
+
     return (
         <Card className="mt-3 shadow-sm">
             <Card.Header>Informations Paiement</Card.Header>
             <Card.Body>
 
-                {/* TOTAL / ASSURANCE / PATIENT */}
                 <div className="d-flex justify-content-between align-items-center mb-2">
+                    {/* Total facture */}
                     <div className="col-3 p-0 me-1">
-                        <Form.Group>
+                        <Form.Group className="mb-1">
                             <Form.Label>Total facture</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={formData.Montanttotal ?? 0}
+                                value={totaux?.montantTotal || 0}
                                 readOnly
                             />
                         </Form.Group>
                     </div>
-
                     <div className="col-3 p-0 me-1">
-                        <Form.Group>
+                        {/* Part Assurance */}
+                        <Form.Group className="mb-1">
                             <Form.Label>Part Assurance</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={formData.PartAssurance ?? 0}
+                                value={totaux?.partAssurance || 0}
                                 readOnly
                             />
                         </Form.Group>
                     </div>
-
                     <div className="col-3 p-0 me-1">
-                        <Form.Group>
+                        {/* Part Patient */}
+                        <Form.Group className="mb-1">
                             <Form.Label>Part Patient</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={formData.PartAssure ?? 0}
+                                value={totaux?.partAssure || 0}
                                 readOnly
                             />
                         </Form.Group>
                     </div>
-                </div>
 
-                {/* A REGLER / REMISE */}
-                <div className="d-flex justify-content-between align-items-center mb-2 bg-info-subtle p-2 rounded">
-                    <Form.Group className="col-3 p-0 me-1">
-                        <Form.Label>Montant à régler</Form.Label>
+                </div>
+                <div className="d-flex justify-content-between align-items-center mb-2 bg-info">
+                    {/* total a payer patient */}
+                    <Form.Group className="col-3 p-0 me-1 ">
+                        <Form.Label>Montant à Regler</Form.Label>
                         <Form.Control
                             type="number"
-                            value={formData.PartAssure ?? 0}
+                            className="bg-info-subtle"
+                            value={Math.max(0, (totaux?.partAssure || 0) - (formData.Remise || 0))}
                             readOnly
                         />
                     </Form.Group>
-
                     <Form.Group className="col-3 p-0 me-1">
-                        <Form.Label>Réduction (FCFA)</Form.Label>
+                        <Form.Label>Reduction (FCFA)</Form.Label>
                         <Form.Control
                             type="number"
-                            value={formData.Remise ?? 0}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    Remise: Number(e.target.value) || 0
-                                })
-                            }
+                            value={formData.Remise}
+                            onChange={(e) => setFormData({ ...formData, Remise: Number(e.target.value) })}
                         />
                     </Form.Group>
-
                     <Form.Group className="col-6 p-0 me-1 px-3">
-                        <Form.Label>Motif de réduction</Form.Label>
+                        <Form.Label>Motif de Reduction</Form.Label>
                         <Form.Control
                             as="textarea"
                             rows={1}
-                            value={formData.MotifRemise ?? ""}
-                            onChange={(e) =>
-                                setFormData({
-                                    ...formData,
-                                    MotifRemise: e.target.value
-                                })
-                            }
+                            value={formData.MotifRemise}
+                            onChange={(e) => setFormData({ ...formData, MotifRemise: e.target.value })}
                         />
                     </Form.Group>
                 </div>
 
-                {/* RESTE / MODE / ENCAISSE */}
                 <div className="d-flex justify-content-between align-items-center mb-2">
 
                     <div className="col-3 p-0 me-1">
-                        <Form.Group>
+                        {/* Reste à payer */}
+                        <Form.Group className="mb-1">
                             <Form.Label>Reste à payer</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={formData.Restapayer ?? 0}
+                                value={Math.max(0, (totaux?.partAssure || 0) - (formData.Remise || 0) - montantEncaisse)}
                                 readOnly
                                 size="lg"
                             />
                         </Form.Group>
                     </div>
-
                     <div className="col-4 p-0 me-1">
-                        <Form.Group>
-                            <Form.Label>Mode de paiement</Form.Label>
+                        <Form.Group className="mb-1">
+                            <Form.Label>Mode de Paiement</Form.Label>
                             <Form.Select
+                                className="border-info fw-bold text-info"
                                 size="lg"
+                                name="modePaiement"
                                 value={modePaiement}
                                 onChange={(e) => setModePaiement(e.target.value)}
-                                className="border-info fw-bold"
                             >
                                 <option value="">-- Sélectionner --</option>
                                 {modesPaiement.map((mode) => (
@@ -154,25 +158,23 @@ export default function ModePaiement({
                             </Form.Select>
                         </Form.Group>
                     </div>
-
                     <div className="col-5 p-0 px-1">
                         <Form.Group>
-                            <Form.Label>Montant encaissé</Form.Label>
+                            <Form.Label>Montant Encaissé</Form.Label>
                             <Form.Control
                                 type="number"
+                                name="montantEncaisse"
                                 value={montantEncaisse}
                                 onChange={(e) => {
-                                    const val = Number(e.target.value);
-                                    setMontantEncaisse(Number.isNaN(val) ? 0 : Math.max(0, val));
+                                    const parsed = Number(e.target.value);
+                                    setMontantEncaisse(Number.isNaN(parsed) ? 0 : Math.max(0, parsed));
                                 }}
                                 size="lg"
                                 className="text-center fw-bold bg-info-subtle"
                             />
                         </Form.Group>
                     </div>
-
                 </div>
-
             </Card.Body>
         </Card>
     );

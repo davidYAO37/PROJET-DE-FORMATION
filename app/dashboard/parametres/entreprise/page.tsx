@@ -1,6 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
-import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
+import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner, Modal } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
 import AjouterEntreprise from './AjouterEntreprise';
 import ModifierEntreprise from './ModifierEntreprise';
@@ -16,7 +16,9 @@ export default function Entreprises() {
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedEntreprise, setSelectedEntreprises] = useState<Entreprise | null>(null);
+  const [entrepriseToDelete, setEntrepriseToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -64,12 +66,21 @@ export default function Entreprises() {
     showNotification(`📝 l'Entreprise "${updated.NomSociete}" modifiée.`, 'info');
   };
 
-  const handleDeleteEntreprise = async (id?: string) => {
+  const handleDeleteEntreprise = (id?: string) => {
+    setEntrepriseToDelete(id || null);
+    setShowDeleteModal(true);
+  };
+
+  const confirmDeleteEntreprise = async () => {
+    if (!entrepriseToDelete) return;
+    
     try {
-      const response = await fetch(`/api/entreprises/${id}`, { method: 'DELETE' });
+      const response = await fetch(`/api/entreprise/${entrepriseToDelete}`, { method: 'DELETE' });
       if (response.ok) {
-        setEntreprises((prev) => prev.filter((m) => m._id !== id));
+        setEntreprises((prev) => prev.filter((m) => m._id !== entrepriseToDelete));
         showNotification(`🗑️ l'Entreprise supprimée.`, 'danger');
+        setShowDeleteModal(false);
+        setEntrepriseToDelete(null);
       }
     } catch {
       showNotification('Erreur suppression', 'danger');
@@ -96,7 +107,7 @@ export default function Entreprises() {
             </InputGroup>
           </Col>
           <Col md={6} className="text-end">
-            <Button variant="success" onClick={() => setShowAddModal(true)}><FaPlus className="me-2" />Ajouter Médecin</Button>
+            <Button variant="success" onClick={() => setShowAddModal(true)}><FaPlus className="me-2" />Ajouter une Entreprise</Button>
           </Col>
         </Row>
 
@@ -130,13 +141,49 @@ export default function Entreprises() {
                     <tr key={Entreprise._id}>
                       <td>{idx + 1 + (currentPage - 1) * ITEMS_PER_PAGE}</td>
                       <td>{Entreprise.NomSociete}</td>
-                      <td>{Entreprise.EnteteSociete || 0}</td>
-                      <td>{Entreprise.PiedPageSociete || 0}</td>
+                      <td>
+                        <div 
+                          dangerouslySetInnerHTML={{ 
+                            __html: Entreprise.EnteteSociete ? 
+                              Entreprise.EnteteSociete.length > 100 ? 
+                                Entreprise.EnteteSociete.substring(0, 100) + '...' : 
+                                Entreprise.EnteteSociete 
+                              : '<span class="text-muted">Aucun</span>'
+                          }}
+                          style={{ 
+                            maxWidth: '200px',
+                            maxHeight: '60px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        />
+                      </td>
+                      <td>
+                        <div 
+                          dangerouslySetInnerHTML={{ 
+                            __html: Entreprise.PiedPageSociete ? 
+                              Entreprise.PiedPageSociete.length > 100 ? 
+                                Entreprise.PiedPageSociete.substring(0, 100) + '...' : 
+                                Entreprise.PiedPageSociete 
+                              : '<span class="text-muted">Aucun</span>'
+                          }}
+                          style={{ 
+                            maxWidth: '200px',
+                            maxHeight: '60px',
+                            overflow: 'hidden',
+                            textOverflow: 'ellipsis'
+                          }}
+                        />
+                      </td>
                       <td>{Entreprise.NCC || 0}</td>
                       <td>
                         {Entreprise.LogoE && typeof Entreprise.LogoE === 'string' ? (
                           <img 
-                            src={Entreprise.LogoE.startsWith('data:') ? Entreprise.LogoE : `/uploads/logos/${Entreprise.LogoE}`}
+                            src={
+                              Entreprise.LogoE.startsWith('data:') ? Entreprise.LogoE :
+                              Entreprise.LogoE.startsWith('/uploads/') ? Entreprise.LogoE :
+                              `/uploads/logos/${Entreprise.LogoE}`
+                            }
                             alt={`Logo de ${Entreprise.NomSociete}`}
                             style={{ 
                               maxWidth: '50px', 
@@ -144,6 +191,17 @@ export default function Entreprises() {
                               objectFit: 'cover',
                               border: '1px solid #ddd',
                               borderRadius: '4px'
+                            }}
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              console.log('Erreur chargement image:', Entreprise.LogoE);
+                              
+                              // Cacher l'image et afficher un message
+                              target.style.display = 'none';
+                              const parent = target.parentElement;
+                              if (parent) {
+                                parent.innerHTML = '<span class="text-muted">Image non trouvée</span>';
+                                      }
                             }}
                           />
                         ) : (
@@ -209,6 +267,55 @@ export default function Entreprises() {
 
         <AjouterEntreprise show={showAddModal} onHide={() => setShowAddModal(false)} onAdd={handleAddEntreprise} />
         <ModifierEntreprise show={showEditModal} onHide={() => setShowEditModal(false)} entreprise={selectedEntreprise} onSave={handleSaveEntreprise} />
+        
+        {/* Modal de confirmation de suppression */}
+        <Modal 
+          show={showDeleteModal} 
+          onHide={() => {
+            setShowDeleteModal(false);
+            setEntrepriseToDelete(null);
+          }}
+          centered
+          backdrop="static"
+          keyboard={false}
+        >
+          <Modal.Header closeButton className="border-0">
+            <Modal.Title className="text-danger">
+              <i className="bi bi-exclamation-triangle me-2"></i>
+              Confirmation de suppression
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body className="text-center">
+            <div className="mb-3">
+              <i className="bi bi-trash display-1 text-danger"></i>
+            </div>
+            <h5 className="mb-3">Êtes-vous sûr de vouloir supprimer cette entreprise ?</h5>
+            <p className="text-muted">
+              Cette action est irréversible. Toutes les données associées à cette entreprise seront définitivement perdues.
+            </p>
+          </Modal.Body>
+          <Modal.Footer className="border-0 justify-content-center">
+            <Button 
+              variant="secondary" 
+              onClick={() => {
+                setShowDeleteModal(false);
+                setEntrepriseToDelete(null);
+              }}
+              className="px-4"
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Non
+            </Button>
+            <Button 
+              variant="danger" 
+              onClick={confirmDeleteEntreprise}
+              className="px-4"
+            >
+              <i className="bi bi-check-circle me-2"></i>
+              Oui
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </Container>
     </div>
 

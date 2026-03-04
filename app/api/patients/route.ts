@@ -15,8 +15,6 @@ export async function GET(req: Request) {
     }
 
     const patients = await Patient.find({});
-    //console.log("le patient selectionné est :" + patients);
-    ({ patients });
     return NextResponse.json(patients);
 
   } catch (error) {

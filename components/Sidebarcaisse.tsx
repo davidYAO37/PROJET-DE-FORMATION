@@ -3,19 +3,18 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
-import { HouseDoorFill, ArrowRightCircleFill, PeopleFill, Clipboard2PulseFill, CalendarFill, Calendar2CheckFill, ClockFill, PencilSquare, KeyFill } from 'react-bootstrap-icons';
 import { useEffect, useState } from 'react';
 import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/componant/FactureExamHospit/ExamenHospitModalCaisse';
-import PaiementPharmacieModal from '@/app/pages/servicecaisse/componant/PharmacieCaisse/PaiementPharmacieModal';
+import PharmacieCaisseModal from '@/app/pages/servicecaisse/componant/PharmacieCaisse/PharmacieCaisseModal';
 
 const menu = [
-  { label: 'Tableau de bord', path: '/pages/servicecaisse/tcaisse', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Factures en attente', path: '/pages/servicecaisse/listefactures', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Saisir une Facture Exam-Hospit...', path: '#', isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2" />, style: { cursor: 'pointer' } },
-  { label: 'Facturer une pharmacie', path: '#', isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2" />, style: { cursor: 'pointer' } },
-  { label: 'Caution Patient', path: '/salle-attente', icon: <PeopleFill size={24} className="me-2" /> },
-  { label: 'Facture a solder', path: '/constantes', icon: <Clipboard2PulseFill size={24} className="me-2" /> },
-  { label: 'Imprimer Facture', path: '/planning-medecin', icon: <CalendarFill size={24} className="me-2" /> },
+  { label: 'Tableau de bord', path: '/pages/servicecaisse/tcaisse', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
+  { label: 'Factures en attente', path: '/pages/servicecaisse/listefactures', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
+  { label: 'Saisir une Facture Exam-Hospit...', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i>, style: { cursor: 'pointer' } },
+  { label: 'Facturer une pharmacie', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-warning"></i>, style: { cursor: 'pointer' } },
+  { label: 'Caution Patient', path: '/salle-attente', icon: <i className="bi bi-people-fill me-2 text-secondary"></i> },
+  { label: 'Facture à solder', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
+  { label: 'Imprimer Facture', path: '/planning-medecin', icon: <i className="bi bi-printer-fill me-2 text-primary"></i> },
 ];
 
 export default function Sidebarcaisse() {
@@ -109,7 +108,7 @@ export default function Sidebarcaisse() {
       />
 
       {/* Modal pour la saisie de facture de pharmacie */}
-      <PaiementPharmacieModal
+      <PharmacieCaisseModal
         show={showPaiementPharmacieModal}
         onHide={() => setShowPaiementPharmacieModal(false)}
       />

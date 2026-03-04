@@ -569,28 +569,9 @@ export default function HospitalisationPageCaisse({
                             setModePaiement("");
                             setMontantEncaisse(0);
                         }}
-                    /* onCodePrestationChange={(code) => {
-                         setCodePrestation(code);
-
-                         // ✅ UNIQUEMENT en mode création
-                         if (!modeModification) {
-                             const today = new Date().toISOString().split('T')[0];
-                             setFormData((prev) => ({
-                             ...prev,
-                             dateEntree: today,
-                             dateSortie: today,
-                             nombreDeJours: 1,
-                             TotalapayerPatient: 0,
-                             }));
-                         }
-
-                         setPresetLines([]);
-                         setResetKey((k) => k + 1);
-                         setModePaiement("");
-                         setMontantEncaisse(0);
-                     }} */
 
                     />
+                    
                     <AssuranceInfoCaisse
                         formData={formData}
                         setFormData={setFormData}

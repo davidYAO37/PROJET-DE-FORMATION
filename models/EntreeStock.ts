@@ -32,7 +32,7 @@ const EntreeStockSchema = new Schema<IEntreeStock>({
     SaisiPar: { type: String, maxlength: 40 },
     SaisiLe: { type: Date },
     Observations: { type: String, maxlength: 120 },
-    Reference: { type: String, maxlength: 30 },
+    Reference: { type: String, maxlength: 100 },
     IDAppro: { type: Schema.Types.ObjectId, ref: 'Approvisionnement' },
     PrixVente: { type: Number },
     Medicament: { type: String, maxlength: 250 },

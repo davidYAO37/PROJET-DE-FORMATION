@@ -3,7 +3,7 @@ export interface PatientPrescription {
     patient: string;
     quantite: number;
     posologie: string;
-    datePres: Date;
+    DatePres: Date;
     heureFacturation?: string;
     prixUnitaire: number;
     prixTotal: number;

@@ -489,9 +489,29 @@ body {
   background-color: #f8d7da;
   padding: 3px 10px;
   border-radius: 6px;
+  font-size: 11px;
+  color: #721c24;
   font-weight: 600;
   border: 1px solid #f5c2c7;
-  color: #842029;
+}
+
+/* Badge stock disponible */
+.searchable-acte-badge-stock {
+  background-color: #d1e7dd;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #0f5132;
+  font-weight: 600;
+}
+
+/* Badge référence */
+.searchable-acte-badge-ref {
+  background-color: #e7f3ff;
+  padding: 3px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  color: #084298;
 }
 
 

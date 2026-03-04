@@ -1,7 +1,7 @@
 import mongoose, { Model, Schema, Types, } from "mongoose";
 
 export interface IStock extends Document {
-    _Id?: number;
+    _id?: string;
     Reference?: string;
     QteEnStock?: number;
     QteStockVirtuel?: number;
@@ -15,7 +15,7 @@ export interface IStock extends Document {
 
 
 const StockSchema = new Schema<IStock>({
-    Reference: { type: String, maxlength: 30 },
+    Reference: { type: String, maxlength: 100 },
     QteEnStock: { type: Number },
     QteStockVirtuel: { type: Number },
     AuteurModif: { type: String, maxlength: 60 },

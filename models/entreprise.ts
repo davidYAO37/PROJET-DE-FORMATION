@@ -11,9 +11,9 @@ export interface IEntreprise extends Document {
 
 const EntrepriseSchema = new Schema<IEntreprise>({
     NomSociete: { type: String, maxlength: 1000 },
-    EnteteSociete: { type: String, maxlength: 50 },   
+    EnteteSociete: { type: String, maxlength: 10000 },   
     LogoE: { type: String },
-    PiedPageSociete: { type: String, maxlength: 50 },   
+    PiedPageSociete: { type: String, maxlength: 10000 },   
     NCC: { type: String, maxlength: 50 },
    
 }, { timestamps: true });

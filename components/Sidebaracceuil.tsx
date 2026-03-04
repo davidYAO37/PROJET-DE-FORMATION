@@ -3,22 +3,21 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
-import { HouseDoorFill, ArrowRightCircleFill, PeopleFill, Clipboard2PulseFill, CalendarFill, Calendar2CheckFill, ClockFill, PencilSquare, KeyFill } from 'react-bootstrap-icons';
 import TransfertPatientModal from '@/app/pages/serviceaccueil/componant/TransfertPatientModal';
 import SalleAttenteModal from '@/app/pages/serviceaccueil/componant/SalleAttenteModal';
 import SalleConstante from '@/app/pages/serviceaccueil/componant/SalleConstante';
 
 const menu = [
-  { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Transférer un patient', path: '#', isModal: true, icon: <ArrowRightCircleFill size={24} className="me-2" /> },
-  { label: 'Salle d\'attente', path: '#', isModal: true, icon: <PeopleFill size={24} className="me-2" /> },
-  { label: 'Constantes', path: '/constantes', icon: <Clipboard2PulseFill size={24} className="me-2" /> },
-  { label: 'Planning Médecin', path: '/planning-medecin', icon: <CalendarFill size={24} className="me-2" /> },
-  { label: 'Disponibilité Médecin', path: '/disponibilite-medecin', icon: <Calendar2CheckFill size={24} className="me-2" /> },
-  { label: 'Gestion Rendez-Vous', path: '/rendez-vous', icon: <ClockFill size={24} className="me-2" /> },
-  { label: 'POINT DE SAISIE', path: '/point-saisie', icon: <PencilSquare size={24} className="me-2" /> },
-  { label: 'Gérer mon Mot De Passe', path: '/mot-de-passe', icon: <KeyFill size={24} className="me-2" /> },
+  { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
+  { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
+  { label: 'Transférer un patient', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
+  { label: 'Salle d\'attente', path: '#', isModal: true, icon: <i className="bi bi-people-fill me-2 text-warning"></i> },
+  { label: 'Constantes', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
+  { label: 'Planning Médecin', path: '/planning-medecin', icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
+  { label: 'Disponibilité Médecin', path: '/disponibilite-medecin', icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
+  { label: 'Gestion Rendez-Vous', path: '/rendez-vous', icon: <i className="bi bi-clock-fill me-2 text-info"></i> },
+  { label: 'POINT DE SAISIE', path: '/point-saisie', icon: <i className="bi bi-pencil-square me-2 text-secondary"></i> },
+  { label: 'Gérer mon Mot De Passe', path: '/mot-de-passe', icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
 export default function Sidebaracceuil() {

@@ -22,7 +22,7 @@ export interface IFactureAssur extends Document {
 }
 
 const FactureAssurSchema = new Schema<IFactureAssur>({
-    Reference: { type: String, maxlength: 30 },
+    Reference: { type: String, maxlength: 100 },
     Saisirpar: { type: String, maxlength: 60 },
     Date: { type: Date },
     etat_facture: { type: Boolean, default: false },

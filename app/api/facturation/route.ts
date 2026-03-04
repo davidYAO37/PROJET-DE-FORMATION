@@ -56,12 +56,49 @@ export async function GET(req: NextRequest) {
 
 // POST /api/facturation - Créer une nouvelle facturation
 export async function POST(req: NextRequest) {
+    
     try {
         await db();
         const body = await req.json();
 
+        // Mapper les champs et gérer les ObjectId
+        const facturationData: any = {
+            ...body
+        };
+        
+        // Gérer les champs ObjectId - ne les inclure que s'ils sont valides
+        if (body.IDASSURANCE && body.IDASSURANCE.trim() !== "") {
+            facturationData.IDASSURANCE = body.IDASSURANCE;
+        } else {
+            delete facturationData.IDASSURANCE;
+        }
+        
+        if (body.IDMEDECIN && body.IDMEDECIN.trim() !== "") {
+            facturationData.IDMEDECIN = body.IDMEDECIN;
+        } else {
+            delete facturationData.IDMEDECIN;
+        }
+        
+        if (body.IDSOCEITEASSUANCE && body.IDSOCEITEASSUANCE.trim() !== "") {
+            facturationData.IDSOCEITEASSUANCE = body.IDSOCEITEASSUANCE;
+        } else {
+            delete facturationData.IDSOCEITEASSUANCE;
+        }
+        
+        if (body.IDPRESCRIPTION && body.IDPRESCRIPTION.trim() !== "") {
+            facturationData.IDPRESCRIPTION = body.IDPRESCRIPTION;
+        } else {
+            delete facturationData.IDPRESCRIPTION;
+        }
+        
+        if (body.IdPatient && body.IdPatient.trim() !== "") {
+            facturationData.IdPatient = body.IdPatient;
+        } else {
+            delete facturationData.IdPatient;
+        }
+
         // Créer la facturation
-        const newFacturation = await Facturation.create(body);
+        const newFacturation = await Facturation.create(facturationData);
 
         return NextResponse.json({
             success: true,
@@ -79,6 +116,7 @@ export async function POST(req: NextRequest) {
 
 // PUT /api/facturation - Mettre à jour une facturation
 export async function PUT(req: NextRequest) {
+    
     try {
         await db();
         const body = await req.json();

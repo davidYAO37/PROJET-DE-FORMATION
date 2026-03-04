@@ -1,7 +1,7 @@
 import mongoose, { Model, Schema, Types } from "mongoose";
 
 export interface ISortieStock extends Document {
-    legacyId?: number;
+   _id?: string;
     DateSortie?: Date;
     Reference?: string;
     Quantite?: number;
@@ -20,9 +20,8 @@ export interface ISortieStock extends Document {
 
 
 const SortieStockSchema = new Schema<ISortieStock>({
-    legacyId: { type: Number },
     DateSortie: { type: Date },
-    Reference: { type: String, maxlength: 30 },
+    Reference: { type: String, maxlength: 100 },
     Quantite: { type: Number },
     Prix_unitaire: { type: Number },
     Prix_TotalS: { type: Number },
@@ -31,7 +30,7 @@ const SortieStockSchema = new Schema<ISortieStock>({
     SaisiPar: { type: String, maxlength: 40 },
     SaisiLe: { type: Date },
     ArticleS: { type: String, maxlength: 60 },
-    Prescription: { type: Schema.Types.ObjectId, ref: 'Prescription' },
-    Patient: { type: Schema.Types.ObjectId, ref: 'Patient' },
+    Prescription: { type: Schema.Types.ObjectId, ref: 'Prescription', required: false },
+    Patient: { type: Schema.Types.ObjectId, ref: 'Patient', required: false },
 }, { timestamps: true });
-export const SortieStock: Model<ISortieStock> = mongoose.models.SortieStockModel || mongoose.model<ISortieStock>("SortieStock", SortieStockSchema);
+export const SortieStock: Model<ISortieStock> = mongoose.models.SortieStock || mongoose.model<ISortieStock>("SortieStock", SortieStockSchema);

@@ -13,7 +13,7 @@ export interface IPharmacie extends Document {
 
 const PharmacieSchema = new Schema<IPharmacie>(
     {
-        Reference: { type: String, maxlength: 30 },
+        Reference: { type: String, maxlength: 100 },
         Designation: { type: String, maxlength: 500, required: true },
         PrixAchat: { type: Number },
         PrixVente: { type: Number },

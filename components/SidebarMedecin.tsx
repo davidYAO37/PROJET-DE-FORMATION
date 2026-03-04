@@ -3,20 +3,19 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
-import { HouseDoorFill, PeopleFill, ClockFill, CalendarCheckFill, FileEarmarkTextFill, CalendarFill, ClipboardCheckFill, BarChartFill, KeyFill } from 'react-bootstrap-icons';
 import { useState, useEffect } from 'react';
 
 const menu = [
-  { label: 'Tableau de bord', path: '/pages/servicemedecin/tmedecin', icon: <HouseDoorFill size={24} className="me-2" /> },
-  { label: 'Liste des patients', path: '/pages/servicemedecin/patient', icon: <PeopleFill size={24} className="me-2" /> },
-  { label: 'Patient en attente', path: '/transfert-patient', icon: <ClockFill size={24} className="me-2" /> },
-  { label: 'Mes Rendez-Vous', path: '/salle-attente', icon: <CalendarCheckFill size={24} className="me-2" /> },
-  { label: 'Saisir fiche prescription', path: '/constantes', icon: <FileEarmarkTextFill size={24} className="me-2" /> },
-  { label: 'Planning Médecin', path: '/planning-medecin', icon: <CalendarFill size={24} className="me-2" /> },
-  { label: 'Mon planning', path: '/disponibilite-medecin', icon: <ClipboardCheckFill size={24} className="me-2" /> },
-  { label: 'Mes comptes rendus', path: '/rendez-vous', icon: <FileEarmarkTextFill size={24} className="me-2" /> },
-  { label: 'Statistiques', path: '/point-saisie', icon: <BarChartFill size={24} className="me-2" /> },
-  { label: 'Gérer mon Mot De Passe', path: '/mot-de-passe', icon: <KeyFill size={24} className="me-2" /> },
+  { label: 'Tableau de bord', path: '/pages/servicemedecin/tmedecin', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
+  { label: 'Liste des patients', path: '/pages/servicemedecin/patient', icon: <i className="bi bi-people-fill me-2 text-info"></i> },
+  { label: 'Patient en attente', path: '/transfert-patient', icon: <i className="bi bi-clock-fill me-2 text-warning"></i> },
+  { label: 'Mes Rendez-Vous', path: '/salle-attente', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i> },
+  { label: 'Saisir fiche prescription', path: '/constantes', icon: <i className="bi bi-file-earmark-text-fill me-2 text-primary"></i> },
+  { label: 'Planning Médecin', path: '/planning-medecin', icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
+  { label: 'Mon planning', path: '/disponibilite-medecin', icon: <i className="bi bi-clipboard-check-fill me-2 text-success"></i> },
+  { label: 'Mes comptes rendus', path: '/rendez-vous', icon: <i className="bi bi-file-earmark-text-fill me-2 text-secondary"></i> },
+  { label: 'Statistiques', path: '/point-saisie', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
+  { label: 'Gérer mon Mot De Passe', path: '/mot-de-passe', icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
 export default function SidebarMedecin() {

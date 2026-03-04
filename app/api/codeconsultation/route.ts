@@ -45,6 +45,12 @@ export async function GET(request: Request) {
         Assure: consultation.Assure,
        // assure: consultation.Assuré,
         Code_dossier: consultation.Code_dossier,
+        //Info clinique
+        Temperature: consultation.Temperature,
+        Tension: consultation.Tension,
+        TailleCons: consultation.TailleCons,
+        Glycemie: consultation.Glycemie,
+        Poids: consultation.Poids,
         info: infoMessage,
     };
 

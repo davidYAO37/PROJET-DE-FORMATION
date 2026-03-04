@@ -31,21 +31,28 @@ export interface IPrescription extends Document {
     Ordonnerlannulation?:number;
     AnnulationOrdonneLe?:Date;
     AnnulationOrdonnePar?:string;
-    IDSOCIETEASSURANCE?: Types.ObjectId;
+    IDSOCIETEASSURANCE?: string;
     SOCIETE_PATIENT?: string;
-
     
+    // Champs supplémentaires pour la pharmacie
+    StatuPrescriptionMedecin?: number;
+    Payéoupas?: boolean;
+    Payele?: string;
+    Heure?: string;
+    TotalapayerPatient?: number;
+    IDpriseCharge?: string;
+    FacturéPar?: string;
 }
 
 
-const PatientPrescriptionSchema = new Schema<IPrescription>(
+const PrescriptionSchema = new Schema<IPrescription>(
     {
-    Designation: {Type: String, maxlength: 100},
-    CodePrestation: {Type: String, maxlength: 50},
-    PatientP: {Type: String, maxlength: 50},
-    DatePres: {Type: Date},
-    SaisiPar: {Type: String, maxlength: 60},
-    Rclinique: {Type: String, maxlength: 250},
+    Designation: {type: String, maxlength: 100},
+    CodePrestation: {type: String, maxlength: 50},
+    PatientP: {type: String, maxlength: 50},
+    DatePres: {type: Date},
+    SaisiPar: {type: String, maxlength: 60},
+    Rclinique: {type: String, maxlength: 250},
     Montanttotal: {type: Number},
     Taux: {type: Number},
     PartAssurance: {type: Number},
@@ -53,10 +60,10 @@ const PatientPrescriptionSchema = new Schema<IPrescription>(
     Remise: {type: Number},
     MotifRemise: {type: String},
     Assurance:{type: String},
-    IDASSURANCE:{type: Types.ObjectId, ref: 'Assurance'},
+    IDASSURANCE:{type: Types.ObjectId, ref: 'Assurance', required: false},
     MontantRecu:{type: Number},
     Restapayer:{type: Number},
-    idMedecin:{type: Types.ObjectId, ref: 'Medecin'},
+    idMedecin:{type: Types.ObjectId, ref: 'Medecin', required: false},
     NomMed:{type: String},
     StatutFacture: { type: Boolean },
     Numfacture:{type: String},
@@ -69,9 +76,18 @@ const PatientPrescriptionSchema = new Schema<IPrescription>(
     Ordonnerlannulation:{type: Number},
     AnnulationOrdonneLe:{type: Date},
     AnnulationOrdonnePar:{type: String},
-    IDSOCIETEASSURANCE:{type: Types.ObjectId, ref: 'SocieteAssurance'},
+    IDSOCIETEASSURANCE:{type: String},
     SOCIETE_PATIENT:{type: String},
+    
+    // Champs supplémentaires pour la pharmacie
+    StatuPrescriptionMedecin: {type: Number},
+    Payéoupas: {type: Boolean},
+    Payele: {type: String},
+    Heure: {type: String},
+    TotalapayerPatient: {type: Number},
+    IDpriseCharge: {type: String},
+    FacturéPar: {type: String, maxlength: 60},
     },
     { timestamps: true }
 );
-export const Prescription: Model<IPrescription> = mongoose.models.Prescription || mongoose.model<IPrescription>('Prescription', PatientPrescriptionSchema);
+export const Prescription: Model<IPrescription> = mongoose.models.Prescription || mongoose.model<IPrescription>('Prescription', PrescriptionSchema);

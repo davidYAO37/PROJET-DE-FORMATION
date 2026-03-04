@@ -3,12 +3,6 @@
 import Link from 'next/link';
 import { Accordion, Button } from 'react-bootstrap';
 import { useState } from 'react';
-import { GiBoneGnawer } from 'react-icons/gi';
-import { IoIosSettings } from 'react-icons/io';
-import { MdBiotech, MdLocalPharmacy } from 'react-icons/md';
-import { BiSolidCalculator, BiSolidUserCircle } from 'react-icons/bi';
-import { FaCashRegister, FaUserDoctor, FaUserNurse, FaUserPlus, FaUserShield } from 'react-icons/fa6';
-import { LiaChessBishopSolid } from 'react-icons/lia';
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
@@ -51,6 +45,7 @@ export default function Sidebar() {
           {/* Tableau de bord */}
           <li>
             <Link href="/dashboard" className="sidebar-link-medical d-flex align-items-center">
+              <i className="bi bi-speedometer2 me-2 text-primary"></i>
               Tableau de bord
             </Link>
           </li>
@@ -59,14 +54,14 @@ export default function Sidebar() {
           {/* Service accueil */}
           <Accordion.Item eventKey="0">
             <Accordion.Header>
-              <BiSolidUserCircle className="me-2 text-primary" size={22} />
+              <i className="bi bi-people-fill me-2 text-primary" style={{ fontSize: '20px' }}></i>
               Service accueil
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/pages/serviceaccueil/tpatient" className="sidebar-link-medical d-flex align-items-center">
-                    <GiBoneGnawer className="me-2 text-info" /> Gestion Accueil
+                    <i className="bi bi-hospital me-2 text-info"></i> Gestion Accueil
                   </Link>
                 </li>
               </ul>
@@ -75,14 +70,14 @@ export default function Sidebar() {
           {/* Service Medecin */}
           <Accordion.Item eventKey="1">
             <Accordion.Header>
-              <FaUserDoctor className="me-2 text-success" size={20} />
+              <i className="bi bi-person-badge-fill me-2 text-success" style={{ fontSize: '20px' }}></i>
               Service Médecin
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/pages/servicemedecin/tmedecin" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserDoctor className="me-2 text-success" /> Gestion Médecin
+                    <i className="bi bi-person-fill-gear me-2 text-success"></i> Gestion Médecin
                   </Link>
                 </li>
               </ul>
@@ -91,14 +86,14 @@ export default function Sidebar() {
           {/* Service caisse */}
           <Accordion.Item eventKey="2">
             <Accordion.Header>
-              <FaCashRegister className="me-2 text-warning" size={20} />
+              <i className="bi bi-cash-stack me-2 text-warning" style={{ fontSize: '20px' }}></i>
               Service caisse
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/pages/servicecaisse/tcaisse" className="sidebar-link-medical d-flex align-items-center">
-                    <FaCashRegister className="me-2 text-warning" /> Gestion caisse
+                    <i className="bi bi-cash-coin me-2 text-warning"></i> Gestion caisse
                   </Link>
                 </li>
               </ul>
@@ -107,14 +102,14 @@ export default function Sidebar() {
           {/* Service comptabilité */}
           <Accordion.Item eventKey="3">
             <Accordion.Header>
-              <BiSolidCalculator className="me-2 text-secondary" size={20} />
+              <i className="bi bi-calculator-fill me-2 text-secondary" style={{ fontSize: '20px' }}></i>
               Service comptabilité
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/compta/recettes" className="sidebar-link-medical d-flex align-items-center">
-                    <BiSolidCalculator className="me-2 text-secondary" /> Gestion Comptabilité
+                    <i className="bi bi-receipt me-2 text-secondary"></i> Gestion Comptabilité
                   </Link>
                 </li>
               </ul>
@@ -123,14 +118,14 @@ export default function Sidebar() {
           {/* Service pharmacie */}
           <Accordion.Item eventKey="4">
             <Accordion.Header>
-              <MdLocalPharmacy className="me-2 text-danger" size={20} />
+              <i className="bi bi-capsule me-2 text-danger" style={{ fontSize: '20px' }}></i>
               Service Pharmacie
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/medecin/consultations" className="sidebar-link-medical d-flex align-items-center">
-                    <MdLocalPharmacy className="me-2 text-danger" /> Gestion Pharmacie
+                    <i className="bi bi-prescription2 me-2 text-danger"></i> Gestion Pharmacie
                   </Link>
                 </li>
               </ul>
@@ -139,14 +134,14 @@ export default function Sidebar() {
           {/* Service biologiste */}
           <Accordion.Item eventKey="5">
             <Accordion.Header>
-              <MdBiotech className="me-2 text-info" size={20} />
+              <i className="bi bi-microscope me-2 text-info" style={{ fontSize: '20px' }}></i>
               Service biologiste
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/biologiste/examens" className="sidebar-link-medical d-flex align-items-center">
-                    <MdBiotech className="me-2 text-info" /> Gestion Biologiste
+                    <i className="bi bi-clipboard2-pulse me-2 text-info"></i> Gestion Biologiste
                   </Link>
                 </li>
               </ul>
@@ -155,14 +150,14 @@ export default function Sidebar() {
           {/* Service laboratoire */}
           <Accordion.Item eventKey="6">
             <Accordion.Header>
-              <LiaChessBishopSolid className="me-2 text-primary" size={20} />
+              <i className="bi bi-virus me-2 text-primary" style={{ fontSize: '20px' }}></i>
               Service laboratoire
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/labo/prelevements" className="sidebar-link-medical d-flex align-items-center">
-                    <LiaChessBishopSolid className="me-2 text-primary" /> Gestion Laboratoire
+                    <i className="bi bi-droplet me-2 text-primary"></i> Gestion Laboratoire
                   </Link>
                 </li>
               </ul>
@@ -171,14 +166,14 @@ export default function Sidebar() {
           {/* Service Infirmerie */}
           <Accordion.Item eventKey="7">
             <Accordion.Header>
-              <FaUserNurse className="me-2 text-info" size={20} />
+              <i className="bi bi-heart-pulse-fill me-2 text-info" style={{ fontSize: '20px' }}></i>
               Service Infirmerie
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/labo/prelevements" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserNurse className="me-2 text-info" /> Gestion Infirmerie
+                    <i className="bi bi-bandaid me-2 text-info"></i> Gestion Infirmerie
                   </Link>
                 </li>
               </ul>
@@ -187,59 +182,59 @@ export default function Sidebar() {
           {/* Paramètre utilisateur */}
           <Accordion.Item eventKey="8">
             <Accordion.Header>
-              <IoIosSettings className='me-2 text-dark' size={22} />
+              <i className="bi bi-gear-fill me-2 text-dark" style={{ fontSize: '22px' }}></i>
               Paramètres
             </Accordion.Header>
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link href="/signup" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserPlus className="me-2 text-dark" /> Utilisateurs
+                    <i className="bi bi-person-plus-fill me-2 text-dark"></i> Utilisateurs
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/medecin" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserDoctor className="me-2 text-success" /> Medecins
+                    <i className="bi bi-person-badge-fill me-2 text-success"></i> Medecins
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/assurances" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" /> Assurances
+                    <i className="bi bi-shield-check me-2 text-primary"></i> Assurances
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/actes" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" />Actes Cliniques
+                    <i className="bi bi-clipboard2-medical me-2 text-primary"></i> Actes Cliniques
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/Typeacte" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" /> Type d'actes
+                    <i className="bi bi-tags-fill me-2 text-primary"></i> Type d'actes
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/familleacte" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" /> Famille d'actes
+                    <i className="bi bi-tag-fill me-2 text-primary"></i> Famille d'actes
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/medicaments" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" />Liste medicaments
+                    <i className="bi bi-capsule-fill me-2 text-primary"></i> Liste medicaments
                   </Link>
                 </li>
                 <li>
                   <Link href="/dashboard/medicamentachat" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" />Gestion Achats
+                    <i className="bi bi-cart-check-fill me-2 text-primary"></i> Gestion Achats
                   </Link>
                 </li>
                  <li>
                   <Link href="/dashboard/parametres/modepaiement" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" />Mode Paiement
+                    <i className="bi bi-credit-card-fill me-2 text-primary"></i> Mode Paiement
                   </Link>
                 </li>
                  <li>
                   <Link href="/dashboard/parametres/entreprise" className="sidebar-link-medical d-flex align-items-center">
-                    <FaUserShield className="me-2 text-primary" />Gestion entreprise
+                    <i className="bi bi-building me-2 text-primary"></i> Gestion entreprise
                   </Link>
                 </li>
               </ul>

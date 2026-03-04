@@ -25,12 +25,12 @@ export interface IPatientPrescription extends Document {
     datePaiement?: Date;
     heure?: string;
     facturation?: mongoose.Types.ObjectId; // ref Facturation
-    societeAssurance?: mongoose.Types.ObjectId;
-    societePatient?: string;
+    IDSOCIETEASSURANCE?: string;
+    SOCIETE_PATIENT?: string
+    
 }
 
 const PatientPrescriptionSchema = new Schema<IPatientPrescription>({
-    _id: { type: String },
     IDPRESCRIPTION: { type: String },
     PatientP: String,
     QteP: Number,
@@ -54,8 +54,8 @@ const PatientPrescriptionSchema = new Schema<IPatientPrescription>({
     datePaiement: Date,
     heure: String,
     facturation: { type: Schema.Types.ObjectId, ref: "Facturation" },
-    societeAssurance: { type: Schema.Types.ObjectId, ref: "SocieteAssurance" },
-    societePatient: String
+    IDSOCIETEASSURANCE: String,
+    SOCIETE_PATIENT: String
 });
 
 export const PatientPrescription: Model<IPatientPrescription> = mongoose.models.PatientPrescription || mongoose.model<IPatientPrescription>("PatientPrescription", PatientPrescriptionSchema);
