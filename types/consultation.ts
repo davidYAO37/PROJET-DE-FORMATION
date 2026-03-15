@@ -47,6 +47,6 @@ export interface ConsultationType {
     Montantencaisse?: number;
     DateFacturation?: Date;
     Modepaiement?: string;
-    FacturéPar?: string;
+    Caissiere?: string;
 
 }

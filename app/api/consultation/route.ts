@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
         let query: any = {};
         if (patientId) {
-            query.IdPatient = patientId;
+            query = { $or: [{ IdPatient: patientId }, { PatientP: patientId }] };
         }
 
         const consultations = await Consultation.find(query)

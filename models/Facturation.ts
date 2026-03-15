@@ -189,7 +189,7 @@ const FacturationSchema = new Schema<IFacturation>(
         DateFacturation: { type: Date },
         idHospitalisation: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation', required: false },
         IDPRESCRIPTION: { type: Schema.Types.ObjectId, ref: 'Prescription', required: false },
-        typefacture: { type: String, maxlength: 2 },
+        typefacture: { type: String, maxlength: 50 },
         IDSOCIETEASSURANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance', required: false },
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
         IdPatient: { type: Schema.Types.ObjectId, ref: 'Patient', required: false },

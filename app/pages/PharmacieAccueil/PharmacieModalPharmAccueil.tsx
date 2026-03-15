@@ -19,6 +19,7 @@ type ValidationResult = {
 interface Patient {
   _id?: string;
   Nom?: string;
+  Prenoms?:string;
   Sexe?: string;
   Age_partient?: string;
   Date_naisse?: string;
@@ -30,7 +31,7 @@ interface Consultation {
   CodePrestation?: string;
   Code_dossier?: string;
   StatutC?: boolean;
-  statutPrescriptionMedecin?: number;
+  StatutPrescriptionMedecin?: number;
   ticket_moderateur?: number;
   Temperature?: string;
   Tension?: string;
@@ -44,6 +45,9 @@ interface Consultation {
   IDASSURANCE?: string;
   NumBon?: string; // Ajout du champ NumBon
   SOCIETE_PATIENT?: string; // Ajout du champ SOCIETE_PATIENT
+  IDSOCIETEASSURANCE?: string; // Ajout du champ IDSOCIETEASSURANCE
+  IdPatient?: string; // Identifiant patient
+  patientId?: string; // alias retourné par l'API
 }
 
 interface Prescription {
@@ -53,12 +57,23 @@ interface Prescription {
   Modepaiement?: string;
   Partassuré?: number;
   MotifRemise?: string; // Ajout du champ MotifRemise
+  Payéoupas?: boolean;
+  Payele?: string;
+  Heure?: string;
+  TotalapayerPatient?: number;
+  Caissiere?: string;
+  Montanttotal?: number;
+  PartAssurance?: number;
+  PartAssure?: number;
+  Remise?: number;
+  CodePrestation?: string;
 }
 
 interface TotauxPharmacie {
   montantTotal: number;
   partAssurance: number;
   partAssure: number;
+  remise?: number; // Ajout du champ remise
 }
 
 type Props = {
@@ -92,6 +107,7 @@ export default function PharmacieModalPharmAccueil({
     montantTotal: 0,
     partAssurance: 0,
     partAssure: 0,
+    remise: 0, // Ajout du champ remise avec valeur par défaut
   });
 
   // États pour la validation
@@ -110,6 +126,7 @@ useEffect(() => {
   if (typeof window !== "undefined") {
     const user = localStorage.getItem("nom_utilisateur");
     setCurrentUser(user);
+    
   }
 }, []);
   // PROCÉDURE Modifie_prescription() selon le pseudo-code
@@ -129,24 +146,52 @@ useEffect(() => {
     }
 
     const prescriptionData: any = {
-      PatientP: patient.Nom || "",
+      PatientP: patient.Nom +" "+ patient.Prenoms || "",
+      IdPatient: consultation.IdPatient || consultation.patientId || patient._id || "",
       Numcarte: consultation.NumBon || "",
       NumBon: consultation.NumBon || "",
       Designation: "PHARMACIE",
       DatePres: formData.DatePres || new Date().toISOString().split('T')[0],
       SaisiPar: currentUser || "",
       Rclinique: formData.Rclinique || prescription.Rclinique || "",
-      CodePrestation: codePrestation,
+      CodePrestation: codePrestation, // ✅ Déjà inclus - champ requis
       StatuPrescriptionMedecin: 2,
       IDpriseCharge: gxMonidORDONNANCE || "",
       IDMEDECIN: consultation.IDMEDECIN || "",
       StatutPaiement: "En cours de Paiement",
       NomMed: nomMed,
+      
+      // Champs supplémentaires pour la pharmacie (selon le modèle)
+      Payéoupas: false,
+      Payele: new Date().toISOString().split('T')[0],
+      Heure: new Date().toTimeString().split(' ')[0],
+      TotalapayerPatient: totaux.partAssure || 0,
+      Caissiere: currentUser || "",
+      
+      // Champs additionnels pour complétude
+      Montanttotal: totaux.montantTotal || 0,
+      PartAssurance: totaux.partAssurance || 0,
+      PartAssure: totaux.partAssure || 0,
+      Remise: totaux.remise || 0,
+      Modepaiement: prescription.Modepaiement || "",
     };
 
     // Ajouter les champs d'assurance si disponibles
     if (consultation.IDASSURANCE) {
       prescriptionData.IDASSURANCE = consultation.IDASSURANCE;
+    }
+    
+    // Synchroniser les champs d'assurance et société avec la consultation
+    if (consultation.assurance) {
+      prescriptionData.Assurance = consultation.assurance;
+    }
+    
+    if (consultation.IDSOCIETEASSURANCE) {
+      prescriptionData.IDSOCIETEASSURANCE = consultation.IDSOCIETEASSURANCE;
+    }
+    
+    if (consultation.SOCIETE_PATIENT) {
+      prescriptionData.SOCIETE_PATIENT = consultation.SOCIETE_PATIENT;
     }
 
     return prescriptionData;
@@ -157,6 +202,15 @@ useEffect(() => {
     console.log("💰 Début de la procédure de validation WLangage");
 
     try {
+      // 0. Vérifier que IdPatient existe
+      if (!consultation.IdPatient && !consultation.patientId && !patient._id) {
+        return {
+          isValid: false,
+          message: "Identifiant patient manquant. Veuillez recharger la consultation.",
+          type: 'error'
+        };
+      }
+
       if (!codePrestation) {
         return {
           isValid: false,
@@ -175,8 +229,6 @@ useEffect(() => {
 
         // Modifie_prescription()
         const prescriptionData = await modifiePrescription();
-
-        console.log("📝 Création prescription:", prescriptionData);
 
         // HAjoute(PRESCRIPTION)
         const prescriptionResponse = await fetch('/api/prescription', {
@@ -333,7 +385,7 @@ const isGeneratedId = (id: string): boolean => {
             DatePres: normalizeDate(pp.DatePres),
             reference: pp.reference || "",
             Exclus: pp.exclusionActe || pp.ExclusionActae || "NON",
-            StatutMedPres: Number(pp.statutPrescriptionMedecin) || 2,
+            StatuPrescriptionMedecin: Number(pp.StatutPrescriptionMedecin) || 2,
             posologie: pp.posologie || "",
           }));
 
@@ -381,8 +433,8 @@ const isGeneratedId = (id: string): boolean => {
           // Prescription trouvée - Mode modification
           console.log("✅ Prescription trouvée - Mode MODIFICATION", presData._id);
           
-          // Vérifier que la consultation est payée (statutPrescriptionMedecin <3 et ticket_moderateur>0)
-          if (presData.statutPrescriptionMedecin < 3 && (presData.ticket_moderateur || 0) > 0) {
+          // Vérifier que la consultation est payée (StatutPrescriptionMedecin <3 et ticket_moderateur>0)
+          if (presData.StatutPrescriptionMedecin < 3 && (presData.ticket_moderateur || 0) > 0) {
             console.error("❌ ATTENTION: La consultation n'est pas encore payée à la caisse");
             setErrorMessage("ATTENTION: La consultation n'est pas encore payée à la caisse");
             setModeModification(false);
@@ -467,6 +519,7 @@ const isGeneratedId = (id: string): boolean => {
       montantTotal: 0,
       partAssurance: 0,
       partAssure: 0,
+      remise: 0, // Ajout du champ remise
     });
     // Charger la prescription si elle existe
     if (code) {
@@ -499,34 +552,41 @@ const isGeneratedId = (id: string): boolean => {
 
   // Handler pour recevoir les médicaments prescrits depuis InfoPatientPharmAccueil
   const handleMedicamentsPrescritsChange = useCallback((medicamentsPrescrits: any[]) => {
-    if (Array.isArray(medicamentsPrescrits) && medicamentsPrescrits.length > 0) {
-      console.log("📋 Médicaments prescrits reçus:", medicamentsPrescrits);
-
-      // Convertir les patientprescription en ILigneMedicament
-      const lignesConverties: ILigneMedicament[] = medicamentsPrescrits.map((pp: any) => ({
-        id: pp._id || generateLineId(),
-        medicamentId: pp.medicament?.toString() || pp.IDMEDICAMENT || "",
-        designation: pp.nomMedicament || "",
-        quantite: Number(pp.QtéP || pp.QteP) || 1,
-        prixUnitaire: Number(pp.prixunitaire || pp.prixUnitaire) || 0,
-        total: Number(pp.PrixTotal || pp.prixTotal) || 0,
-        refuse: pp.ExclusionActae === "Refuser" || pp.exclusionActe === "Refuser",
-        partAssurance: Number(pp.PartAssurance || pp.partAssurance) || 0,
-        partAssure: Number(pp.Partassuré || pp.partAssure) || 0,
-        DatePres: normalizeDate(pp.DatePres),
-        reference: pp.Reference || pp.reference || "",
-        Exclus: pp.ExclusionActae || pp.exclusionActe || "NON",
-        StatutMedPres: Number(pp.StatuPrescriptionMedecin || pp.statutPrescriptionMedecin) || 2,
-        posologie: pp.Posologie || pp.posologie || "",
-      }));
-
-      console.log("📋 Lignes converties depuis InfoPatient:", lignesConverties);
-      setPresetLines(lignesConverties);
-      setResetKey(prev => prev + 1);
-    } else {
+    console.log("📋 Médicaments prescrits reçus:", medicamentsPrescrits);
+    
+    if (!Array.isArray(medicamentsPrescrits) || medicamentsPrescrits.length === 0) {
+      console.log("ℹ️ Aucune patientprescription reçue - table vide");
       setPresetLines([]);
       setResetKey(prev => prev + 1);
+      return;
     }
+
+    // Ne plus filtrer les médicaments déjà payés - afficher tous les médicaments
+    const prescriptionsFiltrees = medicamentsPrescrits;
+    
+    console.log(`✅ ${prescriptionsFiltrees.length} médicament(s) affiché(s) (incluant ceux déjà payés)`);
+
+    // Convertir toutes les patientprescriptions en ILigneMedicament
+    const lignesConverties: ILigneMedicament[] = prescriptionsFiltrees.map((pp: any) => ({
+      id: pp._id || generateLineId(),
+      medicamentId: pp.medicament?.toString() || pp.IDMEDICAMENT || "",
+      designation: pp.nomMedicament || "",
+      quantite: Number(pp.QteP) || 1, // Corrigé: QteP selon le modèle
+      prixUnitaire: Number(pp.prixUnitaire) || 0, // Corrigé: prixUnitaire selon le modèle
+      total: Number(pp.prixTotal) || 0, // Corrigé: prixTotal selon le modèle
+      refuse: pp.exclusionActe === "Refuser", // Corrigé: exclusionActe selon le modèle
+      partAssurance: Number(pp.partAssurance) || 0, // Corrigé: partAssurance selon le modèle
+      partAssure: Number(pp.partAssure) || 0, // Corrigé: partAssure selon le modèle
+      DatePres: normalizeDate(pp.DatePres),
+      reference: pp.reference || "", // Corrigé: reference selon le modèle
+      Exclus: pp.exclusionActe || "NON", // Corrigé: exclusionActe selon le modèle
+      StatuPrescriptionMedecin: Number(pp.StatutPrescriptionMedecin) || 2, // Corrigé: StatutPrescriptionMedecin selon le modèle
+      posologie: pp.posologie || "", // Corrigé: posologie selon le modèle
+    }));
+
+    console.log("📋 Lignes converties depuis InfoPatient:", lignesConverties);
+    setPresetLines(lignesConverties);
+    setResetKey(prev => prev + 1);
   }, []);
 
   const handleTotauxChange = useCallback((newTotaux: {
@@ -577,7 +637,8 @@ const isGeneratedId = (id: string): boolean => {
     const ligneData: any = {
       // Champs requis
       IDPRESCRIPTION: prescriptionId || "",
-      PatientP: patient.Nom || "", // Champ requis
+      PatientP: patient.Nom +" "+ patient.Prenoms || "", // Champ requis
+      IdPatient: consultation.IdPatient || consultation.patientId || patient._id || "", // Identifiant patient
       QteP: Number(ligne.quantite) || 1, // Champ requis, s'assurer que c'est un nombre
       posologie: ligne.posologie || "", // Champ requis
       DatePres: datePres, // Champ requis - sera converti en Date par MongoDB
@@ -592,7 +653,10 @@ const isGeneratedId = (id: string): boolean => {
       reference: ligne.reference || "",
       IDPARTIENT: patient._id || "",
       exclusionActe: ligne.Exclus || "NON",
-      statutPrescriptionMedecin: Number(ligne.StatutMedPres) || 2,
+      StatutPrescriptionMedecin: Number(ligne.StatuPrescriptionMedecin) || 2,
+
+      //info assurance et medecin
+      
     };
 
     // priseCharge doit être un Number, pas un string (ID)
@@ -606,7 +670,7 @@ const isGeneratedId = (id: string): boolean => {
     }
 
     return ligneData;
-  }, [patient, codePrestation]);
+  }, [patient, codePrestation, consultation]);
 
   // PROCÉDURE pour traiter les lignes de médicaments
   const traiterLignesMedicaments = useCallback(async (prescriptionId: string, gxMonidORDONNANCE?: string) => {
@@ -763,6 +827,7 @@ const isGeneratedId = (id: string): boolean => {
       montantTotal: 0,
       partAssurance: 0,
       partAssure: 0,
+      remise: 0, // Ajout du champ remise
     });
     setErrorMessage(null);
     onHide();

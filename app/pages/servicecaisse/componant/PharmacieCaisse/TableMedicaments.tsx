@@ -225,7 +225,7 @@ type Props = {
 export default function TableMedicaments({ medicaments, onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0 }: Props) {
   const [lignes, setLignes] = useState<ILigneMedicament[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [currentUser] = useState("Utilisateur"); // Simuler gsUtilisateur
+  const [currentUser] = useState(""); // dans le localStorage
   const [medicamentsEnStock, setMedicamentsEnStock] = useState<IMedicament[]>([]);
 
   // Charger les lignes pré-remplies quand elles changent

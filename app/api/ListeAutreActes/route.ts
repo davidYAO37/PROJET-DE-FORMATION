@@ -1,6 +1,9 @@
 // app/api/ListeAutreActes/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { ExamenHospitalisation } from "@/models";
+import { Medecin } from "@/models/medecin";
+import { Assurance } from "@/models/assurance";
+import { Patient } from "@/models/patient";
 import { db } from "@/db/mongoConnect";
 
 export async function GET(req: NextRequest) {
@@ -16,10 +19,10 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        const examens = await ExamenHospitalisation.find({ IdPatient: patientId })
+        const examens = await ExamenHospitalisation.find({ $or: [{ IdPatient: patientId }, { PatientP: patientId }] })
             .populate("IDASSURANCE", "desiganationassurance")
             .populate("IdPatient", "Nom Prenoms")
-            .populate("idMedecin", "Nom prenoms")
+            .populate("idMedecin", "nom prenoms")
             .sort({ DatePres: -1 })
             .lean();
 
@@ -27,7 +30,7 @@ export async function GET(req: NextRequest) {
             _id: examen._id.toString(),
             designation: examen.Designationtypeacte || "Non spécifié",
             montant: examen.Montanttotal || 0,
-            date: examen.DatePres ,
+            date: examen.DatePres,
             statut: examen.Payeoupas || false,
             patientId: examen.IdPatient?._id?.toString(),
             codePrestation: examen.CodePrestation || "",

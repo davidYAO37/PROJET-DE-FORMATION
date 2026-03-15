@@ -6,6 +6,7 @@ import { Card, Row, Col, Table, Spinner, Button, Form, Nav, Tab, Badge, Modal } 
 // Import des composants de modales
 import FicheConsultationUpdateCaisse from "../componant/factureAttenteConsult/FicheConsultationUpdateCaisse";
 import ExamenHospitalisationModalCaisse from "../componant/FactureExamHospit/ExamenHospitModalCaisse";
+import PharmacieCaisseModal from "../componant/PharmacieCaisse/PharmacieCaisseModal";
 import { FaRegWindowClose } from "react-icons/fa";
 
 /**
@@ -131,7 +132,7 @@ const PageListeApayer = () => {
                     break;
 
                 case 'PRESCRIPTION':
-                    endpoint = `/api/patientPrescription/${examenId}`;
+                    endpoint = `/api/prescription/${examenId}`;
                     typeActe = 'la prescription';
                     break;
 
@@ -272,11 +273,16 @@ const PageListeApayer = () => {
                     id: d.id ?? d._id,
                     code: d.code ?? d.CodePrestation ?? "",
                     patient: d.patient ?? d.PatientP ?? "Inconnu",
-                    designation: d.designation ?? "PHARMACIE",
+                    designation: d.designation ?? d.Designation ?? "PHARMACIE",
                     montant: Number(d.montant ?? 0),
-                    medecin: d.medecin ?? d.NomMed ?? d.PayéPar ?? "",
-                    assure: d.assure ?? "",
+                    medecin: d.medecin ?? d.NomMed ?? "",
+                    assure: d.assure ?? d.Assurance ?? "",
                     type: "PRESCRIPTION",
+                    // Ajout des champs pour cohérence avec les prestations
+                    dateEntree: undefined,
+                    dateSortie: undefined,
+                    nombreDeJours: 1,
+                    renseignementclinique: d.Rclinique ?? "",
                     raw: d,
                 }))
                 : [];
@@ -366,14 +372,20 @@ const PageListeApayer = () => {
                         id: d.id ?? d._id,
                         code: d.code ?? d.CodePrestation ?? "",
                         patient: d.patient ?? d.PatientP ?? "Inconnu",
-                        designation: d.designation ?? "PHARMACIE",
+                        designation: d.designation ?? d.Designation ?? "PHARMACIE",
                         montant: Number(d.montant ?? 0),
-                        medecin: d.medecin ?? d.NomMed ?? d.PayéPar ?? "",
-                        assure: d.assure ?? "",
+                        medecin: d.medecin ?? d.NomMed ?? "",
+                        assure: d.assure ?? d.Assurance ?? "",
                         type: "PRESCRIPTION",
+                        // Ajout des champs pour cohérence
+                        dateEntree: undefined,
+                        dateSortie: undefined,
+                        nombreDeJours: 1,
+                        renseignementclinique: d.Rclinique ?? "",
                         raw: d,
                     }))
                     : [];
+                console.log('Prescriptions chargées:', items.length, 'éléments');
                 setPrescriptions(items);
             } catch (e: any) {
                 console.error("Err prescriptions fetch", e);
@@ -550,6 +562,20 @@ const PageListeApayer = () => {
                 </Card>
             )}
 
+            {/* Afficher toujours les données si showMerged est false */}
+            {!showMerged && !anyLoading && (
+                <Card className="p-2 mb-3">
+                    <div className="alert alert-warning">
+                        L'affichage fusionné est désactivé.
+                        <br/>
+                        Consultations={countConsult}, Prestations={countPrest}, Prescriptions={countPresc}
+                        <br/>
+                        <Button onClick={() => setShowMerged(true)}>Activer l'affichage fusionné</Button>
+                    </div>
+                    {renderTable(filteredMerged)}
+                </Card>
+            )}
+
 
             {error && <div className="text-danger mt-2">{error}</div>}
 
@@ -589,57 +615,11 @@ const PageListeApayer = () => {
 
             {/* Modal pour les prescriptions */}
             {selectedItem?.type === "PRESCRIPTION" && (
-                <Modal
-                    show={showModal}
+                <PharmacieCaisseModal
+                    show={showModal && selectedItem?.type === "PRESCRIPTION"}
                     onHide={handleCloseModal}
-                    size="lg"
-                >
-                    <Modal.Header closeButton>
-                        <Modal.Title>Facturation Prescription</Modal.Title>
-                    </Modal.Header>
-                    <Modal.Body>
-                        <div className="p-3">
-                            <h5>Facturation pour la prescription #{selectedItem.code}</h5>
-                            <p>Patient: {selectedItem.patient}</p>
-                            <p>Montant: {selectedItem.montant.toLocaleString()} FCFA</p>
-
-                            <div className="mt-3">
-                                <h6>Options de facturation</h6>
-                                <Form>
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Mode de paiement</Form.Label>
-                                        <Form.Select>
-                                            <option>Espèces</option>
-                                            <option>Carte bancaire</option>
-                                            <option>Virement</option>
-                                            <option>Chèque</option>
-                                        </Form.Select>
-                                    </Form.Group>
-
-                                    <Form.Group className="mb-3">
-                                        <Form.Label>Montant reçu</Form.Label>
-                                        <Form.Control
-                                            type="number"
-                                            placeholder="Entrez le montant reçu"
-                                            min={0}
-                                            max={selectedItem.montant}
-                                            defaultValue={selectedItem.montant}
-                                        />
-                                    </Form.Group>
-
-                                    <div className="d-flex justify-content-end gap-2">
-                                        <Button variant="secondary" onClick={handleCloseModal}>
-                                            Annuler
-                                        </Button>
-                                        <Button variant="primary">
-                                            Enregistrer le paiement
-                                        </Button>
-                                    </div>
-                                </Form>
-                            </div>
-                        </div>
-                    </Modal.Body>
-                </Modal>
+                    codePrestation={selectedRow?.CodePrestation || selectedRow?.code || ""}
+                />
             )}
         </Card >
     );

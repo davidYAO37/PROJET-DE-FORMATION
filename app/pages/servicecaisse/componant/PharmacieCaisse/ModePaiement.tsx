@@ -165,9 +165,12 @@ export default function ModePaiement({
                                 type="number"
                                 name="montantEncaisse"
                                 value={montantEncaisse}
+                                max={totaux?.resteAPayer || 0}
                                 onChange={(e) => {
                                     const parsed = Number(e.target.value);
-                                    setMontantEncaisse(Number.isNaN(parsed) ? 0 : Math.max(0, parsed));
+                                    const maxValue = totaux?.resteAPayer || 0;
+                                    const validValue = Number.isNaN(parsed) ? 0 : Math.max(0, Math.min(parsed, maxValue));
+                                    setMontantEncaisse(validValue);
                                 }}
                                 size="lg"
                                 className="text-center fw-bold bg-info-subtle"

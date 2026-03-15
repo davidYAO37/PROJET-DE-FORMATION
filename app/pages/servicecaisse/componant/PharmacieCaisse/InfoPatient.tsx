@@ -19,7 +19,7 @@ interface Consultation {
     CodePrestation?: string;
     Code_dossier?: string;
     StatutC?: boolean;
-    statutPrescriptionMedecin?: number;
+    StatutPrescriptionMedecin?: number;
     ticket_moderateur?: number;
     Temperature?: string;
     Tension?: string;
@@ -174,8 +174,8 @@ export default function InfoPatient({
                 return;
             }
 
-            // 3. Vérifier que la consultation n'est pas payée (statutPrescriptionMedecin <3 et ticket_moderateur>0)
-            if (consultationData.statutPrescriptionMedecin < 3 && consultationData.ticket_moderateur > 0) {
+            // 3. Vérifier que la consultation n'est pas payée (StatutPrescriptionMedecin <3 et ticket_moderateur>0)
+            if (consultationData.StatutPrescriptionMedecin < 3 && consultationData.ticket_moderateur > 0) {
                setInfoMessage("⚠️ ATTENTION: La consultation n'est pas encore payée à la caisse");
 
                 setTimeout(() => {
@@ -242,8 +242,17 @@ export default function InfoPatient({
                                 if (Array.isArray(patientPrescriptions) && patientPrescriptions.length > 0) {
                                     patientPrescriptionsData = patientPrescriptions;
                                     console.log(`📋 ${patientPrescriptions.length} patientprescriptions trouvées pour cette consultation`);
+                                    
+                                    // Transmettre les patientprescriptions au parent pour traitement
+                                    if (onPatientPrescriptionsChange) {
+                                        onPatientPrescriptionsChange(patientPrescriptions);
+                                    }
                                 } else {
                                     console.log("ℹ️ Aucune patientprescription trouvée pour cette consultation");
+                                    // Transmettre un tableau vide au parent
+                                    if (onPatientPrescriptionsChange) {
+                                        onPatientPrescriptionsChange([]);
+                                    }
                                 }
                             } else {
                                 console.log("⚠️ Erreur lors du chargement des patientprescriptions");

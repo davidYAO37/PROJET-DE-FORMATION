@@ -62,7 +62,7 @@ export interface IConsultation extends Document {
   Montantencaisse?: number;
   DateFacturation?: Date;
   Modepaiement?: string;
-  FacturéPar?: string;
+  Caissiere?: string;
 
 }
 
@@ -125,7 +125,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     Montantencaisse: { type: Number },
     DateFacturation: { type: Date },
     Modepaiement: { type: String },
-    FacturéPar: { type: String },
+    Caissiere: { type: String },
 
   },
   { timestamps: true }

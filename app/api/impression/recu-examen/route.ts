@@ -7,7 +7,7 @@ import { ObjectId, WithId, Document } from 'mongodb';
 interface IFacturation extends WithId<Document> {
     _id: ObjectId;
     IDFACTURATION?: string;
-    Code_Prestation?: string;
+    CodePrestation?: string;
     DatePres?: Date;
     // Ajoutez d'autres champs si nécessaire
 }
@@ -91,7 +91,7 @@ export async function GET(request: Request) {
                     _id: d._id?.toString(),
                     IDFACTURATION: d.IDFACTURATION,
                     // Ajouter d'autres champs utiles pour le débogage
-                    ...(d.Code_Prestation && { Code_Prestation: d.Code_PrestATION }),
+                    ...(d.CodePrestation && { CodePrestation: d.Code_PrestATION }),
                     ...(d.DatePres && { DatePres: d.DatePres })
                 })), null, 2)
             );
@@ -104,7 +104,7 @@ export async function GET(request: Request) {
                     sampleIds: sampleDocs.map(d => ({
                         _id: d._id?.toString(),
                         IDFACTURATION: d.IDFACTURATION,
-                        Code_Prestation: d.Code_Prestation
+                        CodePrestation: d.CodePrestation
                     }))
                 },
                 { status: 404 }
@@ -212,7 +212,7 @@ export async function GET(request: Request) {
       // Assurer que les champs requis existent
       Assuance: facturation.Assuance || '',
       Modepaiement_FA: facturation.Modepaiement || '',
-      Code_Prestation_FA: facturation.Code_Prestation || ''
+      CodePrestation_FA: facturation.CodePrestation || ''
     };
 
     // Retourner la réponse formatée

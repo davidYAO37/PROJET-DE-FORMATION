@@ -1,6 +1,7 @@
 export interface PatientPrescription {
     IDPRESCRIPTION: number;
-    patient: string;
+    PatientP: string;
+    IdPatient?: string;
     quantite: number;
     posologie: string;
     DatePres: Date;
@@ -15,13 +16,15 @@ export interface PatientPrescription {
     priseCharge?: number;
     reference?: string;
     exclusionActe?: string;
-    statutPrescriptionMedecin?: number;
+    StatutPrescriptionMedecin?: number;
     actePayeCaisse?: string;
     payeLe?: Date;
     payePar?: string;
     datePaiement?: Date;
     heure?: string;
     facturation?: string;
-    societeAssurance?: string;
-    societePatient?: string;
+    IDSOCIETEASSURANCE?: string;
+    SOCIETE_PATIENT?: string;
+    Assurance?: string;
+    IDASSURANCE?: string;
 }

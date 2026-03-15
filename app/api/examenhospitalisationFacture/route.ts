@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
                 MotifRemise: header.MotifRemise || "",
                 tauxreduction: header.tauxreduction || 0,
                 TotaleTaxe: header.TotaleTaxe || 0,
-                FacturéPar: Recupar || header.SaisiPar || "",
+                Caissiere: Recupar || header.SaisiPar || "",
                 IdPatient: header.IdPatient || header.IdPatient || undefined,
                 Numcarte: header.Numcarte || "",
                 IDTYPE_ACTE: header.IDTYPE_ACTE || undefined,

@@ -24,6 +24,7 @@ export interface PrescriptionForm {
     Designation?: string;
     CodePrestation?: string;
     PatientP?: string;
+    IdPatient?: string;
     DatePres?: Date;
     SaisiPar?: string;
     Rclinique?: string;
@@ -35,7 +36,7 @@ export interface PrescriptionForm {
     MotifRemise?: string;
     Assurance?: Assurance;
     IDASSURANCE?: string;
-    idMedecin?: string;
+    IDMEDECIN?: string;
     NomMed?: string;
     StatutFacture?: boolean;
     Numfacture?: string;
@@ -49,5 +50,12 @@ export interface PrescriptionForm {
     AnnulationOrdonnePar?: string;
     IDSOCIETEASSURANCE?: string;
     SOCIETE_PATIENT?: string;
-    Restapayer?:number;
+    Restapayer?: number;
+    Caissiere?: string;
+    StatuPrescriptionMedecin?: number;
+    Payéoupas?: boolean;
+    Heure?: string;
+    Payele?: Date;
+
+
 }

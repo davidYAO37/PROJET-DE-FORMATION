@@ -33,11 +33,13 @@ interface PageProps {
 type HospitalisationPageCaisseProps = {
     params: PageProps['params'];
     searchParams: PageProps['searchParams'];
+    onSuccess?: () => void;
 };
 
 export default function HospitalisationPageCaisse({
     params,
-    searchParams
+    searchParams,
+    onSuccess
 }: HospitalisationPageCaisseProps) {
 
     const {
@@ -571,7 +573,7 @@ export default function HospitalisationPageCaisse({
                         }}
 
                     />
-                    
+
                     <AssuranceInfoCaisse
                         formData={formData}
                         setFormData={setFormData}
@@ -824,6 +826,11 @@ export default function HospitalisationPageCaisse({
                             }
                             console.log("✅ Enregistrement réussi:", out);
                             alert(out?.message || 'Facture enregistrée avec succès');
+
+                            // Appeler le callback onSuccess pour fermer le modal
+                            if (onSuccess) {
+                                onSuccess();
+                            }
 
                             // Rafraîchir l'état depuis la base (mise à jour ou création)
                             if (out?.id) {

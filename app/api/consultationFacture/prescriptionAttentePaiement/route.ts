@@ -13,72 +13,67 @@ export async function GET(req: NextRequest) {
         const statut = searchParams.get('statut');
         const paye = searchParams.get('paye');
 
-        // Filtre initial selon la logique WLanguage
-        // - Payéoupas: false (non payé) ou lignes non facturées si déjà payé
-        // - statutPrescriptionMedecin: 2 (non facturé)
+        // Filtre initial selon la logique spécifiée
+        // Cas 1: StatuPrescriptionMedecin=2 et Payéoupas=faux
+        // Cas 2: StatuPrescriptionMedecin<=2 et Payéoupas=vrai
         const filter: any = {
             $or: [
-                // Cas 1: Non payé et statut 2
+                // Cas 1: StatuPrescriptionMedecin=2 et Payéoupas=faux
                 {
-                    Payele: { $ne: true },
-                    statutPrescriptionMedecin: statut ? parseInt(statut) : 2
+                    StatuPrescriptionMedecin: statut ? parseInt(statut) : 2,
+                    Payéoupas: { $ne: true }
                 },
-                // Cas 2: Payé mais avec des lignes non facturées (géré dans la logique du frontend)
+                // Cas 2: StatuPrescriptionMedecin<=2 et Payéoupas=vrai
                 {
-                    Payele: true,
-                    statutPrescriptionMedecin: statut ? parseInt(statut) : 2
+                    StatuPrescriptionMedecin: { $lte: statut ? parseInt(statut) : 2 },
+                    Payéoupas: true
                 }
             ]
         };
-
         // Si paye est spécifié, on filtre en conséquence
         if (paye === 'true') {
-            filter.$or = [
-                { Payele: true, statutPrescriptionMedecin: statut ? parseInt(statut) : 2 }
-            ];
-        } else if (paye === 'false' || paye === null) {
+            // Uniquement les prescriptions payées avec StatuPrescriptionMedecin<=2
             filter.$or = [
                 {
-                    $or: [
-                        { Payele: { $ne: true } },
-                        { Payele: { $exists: false } }
-                    ],
-                    statutPrescriptionMedecin: statut ? parseInt(statut) : 2
+                    StatuPrescriptionMedecin: { $lte: statut ? parseInt(statut) : 2 },
+                    Payéoupas: true
+                }
+            ];
+        } else if (paye === 'false' || paye === null) {
+            // Uniquement les prescriptions non payées avec StatuPrescriptionMedecin=2
+            filter.$or = [
+                {
+                    StatuPrescriptionMedecin: statut ? parseInt(statut) : 2,
+                    Payéoupas: { $ne: true }
                 }
             ];
         }
 
         const prescriptions = await Prescription.find(filter)
             .populate({
-                path: 'PatientRef',
-                select: 'Nom Prenoms',
-                model: 'Patient'
-            })
-            .populate({
-                path: 'Prescription',
-                select: 'CodePrestation designation',
-                model: 'Prescription'
-            })
-            .populate({
                 path: 'IDMEDECIN',
                 select: 'nom',
                 model: 'Medecin'
             })
-            .sort({ DatePrescription: -1 })
+            .sort({ DatePres: -1 })
             .lean();
 
         const result = prescriptions.map((p: any) => ({
             id: p._id,
-            code: p.CodePrestation || (p.Prescription?.CodePrestation) || "N/A",
-            patient: p.PatientP || (p.PatientRef ? `${p.PatientRef.Nom || ''} ${p.PatientRef.Prenoms || ''}`.trim() : "Patient inconnu"),
-            designation: p.Prescription?.designation || "Ordonnance",
-            // Calcul du montant selon la logique WLanguage: Partassuré
-            montant: Number(p.Partassuré || 0),
-            NomMed: p.NomMed || (p.IDMEDECIN?.nom) || "",
-            assure: p.SocieteAssurance || "Non assuré",
-            statut: p.statutPrescriptionMedecin || 0,
-            date: p.DatePrescription ? new Date(p.DatePrescription).toLocaleDateString() : "Date inconnue",
-            type: "PRESCRIPTION"
+            code: p.CodePrestation || "N/A",
+            patient: p.PatientP || "Patient inconnu",
+            designation: p.Designation || "PHARMACIE",
+            // Calcul du montant selon la logique : TotalapayerPatient ou Montanttotal
+            montant: Number(p.TotalapayerPatient || p.Montanttotal || 0),
+            medecin: p.NomMed || (p.IDMEDECIN ? p.IDMEDECIN.nom : ""),
+            assure: p.Assurance || "Non assuré",
+            statut: p.StatuPrescriptionMedecin || 0,
+            date: p.DatePres ? new Date(p.DatePres).toLocaleDateString() : "Date inconnue",
+            type: "PRESCRIPTION",
+            // Ajout des champs supplémentaires pour cohérence
+            Payéoupas: p.Payéoupas || false,
+            StatutPaiement: p.StatutPaiement || "En cours de Paiement",
+            Rclinique: p.Rclinique || ""
         }));
 
         return NextResponse.json(result);

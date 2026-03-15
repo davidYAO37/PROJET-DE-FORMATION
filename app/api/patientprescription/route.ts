@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { PatientPrescription } from "@/models/PatientPrescription";
 
-// GET /api/patientprescription?reference=xxx&IDPRESCRIPTION=xxx&_id=xxx&Code_Prestation=xxx
+// GET /api/patientprescription?reference=xxx&IDPRESCRIPTION=xxx&_id=xxx&CodePrestation=xxx
 export async function GET(request: Request) {
     await db();
 
@@ -10,17 +10,17 @@ export async function GET(request: Request) {
         const { searchParams } = new URL(request.url);
         const reference = searchParams.get("reference");
         const IDPRESCRIPTION = searchParams.get("IDPRESCRIPTION");
-        const IDPARTIENT = searchParams.get("IDPARTIENT");
+        const IdPatient = searchParams.get("IdPatient") || searchParams.get("IDPARTIENT"); // Fallback support
         const _id = searchParams.get("_id");
-        const Code_Prestation = searchParams.get("Code_Prestation");
+        const CodePrestation = searchParams.get("CodePrestation");
 
         let query: any = {};
 
         if (reference) query.Reference = reference;
         if (IDPRESCRIPTION) query.IDPRESCRIPTION = IDPRESCRIPTION;
-        if (IDPARTIENT) query.IDPARTIENT = IDPARTIENT;
+        if (IdPatient) query.IdPatient = IdPatient; // Unified field - supports both parameter names
         if (_id) query._id = _id;
-        if (Code_Prestation) query.CodePrestation = Code_Prestation;
+        if (CodePrestation) query.CodePrestation = CodePrestation;
 
         const patientPrescriptions = await PatientPrescription.find(query).lean();
 
@@ -67,6 +67,7 @@ export async function POST(request: NextRequest) {
         const patientPrescriptionData: any = {
             IDPRESCRIPTION: body.IDPRESCRIPTION,
             PatientP: body.PatientP || "",
+            IdPatient: body.IdPatient || body.IDPARTIENT || "",
             QteP: Number(body.QteP) || 1,
             posologie: body.posologie || "",
             DatePres: body.DatePres ? new Date(body.DatePres) : new Date(),
@@ -80,9 +81,9 @@ export async function POST(request: NextRequest) {
             reference: body.reference,
             IDPARTIENT: body.IDPARTIENT,
             exclusionActe: body.exclusionActe,
-            statutPrescriptionMedecin: Number(body.statutPrescriptionMedecin) || 2,
+            StatutPrescriptionMedecin: Number(body.StatutPrescriptionMedecin) || 2,
             actePayeCaisse: body.actePayeCaisse,
-            heureFacturation: body.heureFacturation,
+            // heureFacturation: body.heureFacturation,
         };
 
         // Gérer le _id personnalisé si fourni

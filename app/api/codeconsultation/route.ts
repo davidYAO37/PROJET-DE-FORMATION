@@ -26,6 +26,7 @@ export async function GET(request: Request) {
 
     // Préparation de la réponse avec les infos patient de la consultation
     const response: any = {
+        ...consultation, // Include all fields from consultation
         patient: consultation.PatientP,
         patientId: consultation.IdPatient,
         medecinPrescripteur: consultation.IDMEDECIN,
@@ -43,7 +44,7 @@ export async function GET(request: Request) {
         souscripteur: consultation.Souscripteur,
         idApporteur: consultation.IDAPPORTEUR,
         Assure: consultation.Assure,
-       // assure: consultation.Assuré,
+        // assure: consultation.Assuré,
         Code_dossier: consultation.Code_dossier,
         //Info clinique
         Temperature: consultation.Temperature,

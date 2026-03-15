@@ -2,12 +2,24 @@
 import { auth } from "@/firebase/configConnect";
 import axios from "axios";
 import { createUserWithEmailAndPassword, sendEmailVerification } from "firebase/auth";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 const SignupForm = () => {
-  const [form, setForm] = useState({ nom: "", prenom: "", email: "", type: "" });
+  const [form, setForm] = useState({ nom: "", prenom: "", email: "", type: "", entrepriseId: "" });
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
+  const [entrepriseInfo, setEntrepriseInfo] = useState<string>("");
+
+  useEffect(() => {
+    // Récupérer l'ID entreprise de l'utilisateur connecté
+    const idEntreprise = localStorage.getItem('IdEntreprise');
+    if (idEntreprise) {
+      setForm(prev => ({ ...prev, entrepriseId: idEntreprise }));
+      setEntrepriseInfo(`ID: ${idEntreprise}`);
+    } else {
+      setEntrepriseInfo("Non assignée (utilisateur sans entreprise)");
+    }
+  }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value, [e.target.name]: e.target.value });
@@ -50,12 +62,28 @@ const SignupForm = () => {
 
         <select className="form-select mb-3" name="type" value={form.type} onChange={handleChange} required>
           <option value="">Sélectionnez un rôle</option>
-          <option value="patient">Service Accueil</option>
-          <option value="medecin">Médecin</option>
           <option value="admin">Administrateur</option>
+          <option value="accueil">Service Accueil</option>
+          <option value="biologiste">Biologiste</option>
+          <option value="caisse">Caisse</option>
+          <option value="comptable">Comptable</option>          
+          <option value="infirmier">Infirmier</option>
+          <option value="medecin">Médecin</option>           
+          <option value="pharmacien">Pharmacie</option>
+          <option value="radiologue">Radiologue</option>
+          <option value="technicienlabo">Technicien laboratoire</option>
         </select>
 
-        <button type="submit" className="btn btn-primary w-100">Ajouter l'utlisateur</button>
+        <div className="mb-3">
+          <label className="form-label text-muted">
+            <small>
+              <i className="bi bi-building me-1"></i>
+              Entreprise assignée automatiquement: {entrepriseInfo}
+            </small>
+          </label>
+        </div>
+
+        <button type="submit" className="btn btn-primary w-100">Ajouter l'utilisateur</button>
       </form>
     </div>
   );

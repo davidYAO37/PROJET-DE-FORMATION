@@ -44,7 +44,39 @@ export async function POST(request: Request) {
     try {
         const body = await request.json();
         
-        const newStock = await Stock.create(body);
+        // Validation des champs requis
+        if (!body.IDMEDICAMENT) {
+            return NextResponse.json({ 
+                error: "IDMEDICAMENT est requis",
+                details: "Le champ IDMEDICAMENT est obligatoire pour créer un stock"
+            }, { status: 400 });
+        }
+        
+        // Vérifier si un stock existe déjà pour ce médicament
+        const existingStock = await Stock.findOne({ IDMEDICAMENT: body.IDMEDICAMENT });
+        
+        if (existingStock) {
+            return NextResponse.json({ 
+                error: "Stock déjà existant",
+                details: "Un stock existe déjà pour ce médicament. Utilisez PUT pour le mettre à jour.",
+                existingStock: existingStock
+            }, { status: 409 });
+        }
+        
+        // Préparer les données du nouveau stock
+        const stockData: any = {
+            IDMEDICAMENT: body.IDMEDICAMENT,
+            QteEnStock: Number(body.QteEnStock) || 0,
+            QteStockVirtuel: Number(body.QteStockVirtuel) || 0,
+            Reference: body.Reference || "",
+            Medicament: body.Medicament || "",
+            AuteurModif: body.AuteurModif || "System",
+            DateModif: new Date()
+        };
+        
+        const newStock = await Stock.create(stockData);
+        
+        console.log("✅ Nouveau stock créé:", newStock);
         
         return NextResponse.json({
             success: true,

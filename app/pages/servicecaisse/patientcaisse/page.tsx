@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaHospitalUser } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaHospitalUser, FaPrescription } from 'react-icons/fa';
 
 import { Patient } from '@/types/patient';
 import { CgAbstract, CgUserList } from 'react-icons/cg';
@@ -11,6 +11,7 @@ import ModifierPatientCaisse from './ModifierPatientCaisse';
 import ListeConsultationsModalCaisse from '../componant/factureAttenteConsult/ListeConsultationsModalCaisse';
 import FicheConsultationUpdateCaisse from '../componant/factureAttenteConsult/FicheConsultationUpdateCaisse';
 import ListeExamenHospitModalCaisse from '../componant/FactureExamHospit/ListeExamenHospitModalCaisse';
+import ListePrescriptionModalCaisse from '../componant/PharmacieCaisse/ListePrescriptionModalCaisse';
 
 
 const ITEMS_PER_PAGE = 10;
@@ -29,10 +30,14 @@ export default function Page() {
   const [toastVariant, setToastVariant] = useState<'success' | 'info' | 'danger'>('info');
   const [showListeConsultModal, setShowListeConsultModal] = useState(false);
   const [patientIdConsultModal, setPatientIdConsultModal] = useState<string | null>(null);
-  
+
   // États pour le modal des examens d'hospitalisation
   const [showListeExamenHospitModal, setShowListeExamenHospitModal] = useState(false);
   const [patientIdExamenHospitModal, setPatientIdExamenHospitModal] = useState<string | null>(null);
+
+  // États pour le modal des prescriptions
+  const [showListePrescriptionModal, setShowListePrescriptionModal] = useState(false);
+  const [patientIdPrescriptionModal, setPatientIdPrescriptionModal] = useState<string | null>(null);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
     setToastMessage(message);
@@ -188,7 +193,7 @@ export default function Page() {
                         size="sm"
                         className="me-5"
                         onClick={() => {
-                          setPatientIdConsultModal(patient._id || '');
+                          setPatientIdConsultModal(patient._id?.toString() || '');
                           setShowListeConsultModal(true);
                         }}
                       >
@@ -202,11 +207,11 @@ export default function Page() {
                       />
                       <Button
                         variant="outline-info"
-                        title="Voir les examens d'hospitalisation"
+                        title="Voir les examens, hospitalisation et autres prestations du patient"
                         size="sm"
                         className="me-4"
                         onClick={() => {
-                          setPatientIdExamenHospitModal(patient._id || '');
+                          setPatientIdExamenHospitModal(patient._id?.toString() || '');
                           setShowListeExamenHospitModal(true);
                         }}
                       >
@@ -217,6 +222,25 @@ export default function Page() {
                         show={showListeExamenHospitModal}
                         onHide={() => setShowListeExamenHospitModal(false)}
                         patientId={patientIdExamenHospitModal || ''}
+                      />
+                      {/* Bouton pour la liste des prescriptions du patient */}
+                      <Button
+                        variant="outline-warning"
+                        title="Voir les prescriptions du patient"
+                        size="sm"
+                        className="me-4"
+                        onClick={() => {
+                          setPatientIdPrescriptionModal(patient._id?.toString() || '');
+                          setShowListePrescriptionModal(true);
+                        }}
+                      >
+                        <FaPrescription />
+                      </Button>
+                      {/* Modal liste des prescriptions */}
+                      <ListePrescriptionModalCaisse
+                        show={showListePrescriptionModal}
+                        onHide={() => setShowListePrescriptionModal(false)}
+                        patientId={patientIdPrescriptionModal || ''}
                       />
                     </td>
 

@@ -3,6 +3,7 @@ import { db } from "@/db/mongoConnect";
 import { Facturation } from "@/models/Facturation";
 import { LignePrestation } from "@/models/lignePrestation";
 import { Patient } from "@/models/patient";
+import { PatientPrescription } from "@/models/PatientPrescription";
 import { Types } from "mongoose";
 import { Assurance } from "@/models/assurance";
 
@@ -27,31 +28,50 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 
     /* ================= FACTURATION ================= */
     const facturation = await Facturation.findById(id).lean();
+      
     if (!facturation) {
-      console.log("la facture trouvé", facturation)
+      console.log("Facture non trouvée", facturation)
       return NextResponse.json({ error: "Facturation introuvable" }, { status: 404 });
     }
 
     /* ================= PATIENT ================= */
     const patient = await Patient.findById(facturation.IdPatient).lean();
     if (!patient) {
-      console.log("le patient trouvé", patient)
+      console.log("Patient non trouvé", patient)
       return NextResponse.json({ error: "Patient introuvable" }, { status: 404 });
     }
+
 /* ================= ASSURANCE ================= */
     let designationAssurance = "";
     if (facturation.Assurance) {
       const assurance = await Assurance.findById(facturation.Assurance).lean();
       if (assurance) {
-        designationAssurance = assurance.desiganationassurance;
+        designationAssurance = assurance.desiganationassurance || "";
       }
     }
     /* ================= LIGNES DE PRESTATION ================= */
-    const lignes = await LignePrestation.find({
-      idFacturation: facturation._id,
-    })
-      .sort({ ordonnancementAffichage: 1 })
+    let lignes: any[] = [];
+    let patientPrescriptions: any[] = [];
+
+    // Vérifier si c'est une facturation de prescription
+    if (facturation.IDPRESCRIPTION) {
+      // Récupérer les patientprescriptions liées à cette facturation
+      patientPrescriptions = await PatientPrescription.find({
+        facturation: facturation._id
+      })
+      .populate('medicament', 'Designation')
+      .sort({ DatePres: 1 })
       .lean();
+
+      console.log("PatientPrescriptions trouvées:", patientPrescriptions.length);
+    } else {
+      // Pour les factures normales, récupérer les lignes de prestation
+      lignes = await LignePrestation.find({
+        idFacturation: facturation._id,
+      })
+        .sort({ ordonnancementAffichage: 1 })
+        .lean();
+    }
 
     /* ================= RESPONSE ================= */
     return NextResponse.json({
@@ -120,6 +140,31 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         totalsurplus: l.totalSurplus || 0,
         ReliquatPatient: l.reliquatPatient || 0,
       })),
+
+      patientPrescriptions: patientPrescriptions.map(pp => ({
+        _id: pp._id.toString(),
+        IDPRESCRIPTION: pp.IDPRESCRIPTION,
+        PatientP: pp.PatientP,
+        QteP: pp.QteP,
+        posologie: pp.posologie,
+        DatePres: pp.DatePres,
+        prixUnitaire: pp.prixUnitaire,
+        prixTotal: pp.prixTotal,
+        nomMedicament: pp.nomMedicament,
+        partAssurance: pp.partAssurance,
+        partAssure: pp.partAssure,
+        StatutPrescriptionMedecin: pp.StatutPrescriptionMedecin,
+        actePayeCaisse: pp.actePayeCaisse,
+        payeLe: pp.payeLe,
+        payePar: pp.payePar,
+        reference: pp.reference,
+        exclusionActe: pp.exclusionActe,
+        medicament: pp.medicament ? {
+          _id: pp.medicament._id,
+          Designation: pp.medicament.Designation
+        } : null
+      })),
+
     });
 
   } catch (error) {

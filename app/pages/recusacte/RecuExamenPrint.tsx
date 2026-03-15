@@ -15,6 +15,30 @@ interface LignePrestation {
   totalsurplus: number
 }
 
+interface PatientPrescription {
+  _id: string;
+  IDPRESCRIPTION: string;
+  PatientP: string;
+  QteP: number;
+  posologie: string;
+  DatePres: Date;
+  prixUnitaire: number;
+  prixTotal: number;
+  nomMedicament: string;
+  partAssurance: number;
+  partAssure: number;
+  StatutPrescriptionMedecin?: number;
+  actePayeCaisse?: string;
+  payeLe?: Date;
+  payePar?: string;
+  reference?: string;
+  exclusionActe?: string;
+  medicament?: {
+    _id: string;
+    Designation: string;
+  };
+}
+
 interface Patient {
   Nom: string;
   Prenoms: string;
@@ -60,6 +84,7 @@ export default function RecuExamenPrint({ params }: { params: { id: string } }) 
   const [patient, setPatient] = useState<Patient | null>(null);
   const [facturation, setFacturation] = useState<Facturation | null>(null);
   const [lignes, setLignes] = useState<LignePrestation[]>([]);
+  const [patientPrescriptions, setPatientPrescriptions] = useState<PatientPrescription[]>([]);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -78,6 +103,7 @@ export default function RecuExamenPrint({ params }: { params: { id: string } }) 
     setPatient(data.header.Patient);
     setFacturation(data.header);
     setLignes(data.lignes || []);
+    setPatientPrescriptions(data.patientPrescriptions || []);
   } catch (e) {
     console.error("FETCH ERROR:", e);
   } finally {
@@ -215,36 +241,69 @@ if (params.id) {
          <strong>{facturation.Designationtypeacte}</strong>{"-"} <strong>{facturation.CodePrestation}</strong>          
         </div>
         {/* TABLE ACTES */}
-        <Table bordered size="sm">
-          <thead className="text-center">
-            <tr>
-              <th>#</th>
-              <th>Désignation</th>
-              <th>Coef</th>
-              <th>Qté</th>
-              <th>PU</th>
-              <th>Total</th>
-              <th>Part Assurance</th>
-              <th>Part Patient</th>
-              <th>Surplus Patient</th>
-            </tr>
-          </thead>
-          <tbody>
-            {lignes.map((l, i) => (
-              <tr key={l._id}>
-                <td className="text-center">{i + 1}</td>
-                <td>{l.Prestation}</td>
-                <td className="text-center">{l.CoefficientActe}</td>
-                <td className="text-center">{l.Qte}</td>
-                <td className="text-center">{l.Prix.toLocaleString()}</td>
-                <td className="text-center">{l.PrixTotal.toLocaleString()}</td>
-                <td className="text-center">{l.PartAssurance.toLocaleString()}</td>
-                <td className="text-center">{l.Partassure.toLocaleString()}</td>
-                <td className="text-center">{l.totalsurplus.toLocaleString()}</td>
+        {patientPrescriptions.length > 0 ? (
+          // Tableau pour les prescriptions de pharmacie
+          <Table bordered size="sm">
+            <thead className="text-center">
+              <tr>
+                <th>#</th>
+                <th>Médicament</th>
+                <th>Qté</th>
+                <th>Posologie</th>
+                <th>PU</th>
+                <th>Total</th>
+                <th>Part Assurance</th>
+                <th>Part Patient</th>
               </tr>
-            ))}
-          </tbody>
-        </Table>
+            </thead>
+            <tbody>
+              {patientPrescriptions.map((pp, i) => (
+                <tr key={pp._id}>
+                  <td className="text-center">{i + 1}</td>
+                  <td>{pp.nomMedicament || (pp.medicament?.Designation) || '-'}</td>
+                  <td className="text-center">{pp.QteP}</td>
+                  <td className="text-center">{pp.posologie || '-'}</td>
+                  <td className="text-center">{pp.prixUnitaire.toLocaleString()}</td>
+                  <td className="text-center">{pp.prixTotal.toLocaleString()}</td>
+                  <td className="text-center">{pp.partAssurance.toLocaleString()}</td>
+                  <td className="text-center">{pp.partAssure.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        ) : (
+          // Tableau normal pour les examens
+          <Table bordered size="sm">
+            <thead className="text-center">
+              <tr>
+                <th>#</th>
+                <th>Désignation</th>
+                <th>Coef</th>
+                <th>Qté</th>
+                <th>PU</th>
+                <th>Total</th>
+                <th>Part Assurance</th>
+                <th>Part Patient</th>
+                <th>Surplus Patient</th>
+              </tr>
+            </thead>
+            <tbody>
+              {lignes.map((l, i) => (
+                <tr key={l._id}>
+                  <td className="text-center">{i + 1}</td>
+                  <td>{l.Prestation}</td>
+                  <td className="text-center">{l.CoefficientActe}</td>
+                  <td className="text-center">{l.Qte}</td>
+                  <td className="text-center">{l.Prix.toLocaleString()}</td>
+                  <td className="text-center">{l.PrixTotal.toLocaleString()}</td>
+                  <td className="text-center">{l.PartAssurance.toLocaleString()}</td>
+                  <td className="text-center">{l.Partassure.toLocaleString()}</td>
+                  <td className="text-center">{l.totalsurplus.toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </Table>
+        )}
 
         {/* TOTAUX */}
          <Row>

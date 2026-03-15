@@ -29,7 +29,7 @@ export interface ILigneMedicament {
   DATE?: string; // Ajout du champ DATE
   reference?: string; // Ajout du champ reference
   Exclus?: string; // Ajout du champ Exclus
-  StatutMedPres?: number; // Ajout du champ StatutMedPres
+  StatuPrescriptionMedecin?: number; // Ajout du champ StatuPrescriptionMedecin
   posologie?: string; // Ajout du champ posologie
 }
 
@@ -212,7 +212,7 @@ function emptyLigne(medicament?: IMedicament): ILigneMedicament {
     DATE: new Date().toISOString().split('T')[0], // Date du jour par défaut
     reference: medicament?.Reference || "", // Ajouter la référence du médicament
     Exclus: "", // Ajouter le champ Exclus
-    StatutMedPres: 0, // Ajouter le champ StatutMedPres
+    StatuPrescriptionMedecin: 0, // Ajouter le champ StatuPrescriptionMedecin
     posologie: "" // Ajouter le champ posologie
   };
 }
@@ -408,7 +408,7 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
       // TABLE_PARTIENT_PRESCRIPTION.COL_Prixunitaire=PHARMACIE.PrixVente
       // TABLE_PARTIENT_PRESCRIPTION.COL_MédicamentID=PHARMACIE.IDMEDICAMENT
       // TABLE_PARTIENT_PRESCRIPTION.COL_Reference=PHARMACIE.Reference
-      // TABLE_PARTIENT_PRESCRIPTION.COL_StatutMedPres=2
+      // TABLE_PARTIENT_PRESCRIPTION.COL_StatuPrescriptionMedecin=2
 
       updateLigne(id, {
         medicamentId: medicament._id, // COL_MédicamentID=PHARMACIE.IDMEDICAMENT
@@ -418,7 +418,7 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
         total: medicament.PrixVente || 0,
         DATE: new Date().toISOString().split('T')[0], // COL_Date=DateSys()
         Exclus: "NON", // COL_Exclus="NON"
-        StatutMedPres: 2, // COL_StatutMedPres=2
+        StatuPrescriptionMedecin: 2, // COL_StatuPrescriptionMedecin=2
         reference: medicament.Reference || "", // COL_Reference=PHARMACIE.Reference
         partAssurance: 0,
         partAssure: medicament.PrixVente || 0
@@ -503,7 +503,7 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
       {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
 
       {/* Message informatif pour les lignes verrouillées */}
-      {lignes.some(ligne => ligne.StatutMedPres === 3) && (
+      {lignes.some(ligne => ligne.StatuPrescriptionMedecin === 3) && (
         <Alert variant="warning" className="mb-2">
           <small>
             <i className="bi bi-info-circle me-2"></i>
@@ -529,8 +529,8 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
           </thead>
           <tbody>
             {lignes.map((ligne, index) => {
-              // Vérifier si la ligne est verrouillée (statutPrescriptionMedecin = 3)
-              const isLigneLocked = ligne.StatutMedPres === 3;
+              // Vérifier si la ligne est verrouillée (StatutPrescriptionMedecin = 3)
+              const isLigneLocked = ligne.StatuPrescriptionMedecin === 3;
               
               return (
                 <tr key={ligne.id} className={ligne.refuse ? 'table-danger' : (isLigneLocked ? 'table-warning' : '')}>

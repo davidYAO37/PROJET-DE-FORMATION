@@ -32,13 +32,17 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const { id } = await params;
         const body = await request.json();
 
+        console.log("🔄 PUT /api/prescription/[id] - ID:", id, "Body:", body);
+        console.log("📊 StatuPrescriptionMedecin reçu:", body.statutPrescriptionMedecin || body.StatuPrescriptionMedecin);
+
         // Mapper les champs du composant vers le modèle
         const prescriptionData: any = {
             Designation: body.Designation || "PHARMACIE",
-            CodePrestation: body.Code_Prestation || body.CodePrestation,
+            CodePrestation: body.CodePrestation || body.CodePrestation,
             PatientP: body.PatientP,
+            IdPatient: body.IdPatient || body.IDPARTIENT || "", // Unified field - supports both parameter names
             DatePres: body.DatePres ? new Date(body.DatePres) : body.DatePres,
-            SaisiPar: body.FacturéPar || body.SaisiPar,
+            SaisiPar: body.Caissiere || body.SaisiPar,
             Rclinique: body.Rclinique || "",
             Montanttotal: body.Montanttotal,
             Taux: body.Taux,
@@ -54,24 +58,28 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             Numfacture: body.Numfacture,
             NumBon: body.NumBon || body.Numcarte,
             Modepaiement: body.Modepaiement,
-            Document: body.Document,
-            ExtensionF: body.ExtensionF,
+            // Les champs exclus de la facturation ne sont pas mappés ici. Cela évite que
+            // des valeurs parasites soient enregistrées lors du passage en caisse.
+            // Document: body.Document,
+            // ExtensionF: body.ExtensionF,
             Souscripteur: body.Souscripteur,
             StatutPaiement: body.StatutPaiement || "Facture payée",
-            Ordonnerlannulation: body.Ordonnerlannulation,
-            AnnulationOrdonneLe: body.AnnulationOrdonneLe,
-            AnnulationOrdonnePar: body.AnnulationOrdonnePar,
+            // Ordonnerlannulation: body.Ordonnerlannulation,
+            // AnnulationOrdonneLe: body.AnnulationOrdonneLe,
+            // AnnulationOrdonnePar: body.AnnulationOrdonnePar,
             SOCIETE_PATIENT: body.SOCIETE_PATIENT,
 
             // Champs supplémentaires pour la pharmacie
-            StatuPrescriptionMedecin: body.StatuPrescriptionMedecin,
+            StatuPrescriptionMedecin: body.StatuPrescriptionMedecin || body.statutPrescriptionMedecin,
             Payéoupas: body.Payéoupas,
             Payele: body.Payele,
             Heure: body.Heure,
             TotalapayerPatient: body.TotalapayerPatient,
             IDpriseCharge: body.IDpriseCharge,
-            FacturéPar: body.FacturéPar
+            Caissiere: body.Caissiere
         };
+
+        console.log("📋 prescriptionData.StatuPrescriptionMedecin:", prescriptionData.StatuPrescriptionMedecin);
 
         // Gérer les champs ObjectId - ne les inclure que s'ils sont valides
         if (body.IDASSURANCE && body.IDASSURANCE.trim() !== "") {
@@ -82,10 +90,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             prescriptionData.idMedecin = body.IDMEDECIN;
         }
 
-        if (body.IDSOCEITEASSUANCE && body.IDSOCEITEASSUANCE.trim() !== "") {
-            prescriptionData.IDSOCEITEASSUANCE = body.IDSOCEITEASSUANCE;
+        // IdPatient déjà mappé ci-dessus avec fallback, pas de vérification supplémentaire nécessaire
+
+        if (body.IDSOCIETEASSURANCE && body.IDSOCIETEASSURANCE.trim() !== "") {
+            prescriptionData.IDSOCIETEASSURANCE = body.IDSOCIETEASSURANCE;
         } else if (body.IDASSURANCE && body.IDASSURANCE.trim() !== "") {
-            prescriptionData.IDSOCEITEASSUANCE = body.IDASSURANCE;
+            prescriptionData.IDSOCIETEASSURANCE = body.IDASSURANCE;
         }
 
         const updated = await Prescription.findByIdAndUpdate(id, prescriptionData, { new: true });
@@ -95,6 +105,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
                 error: "Prescription introuvable"
             }, { status: 404 });
         }
+
+        console.log("✅ Prescription mise à jour - StatuPrescriptionMedecin:", updated.StatuPrescriptionMedecin);
 
         return NextResponse.json({
             success: true,

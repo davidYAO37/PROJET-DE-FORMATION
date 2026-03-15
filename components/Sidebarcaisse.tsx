@@ -23,12 +23,50 @@ export default function Sidebarcaisse() {
   const [user, setUser] = useState('');
   const [showFactureModal, setShowFactureModal] = useState(false);
   const [showPaiementPharmacieModal, setShowPaiementPharmacieModal] = useState(false);
+  const [facturesEnAttenteCount, setFacturesEnAttenteCount] = useState(0);
 
 
   // Charger l'utilisateur connecté au montage
   useEffect(() => {
     const storedUser = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || '';
     setUser(storedUser);
+  }, []);
+
+  // Charger le nombre de factures en attente
+  useEffect(() => {
+    const fetchFacturesEnAttente = async () => {
+      try {
+        // Récupérer les consultations en attente
+        const consultRes = await fetch('/api/consultationFacture/consultAttentePaiement');
+        const consultations = consultRes.ok ? await consultRes.json() : [];
+
+        // Récupérer les prestations en attente
+        const prestRes = await fetch('/api/consultationFacture/prestationAttentePaiement');
+        const prestations = prestRes.ok ? await prestRes.json() : [];
+
+        // Récupérer les prescriptions en attente
+        const prescRes = await fetch('/api/consultationFacture/prescriptionAttentePaiement');
+        const prescriptions = prescRes.ok ? await prescRes.json() : [];
+
+        // Calculer le total
+        const totalCount = 
+          (Array.isArray(consultations) ? consultations.length : 0) +
+          (Array.isArray(prestations) ? prestations.length : 0) +
+          (Array.isArray(prescriptions) ? prescriptions.length : 0);
+
+        setFacturesEnAttenteCount(totalCount);
+      } catch (error) {
+        console.error('Erreur lors du chargement des factures en attente:', error);
+        setFacturesEnAttenteCount(0);
+      }
+    };
+
+    fetchFacturesEnAttente();
+    
+    // Rafraîchir toutes les 30 secondes
+    const interval = setInterval(fetchFacturesEnAttente, 30000);
+    
+    return () => clearInterval(interval);
   }, []);
 
 
@@ -89,11 +127,18 @@ export default function Sidebarcaisse() {
               ) : (
                 <Link
                   href={item.path}
-                  className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''}`}
+                  className={`sidebar-link-medical d-flex align-items-center justify-content-between ${pathname === item.path ? 'active' : ''}`}
                   onClick={handleLinkClick}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  <div className="d-flex align-items-center">
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                  {item.label === 'Factures en attente' && facturesEnAttenteCount > 0 && (
+                    <span className="badge bg-danger text-white rounded-pill ms-2">
+                      {facturesEnAttenteCount}
+                    </span>
+                  )}
                 </Link>
               )}
             </Nav.Item>

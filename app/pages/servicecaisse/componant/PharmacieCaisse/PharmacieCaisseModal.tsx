@@ -19,6 +19,7 @@ type ValidationResult = {
 interface Patient {
   _id?: string;
   Nom?: string;
+  Prenoms?: string;
   Sexe?: string;
   Age_partient?: string;
   Date_naisse?: string;
@@ -30,7 +31,7 @@ interface Consultation {
   CodePrestation?: string;
   Code_dossier?: string;
   StatutC?: boolean;
-  statutPrescriptionMedecin?: number;
+  StatutPrescriptionMedecin?: number;
   ticket_moderateur?: number;
   Temperature?: string;
   Tension?: string;
@@ -44,8 +45,11 @@ interface Consultation {
   IDASSURANCE?: string;
   NumBon?: string; // Ajout du champ NumBon
   SOCIETE_PATIENT?: string; // Ajout du champ SOCIETE_PATIENT
+  IDSOCIETEASSURANCE?: string; // Ajout du champ IDSOCIETEASSURANCE
+  Medecin?: string; // Nom du médecin
+  IdPatient?: string; // Identifiant Mongo du patient
+  patientId?: string; // alias renvoyé par API
 }
-
 interface Prescription {
   _id?: string;
   BanqueC?: string;
@@ -53,6 +57,7 @@ interface Prescription {
   Modepaiement?: string;
   Partassuré?: number;
   MotifRemise?: string; // Ajout du champ MotifRemise
+  Remise?: number; // Ajout du champ Remise
 }
 
 interface TotauxPharmacie {
@@ -107,7 +112,8 @@ export default function PharmacieCaisseModal({
   const [montantEncaisse, setMontantEncaisse] = useState(0);
 
   // Simulation utilisateur (à remplacer par l'utilisateur réel)
-  const currentUser = "Utilisateur Test";
+  const currentUser = localStorage.getItem("nom_utilisateur");
+
   const isObjectId = (value?: string) => typeof value === "string" && /^[a-f\\d]{24}$/i.test(value);
 
   const imprimerRecuPharmacie = (facturationId: string) => {
@@ -128,6 +134,15 @@ export default function PharmacieCaisseModal({
 
   // Fonction de validation selon la logique WLangage
   const validerPaiement = useCallback((): ValidationResult => {
+    // 0. Vérifier que IdPatient existe
+    if (!consultation.IdPatient && !consultation.patientId && !patient._id) {
+      return {
+        isValid: false,
+        message: "Identifiant patient manquant. Veuillez recharger la consultation.",
+        type: 'error'
+      };
+    }
+
     // 1. Vérifier qu'au moins une ligne est payée
     // Équivalent: nMoncompte = 0, POUR TOUTE LIGNE, SI COL_FActuré="Payé" ALORS nMoncompte++
     const lignesPayees = lignesMedicaments.filter(ligne => ligne.paye);
@@ -160,7 +175,7 @@ export default function PharmacieCaisseModal({
       };
     }
 
-    // 4. Vérifications supplémentaires (basées sur la logique métier)
+    /* // 4. Vérifications supplémentaires (basées sur la logique métier)
     // Vérifier que le montant encaissé est suffisant
     if (montantEncaisse < totaux.resteAPayer) {
       return {
@@ -168,7 +183,7 @@ export default function PharmacieCaisseModal({
         message: `Montant encaissé insuffisant. Il manque ${totaux.resteAPayer - montantEncaisse} FCFA`,
         type: 'error'
       };
-    }
+    } */
 
     // 5. Vérifier qu'il y a des médicaments dans les lignes payées
     const lignesPayeesAvecMedicaments = lignesPayees.filter(ligne => ligne.medicamentId);
@@ -186,7 +201,7 @@ export default function PharmacieCaisseModal({
       message: `Validation réussie: ${lignesPayees.length} ligne(s) payée(s) pour un total de ${totaux.partAssure + totaux.partAssurance} FCFA`,
       type: 'info'
     };
-  }, [lignesMedicaments, totaux, formData.MotifRemise, modePaiement, montantEncaisse]);
+  }, [lignesMedicaments, totaux, formData.MotifRemise, modePaiement, montantEncaisse, consultation, patient]);
 
   // Charger les médicaments au montage du modal
   useEffect(() => {
@@ -249,8 +264,8 @@ export default function PharmacieCaisseModal({
   // Fonction pour charger les patientprescription liées à la prescription
   const loadPatientPrescriptions = useCallback(async (codePrestation: string, prescriptionId?: string) => {
     try {
-      // Charger les patientprescription par Code prestation (param attendu: Code_Prestation)
-      let url = `/api/patientprescriptionFacture?Code_Prestation=${encodeURIComponent(codePrestation)}`;
+      // Charger les patientprescription par Code prestation (param attendu: CodePrestation)
+      let url = `/api/patientprescriptionFacture?CodePrestation=${encodeURIComponent(codePrestation)}`;
       if (prescriptionId) {
         url += `&IDPRESCRIPTION=${encodeURIComponent(prescriptionId)}`;
       }
@@ -266,9 +281,9 @@ export default function PharmacieCaisseModal({
           // Filtrer les patientprescriptions selon les critères
           const prescriptionsFiltrees = await Promise.all(
             patientPrescriptions.map(async (pp: any) => {
-              // Critère 1: statutPrescriptionMedecin < 3
-              if (pp.statutPrescriptionMedecin >= 3) {
-                console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - statutPrescriptionMedecin >= 3 (${pp.statutPrescriptionMedecin})`);
+              // Critère 1: StatutPrescriptionMedecin < 3
+              if (pp.StatutPrescriptionMedecin >= 3) {
+                console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - StatutPrescriptionMedecin >= 3 (${pp.StatutPrescriptionMedecin})`);
                 return null;
               }
 
@@ -281,7 +296,7 @@ export default function PharmacieCaisseModal({
 
               const quantiteRequise = Number(pp.QteP) || 1;
               const estEnStock = await verifierStockMedicament(medicamentId, quantiteRequise);
-              
+
               if (!estEnStock) {
                 console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - quantité insuffisante en stock (${quantiteRequise} requise)`);
                 return null;
@@ -294,19 +309,19 @@ export default function PharmacieCaisseModal({
 
           // Filtrer les null et convertir en ILigneMedicament
           const lignesValidées = prescriptionsFiltrees.filter(Boolean);
-          
+
           // Afficher un message si des médicaments ont été filtrés
           const nombreTotal = patientPrescriptions.length;
           const nombreValidés = lignesValidées.length;
           const nombreFiltrés = nombreTotal - nombreValidés;
-          
+
           if (nombreFiltrés > 0) {
             console.log(`ℹ️ ${nombreFiltrés} médicament(s) filtré(s) sur ${nombreTotal} total - ${nombreValidés} éligible(s) pour le paiement`);
             setInfoMessage(`${nombreFiltrés} médicament(s) non éligible(s) pour le paiement (stock insuffisant ou déjà payé)`);
             // Effacer le message après 5 secondes
             setTimeout(() => setInfoMessage(null), 5000);
           }
-          
+
           if (lignesValidées.length === 0) {
             console.log("ℹ️ Aucun médicament valide trouvé pour le paiement à la caisse");
             setInfoMessage("Aucun médicament éligible pour le paiement (stock insuffisant ou déjà payé)");
@@ -387,10 +402,19 @@ export default function PharmacieCaisseModal({
   const handlePrescriptionChangeUpdated = useCallback(
     async (prescriptionData: Prescription) => {
       console.log("📋 Prescription reçue de InfoPatient:", prescriptionData);
-      setPrescription(prescriptionData);
+      // Retirer les champs que nous ne devons pas conserver
+      const {
+        Ordonnerlannulation,
+        AnnulationOrdonneLe,
+        AnnulationOrdonnePar,
+        Document,
+        ExtensionF,
+        ...sanitized
+      } = prescriptionData as any;
+      setPrescription(sanitized);
 
-      if (prescriptionData.Modepaiement) {
-        setModePaiement(prescriptionData.Modepaiement);
+      if (sanitized.Modepaiement) {
+        setModePaiement(sanitized.Modepaiement);
       }
 
       // Le chargement des patientprescriptions est maintenant géré par InfoPatient
@@ -402,7 +426,7 @@ export default function PharmacieCaisseModal({
   // Handler pour les changements de patientprescriptions venant de InfoPatient
   const handlePatientPrescriptionsChange = useCallback(async (patientPrescriptions: any[]) => {
     console.log("📋 Patientprescriptions reçues de InfoPatient:", patientPrescriptions);
-    
+
     if (!Array.isArray(patientPrescriptions) || patientPrescriptions.length === 0) {
       console.log("ℹ️ Aucune patientprescription reçue - table vide");
       setPresetLines([]);
@@ -413,9 +437,9 @@ export default function PharmacieCaisseModal({
     // Filtrer les patientprescriptions selon les critères
     const prescriptionsFiltrees = await Promise.all(
       patientPrescriptions.map(async (pp: any) => {
-        // Critère 1: statutPrescriptionMedecin < 3
-        if (pp.statutPrescriptionMedecin >= 3) {
-          console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - statutPrescriptionMedecin >= 3 (${pp.statutPrescriptionMedecin})`);
+        // Critère 1: StatutPrescriptionMedecin < 3
+        if (pp.StatutPrescriptionMedecin >= 3) {
+          console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - StatutPrescriptionMedecin >= 3 (${pp.StatutPrescriptionMedecin})`);
           return null;
         }
 
@@ -428,7 +452,7 @@ export default function PharmacieCaisseModal({
 
         const quantiteRequise = Number(pp.QteP) || 1;
         const estEnStock = await verifierStockMedicament(medicamentId, quantiteRequise);
-        
+
         if (!estEnStock) {
           console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - quantité insuffisante en stock (${quantiteRequise} requise)`);
           return null;
@@ -441,19 +465,19 @@ export default function PharmacieCaisseModal({
 
     // Filtrer les null et convertir en ILigneMedicament
     const lignesValidées = prescriptionsFiltrees.filter(Boolean);
-    
+
     // Afficher un message si des médicaments ont été filtrés
     const nombreTotal = patientPrescriptions.length;
     const nombreValidés = lignesValidées.length;
     const nombreFiltrés = nombreTotal - nombreValidés;
-    
+
     if (nombreFiltrés > 0) {
       console.log(`ℹ️ ${nombreFiltrés} médicament(s) filtré(s) sur ${nombreTotal} total - ${nombreValidés} éligible(s) pour le paiement`);
       setInfoMessage(`${nombreFiltrés} médicament(s) non éligible(s) pour le paiement (stock insuffisant ou déjà payé)`);
       // Effacer le message après 5 secondes
       setTimeout(() => setInfoMessage(null), 5000);
     }
-    
+
     if (lignesValidées.length === 0) {
       console.log("ℹ️ Aucun médicament valide trouvé pour le paiement à la caisse");
       setInfoMessage("Aucun médicament éligible pour le paiement (stock insuffisant ou déjà payé)");
@@ -474,7 +498,7 @@ export default function PharmacieCaisseModal({
       refuse: pp.exclusionActe === "Refuser" || pp.ExclusionActae === "Refuser",
       partAssurance: Number(pp.partAssurance) || 0,
       partAssure: Number(pp.partAssure) || 0,
-      DATE: pp.DatePres ? (typeof pp.DatePres === 'string' ? pp.DatePres : new Date(pp.DatePres).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
+      DATE: new Date().toISOString().split('T')[0], // Toujours la date du jour par défaut
       reference: pp.reference || "",
       payeLe: pp.payeLe ? (typeof pp.payeLe === 'string' ? pp.payeLe : new Date(pp.payeLe).toISOString().split('T')[0]) : undefined,
       payePar: pp.payePar || undefined,
@@ -542,13 +566,34 @@ export default function PharmacieCaisseModal({
     const isModification = Boolean(prescription?._id);
 
     // 1) Ajouter ou modifier la prescription (selon nMonid = 0 ou non)
-    const prescriptionPayload = {
+    // Calculer TotalapayerPatient et Restapayer selon la logique WLangage
+    let totalAPayerPatient = Math.max(0, totaux.partAssure - (totaux.remise || 0));
+    let restapayer = 0;
+    let montantEncaisseFinal = montantEncaisse;
+
+    // SI montantEncaisse = TotalapayerPatient ALORS Restapayer = 0
+    if (montantEncaisse >= totalAPayerPatient) {
+      restapayer = 0;
+      montantEncaisseFinal = totalAPayerPatient; // Limiter au montant exact
+    }
+    // SI montantEncaisse > TotalapayerPatient ALORS Restapayer = 0 et montantEncaisse = TotalapayerPatient
+    else if (montantEncaisse > totalAPayerPatient) {
+      restapayer = 0;
+      montantEncaisseFinal = totalAPayerPatient; // Limiter au montant exact
+    }
+    // SI montantEncaisse < TotalapayerPatient ALORS Restapayer = TotalapayerPatient - montantEncaisse
+    else {
+      restapayer = totalAPayerPatient - montantEncaisse;
+    }
+
+    let prescriptionPayload: any = {
       StatuPrescriptionMedecin: 3,
       FacturéPar: gsUtilisateur,
       Payele: toYMD(now),
       Heure: toTimeHHMMSS(now),
       Payéoupas: true,
       PatientP: patient.Nom || "",
+      IdPatient: consultation.IdPatient || consultation.patientId || patient._id || "",
       Numcarte: consultation.NumBon || "",
       NumBon: consultation.NumBon || "",
       Designation: "PHARMACIE",
@@ -557,22 +602,29 @@ export default function PharmacieCaisseModal({
       Montanttotal: totaux.montantTotal,
       PartAssuranceP: totaux.partAssurance,
       Partassuré: totaux.partAssure,
-      MontantRecu: montantEncaisse,
+      MontantRecu: montantEncaisseFinal,
       Assurance: consultation.assurance || "",
       Taux: consultation.tauxAssurance || 0,
       REMISE: totaux.remise,
       MotifRemise: (formData.MotifRemise || "").trim(),
-      TotalapayerPatient: Math.max(0, totaux.partAssure - (totaux.remise || 0)),
-      Restapayer: totaux.resteAPayer,
-      Code_Prestation: codePrestation,
+      TotalapayerPatient: totalAPayerPatient,
+      Restapayer: restapayer,
+      CodePrestation: codePrestation,
       IDpriseCharge: "",
       IDMEDECIN: consultation.IDMEDECIN || "",
+      NomMed: consultation.Medecin || "",
       StatutPaiement: "Facture payée",
       Modepaiement: modePaiement,
       IDASSURANCE: consultation.IDASSURANCE || "",
-      IDSOCEITEASSUANCE: consultation._id || "",
+      IDSOCIETEASSURANCE: consultation.IDASSURANCE || "",
       SOCIETE_PATIENT: consultation.SOCIETE_PATIENT || ""
     };
+    // S'assurer que les champs interdits ne sont jamais envoyés
+    delete prescriptionPayload.Ordonnerlannulation;
+    delete prescriptionPayload.AnnulationOrdonneLe;
+    delete prescriptionPayload.AnnulationOrdonnePar;
+    delete prescriptionPayload.Document;
+    delete prescriptionPayload.ExtensionF;
 
     let prescriptionId = "";
     if (isModification && prescription._id) {
@@ -604,32 +656,35 @@ export default function PharmacieCaisseModal({
       DateFacturation: toYMD(now),
       Heure_Facturation: toTimeHHMMSS(now),
       Payéoupas: true,
-      PatientP: patient.Nom || "",
+      PatientP: patient.Nom + " " + patient.Prenoms || "",
+      IdPatient: consultation.IdPatient || consultation.patientId || patient._id || "",
       IDPARTIENT: patient._id || "",
       Numcarte: consultation.NumBon || "",
       NumBon: consultation.NumBon || "",
-      Désignationtypeacte: "PHARMACIE",
+      Designationtypeacte: "PHARMACIE",
+      IDSOCIETEASSURANCE: consultation.IDASSURANCE || "",
+      SOCIETE_PATIENT: consultation.SOCIETE_PATIENT || "",
+      // Champs supplémentaires selon la logique WLangage
+      CodePrestation: codePrestation,
+      NomMed: consultation.Medecin || "",
       DatePres: consultation.DatePres || toYMD(now),
+      SaisiPar: gsUtilisateur,
       Rclinique: "",
       Montanttotal: totaux.montantTotal,
-      PartAssuranceP: totaux.partAssurance,
-      Partassuré: totaux.partAssure,
-      TotalPaye: montantEncaisse,
-      MontantRecu: montantEncaisse,
-      Assuance: consultation.assurance || "",
-      Taux: consultation.tauxAssurance || 0,
+      MontantRecu: montantEncaisseFinal,
       reduction: totaux.remise,
-      TotalapayerPatient: Math.max(0, totaux.partAssure - (totaux.remise || 0)),
-      Restapayer: totaux.resteAPayer,
-      CodePrestation: codePrestation,
-      Code_Prestation: codePrestation, // compat / cohérence
-      IDMEDECIN: consultation.IDMEDECIN || "",
+      MotifRemise: (formData.MotifRemise || "").trim(),
+      Restapayer: restapayer,
+      TotalapayerPatient: totalAPayerPatient,
+      PartAssuranceP: totaux.partAssurance,
+      Partassure: totaux.partAssure,
+      Taux: consultation.tauxAssurance || 0,
       IDASSURANCE: consultation.IDASSURANCE || "",
+      IDMEDECIN: consultation.IDMEDECIN || "",
+      StatutFacture: true,
       Modepaiement: modePaiement,
-      BanqueC: prescription.BanqueC || "",
-      NumChèque: prescription.NumChèque || "",
-      IDSOCEITEASSUANCE: consultation._id || consultation.IDASSURANCE || "",
-      SOCIETE_PATIENT: consultation.SOCIETE_PATIENT || ""
+      StatutPaiement: "Facture payée",
+      typefacture: "PHARMACIE"
     };
 
     const factureCreated = await fetchJson<{ success: boolean; data?: any }>(`/api/facturation`, {
@@ -644,7 +699,7 @@ export default function PharmacieCaisseModal({
 
     // 3) Charger l'état actuel des lignes en base (pour savoir si on modifie ou on ajoute)
     const existingLines = await fetchJson<any[]>(
-      `/api/patientprescriptionFacture?IDPRESCRIPTION=${encodeURIComponent(prescriptionId)}&Code_Prestation=${encodeURIComponent(codePrestation)}`,
+      `/api/patientprescriptionFacture?IDPRESCRIPTION=${encodeURIComponent(prescriptionId)}&CodePrestation=${encodeURIComponent(codePrestation)}`,
     );
     const existingById = new Map<string, any>();
     for (const l of existingLines || []) {
@@ -661,6 +716,7 @@ export default function PharmacieCaisseModal({
       const commonPayload: any = {
         IDPRESCRIPTION: prescriptionId,
         PatientP: patient.Nom || "",
+        IdPatient: consultation.IdPatient || consultation.patientId || patient._id || "",
         reference: (ligne.reference || "").trim(),
         IDPARTIENT: patient._id || "",
         QteP: Number(ligne.quantite) || 1,
@@ -675,13 +731,18 @@ export default function PharmacieCaisseModal({
         CodePrestation: codePrestation,
         medicament: ligne.medicamentId,
         exclusionActe,
-        IDSOCIETEASSURANCE: consultation._id || "",
+        IDSOCIETEASSURANCE: consultation.IDSOCIETEASSURANCE || "",
         SOCIETE_PATIENT: consultation.SOCIETE_PATIENT || "",
+        //infos medecin et assurance
+        IDMEDECIN: consultation.IDMEDECIN || "",
+        NomMed: consultation.Medecin || "",
+        IDASSURANCE: consultation.IDASSURANCE || "",
+
       };
 
       const payloadPayee = {
         ...commonPayload,
-        statutPrescriptionMedecin: 3,
+        StatutPrescriptionMedecin: 3,
         actePayeCaisse: "Payé",
         payeLe: now,
         payePar: gsUtilisateur,
@@ -692,7 +753,7 @@ export default function PharmacieCaisseModal({
 
       const payloadNonPayee = {
         ...commonPayload,
-        statutPrescriptionMedecin: 1,
+        StatutPrescriptionMedecin: 1,
         actePayeCaisse: "Non Payé",
         payeLe: null,
         payePar: "",
@@ -701,7 +762,7 @@ export default function PharmacieCaisseModal({
         facturation: null,
       };
 
-      const shouldUpdate = isObjectId(ligne.id) && existingById.has(ligne.id);
+      const shouldUpdate = ligne.id && existingById.has(String(ligne.id));
       const payload = ligne.paye ? payloadPayee : payloadNonPayee;
 
       if (shouldUpdate) {

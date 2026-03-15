@@ -23,4 +23,4 @@ const StockSchema = new Schema<IStock>({
     Medicament: { type: String, maxlength: 250 },
     IDMEDICAMENT:{type:Schema.Types.ObjectId,ref:'Pharmacie'}
 }, { timestamps: true });
-export const Stock: Model<IStock> = mongoose.models.StockModel || mongoose.model<IStock>("Stock", StockSchema);  
+export const Stock: Model<IStock> = mongoose.models.Stock || mongoose.model<IStock>("Stock", StockSchema);  

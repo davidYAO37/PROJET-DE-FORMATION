@@ -1,12 +1,14 @@
-'use client';
-import { useRouter } from 'next/navigation';
-import { Container, Row, Col, Card, Button } from 'react-bootstrap';
+"use client";
+import { useRouter } from "next/navigation";
+import { Container, Row, Col, Card, Button } from "react-bootstrap";
 
 export default function DashboardPage() {
   const router = useRouter();
   const handleLogout = () => {
     // Supprime le token ou les infos de session stockées
     localStorage.removeItem('profil'); // selon ton système
+    localStorage.removeItem('nom_utilisateur'); // selon ton système
+    localStorage.removeItem('IdEntreprise'); // selon ton système
     // Redirige vers la page de connexion
     router.push('/connexion');
   };

@@ -5,6 +5,7 @@ export interface IUser extends Document {
   prenom: string;
   email: string;
   type: string;
+  entrepriseId?: mongoose.Types.ObjectId;
   uid: string;
 }
 
@@ -13,7 +14,9 @@ const UserSchema = new Schema<IUser>({
   prenom: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   type: { type: String, required: true },
+  entrepriseId: { type: Schema.Types.ObjectId, ref: 'Entreprise', required: false },
   uid: { type: String, required: true },
+
 });
 
 export const UserCollection = mongoose.models.User || mongoose.model<IUser>('User', UserSchema);

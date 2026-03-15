@@ -282,7 +282,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                     Toutencaisse: toutEncaisse,
                     statutPrescriptionMedecin: 3,
                     DateFacturation: new Date(),
-                    FacturéPar: recuPar,
+                    Caissiere: recuPar,
                     Modepaiement: modePaiement,
                     Montantencaisse: montantEncaisse,
                 }),

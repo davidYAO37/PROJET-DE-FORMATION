@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
 
 // POST /api/facturation - Créer une nouvelle facturation
 export async function POST(req: NextRequest) {
-    
+
     try {
         await db();
         const body = await req.json();
@@ -65,32 +65,32 @@ export async function POST(req: NextRequest) {
         const facturationData: any = {
             ...body
         };
-        
+
         // Gérer les champs ObjectId - ne les inclure que s'ils sont valides
         if (body.IDASSURANCE && body.IDASSURANCE.trim() !== "") {
             facturationData.IDASSURANCE = body.IDASSURANCE;
         } else {
             delete facturationData.IDASSURANCE;
         }
-        
+
         if (body.IDMEDECIN && body.IDMEDECIN.trim() !== "") {
             facturationData.IDMEDECIN = body.IDMEDECIN;
         } else {
             delete facturationData.IDMEDECIN;
         }
-        
-        if (body.IDSOCEITEASSUANCE && body.IDSOCEITEASSUANCE.trim() !== "") {
-            facturationData.IDSOCEITEASSUANCE = body.IDSOCEITEASSUANCE;
+
+        if (body.IDSOCIETEASSURANCE && body.IDSOCIETEASSURANCE.trim() !== "") {
+            facturationData.IDSOCIETEASSURANCE = body.IDSOCIETEASSURANCE;
         } else {
-            delete facturationData.IDSOCEITEASSUANCE;
+            delete facturationData.IDSOCIETEASSURANCE;
         }
-        
+
         if (body.IDPRESCRIPTION && body.IDPRESCRIPTION.trim() !== "") {
             facturationData.IDPRESCRIPTION = body.IDPRESCRIPTION;
         } else {
             delete facturationData.IDPRESCRIPTION;
         }
-        
+
         if (body.IdPatient && body.IdPatient.trim() !== "") {
             facturationData.IdPatient = body.IdPatient;
         } else {
@@ -116,7 +116,7 @@ export async function POST(req: NextRequest) {
 
 // PUT /api/facturation - Mettre à jour une facturation
 export async function PUT(req: NextRequest) {
-    
+
     try {
         await db();
         const body = await req.json();

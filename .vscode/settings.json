@@ -1,4 +1,5 @@
 {
     "codeiumEnterprise.portalUrl": "https://codeium.customer.com",
-    "CodeGPT.apiKey": "CodeGPT Plus Beta"
+    "CodeGPT.apiKey": "Anthropic",
+    "chatgpt.gpt3.provider": "Anthropic"
 }

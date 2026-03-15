@@ -5,6 +5,7 @@ import HospitalisationPageCaisse from "./page";
 interface ExamenHospitalisationModalProps {
     show: boolean;
     onHide: () => void;
+    onSuccess?: () => void;
     CodePrestation?: string;
     Designationtypeacte?: string;
     PatientP?: string;
@@ -18,6 +19,7 @@ interface ExamenHospitalisationModalProps {
 export default function ExamenHospitalisationModalCaisse({
     show,
     onHide,
+    onSuccess,
     CodePrestation = "",
     Designationtypeacte = "",
     PatientP = "",
@@ -30,11 +32,14 @@ export default function ExamenHospitalisationModalCaisse({
 
     const [key, setKey] = useState(0);
 
-    useEffect(() => {
-        if (show) {
-            setKey(prevKey => prevKey + 1);
+    // Fermeture automatique après facturation réussie
+    const handleOnSuccess = () => {
+        if (onSuccess) {
+            onSuccess();
         }
-    }, [show, CodePrestation, Designationtypeacte, examenHospitId]);
+        setKey(prevKey => prevKey + 1);
+        onHide();
+    };
 
     return (
         <Modal
@@ -80,9 +85,10 @@ export default function ExamenHospitalisationModalCaisse({
                         renseignementclinique
                     }}
                     searchParams={{}}
+                    onSuccess={handleOnSuccess}
                 />
             </Modal.Body>
-            
+
             <Modal.Footer>
                 <Button variant="secondary" onClick={onHide}>
                     Annuler

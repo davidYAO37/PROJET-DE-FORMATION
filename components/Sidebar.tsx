@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { Accordion, Button } from 'react-bootstrap';
 import { useState } from 'react';
+import { useAuthUser } from '@/hooks/useAuthUser';
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
+  const { user, loading } = useAuthUser();
 
   return (
     <>
@@ -188,9 +190,21 @@ export default function Sidebar() {
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 <li>
-                  <Link href="/signup" className="sidebar-link-medical d-flex align-items-center">
-                    <i className="bi bi-person-plus-fill me-2 text-dark"></i> Utilisateurs
-                  </Link>
+                  {!loading && user ? (
+                    user.type === 'adminsuper' ? (
+                      <Link href="/signupdev" className="sidebar-link-medical d-flex align-items-center">
+                        <i className="bi bi-person-plus-fill me-2 text-dark"></i> Utilisateurs
+                      </Link>
+                    ) : (
+                      <Link href="/signup" className="sidebar-link-medical d-flex align-items-center">
+                        <i className="bi bi-person-plus-fill me-2 text-dark"></i> Utilisateurs
+                      </Link>
+                    )
+                  ) : (
+                    <Link href="/signup" className="sidebar-link-medical d-flex align-items-center">
+                      <i className="bi bi-person-plus-fill me-2 text-dark"></i> Utilisateurs
+                    </Link>
+                  )}
                 </li>
                 <li>
                   <Link href="/dashboard/parametres/medecin" className="sidebar-link-medical d-flex align-items-center">
@@ -232,11 +246,13 @@ export default function Sidebar() {
                     <i className="bi bi-credit-card-fill me-2 text-primary"></i> Mode Paiement
                   </Link>
                 </li>
-                 <li>
-                  <Link href="/dashboard/parametres/entreprise" className="sidebar-link-medical d-flex align-items-center">
-                    <i className="bi bi-building me-2 text-primary"></i> Gestion entreprise
-                  </Link>
-                </li>
+                 {!loading && user && user.type === 'adminsuper' && (
+                  <li>
+                    <Link href="/dashboard/parametres/entreprise" className="sidebar-link-medical d-flex align-items-center">
+                      <i className="bi bi-building me-2 text-primary"></i> Gestion entreprise
+                    </Link>
+                  </li>
+                 )}
               </ul>
             </Accordion.Body>
           </Accordion.Item>

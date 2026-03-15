@@ -19,7 +19,7 @@ interface Consultation {
     CodePrestation?: string;
     Code_dossier?: string;
     StatutC?: boolean;
-    statutPrescriptionMedecin?: number;
+    StatutPrescriptionMedecin?: number;
     ticket_moderateur?: number;
     Temperature?: string;
     Tension?: string;
@@ -45,12 +45,12 @@ interface Prescription {
 interface PatientPrescription {
     DatePres?: string;
     nomMedicament?: string;
-    QtéP?: number;
-    prixunitaire?: number;
+    QteP?: number; // Corrigé: QteP au lieu de QtéP
+    prixUnitaire?: number; // Corrigé: prixUnitaire au lieu de prixunitaire
     Posologie?: string;
-    PrixTotal?: number;
+    PrixTotal?: number; // Corrigé: PrixTotal au lieu de PrixTotal
     PartAssurance?: number;
-    Partassuré?: number;
+    PartAssure?: number;
     IDMEDICAMENT?: string;
     Reference?: string;
     ExclusionActae?: string;
@@ -137,7 +137,7 @@ export default function InfoPatientPharmAccueil({
             console.log("🔄 Med_Modif() - Suppression de la table existante");
             
             // POUR TOUT PARTIENT_PRESCRIPTION AVEC CodePrestation=gsCodeconsulte
-            const medicamentsUrl = `/api/patientprescriptions?CodePrestation=${encodeURIComponent(codePrestation)}`;
+            const medicamentsUrl = `/api/patientprescription?CodePrestation=${encodeURIComponent(codePrestation)}`;
             console.log("📡 Appel API médicaments prescrits:", medicamentsUrl);
             const medicamentsRes = await fetch(medicamentsUrl);
             
@@ -213,7 +213,6 @@ export default function InfoPatientPharmAccueil({
 
             // SI HTrouve(PARTIENT) ALORS
             if (!patientData || Object.keys(patientData).length === 0) {
-                console.error("❌ Ce patient n'est pas connu");
                 setErrorMessage("Ce patient n'est pas connu");
                 // Vider tous les champs selon la logique WLangage
                 setPatient({
@@ -236,9 +235,8 @@ export default function InfoPatientPharmAccueil({
 
             // SI CONSULTATION.StatutC=Vrai ALORS (vérifier si la consultation est payée)
             // Dans votre code WLangage: SI CONSULTATION.StatutC=Vrai ALORS
-            // Mais selon votre logique, on vérifie si statutPrescriptionMedecin >= 3 OU ticket_moderateur = 0
-            if (consultationData.statutPrescriptionMedecin < 3 && (consultationData.ticket_moderateur || 0) > 0) {
-                console.error("❌ Consultation pas encore payée à la caisse");
+            // Mais selon votre logique, on vérifie si StatutPrescriptionMedecin >= 3 OU ticket_moderateur = 0
+            if (consultationData.StatutPrescriptionMedecin < 3 && (consultationData.ticket_moderateur || 0) > 0) {
                 setErrorMessage("Consultation pas encore payée à la caisse");
                 resetForm();
                 return;
@@ -286,7 +284,6 @@ export default function InfoPatientPharmAccueil({
             let prescriptionData: Prescription & { Rclinique?: string } = {};
             try {
                 const prescriptionUrl = `/api/prescription?CodePrestation=${encodeURIComponent(code)}`;
-                console.log("📡 Appel API prescription:", prescriptionUrl);
                 const prescriptionRes = await fetch(prescriptionUrl);
                 
                 if (prescriptionRes.ok) {
@@ -311,10 +308,7 @@ export default function InfoPatientPharmAccueil({
             setConsultation(updatedConsultation);
             setPrescription(prescriptionData);
 
-            console.log("✅ Recherche terminée avec succès");
-
         } catch (error: any) {
-            console.error("❌ Erreur générale loadConsultationData:", error);
             setErrorMessage("Une erreur est survenue lors de la recherche. Veuillez réessayer.");
             resetForm();
         } finally {
@@ -358,11 +352,9 @@ export default function InfoPatientPharmAccueil({
                         <Button 
                             variant={patient && Object.keys(patient).length > 0 ? "success" : "outline-primary"}
                             onClick={() => {                             
-                                if (codePrestation.trim() === "") {
-                                    console.log("⚠️ Champ vide - affichage erreur");
+                                    if (codePrestation.trim() === "") {    
                                     setErrorMessage("Veuillez saisir un code prestation");
                                 } else {
-                                    console.log("🚀 Lancement recherche manuelle");
                                     loadConsultationData(codePrestation);
                                 }
                             }}

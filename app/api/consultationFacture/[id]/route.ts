@@ -107,7 +107,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.Toutencaisse = toutEncaisse; // True si Restapayer = 0
         consultation.statutPrescriptionMedecin = 3;
         consultation.DateFacturation = data.DateFacturation || new Date();
-        consultation.FacturéPar = data.FacturéPar || data.Recupar || "";
+        consultation.Caissiere = data.Caissiere || data.Recupar || "";
         consultation.Modepaiement = data.Modepaiement || "Espèce";
         consultation.Montantencaisse = data.Montantencaisse || 0;
         consultation.StatutPaiement = toutEncaisse ? "En cours de Paiement" : "Pas facturé";
