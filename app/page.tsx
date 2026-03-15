@@ -15,6 +15,47 @@ export default function Home() {
   const [sent, setSent] = useState(false);
   // État pour erreur
   const [error, setError] = useState<string | null>(null);
+  // État pour la création du super admin
+  const [creatingSuperAdmin, setCreatingSuperAdmin] = useState(false);
+
+  // Fonction pour créer le super admin si nécessaire
+  const createSuperAdminIfNeeded = async () => {
+    setCreatingSuperAdmin(true);
+    try {
+      // Vérifier si le super admin existe déjà
+      const checkResponse = await fetch('/api/check-users');
+      const checkData = await checkResponse.json();
+      
+      if (checkData.userCount === 0) {
+        console.log("🚀 Création du super admin...");
+        // Créer le super admin avec UID temporaire
+        const createResponse = await fetch('/api/check-users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (createResponse.ok) {
+          const createData = await createResponse.json();
+          console.log("✅ Super admin créé:", createData.message);
+        } else {
+          console.error("❌ Erreur lors de la création du super admin");
+        }
+      } else {
+        console.log("ℹ️ Le super admin existe déjà");
+      }
+    } catch (error) {
+      console.error("❌ Erreur lors de la vérification/création du super admin:", error);
+    } finally {
+      setCreatingSuperAdmin(false);
+    }
+  };
+
+  // Fonction pour gérer le clic sur "Accéder à mon espace"
+  const handleAccessSpace = async () => {
+    await createSuperAdminIfNeeded();
+    // Rediriger vers la page de connexion
+    window.location.href = '/connexion';
+  };
 
   // Fonction pour scroller vers une section donnée
   const scrollToSection = (id: string) => {
@@ -143,18 +184,17 @@ export default function Home() {
                   </span>
                 </div>
 
-                {/* --- Bouton d’accès --- */}
-                <Link href="/connexion" className="text-decoration-none">
-                  <Button
-                    variant="success"
-                    size="lg"
-                    className="shadow-lg px-4 py-2 fw-bold"
-                    disabled={sending}
-                  >
-                    {sending && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />}
-                    Accéder à mon espace
-                  </Button>
-                </Link>
+                {/* --- Bouton d'accès --- */}
+                <Button
+                  variant="success"
+                  size="lg"
+                  className="shadow-lg px-4 py-2 fw-bold"
+                  disabled={sending || creatingSuperAdmin}
+                  onClick={handleAccessSpace}
+                >
+                  {(sending || creatingSuperAdmin) && <Spinner as="span" animation="border" size="sm" role="status" aria-hidden="true" className="me-2" />}
+                  {creatingSuperAdmin ? 'Configuration en cours...' : 'Accéder à mon espace'}
+                </Button>
               </div>
             </Col>
           </Row>
