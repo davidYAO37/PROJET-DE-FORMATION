@@ -195,19 +195,9 @@ export default function ListeConsultationsModalCaisse({ show, onHide, patientId 
                     {selectedConsult && <div ref={recuRef}><RecuConsultationPrint consultation={selectedConsult} /></div>}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="primary" onClick={() => {
-                        if (recuRef.current) {
-                            const printContents = recuRef.current.innerHTML;
-                            const printWindow = window.open('', '', 'height=800,width=900');
-                            if (printWindow) {
-                                printWindow.document.write('<html><head><title>Reçu consultation</title></head><body>' + printContents + '</body></html>');
-                                printWindow.document.close();
-                                printWindow.focus();
-                                printWindow.print();
-                                printWindow.close();
-                            }
-                        }
-                    }}>Imprimer</Button>
+                    <Button variant="secondary" onClick={() => setShowRecu(false)}>
+                        Fermer
+                    </Button>
                 </Modal.Footer>
             </Modal>
 

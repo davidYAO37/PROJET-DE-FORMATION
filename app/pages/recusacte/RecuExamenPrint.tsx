@@ -2,6 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { Spinner, Table, Button, Row, Col } from "react-bootstrap";
+import { useEntreprise } from "@/hooks/useEntreprise";
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader, extractContentWithoutHeaderAndFooter } from "@/utils/printRecu";
 
 interface LignePrestation {
   _id: string;
@@ -51,6 +53,8 @@ interface Patient {
 }
 
 interface Facturation {
+  _id?: string;
+  idFacturation?: string;
   CodePrestation?: string;
   DateFacturation?: string;
   Modepaiement?: string;
@@ -85,6 +89,7 @@ export default function RecuExamenPrint({ params }: { params: { id: string } }) 
   const [facturation, setFacturation] = useState<Facturation | null>(null);
   const [lignes, setLignes] = useState<LignePrestation[]>([]);
   const [patientPrescriptions, setPatientPrescriptions] = useState<PatientPrescription[]>([]);
+  const { entreprise } = useEntreprise();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -117,7 +122,24 @@ if (params.id) {
   }, [params.id]);
 
   const handlePrint = () => {
-    window.print();
+    const printContent = document.getElementById('print-content');
+    if (!printContent) return;
+    
+    const headerHTML = generatePrintHeader(entreprise);
+    const footerHTML = generatePrintFooter(entreprise);
+    const restContent = extractContentWithoutHeaderAndFooter(printContent.innerHTML);
+    
+    createPrintWindow('Reçu Examens', headerHTML, restContent, footerHTML);
+  };
+
+  const handlePrintWithoutHeader = () => {
+    const printContent = document.getElementById('print-content');
+    if (!printContent) return;
+    
+    // Extraire le contenu sans header ni footer pour l'impression sans entête
+    const restContent = extractContentWithoutHeaderAndFooter(printContent.innerHTML);
+    
+    createPrintWindowWithoutHeader('Reçu Examens (sans entête)', restContent);
   };
 
   if (loading) {
@@ -130,7 +152,23 @@ if (params.id) {
 
   if (!patient || !facturation) return null;
 
- 
+  // Fonction pour convertir l'ID MongoDB en format court
+  const formatFactureId = (id?: string) => {
+    if (!id) return '';
+    try {
+      // Prendre les 6 derniers caractères de l'ID et convertir en nombre
+      const lastChars = id.slice(-6);
+      const num = parseInt(lastChars, 16); // Convertir hexadécimal en décimal
+      return (num % 10000).toString(); // Limiter à 4 chiffres max
+    } catch (error) {
+      console.error('Erreur formatFactureId:', error, 'ID:', id);
+      return id.slice(-4); // Fallback: prendre les 4 derniers caractères
+    }
+  };
+
+  // Debug pour vérifier si l'ID est disponible
+  console.log('Facturation ID:', facturation?.idFacturation);
+  console.log('Formatted ID:', formatFactureId(facturation?.idFacturation));
 
   const totalPrix = lignes.reduce(
     (s, l) => s + (l.PrixTotal || 0),
@@ -139,19 +177,23 @@ if (params.id) {
 
   return (
     <>
-      {/* ===== BOUTON (non imprimé) ===== */}
+      {/* ===== BOUTONS (non imprimés) ===== */}
       <div className="text-end mb-3 no-print">
-        <Button variant="primary" onClick={handlePrint}>
-          🖨️ Imprimer le reçu
+        <Button variant="primary" onClick={handlePrint} className="me-2">
+          🖨️ Imprimer le reçu avec entête
+        </Button>
+        <Button variant="secondary" onClick={handlePrintWithoutHeader}>
+          📄 Imprimer le reçu sans entête
         </Button>
       </div>
 
       {/* ===== ZONE IMPRIMABLE ===== */}
-      <div className="print-area p-4 text-dark" style={{ fontSize: "13px" }}>
-        {/* EN-TÊTE */}
+      <div id="print-content" className="print-area p-4 text-dark" style={{ fontSize: "13px" }}>
+        {/* L'en-tête sera généré dynamiquement dans la fonction d'impression */}
         <div className="text-center mb-3">
-          <h5 className="fw-bold">CENTRE MÉDICAL</h5>
-          <div className="fw-bold">REÇU D’EXAMENS</div>
+          <div className="fw-bold" style={{ fontSize: 18, color: '#333' }}>
+            REÇU D'EXAMENS - {formatFactureId(facturation?.idFacturation)}
+          </div>
         </div>      
 
         {/* INFOS PATIENT */}
@@ -272,7 +314,7 @@ if (params.id) {
             </tbody>
           </Table>
         ) : (
-          // Tableau normal pour les examens
+          // Tableau normal pour les actes
           <Table bordered size="sm">
             <thead className="text-center">
               <tr>
@@ -359,19 +401,14 @@ if (params.id) {
           </Row>
 
         <div className="mt-3">
-          
-
-            
         </div>
           <hr />
-
-          
-
         {/* FOOTER */}
         <div className="text-center mt-4">
           <div>
-            <span className="fw-bold fs-6">Merci pour votre confiance</span> <br /><small>Imprimé par : {typeof window !== 'undefined' ? localStorage.getItem('nom_utilisateur') || "Utilisateur inconnu" : "Chargement..."} le : {new Date().toLocaleString()}</small>
-         </div>
+            <span className="fw-bold fs-6">Merci pour votre confiance</span> <br />
+            <small>Imprimé par : {typeof window !== 'undefined' ? localStorage.getItem('nom_utilisateur') || "Utilisateur inconnu" : "Chargement..."} le : {new Date().toLocaleString()}</small>
+          </div>
         </div>
       </div>
 

@@ -1,4 +1,7 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
+import { Button } from 'react-bootstrap';
+import { useEntreprise } from "@/hooks/useEntreprise";
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader, extractContentWithoutHeaderAndFooter } from "@/utils/printRecu";
 
 interface RecuConsultationPrintProps {
     consultation: any;
@@ -56,12 +59,51 @@ const styles = {
 };
 
 const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintProps>(({ consultation }, ref) => {
+    const { entreprise } = useEntreprise();
+
+    const handlePrint = () => {
+        const printContent = document.getElementById('print-content');
+        if (!printContent) return;
+        
+        const headerHTML = generatePrintHeader(entreprise);
+        const footerHTML = generatePrintFooter(entreprise);
+        const restContent = extractContentWithoutHeaderAndFooter(printContent.innerHTML);
+        
+        createPrintWindow('Reçu Consultation', headerHTML, restContent, footerHTML);
+    };
+
+    const handlePrintWithoutHeader = () => {
+        const printContent = document.getElementById('print-content');
+        if (!printContent) return;
+        
+        // Extraire le contenu sans header ni footer pour l'impression sans entête
+        const restContent = extractContentWithoutHeaderAndFooter(printContent.innerHTML);
+        
+        createPrintWindowWithoutHeader('Reçu Consultation (sans entête)', restContent);
+    };
+
     if (!consultation) return null;
     return (
-        <div ref={ref} style={styles.container}>
-            <div style={styles.header}>
-                <div>CLINIQUE<br />ANDROLOGIE- UROLOGIE<br />SEXOLOGIE</div>                
+        <>
+            {/* ===== BOUTONS (non imprimés) ===== */}
+            <div className="text-end mb-3 no-print">
+                <Button variant="primary" onClick={handlePrint} className="me-2">
+                    🖨️ Imprimer le reçu avec entête
+                </Button>
+                <Button variant="secondary" onClick={handlePrintWithoutHeader}>
+                    📄 Imprimer le reçu sans entête
+                </Button>
             </div>
+
+            {/* ===== ZONE IMPRIMABLE ===== */}
+            <div id="print-content" ref={ref} style={styles.container}>
+            {/* L'en-tête sera généré dynamiquement dans la fonction d'impression */}
+            {/* EN-TÊTE STATIQUE (uniquement si pas de données entreprise) */}
+            {!entreprise?.LogoE && !entreprise?.EnteteSociete && (
+                <div style={styles.header}>
+                                   
+                </div>
+            )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <div>
                     <div className="d-flex space-between">
@@ -99,13 +141,21 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
                     </tr>
                 </tbody>
             </table>
-            <div style={styles.info}>Surplus Patient {consultation.ReliquatPatient || 0} &nbsp; Reste à payer {consultation.Restapayer || 0} &nbsp; {consultation.assurance}</div>
-            <div className="d-flex" style={styles.footer}>
-                <div>Imprimé par: {consultation.Recupar} Le {new Date().toLocaleDateString()} A {new Date().toLocaleTimeString()}</div>
-               &nbsp;&nbsp;&nbsp; <div><b>Valable pour 15 jours</b></div>  
+            {/* Total */}
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
+                <div style={styles.info}>Surplus patient : {consultation.totalsurplus?.toLocaleString() || 0} FCFA</div>
+                <div style={styles.info}>Reste à payer : {consultation.resteapayer?.toLocaleString() || 0} FCFA</div>
+                <div style={styles.info}>Société patient : {consultation.SOCIETE_PATIENT || 'N/A'}</div>
             </div>
+             <div className="text-center mt-4">
+          <div>
+            <span className="fw-bold fs-6">Merci pour votre confiance</span> <br />
+            <small>Imprimé par : {typeof window !== 'undefined' ? localStorage.getItem('nom_utilisateur') || "Utilisateur inconnu" : "Chargement..."} le : {new Date().toLocaleString()}</small>
+          </div>
+        </div>
             
         </div>
+        </>
     );
 });
 

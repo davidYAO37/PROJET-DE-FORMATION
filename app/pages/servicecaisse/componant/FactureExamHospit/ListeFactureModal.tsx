@@ -72,6 +72,20 @@ export default function ListeFactureModal({
         fetchFactures();
     }, [show, idHospitalisation]);
 
+    // Fonction pour convertir l'ID MongoDB en format court
+    const formatFactureId = (id?: string) => {
+        if (!id) return '';
+        try {
+            // Prendre les 6 derniers caractères de l'ID et convertir en nombre
+            const lastChars = id.slice(-6);
+            const num = parseInt(lastChars, 16); // Convertir hexadécimal en décimal
+            return (num % 10000).toString(); // Limiter à 4 chiffres max
+        } catch (error) {
+            console.error('Erreur formatFactureId:', error, 'ID:', id);
+            return id.slice(-4); // Fallback: prendre les 4 derniers caractères
+        }
+    };
+
     const handlePrintFacture = (factureId: string) => {
         setSelectedFactureId(factureId);
         setShowRecuModal(true);
@@ -135,7 +149,7 @@ export default function ListeFactureModal({
                             <tbody>
                                {factures.map((facture) => (
                 <tr key={facture._id}>
-                    <td>{facture.CodePrestation || 'N/A'}</td>
+                    <td>{formatFactureId(facture._id)}</td>
                     <td>{facture.DatePres ? new Date(facture.DatePres).toLocaleDateString() : 'N/A'}</td>
                     <td>{facture.PatientP}</td>
                     <td>{facture.Designationtypeacte}</td>

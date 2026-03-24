@@ -7,6 +7,7 @@ import TableMedicaments, { IMedicament, ILigneMedicament } from "./TableMedicame
 import ModePaiement from "./ModePaiement";
 import ValidationPaiement from "./ValidationPaiement";
 import { PrescriptionForm } from "@/types/Prescription";
+import RecuPharmaciePrint from "@/app/pages/recusacte/RecuPharmaciePrint";
 
 // Types pour la validation
 type ValidationResult = {
@@ -111,15 +112,34 @@ export default function PharmacieCaisseModal({
   const [modePaiement, setModePaiement] = useState("");
   const [montantEncaisse, setMontantEncaisse] = useState(0);
 
+  // États pour la modal du reçu
+  const [showRecuModal, setShowRecuModal] = useState(false);
+  const [recuFacturation, setRecuFacturation] = useState<any>(null);
+  const [recuLignes, setRecuLignes] = useState<any[]>([]);
+
   // Simulation utilisateur (à remplacer par l'utilisateur réel)
   const currentUser = localStorage.getItem("nom_utilisateur");
 
   const isObjectId = (value?: string) => typeof value === "string" && /^[a-f\\d]{24}$/i.test(value);
 
-  const imprimerRecuPharmacie = (facturationId: string) => {
-    // Équivalent Web de iInitRequêteEtat/iImprimeEtat : on ouvre une page imprimable dédiée.
-    const url = `/pages/servicecaisse/recu-pharmacie?facturationId=${encodeURIComponent(facturationId)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+  const afficherRecuPharmacie = async (facturationId: string) => {
+    try {
+      // Utiliser la nouvelle API recu-pharmacie pour récupérer toutes les données
+      const response = await fetch(`/api/recu-pharmacie/${facturationId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Erreur lors du chargement du reçu pharmacie');
+      }
+
+      const data = await response.json();
+      
+      setRecuFacturation(data.facturation);
+      setRecuLignes(data.lignes);
+      setShowRecuModal(true);
+    } catch (error) {
+      console.error('Erreur lors du chargement du reçu:', error);
+    }
   };
 
   // État pour le formulaire de paiement (remise + motif notamment)
@@ -896,7 +916,7 @@ export default function PharmacieCaisseModal({
     try {
       const { facturationId, prescriptionId } = await handlePaiementValide();
       console.log("✅ Paiement terminé. Prescription:", prescriptionId, "Facturation:", facturationId);
-      imprimerRecuPharmacie(facturationId);
+      afficherRecuPharmacie(facturationId);
       return { success: true };
     } catch (e: any) {
       const msg = e?.message || "Erreur lors du traitement du paiement";
@@ -1007,6 +1027,41 @@ export default function PharmacieCaisseModal({
         <Modal.Footer>
           <Button variant="secondary" onClick={onHide}>
             Annuler
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal pour afficher le reçu pharmacie */}
+      <Modal
+        show={showRecuModal}
+        onHide={() => {
+          setShowRecuModal(false);
+          setRecuFacturation(null);
+          setRecuLignes([]);
+        }}
+        size="xl"
+        centered
+        fullscreen="lg-down"
+      >
+        <Modal.Header closeButton>
+          <Modal.Title>Reçu de pharmacie</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ minHeight: '80vh' }}>
+          {recuFacturation && (
+            <RecuPharmaciePrint
+              facturation={recuFacturation}
+              lignes={recuLignes}
+            />
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => {
+            setShowRecuModal(false);
+            setRecuFacturation(null);
+            setRecuLignes([]);
+            onHide(); // Fermer aussi la modal principale
+          }}>
+            Fermer
           </Button>
         </Modal.Footer>
       </Modal>

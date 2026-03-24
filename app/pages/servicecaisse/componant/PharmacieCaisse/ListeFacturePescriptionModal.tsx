@@ -68,22 +68,35 @@ export default function ListeFactureModal({
         fetchFactures();
     }, [show, IDPRESCRIPTION]);
 
+    // Fonction pour convertir l'ID MongoDB en format court
+    const formatFactureId = (id?: string) => {
+        if (!id) return '';
+        try {
+            // Prendre les 6 derniers caractères de l'ID et convertir en nombre
+            const lastChars = id.slice(-6);
+            const num = parseInt(lastChars, 16); // Convertir hexadécimal en décimal
+            return (num % 10000).toString(); // Limiter à 4 chiffres max
+        } catch (error) {
+            console.error('Erreur formatFactureId:', error, 'ID:', id);
+            return id.slice(-4); // Fallback: prendre les 4 derniers caractères
+        }
+    };
+
     const handlePrintFacture = async (factureId: string) => {
         try {
-            // Récupérer les données de facturation
-            const factureResponse = await fetch(`/api/facturation?id=${factureId}`);
-            if (!factureResponse.ok) {
-                throw new Error('Erreur lors du chargement de la facturation');
+            // Utiliser la nouvelle API recu-pharmacie pour récupérer toutes les données
+            const response = await fetch(`/api/recu-pharmacie/${factureId}`);
+            
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                throw new Error(errorData.error || 'Erreur lors du chargement du reçu pharmacie');
             }
-            const factureData = await factureResponse.json();
 
-            // Récupérer les lignes de prescription
-            const lignesResponse = await fetch(`/api/patientprescriptionFacture?IDPRESCRIPTION=${IDPRESCRIPTION}&CodePrestation=${factureData.CodePrestation}`);
-            const lignesData = lignesResponse.ok ? await lignesResponse.json() : [];
-
+            const data = await response.json();
+            
             setSelectedFactureId(factureId);
-            setSelectedFacture(factureData);
-            setFactureLignes(lignesData);
+            setSelectedFacture(data.facturation);
+            setFactureLignes(data.lignes);
             setShowRecuModal(true);
         } catch (error) {
             console.error('Erreur lors du chargement des données:', error);
@@ -151,7 +164,7 @@ export default function ListeFactureModal({
                                 <tbody>
                                     {factures.map((facture) => (
                                         <tr key={facture._id}>
-                                            <td>{facture.CodePrestation || 'N/A'}</td>
+                                            <td>{formatFactureId(facture._id)}</td>
                                             <td>{facture.DatePres ? new Date(facture.DatePres).toLocaleDateString() : 'N/A'}</td>
                                             <td>{facture.PatientP}</td>
                                             <td>{facture.Designationtypeacte}</td>
