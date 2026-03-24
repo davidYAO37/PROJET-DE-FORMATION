@@ -14,43 +14,55 @@ export default function Caisse() {
   const [prescriptions, setPrescriptions] = useState([]);
   const [facturesNonSoldées, setFacturesNonSoldées] = useState([]);
 
+  // Fonction pour recharger les données
+  const rechargerDonnées = async () => {
+    try {
+      // Charger les consultations
+      const consultationsResponse = await fetch('/api/consultationFacture/consultAttentePaiement');
+      if (consultationsResponse.ok) {
+        const consultationsData = await consultationsResponse.json();
+        setConsultations(consultationsData || []);
+      }
+
+      // Charger les prestations
+      const prestationsResponse = await fetch('/api/consultationFacture/prestationAttentePaiement');
+      if (prestationsResponse.ok) {
+        const prestationsData = await prestationsResponse.json();
+        setPrestations(prestationsData || []);
+      }
+
+      // Charger les prescriptions
+      const prescriptionsResponse = await fetch('/api/consultationFacture/prescriptionAttentePaiement');
+      if (prescriptionsResponse.ok) {
+        const prescriptionsData = await prescriptionsResponse.json();
+        setPrescriptions(prescriptionsData || []);
+      }
+
+      // Charger les factures non soldées
+      const facturesResponse = await fetch('/api/facturesnonsoldees');
+      if (facturesResponse.ok) {
+        const facturesData = await facturesResponse.json();
+        setFacturesNonSoldées(facturesData.data || facturesData || []);
+      }
+    } catch (error) {
+      console.error('Erreur de chargement:', error);
+    }
+  };
+
+  // Rendre la fonction accessible globalement pour la sidebar
+  useEffect(() => {
+    // Stocker la fonction de rechargement dans une variable globale
+    (window as any).rechargerCompteursCaisse = rechargerDonnées;
+    
+    return () => {
+      // Nettoyer lors du démontage
+      delete (window as any).rechargerCompteursCaisse;
+    };
+  }, []);
+
   // Charger les données pour les compteurs
   useEffect(() => {
-    const chargerDonnées = async () => {
-      try {
-        // Charger les consultations
-        const consultationsResponse = await fetch('/api/consultations');
-        if (consultationsResponse.ok) {
-          const consultationsData = await consultationsResponse.json();
-          setConsultations(consultationsData.data || []);
-        }
-
-        // Charger les prestations
-        const prestationsResponse = await fetch('/api/prestations');
-        if (prestationsResponse.ok) {
-          const prestationsData = await prestationsResponse.json();
-          setPrestations(prestationsData.data || []);
-        }
-
-        // Charger les prescriptions
-        const prescriptionsResponse = await fetch('/api/prescriptions');
-        if (prescriptionsResponse.ok) {
-          const prescriptionsData = await prescriptionsResponse.json();
-          setPrescriptions(prescriptionsData.data || []);
-        }
-
-        // Charger les factures non soldées
-        const facturesResponse = await fetch('/api/factures-non-soldees');
-        if (facturesResponse.ok) {
-          const facturesData = await facturesResponse.json();
-          setFacturesNonSoldées(facturesData.data || []);
-        }
-      } catch (error) {
-        console.error('Erreur de chargement:', error);
-      }
-    };
-
-    chargerDonnées();
+    rechargerDonnées();
   }, []);
 
   // Styles CSS pour les cartes

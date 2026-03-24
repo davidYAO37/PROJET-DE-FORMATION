@@ -126,7 +126,7 @@ export default function DashboardPage() {
                     <div className="mb-3">
                       <FaUserMd size={48} className="mb-3" />
                     </div>
-                    <Card.Title className="text-white mb-2">Utilisateur</Card.Title>
+                    <Card.Title className="text-white mb-2"></Card.Title>
                     <div>
                       <Badge bg="light" text="dark" className="fs-6" style={{ fontSize: '1.2rem !important', padding: '0.5rem 1rem !important' }}>
                         {stats.utilisateurConnecte}

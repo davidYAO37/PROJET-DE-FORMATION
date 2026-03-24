@@ -69,9 +69,45 @@ export default function Sidebarcaisse() {
     return () => clearInterval(interval);
   }, []);
 
+  // Fonction de rechargement locale pour la sidebar
+  const rechargerCompteursLocaux = async () => {
+    try {
+      // Récupérer les consultations en attente
+      const consultRes = await fetch('/api/consultationFacture/consultAttentePaiement');
+      const consultations = consultRes.ok ? await consultRes.json() : [];
+
+      // Récupérer les prestations en attente
+      const prestRes = await fetch('/api/consultationFacture/prestationAttentePaiement');
+      const prestations = prestRes.ok ? await prestRes.json() : [];
+
+      // Récupérer les prescriptions en attente
+      const prescRes = await fetch('/api/consultationFacture/prescriptionAttentePaiement');
+      const prescriptions = prescRes.ok ? await prescRes.json() : [];
+
+      // Calculer le total
+      const totalCount = 
+        (Array.isArray(consultations) ? consultations.length : 0) +
+        (Array.isArray(prestations) ? prestations.length : 0) +
+        (Array.isArray(prescriptions) ? prescriptions.length : 0);
+
+      setFacturesEnAttenteCount(totalCount);
+
+      // Appeler la fonction globale si elle existe (pour la page tcaisse)
+      if (typeof window !== 'undefined' && (window as any).rechargerCompteursCaisse) {
+        (window as any).rechargerCompteursCaisse();
+      }
+    } catch (error) {
+      console.error('Erreur lors du rechargement des compteurs:', error);
+    }
+  };
+
 
   // Ferme la sidebar quand on clique sur un lien (mobile)
-  const handleLinkClick = () => setOpen(false);
+  const handleLinkClick = () => {
+    setOpen(false);
+    // Recharger les compteurs locaux de la sidebar
+    rechargerCompteursLocaux();
+  };
 
   // ouvre le modal de saisir une facture et ferme la sidebar en mobile
   const handleFactureClick = () => {
