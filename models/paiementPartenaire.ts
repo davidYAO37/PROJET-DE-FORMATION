@@ -11,6 +11,7 @@ export interface IPaiementPartenaire extends Document {
     FactureAssur?: Types.ObjectId;
     NumChèque?: string;
     BanqueC?: string;
+    entrepriseId?: string;
 }
 
 const PaiementPartenaireSchema = new Schema<IPaiementPartenaire>({
@@ -24,6 +25,7 @@ const PaiementPartenaireSchema = new Schema<IPaiementPartenaire>({
     FactureAssur: { type: Schema.Types.ObjectId, ref: 'FactureAssur' },
     NumChèque: { type: String, maxlength: 50 },
     BanqueC: { type: String, maxlength: 50 },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 
 export const PaiementPartenaire: Model<IPaiementPartenaire> = mongoose.models.PaiementPartenaire || mongoose.model<IPaiementPartenaire>('PaiementPartenaire', PaiementPartenaireSchema);

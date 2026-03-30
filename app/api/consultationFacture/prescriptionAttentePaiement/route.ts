@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
-import { Medecin } from "@/models/medecin";          // ✅ OBLIGATOIRE
-import { Patient } from "@/models/patient";          // ✅ pour PatientRef
 import { Prescription } from "@/models/Prescription";
-//import { Prescription } from "@/models/prescription"; // ✅ pour Prescription populate
 
 export async function GET(req: NextRequest) {
     await db();
@@ -13,40 +10,27 @@ export async function GET(req: NextRequest) {
         const statut = searchParams.get('statut');
         const paye = searchParams.get('paye');
 
-        // Filtre initial selon la logique spécifiée
-        // Cas 1: StatuPrescriptionMedecin=2 et Payéoupas=faux
-        // Cas 2: StatuPrescriptionMedecin<=2 et Payéoupas=vrai
+        // Filtre initial pour récupérer les prescriptions en attente de paiement
+        // StatuPrescriptionMedecin = 2 (non facturé) ET Payéoupas = false (non payé)
         const filter: any = {
-            $or: [
-                // Cas 1: StatuPrescriptionMedecin=2 et Payéoupas=faux
-                {
-                    StatuPrescriptionMedecin: statut ? parseInt(statut) : 2,
-                    Payéoupas: { $ne: true }
-                },
-                // Cas 2: StatuPrescriptionMedecin<=2 et Payéoupas=vrai
-                {
-                    StatuPrescriptionMedecin: { $lte: statut ? parseInt(statut) : 2 },
-                    Payéoupas: true
-                }
-            ]
+            StatuPrescriptionMedecin: statut ? parseInt(statut) : 2,
+            Payéoupas: { $ne: true }
         };
-        // Si paye est spécifié, on filtre en conséquence
-        if (paye === 'true') {
-            // Uniquement les prescriptions payées avec StatuPrescriptionMedecin<=2
-            filter.$or = [
-                {
-                    StatuPrescriptionMedecin: { $lte: statut ? parseInt(statut) : 2 },
-                    Payéoupas: true
-                }
-            ];
-        } else if (paye === 'false' || paye === null) {
-            // Uniquement les prescriptions non payées avec StatuPrescriptionMedecin=2
-            filter.$or = [
-                {
-                    StatuPrescriptionMedecin: statut ? parseInt(statut) : 2,
-                    Payéoupas: { $ne: true }
-                }
-            ];
+
+        // Si un statut spécifique est fourni dans la requête
+        if (statut) {
+            filter.StatuPrescriptionMedecin = parseInt(statut);
+        }
+
+        // Filtre supplémentaire si paye est spécifié
+        if (paye !== null) {
+            if (paye === 'true') {
+                // Uniquement les prescriptions payées
+                filter.Payéoupas = true;
+            } else if (paye === 'false') {
+                // Uniquement les prescriptions non payées
+                filter.Payéoupas = { $ne: true };
+            }
         }
 
         const prescriptions = await Prescription.find(filter)
@@ -55,32 +39,50 @@ export async function GET(req: NextRequest) {
                 select: 'nom',
                 model: 'Medecin'
             })
+            .populate({
+                path: 'IdPatient',
+                select: 'Nom Prenoms',
+                model: 'Patient'
+            })
             .sort({ DatePres: -1 })
             .lean();
 
-        const result = prescriptions.map((p: any) => ({
-            id: p._id,
-            code: p.CodePrestation || "N/A",
-            patient: p.PatientP || "Patient inconnu",
-            designation: p.Designation || "PHARMACIE",
-            // Calcul du montant selon la logique : TotalapayerPatient ou Montanttotal
-            montant: Number(p.TotalapayerPatient || p.Montanttotal || 0),
-            medecin: p.NomMed || (p.IDMEDECIN ? p.IDMEDECIN.nom : ""),
-            assure: p.Assurance || "Non assuré",
-            statut: p.StatuPrescriptionMedecin || 0,
-            date: p.DatePres ? new Date(p.DatePres).toLocaleDateString() : "Date inconnue",
-            type: "PRESCRIPTION",
-            // Ajout des champs supplémentaires pour cohérence
-            Payéoupas: p.Payéoupas || false,
-            StatutPaiement: p.StatutPaiement || "En cours de Paiement",
-            Rclinique: p.Rclinique || ""
-        }));
+        const result = prescriptions.map((p: any) => {
+            try {
+                return {
+                    id: p._id?.toString() || "",
+                    code: p.CodePrestation || "N/A",
+                    patient: p.PatientP || (p.IdPatient ? `${p.IdPatient?.Nom || ''} ${p.IdPatient?.Prenoms || ''}`.trim() : "Patient inconnu"),
+                    designation: p.Designation || "PHARMACIE",
+                    // Calcul du montant selon la logique : TotalapayerPatient ou Montanttotal
+                    montant: Number(p.TotalapayerPatient || p.Montanttotal || 0),
+                    medecin: p.NomMed || (p.IDMEDECIN ? p.IDMEDECIN?.nom : ""),
+                    assure: p.Assurance || "Non assuré",
+                    statut: p.StatuPrescriptionMedecin || 0,
+                    date: p.DatePres ? new Date(p.DatePres).toLocaleDateString() : "Date inconnue",
+                    type: "PRESCRIPTION",
+                    // Ajout des champs supplémentaires pour cohérence
+                    Payéoupas: p.Payéoupas || false,
+                    StatutPaiement: p.StatutPaiement || "En cours de Paiement",
+                    Rclinique: p.Rclinique || ""
+                };
+            } catch (mapError) {
+                console.error("Erreur lors du mapping d'une prescription:", mapError);
+                return null;
+            }
+        }).filter(Boolean);
 
         return NextResponse.json(result);
+
     } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'Erreur inconnue';
         console.error("Erreur lors du chargement des prescriptions:", err);
         return NextResponse.json(
-            { error: "Une erreur est survenue lors du chargement des prescriptions" },
+            { 
+                error: "Une erreur est survenue lors du chargement des prescriptions",
+                details: process.env.NODE_ENV === 'development' ? errorMessage : undefined,
+                data: [] // Retourner un tableau vide en cas d'erreur
+            },
             { status: 500 }
         );
     }

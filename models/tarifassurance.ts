@@ -8,6 +8,7 @@ export interface ITarifAssurance extends Document {
   prixmutuel: number;
   prixpreferenciel: number;
   assurance: mongoose.Types.ObjectId;
+  entrepriseId?: string;
 }
 
 const TarifAssuranceSchema = new Schema<ITarifAssurance>(
@@ -19,6 +20,7 @@ const TarifAssuranceSchema = new Schema<ITarifAssurance>(
     prixmutuel: { type: Number, required: true },
     prixpreferenciel: { type: Number, required: true },
     assurance: { type: Schema.Types.ObjectId, ref: "Assurance", required: true },
+    entrepriseId: { type: String },
   },
   { timestamps: true }
 );

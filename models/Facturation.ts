@@ -21,7 +21,7 @@ export interface IFacturation extends Document {
     PartAssuranceP?: number;
     Partassure?: number;
     Taux?: string;
-    Assurance?: Types.ObjectId;
+    Assurance?: string;
     IDTYPE_ACTE?: string
     FacturePar?: string;
     CompteClient?: boolean;
@@ -96,7 +96,7 @@ export interface IFacturation extends Document {
     IdPatient?: Types.ObjectId;
     IDASSURANCE?: Types.ObjectId;
     IDMEDECIN?: Types.ObjectId;
-
+    entrepriseId?: string;
 }
 
 const FacturationSchema = new Schema<IFacturation>(
@@ -120,7 +120,7 @@ const FacturationSchema = new Schema<IFacturation>(
         PartAssuranceP: { type: Number },
         Partassure: { type: Number },
         Taux: { type: String, maxlength: 4 },
-        Assurance: { type: Schema.Types.ObjectId, ref: 'Assurance', required: false },
+        Assurance: { type: String },
         IDTYPE_ACTE: { type: String },
         FacturePar: { type: String, maxlength: 50 },
         CompteClient: { type: Boolean },
@@ -195,6 +195,7 @@ const FacturationSchema = new Schema<IFacturation>(
         IdPatient: { type: Schema.Types.ObjectId, ref: 'Patient', required: false },
         IDASSURANCE: { type: Schema.Types.ObjectId, ref: 'Assurance', required: false },
         IDMEDECIN: { type: Schema.Types.ObjectId, ref: 'Medecin', required: false },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

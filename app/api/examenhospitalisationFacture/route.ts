@@ -81,6 +81,12 @@ export async function POST(req: NextRequest) {
         await db();
         const body = await req.json();
         const { header, lignes, Recupar } = body || {};
+        
+        console.log("🔍 Données reçues dans l'API:", {
+            headerAssurance: header?.Assurance,
+            headerIDASSURANCE: header?.IDASSURANCE,
+            headerFull: header
+        });
 
         // Validation du payload
         if (!header) {
@@ -104,13 +110,13 @@ export async function POST(req: NextRequest) {
             );
         }
         const currentDate = new Date();
-        let assuranceName = '';
+        let assuranceName = header.Assurance || '';
 
-        // Si un ID d'assurance est fourni, récupérer le nom de l'assurance
-        if (header.assurance?.assuranceId) {
+        // Si un ID d'assurance est fourni mais pas de nom, récupérer le nom de l'assurance
+        if (!assuranceName && header.IDASSURANCE) {
             try {
-                const assurance = await Assurance.findById(header.assurance.assuranceId);
-                assuranceName = assurance?.desiganationassurance || '';
+                const assurance = await Assurance.findById(header.IDASSURANCE);
+                assuranceName = assurance?.designationassurance || '';
             } catch (error) {
                 console.error('Error fetching assurance:', error);
             }
@@ -153,8 +159,8 @@ export async function POST(req: NextRequest) {
 
             // Informations d'assurance
             Assurance: assuranceName,
-            ...(header.assurance?.assuranceId && {
-                IDASSURANCE: new mongoose.Types.ObjectId(header.assurance.assuranceId)
+            ...(header.IDASSURANCE && {
+                IDASSURANCE: new mongoose.Types.ObjectId(header.IDASSURANCE)
             }),
         };
 
@@ -194,7 +200,8 @@ export async function POST(req: NextRequest) {
                 TotalapayerPatient: header.TotalapayerPatient || header.TotalapayerPatient || 0,
                 PartAssuranceP: header.PartAssuranceP || header.partAssurance || 0,
                 Partassure: header.Partassure || header.Partassure || 0,
-                Assurance: header.Assurance?.desiganationassurance || (typeof header.Assurance === 'string' ? header.Assurance : ''),
+                Assurance: header.Assurance || "",
+                IDASSURANCE: header.IDASSURANCE || undefined,
                 IDSOCIETEASSURANCE: header.IDSOCIETEASSURANCE || undefined,
                 Souscripteur: header.Souscripteur || "",
                 SOCIETE_PATIENT: header.SOCIETE_PATIENT || "",
@@ -230,13 +237,9 @@ export async function POST(req: NextRequest) {
                 idHospitalisation: hospId,
             };
 
-            if (header.IDASSURANCE) {
-                try {
-                    factData.Assurance = new mongoose.Types.ObjectId(header.IDASSURANCE);
-                } catch (err) {
-                    // ignore invalid id
-                }
-            }
+            // Conserver le nom de l'assurance dans le champ Assurance (pas de conversion en ObjectId)
+            // L'ObjectId est déjà stocké dans IDASSURANCE
+            // factData.Assurance garde le nom de l'assurance pour l'affichage
 
             // Créer la facturation
             const createdFact = await Facturation.create(factData);
@@ -310,7 +313,7 @@ export async function POST(req: NextRequest) {
                         statutPrescriptionMedecin: l.Statutprescription || 2,
                         coefficientClinique: l.CoefClinique || l.Coefficient || 1,
                         taxe: l.TAXE || 0,
-                        Assurance: header.Assurance?.desiganationassurance || "",
+                        Assurance: header.Assurance || "",
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
                     };

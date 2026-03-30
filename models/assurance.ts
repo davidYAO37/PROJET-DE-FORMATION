@@ -3,7 +3,7 @@ import mongoose, { Schema, Document, Model } from "mongoose";
 
 export interface IAssurance extends Document {
   _id: mongoose.Types.ObjectId | string;
-  desiganationassurance: string;
+  designationassurance: string;
   codeassurance: string;
   telephone: string;
   email: string;
@@ -11,7 +11,7 @@ export interface IAssurance extends Document {
 }
 
 const AssuranceSchema: Schema<IAssurance> = new Schema({
-  desiganationassurance: { type: String, required: true, unique: true },
+  designationassurance: { type: String, required: true, unique: true },
   codeassurance: { type: String, required: true, unique: true },
   telephone: { type: String, required: true },
   email: { type: String, required: true },

@@ -16,6 +16,7 @@ export interface IPlanningMed extends Document {
     Modifiele: Date;
     saisiepar: string;
     ModifierPar: string;
+    entrepriseId: string;
 }
 
 const PlanningMedSchema = new Schema<IPlanningMed>({
@@ -34,5 +35,6 @@ const PlanningMedSchema = new Schema<IPlanningMed>({
     Modifiele: Date,
     saisiepar: String,
     ModifierPar: String,
+    entrepriseId: String,
 }, { timestamps: true });
 export const PlanningMed: Model<IPlanningMed> = mongoose.models.PlanningMed || mongoose.model<IPlanningMed>('PlanningMed', PlanningMedSchema);   

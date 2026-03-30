@@ -27,6 +27,7 @@ export interface IPatient extends Document {
   SOCIETE_PATIENT: string;
   Taux: number;
   TarifPatient: string;
+  entrepriseId: string;
 }
 
 const PatientSchema = new Schema<IPatient>(
@@ -56,6 +57,7 @@ const PatientSchema = new Schema<IPatient>(
     SOCIETE_PATIENT: { type: String, required: false },
     Taux: { type: Number, required: false },
     TarifPatient: { type: String, required: false },
+    entrepriseId: { type: String, required: false },
   },
   { timestamps: true }
 );

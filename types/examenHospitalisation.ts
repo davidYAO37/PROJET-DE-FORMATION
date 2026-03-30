@@ -32,6 +32,7 @@ export type Acte = {
 
 export type Assurance = {
     assuranceId: string;
+    designationassurance: string;
     type: string;
     taux: number;
     matricule: string;
@@ -111,6 +112,7 @@ export const defaultFormData: ExamenHospitalisationForm = {
     societePatient: "",
     assurance: {
         assuranceId: "",
+        designationassurance: "",
         type: "",
         taux: 0,
         matricule: "",

@@ -8,7 +8,7 @@ import SocietePatientModal from "@/components/SocietePatientModal";
 interface Assurance {
   _id: string;
   nom: string;
-  desiganationassurance?: string;
+  designationassurance?: string;
 }
 
 interface ModifierPatientProps {
@@ -250,7 +250,7 @@ export default function ModifierPatientCaisse({ show, handleClose, patient, onUp
                   <option value="">-- Sélectionner une assurance --</option>
                   {assurances.map((a) => (
                     <option key={a._id} value={a._id}>
-                      {a.nom || a.desiganationassurance || ''}
+                      {a.nom || a.designationassurance || ''}
                     </option>
                   ))}
                 </Form.Select>

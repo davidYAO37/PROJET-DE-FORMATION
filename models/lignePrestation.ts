@@ -70,6 +70,7 @@ export interface ILignePrestation extends Document {
     idFacturation?: Types.ObjectId | string;
     SOCIETE_PATIENT?: string;
     ordonnancementAffichage?: number;
+    entrepriseId?: string;
 }
 
 const LignePrestationSchema = new Schema<ILignePrestation>(
@@ -142,6 +143,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         idFacturation: { type: Schema.Types.ObjectId, ref: "Facturation" },
         SOCIETE_PATIENT: { type: String },
         ordonnancementAffichage: { type: Number },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

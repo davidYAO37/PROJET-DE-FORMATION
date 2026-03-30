@@ -636,7 +636,7 @@ export default function PharmacieCaisseModal({
       StatutPaiement: "Facture payée",
       Modepaiement: modePaiement,
       IDASSURANCE: consultation.IDASSURANCE || "",
-      IDSOCIETEASSURANCE: consultation.IDASSURANCE || "",
+      IDSOCIETEASSURANCE: consultation.IDSOCIETEASSURANCE || "",
       SOCIETE_PATIENT: consultation.SOCIETE_PATIENT || ""
     };
     // S'assurer que les champs interdits ne sont jamais envoyés
@@ -682,7 +682,7 @@ export default function PharmacieCaisseModal({
       Numcarte: consultation.NumBon || "",
       NumBon: consultation.NumBon || "",
       Designationtypeacte: "PHARMACIE",
-      IDSOCIETEASSURANCE: consultation.IDASSURANCE || "",
+      IDSOCIETEASSURANCE: consultation.IDSOCIETEASSURANCE || "",
       SOCIETE_PATIENT: consultation.SOCIETE_PATIENT || "",
       // Champs supplémentaires selon la logique WLangage
       CodePrestation: codePrestation,
@@ -699,6 +699,7 @@ export default function PharmacieCaisseModal({
       PartAssuranceP: totaux.partAssurance,
       Partassure: totaux.partAssure,
       Taux: consultation.tauxAssurance || 0,
+      Assurance: consultation.assurance || "",
       IDASSURANCE: consultation.IDASSURANCE || "",
       IDMEDECIN: consultation.IDMEDECIN || "",
       StatutFacture: true,

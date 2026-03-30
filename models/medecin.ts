@@ -8,6 +8,7 @@ export interface IMedecin extends Document {
   TauxHonoraire?: number;
   TauxPrescription?: number;
   TauxExecution?: number;
+  entrepriseId?: string;
 }
 
 const MedecinSchema = new Schema<IMedecin>(
@@ -18,6 +19,7 @@ const MedecinSchema = new Schema<IMedecin>(
     TauxHonoraire: { type: Number },
     TauxPrescription: { type: Number },
     TauxExecution: { type: Number },
+    entrepriseId: { type: String },
   },
   { timestamps: true }
 );

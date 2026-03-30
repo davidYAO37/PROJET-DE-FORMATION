@@ -8,6 +8,7 @@ export interface IPharmacie extends Document {
     PrixAchat?: number;
     PrixVente?: number;
     Ajouter?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -18,6 +19,7 @@ const PharmacieSchema = new Schema<IPharmacie>(
         PrixAchat: { type: Number },
         PrixVente: { type: Number },
         Ajouter: { type: Date },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

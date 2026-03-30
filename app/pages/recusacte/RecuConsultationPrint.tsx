@@ -144,7 +144,8 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
             {/* Total */}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <div style={styles.info}>Surplus patient : {consultation.totalsurplus?.toLocaleString() || 0} FCFA</div>
-                <div style={styles.info}>Reste à payer : {consultation.resteapayer?.toLocaleString() || 0} FCFA</div>
+                <div style={styles.info}>Reste à payer : {consultation.Restapayer?.toLocaleString() || 0} FCFA</div>
+                <div style={styles.info}>Montant payé : {consultation.Montantencaisse?.toLocaleString() || 0} FCFA</div>
                 <div style={styles.info}>Société patient : {consultation.SOCIETE_PATIENT || 'N/A'}</div>
             </div>
              <div className="text-center mt-4">

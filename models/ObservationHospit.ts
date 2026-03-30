@@ -14,6 +14,7 @@ export interface IObservationHospit extends Document {
     TailleCons?: string;
     Code_dossier?: string;
     CodePrestation?: string;
+    entrepriseId?: string;
 }
 
 const ObservationHospitSchema = new Schema<IObservationHospit>(
@@ -31,6 +32,7 @@ const ObservationHospitSchema = new Schema<IObservationHospit>(
         TailleCons: { type: String, maxlength: 10 },
         Code_dossier: { type: String, maxlength: 50 },
         CodePrestation: { type: String, maxlength: 50 },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

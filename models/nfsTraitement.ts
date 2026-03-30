@@ -24,6 +24,7 @@ export interface INfsTraitement extends Document {
     ValeurMaxNormale?: number;
     ValeurMinNormale?: number;
     DejaUtilise?: boolean;
+    entrepriseId?: string;
 }
 
 const NfsTraitementSchema = new Schema<INfsTraitement>({
@@ -50,5 +51,6 @@ const NfsTraitementSchema = new Schema<INfsTraitement>({
     ValeurMaxNormale: { type: Number },
     ValeurMinNormale: { type: Number },
     DejaUtilise: { type: Boolean, default: false },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const NfsTraitement: Model<INfsTraitement> = mongoose.models.NfsTraitement || mongoose.model<INfsTraitement>('NfsTraitement', NfsTraitementSchema);

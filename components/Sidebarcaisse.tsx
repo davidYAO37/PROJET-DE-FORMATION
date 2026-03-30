@@ -6,6 +6,9 @@ import { Nav } from 'react-bootstrap';
 import { useEffect, useState } from 'react';
 import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/componant/FactureExamHospit/ExamenHospitModalCaisse';
 import PharmacieCaisseModal from '@/app/pages/servicecaisse/componant/PharmacieCaisse/PharmacieCaisseModal';
+import FacturesNonSoldesModal from '@/app/pages/servicecaisse/componant/FacturesNonSoldesModal';
+import PointCaisseModal from '@/app/pages/servicecaisse/componant/PointCaisseModal';
+
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicecaisse/tcaisse', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
@@ -13,7 +16,8 @@ const menu = [
   { label: 'Saisir une Facture Exam-Hospit...', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i>, style: { cursor: 'pointer' } },
   { label: 'Facturer une pharmacie', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-warning"></i>, style: { cursor: 'pointer' } },
   { label: 'Caution Patient', path: '/salle-attente', icon: <i className="bi bi-people-fill me-2 text-secondary"></i> },
-  { label: 'Facture à solder', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
+  { label: 'Facture à solder', path: '#', isModal: true, icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i>, style: { cursor: 'pointer' } },
+  { label: 'Point de caisse', path: '#', isModal: true, icon: <i className="bi bi-cash-stack me-2 text-success"></i>, style: { cursor: 'pointer' } },
   { label: 'Imprimer Facture', path: '/planning-medecin', icon: <i className="bi bi-printer-fill me-2 text-primary"></i> },
 ];
 
@@ -23,6 +27,8 @@ export default function Sidebarcaisse() {
   const [user, setUser] = useState('');
   const [showFactureModal, setShowFactureModal] = useState(false);
   const [showPaiementPharmacieModal, setShowPaiementPharmacieModal] = useState(false);
+  const [showFacturesNonSoldesModal, setShowFacturesNonSoldesModal] = useState(false);
+  const [showPointCaisseModal, setShowPointCaisseModal] = useState(false);
   const [facturesEnAttenteCount, setFacturesEnAttenteCount] = useState(0);
 
 
@@ -121,6 +127,18 @@ export default function Sidebarcaisse() {
     setOpen(false);
   };
 
+  // ouvre le modal des factures non soldées et ferme la sidebar en mobile
+  const handleFacturesNonSoldesClick = () => {
+    setShowFacturesNonSoldesModal(true);
+    setOpen(false);
+  };
+
+  // ouvre le modal Point de caisse et ferme la sidebar en mobile
+  const handlePointCaisseClick = () => {
+    setShowPointCaisseModal(true);
+    setOpen(false);
+  };
+
   return (
     <>
       {/* Bouton burger visible sur mobile */}
@@ -155,7 +173,15 @@ export default function Sidebarcaisse() {
               {item.isModal ? (
                 <div
                   className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''} cursor-pointer`}
-                  onClick={item.label === 'Facturer une pharmacie' ? handlePaiementPharmacieClick : handleFactureClick}
+                  onClick={
+                    item.label === 'Facturer une pharmacie' 
+                      ? handlePaiementPharmacieClick 
+                      : item.label === 'Facture à solder'
+                      ? handleFacturesNonSoldesClick
+                      : item.label === 'Point de caisse'
+                      ? handlePointCaisseClick
+                      : handleFactureClick
+                  }
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -188,10 +214,22 @@ export default function Sidebarcaisse() {
         onHide={() => setShowFactureModal(false)}
       />
 
-      {/* Modal pour la saisie de facture de pharmacie */}
+      {/* Modal pour le paiement de pharmacie */}
       <PharmacieCaisseModal
         show={showPaiementPharmacieModal}
         onHide={() => setShowPaiementPharmacieModal(false)}
+      />
+
+      {/* Modal pour les factures non soldées */}
+      <FacturesNonSoldesModal
+        show={showFacturesNonSoldesModal}
+        onHide={() => setShowFacturesNonSoldesModal(false)}
+      />
+
+      {/* Modal pour le point de caisse */}
+      <PointCaisseModal
+        show={showPointCaisseModal}
+        onHide={() => setShowPointCaisseModal(false)}
       />
 
     </>

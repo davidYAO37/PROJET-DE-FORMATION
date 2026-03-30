@@ -190,7 +190,7 @@ export default function AssuranceInfoUpdate({ formData, setFormData, currentLign
                             <option value="">-- Sélectionner --</option>
                             {assurances.map((a) => (
                                 <option key={a._id} value={a._id}>
-                                    {a.desiganationassurance}
+                                    {a.designationassurance}
                                 </option>
                             ))}
                         </Form.Select>

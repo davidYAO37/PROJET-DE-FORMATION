@@ -15,6 +15,7 @@ export interface IDocumentPatient extends Document {
     extensionF?: string;
     interpretation?: string;
     consultation?: mongoose.Types.ObjectId;
+    entrepriseId?: string;
 }
 
 const DocumentPatientSchema = new Schema<IDocumentPatient>({
@@ -31,6 +32,7 @@ const DocumentPatientSchema = new Schema<IDocumentPatient>({
     prestationId: Number,
     extensionF: String,
     interpretation: String,
-    consultation: { type: Schema.Types.ObjectId, ref: "Consultation" }
+    consultation: { type: Schema.Types.ObjectId, ref: "Consultation" },
+    entrepriseId: { type: String },
 });
 export const DocumentPatient: Model<IDocumentPatient> = mongoose.models.DocumentPatient || mongoose.model<IDocumentPatient>('DocumentPatient', DocumentPatientSchema);

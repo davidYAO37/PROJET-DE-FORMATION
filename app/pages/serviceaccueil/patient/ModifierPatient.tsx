@@ -8,7 +8,7 @@ import SocietePatientModal from "@/components/SocietePatientModal";
 interface Assurance {
   _id: string;
   nom: string;
-  desiganationassurance?: string;
+  designationassurance?: string;
 }
 
 interface ModifierPatientProps {
@@ -27,7 +27,12 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
 
   // Callback pour sélection société
   const handleSelectSociete = (societe: { _id: string; societe: string }) => {
-    setForm((prev: any) => ({ ...prev, SOCIETE_PATIENT: societe.societe }));
+    setForm((prev: any) => ({ 
+      ...prev, 
+      SOCIETE_PATIENT: societe.societe,
+      IDSOCIETEASSURANCE: societe._id
+      // Le champ Assurance reste inchangé (il contient la designationassurance de l'assurance)
+    }));
   };
 
   useEffect(() => {
@@ -52,11 +57,13 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
         sexe: patient.sexe || '',
         Contact: patient.Contact || '',
         TarifPatient: patient.TarifPatient || '',
+        Assurance: patient.Assurance || '',
         IDASSURANCE: patient.IDASSURANCE || '',
         Taux: patient.Taux || '',
         Matricule: patient.Matricule || '',
         Date_naisse: patient.Date_naisse ? new Date(patient.Date_naisse).toISOString().split('T')[0] : '',
         SOCIETE_PATIENT: patient.SOCIETE_PATIENT || '',
+        IDSOCIETEASSURANCE: patient.IDSOCIETEASSURANCE || '',
         Souscripteur: patient.Souscripteur || '',
       });
     }
@@ -70,13 +77,20 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
       let updatedForm = { ...prev, [name]: val };
       if (name === "TarifPatient" && value === "Non Assuré") {
         updatedForm.IDASSURANCE = '';
+        updatedForm.Assurance = '';
         updatedForm.Taux = '';
         updatedForm.Matricule = '';
         updatedForm.SOCIETE_PATIENT = '';
+        updatedForm.IDSOCIETEASSURANCE = '';
         updatedForm.Souscripteur = '';
       }
       // Ouvrir le modal si on sélectionne une assurance
       if (name === "IDASSURANCE" && value) {
+        // Mettre à jour le champ Assurance avec la designationassurance de l'assurance sélectionnée
+        const selectedAssurance = assurances.find(ass => ass._id === value);
+        if (selectedAssurance) {
+          updatedForm.Assurance = selectedAssurance.designationassurance || selectedAssurance.nom || '';
+        }
         setShowSocieteModal(true);
       }
       return updatedForm;
@@ -105,9 +119,11 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
       let payload = { ...form };
       if (payload.TarifPatient === "Non Assuré") {
         payload.IDASSURANCE = undefined;
+        payload.Assurance = '';
         payload.Taux = undefined;
         payload.Matricule = '';
         payload.SOCIETE_PATIENT = '';
+        payload.IDSOCIETEASSURANCE = '';
         payload.Souscripteur = '';
       }
       Object.keys(payload).forEach((k) => {
@@ -250,7 +266,7 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
                   <option value="">-- Sélectionner une assurance --</option>
                   {assurances.map((a) => (
                     <option key={a._id} value={a._id}>
-                      {a.nom || a.desiganationassurance || ''}
+                      {a.nom || a.designationassurance || ''}
                     </option>
                   ))}
                 </Form.Select>

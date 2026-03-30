@@ -14,7 +14,6 @@ const SocieteAssuranceSchema = new Schema<ISocieteAssurance>(
         legacyId: { type: Number },
         Assurance: { type: Schema.Types.ObjectId, ref: 'Assurance', required: true },
         societe: { type: String, maxlength: 60 },
-
     },
     { timestamps: true }
 );

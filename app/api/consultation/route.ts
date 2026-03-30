@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
         }
 
         const consultations = await Consultation.find(query)
-            .populate("IDASSURANCE", "desiganationassurance")
+            .populate("IDASSURANCE", "designationassurance")
             .populate("IdPatient", "Nom Prenoms")
             .populate("IDMEDECIN", "nom prenoms");
 
@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
 
         const consultation = new Consultation({
             designationC: data.selectedActeDesignation,
-            assurance: assurance?.desiganationassurance || "NON ASSURE",
+            assurance: assurance?.designationassurance || "NON ASSURE",
             Assure: data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE",
             IDASSURANCE: assurance?._id,
 

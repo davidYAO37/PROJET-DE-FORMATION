@@ -11,7 +11,7 @@ type Props = {
 
 export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
     const [form, setForm] = useState({
-        desiganationassurance: "",
+        designationassurance: "",
         codeassurance: "",
         telephone: "",
         email: "",
@@ -56,7 +56,7 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
                 });
             }
             onAdd(data);
-            setForm({ desiganationassurance: "", codeassurance: "", telephone: "", email: "" });
+            setForm({ designationassurance: "", codeassurance: "", telephone: "", email: "" });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -74,7 +74,7 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
                     {error && <div className="text-danger mb-2">{error}</div>}
                     <Form.Group className="mb-2">
                         <Form.Label>Désignation</Form.Label>
-                        <Form.Control name="desiganationassurance" value={form.desiganationassurance} onChange={handleChange} required />
+                        <Form.Control name="designationassurance" value={form.designationassurance} onChange={handleChange} required />
                     </Form.Group>
                     <Form.Group className="mb-2">
                         <Form.Label>Code</Form.Label>

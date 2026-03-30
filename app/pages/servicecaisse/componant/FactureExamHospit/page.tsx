@@ -427,6 +427,7 @@ export default function HospitalisationPageCaisse({
             assurance: {
                 ...prev.assurance,
                 assuranceId: data.IDASSURANCE || prev.assurance.assuranceId,
+                designationassurance: data.assurance || prev.assurance.designationassurance, // ✅ AJOUTÉ
                 type: data.Assure ?? prev.assurance.type,
                 taux: data.Taux ?? prev.assurance.taux,
                 matricule: data.Numcarte ?? prev.assurance.matricule,
@@ -767,7 +768,7 @@ export default function HospitalisationPageCaisse({
                                 CodePrestation: codePrestation || formData.patientId, // fallback si besoin
                                 Rclinique: formData.renseignementclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
-                                Assurance: formData.assurance || "",
+                                Assurance: formData.assurance?.designationassurance || "",
                                 Souscripteur: formData.assurance.adherent || "",
                                 Taux: formData.assurance.taux || 0,
                                 IdPatient: formData.patientId,
@@ -800,6 +801,9 @@ export default function HospitalisationPageCaisse({
 
                             // Utiliser les lignes actuelles du composant ActesTable
                             console.log("📤 Envoi des données:", { header, lignesCount: lignesValides.length });
+                            console.log("🔍 Valeur de formData.assurance:", formData.assurance);
+                            console.log("🔍 Valeur de header.Assurance:", header.Assurance);
+                            console.log("🔍 Valeur de header.IDASSURANCE:", header.IDASSURANCE);
 
                             const resp = await fetch('/api/examenhospitalisationFacture', {
                                 method: 'POST',

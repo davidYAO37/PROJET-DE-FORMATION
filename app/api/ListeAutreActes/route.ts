@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
         }
 
         const examens = await ExamenHospitalisation.find({ $or: [{ IdPatient: patientId }, { PatientP: patientId }] })
-            .populate("IDASSURANCE", "desiganationassurance")
+            .populate("IDASSURANCE", "designationassurance")
             .populate("IdPatient", "Nom Prenoms")
             .populate("idMedecin", "nom prenoms")
             .sort({ DatePres: -1 })

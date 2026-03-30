@@ -15,6 +15,7 @@ export interface ILigneHonoraireMed extends Document {
     Patient?: string;
     createdAt?: Date;
     updatedAt?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -31,5 +32,6 @@ const LigneHonoraireMedSchema = new Schema<ILigneHonoraireMed>({
     TAXE: { type: Number },
     Netapayer: { type: Number },
     Patient: { type: String, maxlength: 60 },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const LigneHonoraireMed: Model<ILigneHonoraireMed> = mongoose.models.LigneHonoraireMedModel || mongoose.model<ILigneHonoraireMed>("LigneHonoraireMed", LigneHonoraireMedSchema);

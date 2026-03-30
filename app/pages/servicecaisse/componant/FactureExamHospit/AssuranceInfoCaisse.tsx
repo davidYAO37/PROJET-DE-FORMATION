@@ -41,7 +41,11 @@ export default function AssuranceInfoCaisse({ formData, setFormData, currentLign
     useEffect(() => {
         fetch("/api/assurances")
             .then((res) => res.json())
-            .then((data) => setAssurances(Array.isArray(data) ? data : []));
+            .then((data) => {
+                console.log("🔍 Assurances chargées:", data);
+                console.log("🔍 formData.assurance au chargement:", formData.assurance);
+                setAssurances(Array.isArray(data) ? data : []);
+            });
     }, []);
 
     // Fonction pour vérifier les paiements existants
@@ -73,12 +77,20 @@ export default function AssuranceInfoCaisse({ formData, setFormData, currentLign
                     assurance: {
                         ...prev.assurance,
                         taux: 0,
+                        assuranceId: "",
+                        designationassurance: "",
+                        type: "",
                         matricule: "",
                         numeroBon: "",
-                        adherent: "",
-                        assuranceId: "",
                         societe: "",
+                        numero: "",
+                        adherent: "",
                     },
+                    partAssurance: 0,
+                    Partassure: 0,
+                    reliquat: 0,
+                    totalRelicatCoefAssur: 0,
+                    montantMedExecutant: 0,
                     medecinPrescripteur: "",
                 }));
                 // Mettre à jour la référence
@@ -162,6 +174,17 @@ export default function AssuranceInfoCaisse({ formData, setFormData, currentLign
                                     return;
                                 }
 
+                                // Trouver le nom de l'assurance sélectionnée
+                                const selectedAssurance = assurances.find(a => a._id === newAssuranceId);
+                                const designationassurance = selectedAssurance?.designationassurance || "";
+                                
+                                console.log("🔍 Changement assurance:", {
+                                    newAssuranceId,
+                                    selectedAssurance,
+                                    designationassurance,
+                                    assurancesCount: assurances.length
+                                });
+
                                 // Vérifier si on passe à MUTUALISTE/ASSURE sans taux
                                 /*   if ((formData.Assure === "TARIF MUTUALISTE" || formData.Assure === "TARIF ASSURE") && 
                                       formData.assurance.taux === 0 && newAssuranceId) {
@@ -171,7 +194,7 @@ export default function AssuranceInfoCaisse({ formData, setFormData, currentLign
 
                                 setFormData({
                                     ...formData,
-                                    assurance: { ...formData.assurance, assuranceId: newAssuranceId },
+                                    assurance: { ...formData.assurance, assuranceId: newAssuranceId, designationassurance },
                                 });
                                 previousAssuranceId.current = newAssuranceId;
 
@@ -190,7 +213,7 @@ export default function AssuranceInfoCaisse({ formData, setFormData, currentLign
                             <option value="">-- Sélectionner --</option>
                             {assurances.map((a) => (
                                 <option key={a._id} value={a._id}>
-                                    {a.desiganationassurance}
+                                    {a.designationassurance}
                                 </option>
                             ))}
                         </Form.Select>

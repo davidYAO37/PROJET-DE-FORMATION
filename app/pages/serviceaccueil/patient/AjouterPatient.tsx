@@ -8,7 +8,7 @@ import { Patient } from '@/types/patient';
 type Assurance = {
   _id: string;
   nom: string;
-  desiganationassurance?: string;
+  designationassurance?: string;
 };
 
 type Props = {
@@ -30,8 +30,10 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
     Matricule: '',
     Date_naisse: '',
     Taux: '',
+    Assurance: '',
     IDASSURANCE: '',
     SOCIETE_PATIENT: '',
+    IDSOCIETEASSURANCE: '',
     Souscripteur: '',
   });
 
@@ -40,7 +42,12 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
 
   // Callback pour sélection société
   const handleSelectSociete = (societe: { _id: string; societe: string }) => {
-    setFormData((prev: any) => ({ ...prev, SOCIETE_PATIENT: societe.societe }));
+    setFormData((prev: any) => ({ 
+      ...prev, 
+      SOCIETE_PATIENT: societe.societe,
+      IDSOCIETEASSURANCE: societe._id
+      // Le champ Assurance reste inchangé (il contient la designationassurance de l'assurance)
+    }));
   };
 
   const [assurances, setAssurances] = useState<Assurance[]>([]);
@@ -78,8 +85,10 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         Matricule: '',
         Date_naisse: '',
         Taux: '',
+        Assurance: '',
         IDASSURANCE: '',
         SOCIETE_PATIENT: '',
+        IDSOCIETEASSURANCE: '',
         Souscripteur: '',
       });
       setErrorMsg(null);
@@ -113,13 +122,21 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
       // Logique TarifPatient
       if (name === "TarifPatient" && value === "Non Assuré") {
         newData.IDASSURANCE = '';
+        newData.Assurance = '';
         newData.Taux = '';
         newData.Matricule = '';
         newData.SOCIETE_PATIENT = '';
+        newData.IDSOCIETEASSURANCE = '';
+        newData.Souscripteur = '';
       }
 
       // Ouvre le modal société si on sélectionne une assurance
       if (name === "IDASSURANCE" && value) {
+        // Mettre à jour le champ Assurance avec la designationassurance de l'assurance sélectionnée
+        const selectedAssurance = assurances.find(ass => ass._id === value);
+        if (selectedAssurance) {
+          newData.Assurance = selectedAssurance.designationassurance || selectedAssurance.nom || '';
+        }
         setShowSocieteModal(true);
       }
 
@@ -170,9 +187,11 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
 
       if (payload.TarifPatient === "Non Assuré") {
         payload.IDASSURANCE = undefined;
+        payload.Assurance = '';
         payload.Taux = undefined;
         payload.Matricule = '';
         payload.SOCIETE_PATIENT = '';
+        payload.IDSOCIETEASSURANCE = '';
         payload.Souscripteur = '';
       }
 
@@ -336,7 +355,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
                       <option value="">-- Sélectionner --</option>
                       {assurances.map((a) => (
                         <option key={a._id} value={a._id}>
-                          {a.nom || a.desiganationassurance || ''}
+                          {a.nom || a.designationassurance || ''}
                         </option>
                       ))}
                     </Form.Select>

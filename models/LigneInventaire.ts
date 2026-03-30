@@ -14,6 +14,7 @@ export interface ILigneInventaire extends Document {
     Inventaire?: Types.ObjectId | IInventaire | null;
     createdAt?: Date;
     updatedAt?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -29,6 +30,7 @@ const LigneInventaireSchema = new Schema<ILigneInventaire>(
         Dateinventaire: { type: Date },
         ObservationC: { type: String, maxlength: 120 },
         Inventaire: { type: Schema.Types.ObjectId, ref: 'Inventaire' },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

@@ -9,6 +9,7 @@ export interface IInventaire extends Document {
     DateModif?: Date;
     createdAt?: Date;
     updatedAt?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -20,6 +21,7 @@ const InventaireSchema = new Schema<IInventaire>(
         QtéManquant: { type: Number },
         AuteurModif: { type: String, maxlength: 60 },
         DateModif: { type: Date },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

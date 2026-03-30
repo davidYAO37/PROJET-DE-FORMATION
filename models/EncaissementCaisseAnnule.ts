@@ -33,6 +33,7 @@ export interface IEncaissementCaisseAnnule extends Document {
     PrixUni?: number;
     Posologie?: string;
     PrixTotal?: number;
+    entrepriseId?: string;
 }
 
 
@@ -70,6 +71,7 @@ const EncaissementCaisseAnnuleSchema = new Schema<IEncaissementCaisseAnnule>(
         PrixUni: { type: Number },
         Posologie: { type: String, maxlength: 100 },
         PrixTotal: { type: Number },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

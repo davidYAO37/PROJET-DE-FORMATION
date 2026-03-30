@@ -11,6 +11,7 @@ export interface IStock extends Document {
     IDMEDICAMENT?:Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -21,6 +22,7 @@ const StockSchema = new Schema<IStock>({
     AuteurModif: { type: String, maxlength: 60 },
     DateModif: { type: Date },
     Medicament: { type: String, maxlength: 250 },
-    IDMEDICAMENT:{type:Schema.Types.ObjectId,ref:'Pharmacie'}
+    IDMEDICAMENT:{type:Schema.Types.ObjectId,ref:'Pharmacie'},
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const Stock: Model<IStock> = mongoose.models.Stock || mongoose.model<IStock>("Stock", StockSchema);  

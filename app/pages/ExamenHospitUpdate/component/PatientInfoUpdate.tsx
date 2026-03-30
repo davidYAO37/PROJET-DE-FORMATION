@@ -66,6 +66,7 @@ export default function PatientInfoUpdate({ formData, setFormData, onCodePrestat
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
                     assurance: {
                         assuranceId: data.idAssurance || prev.assurance.assuranceId,
+                        designationassurance: data.assurance || prev.assurance.designationassurance,
                         type: data.Assure || data.assure || prev.assurance.type,
                         taux: data.tauxAssurance ?? data.taux ?? prev.assurance.taux,
                         matricule: data.matricule || prev.assurance.matricule,

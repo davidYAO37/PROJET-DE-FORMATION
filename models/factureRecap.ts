@@ -13,6 +13,7 @@ export interface IFactureRecap extends Document {
     Assurance?: string;
     CreePar?: string;
     NCC?: string;
+    entrepriseId?: string;
 }
 
 const FactureRecapSchema = new Schema<IFactureRecap>({
@@ -28,6 +29,7 @@ const FactureRecapSchema = new Schema<IFactureRecap>({
     Assurance: { type: String, maxlength: 50 },
     CreePar: { type: String, maxlength: 50 },
     NCC: { type: String, maxlength: 100 },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 
 export const FactureRecap: Model<IFactureRecap> = mongoose.models.FactureRecap || mongoose.model<IFactureRecap>("FactureRecap", FactureRecapSchema);

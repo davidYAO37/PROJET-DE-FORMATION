@@ -21,7 +21,7 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
     const [showSocieteModal, setShowSocieteModal] = useState(false);
     const [selectedSocieteAssurance, setSelectedSocieteAssurance] = useState<Assurance | null>(null);
     const filteredAssurances = assurances.filter((a) =>
-        a.desiganationassurance?.toLowerCase().includes(searchTerm.toLowerCase())
+        a.designationassurance?.toLowerCase().includes(searchTerm.toLowerCase())
     );
     const totalPages = Math.ceil(filteredAssurances.length / itemsPerPage);
     const paginatedAssurances = filteredAssurances.slice(
@@ -85,7 +85,7 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
                             paginatedAssurances.map((a, i) => (
                                 <tr key={a._id}>
                                     <td>{i + 1 + (currentPage - 1) * itemsPerPage}</td>
-                                    <td>{a.desiganationassurance}</td>
+                                    <td>{a.designationassurance}</td>
                                     <td>{a.codeassurance}</td>
                                     <td>{a.telephone}</td>
                                     <td>{a.email}</td>

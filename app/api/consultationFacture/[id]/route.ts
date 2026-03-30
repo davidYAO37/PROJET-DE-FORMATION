@@ -70,7 +70,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         // Mise à jour consultation
         consultation.designationC = data.selectedActeDesignation;
-        consultation.assurance = assurance?.desiganationassurance || "NON ASSURE";
+        consultation.assurance = assurance?.designationassurance || "NON ASSURE";
         consultation.Assure = data.assure === "non" ? "NON ASSURE" : data.assure === "mutualiste" ? "TARIF MUTUALISTE" : "TARIF ASSURE";
 
         consultation.IDASSURANCE = assurance?._id ? new mongoose.Types.ObjectId(String(assurance._id)) : undefined;

@@ -37,8 +37,9 @@ export default function ModePaiement({
         const fetchModesPaiement = async () => {
             try {
                 const response = await fetch('/api/modepaiement');
-                const data = await response.json();
-                setModesPaiement(data);
+                const result = await response.json();
+                // L'API retourne { success: true, data: modepaiements }
+                setModesPaiement(result.data || []);
             } catch (error) {
                 console.error('Erreur lors de la récupération des modes de paiement:', error);
             }

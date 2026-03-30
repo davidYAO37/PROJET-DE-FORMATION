@@ -9,10 +9,10 @@ import { useState, useEffect } from 'react';
 
 export default function Caisse() {
   const router = useRouter();
-  const [consultations, setConsultations] = useState([]);
-  const [prestations, setPrestations] = useState([]);
-  const [prescriptions, setPrescriptions] = useState([]);
-  const [facturesNonSoldées, setFacturesNonSoldées] = useState([]);
+  const [consultations, setConsultations] = useState<any[]>([]);
+  const [prestations, setPrestations] = useState<any[]>([]);
+  const [prescriptions, setPrescriptions] = useState<any[]>([]);
+  const [facturesNonSoldées, setFacturesNonSoldées] = useState<any[]>([]);
 
   // Fonction pour recharger les données
   const rechargerDonnées = async () => {
@@ -38,11 +38,60 @@ export default function Caisse() {
         setPrescriptions(prescriptionsData || []);
       }
 
-      // Charger les factures non soldées
+      // Charger les factures non soldées avec vérification des encaissements
       const facturesResponse = await fetch('/api/facturesnonsoldees');
       if (facturesResponse.ok) {
         const facturesData = await facturesResponse.json();
-        setFacturesNonSoldées(facturesData.data || facturesData || []);
+        const facturesBrutes = facturesData.data || facturesData || [];
+        
+        // Appliquer la logique de vérification des encaissements
+        const facturesFiltrees = await Promise.all(
+          facturesBrutes.map(async (facture: any) => {
+            // Si le reste à payer est <= 0, on n'affiche pas
+            if (facture.montantRestant <= 0) {
+              return null;
+            }
+            
+            // Vérifier dans les encaissements selon le type
+            let encaissements;
+            if (facture.type === 'consultation') {
+              // Pour les consultations, chercher par IDCONSULTATION
+              encaissements = await fetch(`/api/encaissementcaisse?idConsultation=${facture.id}`);
+            } else {
+              // Pour les facturations, chercher par IDFACTURATION
+              encaissements = await fetch(`/api/encaissementcaisse?idFacturation=${facture.id}`);
+            }
+            
+            if (encaissements.ok) {
+              const encaissementsData = await encaissements.json();
+              const sommeEncaissements = encaissementsData.data?.reduce(
+                (sum: number, enc: any) => sum + (enc.Montantencaisse || 0), 
+                0
+              ) || 0;
+              
+              // Calculer le reste réel à payer
+              const resteReel = facture.montantRestant - sommeEncaissements;
+              
+              // Si le reste à payer - la somme des encaissements = 0, on n'affiche pas
+              if (resteReel <= 0) {
+                return null;
+              }
+              
+              // Sinon on affiche avec le reste réel
+              return {
+                ...facture,
+                montantRestant: resteReel
+              };
+            } else {
+              // Si pas trouvé dans encaissements, on affiche directement
+              return facture;
+            }
+          })
+        );
+        
+        // Filtrer les null et mettre à jour les factures
+        const facturesValidées = facturesFiltrees.filter(f => f !== null);
+        setFacturesNonSoldées(facturesValidées);
       }
     } catch (error) {
       console.error('Erreur de chargement:', error);
@@ -92,7 +141,7 @@ export default function Caisse() {
     <>
       <style>{cardStyles}</style>
     
-      <div className="container-fluid py-4">
+      <div className="container-fluid ">
         <div className="d-flex justify-content-between align-items-center mb-4">
           <h2 className="mb-0 text-primary fw-bold">
             <FaClock className="me-2" />
@@ -102,16 +151,16 @@ export default function Caisse() {
             Se déconnecter
           </Button>
         </div>
-        <Row className="g-4 my-4">
+        <Row className="g-3">
           <Col md={4}>
-            <Card className="shadow h-75 border-0 my-3" style={{ 
+            <Card className="shadow h-75 border-0 my-2" style={{ 
               background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
               color: 'white',
               transition: 'transform 0.3s ease'
             }}>
               <Card.Body className=" d-flex justify-content-center align-items-center mx-3 py-4">
-                <div className="mb-3">
-                  <FaUserCheck size={48} className="mb-3" />
+                <div className="mb-2">
+                  <FaUserCheck size={48} className="mb-2" />
                 </div>
                 <Card.Title className="text-white mb-2">Consultations <br /> à facturer</Card.Title>
                 <div>
@@ -123,16 +172,16 @@ export default function Caisse() {
             </Card>
           </Col>
           <Col md={4}>
-            <Card className="shadow h-75 border-0 my-3" style={{ 
+            <Card className="shadow h-75 border-0 my-2" style={{ 
               background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
               color: 'white',
               transition: 'transform 0.3s ease'
             }}>
               <Card.Body className="text-center d-flex justify-content-center align-items-center mx-3 py-4">
-                <div className="mb-3">
-                  <FaFlask size={48} className="mb-3" />
+                <div className="mb-2">
+                  <FaFlask size={48} className="mb-2" />
                 </div>
-                <Card.Title className="text-white mb-2">Examens-Pharmacies et Autres</Card.Title>
+                <Card.Title className="text-white mb-2">Examens-Pharmacies et Autres  à facturer</Card.Title>
                 <div>
                   <Badge bg="light" text="dark" className="fs-6">
                     {prestations.length + prescriptions.length}
@@ -142,13 +191,13 @@ export default function Caisse() {
             </Card>
           </Col>
           <Col md={4}>
-            <Card className="shadow h-75 border-0 my-3" style={{ 
+            <Card className="shadow h-75 border-0 my-2" style={{ 
               background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
               color: 'white',
               transition: 'transform 0.3s ease'
             }}>
               <Card.Body className="text-center d-flex justify-content-center align-items-center mx-3 py-4">
-                <div className="mb-3">
+                <div className="mb-2">
                   <FaFileInvoice size={48} className="mb-3" />
                 </div>
                 <Card.Title className="text-white mb-2">Factures à solder</Card.Title>

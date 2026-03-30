@@ -11,7 +11,7 @@ type Props = {
 
 export default function ModifierAssurance({ show, onHide, assurance, onSave }: Props) {
     const [form, setForm] = useState({
-        desiganationassurance: "",
+        designationassurance: "",
         codeassurance: "",
         telephone: "",
         email: "",
@@ -22,7 +22,7 @@ export default function ModifierAssurance({ show, onHide, assurance, onSave }: P
     useEffect(() => {
         if (assurance) {
             setForm({
-                desiganationassurance: assurance.desiganationassurance,
+                designationassurance: assurance.designationassurance,
                 codeassurance: assurance.codeassurance,
                 telephone: assurance.telephone || "",
                 email: assurance.email || "",
@@ -65,7 +65,7 @@ export default function ModifierAssurance({ show, onHide, assurance, onSave }: P
                     {error && <div className="text-danger mb-2">{error}</div>}
                     <Form.Group className="mb-2">
                         <Form.Label>Désignation</Form.Label>
-                        <Form.Control name="desiganationassurance" value={form.desiganationassurance} onChange={handleChange} required />
+                        <Form.Control name="designationassurance" value={form.designationassurance} onChange={handleChange} required />
                     </Form.Group>
                     <Form.Group className="mb-2">
                         <Form.Label>Code</Form.Label>

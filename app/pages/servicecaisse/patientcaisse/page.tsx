@@ -2,16 +2,14 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaHospitalUser, FaPrescription } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList } from 'react-icons/fa';
 
 import { Patient } from '@/types/patient';
 import { CgAbstract, CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
 import ModifierPatientCaisse from './ModifierPatientCaisse';
-import ListeConsultationsModalCaisse from '../componant/factureAttenteConsult/ListeConsultationsModalCaisse';
+import PatientServicesModal from '../componant/PatientServicesModal';
 import FicheConsultationUpdateCaisse from '../componant/factureAttenteConsult/FicheConsultationUpdateCaisse';
-import ListeExamenHospitModalCaisse from '../componant/FactureExamHospit/ListeExamenHospitModalCaisse';
-import ListePrescriptionModalCaisse from '../componant/PharmacieCaisse/ListePrescriptionModalCaisse';
 
 
 const ITEMS_PER_PAGE = 10;
@@ -28,16 +26,10 @@ export default function Page() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastVariant, setToastVariant] = useState<'success' | 'info' | 'danger'>('info');
-  const [showListeConsultModal, setShowListeConsultModal] = useState(false);
-  const [patientIdConsultModal, setPatientIdConsultModal] = useState<string | null>(null);
 
-  // États pour le modal des examens d'hospitalisation
-  const [showListeExamenHospitModal, setShowListeExamenHospitModal] = useState(false);
-  const [patientIdExamenHospitModal, setPatientIdExamenHospitModal] = useState<string | null>(null);
-
-  // États pour le modal des prescriptions
-  const [showListePrescriptionModal, setShowListePrescriptionModal] = useState(false);
-  const [patientIdPrescriptionModal, setPatientIdPrescriptionModal] = useState<string | null>(null);
+  // État pour le modal unifié des services patient
+  const [showPatientServicesModal, setShowPatientServicesModal] = useState(false);
+  const [patientIdServicesModal, setPatientIdServicesModal] = useState<string | null>(null);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
     setToastMessage(message);
@@ -185,63 +177,19 @@ export default function Page() {
                     <td>{patient.Contact}</td>
                     <td>{patient.Code_dossier}</td>
                     <td className="bg-secondary bg-opacity-10">
-
-
                       <Button
-                        variant="outline-success"
-                        title="Liste des consultations ou visites du patient"
+                        variant="outline-primary"
+                        title="Voir tous les services du patient (consultations, prescriptions, prestations)"
                         size="sm"
-                        className="me-5"
+                        className="me-3"
                         onClick={() => {
-                          setPatientIdConsultModal(patient._id?.toString() || '');
-                          setShowListeConsultModal(true);
+                          setPatientIdServicesModal(patient._id?.toString() || '');
+                          setShowPatientServicesModal(true);
                         }}
                       >
-                        <CgUserList />
+                        <FaList className="me-2" />
+                        Services Patient
                       </Button>
-                      {/* Modal liste prestation */}
-                      <ListeConsultationsModalCaisse
-                        show={showListeConsultModal}
-                        onHide={() => setShowListeConsultModal(false)}
-                        patientId={patientIdConsultModal || ''}
-                      />
-                      <Button
-                        variant="outline-info"
-                        title="Voir les examens, hospitalisation et autres prestations du patient"
-                        size="sm"
-                        className="me-4"
-                        onClick={() => {
-                          setPatientIdExamenHospitModal(patient._id?.toString() || '');
-                          setShowListeExamenHospitModal(true);
-                        }}
-                      >
-                        <FaHospitalUser />
-                      </Button>
-                      {/* Modal liste des examens d'hospitalisation */}
-                      <ListeExamenHospitModalCaisse
-                        show={showListeExamenHospitModal}
-                        onHide={() => setShowListeExamenHospitModal(false)}
-                        patientId={patientIdExamenHospitModal || ''}
-                      />
-                      {/* Bouton pour la liste des prescriptions du patient */}
-                      <Button
-                        variant="outline-warning"
-                        title="Voir les prescriptions du patient"
-                        size="sm"
-                        className="me-4"
-                        onClick={() => {
-                          setPatientIdPrescriptionModal(patient._id?.toString() || '');
-                          setShowListePrescriptionModal(true);
-                        }}
-                      >
-                        <FaPrescription />
-                      </Button>
-                      {/* Modal liste des prescriptions */}
-                      <ListePrescriptionModalCaisse
-                        show={showListePrescriptionModal}
-                        onHide={() => setShowListePrescriptionModal(false)}
-                        patientId={patientIdPrescriptionModal || ''}
-                      />
                     </td>
 
                     <td className="bg-primary bg-opacity-10">
@@ -343,6 +291,13 @@ export default function Page() {
           )}
         </Modal.Body>
       </Modal>
+
+      {/* Modal unifié des services patient */}
+      <PatientServicesModal
+        show={showPatientServicesModal}
+        onHide={() => setShowPatientServicesModal(false)}
+        patientId={patientIdServicesModal || ''}
+      />
     </Container>
 
   );

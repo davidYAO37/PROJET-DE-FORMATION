@@ -16,6 +16,7 @@ export interface ISortieStock extends Document {
     Patient?: Types.ObjectId | null;
     createdAt?: Date;
     updatedAt?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -32,5 +33,6 @@ const SortieStockSchema = new Schema<ISortieStock>({
     ArticleS: { type: String, maxlength: 60 },
     Prescription: { type: Schema.Types.ObjectId, ref: 'Prescription', required: false },
     Patient: { type: Schema.Types.ObjectId, ref: 'Patient', required: false },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const SortieStock: Model<ISortieStock> = mongoose.models.SortieStock || mongoose.model<ISortieStock>("SortieStock", SortieStockSchema);

@@ -18,6 +18,7 @@ export interface ICaisse extends Document {
     IDOpération?: number;
     IDHonoraireMed?: Types.ObjectId;
     IDMEDECIN?: Types.ObjectId;
+    entrepriseId?: string;
 }
 
 const CaisseSchema = new Schema<ICaisse>({
@@ -38,6 +39,7 @@ const CaisseSchema = new Schema<ICaisse>({
     IDOpération: { type: Number },
     IDHonoraireMed: { type: Schema.Types.ObjectId, ref: 'HonoraireMed' },
     IDMEDECIN: { type: Schema.Types.ObjectId, ref: 'Medecin' },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 
 export const caisse: Model<ICaisse> = mongoose.models.Caisse || mongoose.model<ICaisse>('Caisse', CaisseSchema);

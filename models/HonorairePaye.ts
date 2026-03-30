@@ -16,6 +16,7 @@ export interface IHonorairePaye extends Document {
     Modepaiement?: string;
     createdAt?: Date;
     updatedAt?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -33,5 +34,6 @@ const HonorairePayeSchema = new Schema<IHonorairePaye>({
     BanqueC: { type: String, maxlength: 50 },
     NCheque: { type: String, maxlength: 50 },
     Modepaiement: { type: String, maxlength: 50 },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const HonorairePaye: Model<IHonorairePaye> = mongoose.models.HonorairePaye || mongoose.model<IHonorairePaye>("HonorairePaye", HonorairePayeSchema);

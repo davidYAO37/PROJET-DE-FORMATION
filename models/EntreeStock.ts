@@ -19,6 +19,7 @@ export interface IEntreeStock extends Document {
     IDMEDICAMENT?: Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -37,5 +38,6 @@ const EntreeStockSchema = new Schema<IEntreeStock>({
     PrixVente: { type: Number },
     Medicament: { type: String, maxlength: 250 },
     IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const EntreeStock: Model<IEntreeStock> = mongoose.models.EntreeStock || mongoose.model<IEntreeStock>("EntreeStock", EntreeStockSchema);

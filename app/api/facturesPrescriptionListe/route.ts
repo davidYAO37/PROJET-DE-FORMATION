@@ -18,7 +18,7 @@ export async function GET(req: NextRequest) {
 
         // Rechercher toutes les facturations liées à cette prescription
         const factures = await Facturation.find({ IDPRESCRIPTION: IDPRESCRIPTION })
-            .populate("IDASSURANCE", "desiganationassurance")
+            .populate("IDASSURANCE", "designationassurance")
             .populate("IDMEDECIN", "Nom prenoms")
             .populate("IdPatient", "Nom Prenoms")
             .sort({ DatePres: -1 })

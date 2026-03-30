@@ -42,11 +42,11 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
     }
 
 /* ================= ASSURANCE ================= */
-    let designationAssurance = "";
+    let designationassurance = "";
     if (facturation.Assurance) {
       const assurance = await Assurance.findById(facturation.Assurance).lean();
       if (assurance) {
-        designationAssurance = assurance.desiganationassurance || "";
+        designationassurance = assurance.designationassurance || "";
       }
     }
     /* ================= LIGNES DE PRESTATION ================= */
@@ -100,7 +100,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
         SortieLe: facturation.SortieLe,
         nombreDeJours: facturation.nombreDeJours,
 
-        Assurance: designationAssurance,
+        Assurance: designationassurance,
         Taux: facturation.Taux,
         Souscripteur: facturation.Souscripteur,
         SOCIETE_PATIENT: facturation.SOCIETE_PATIENT,

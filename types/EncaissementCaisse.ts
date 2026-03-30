@@ -1,8 +1,8 @@
 export interface EncaissementCaisse {
     DatePrest: Date;
     Patient: string;
-    assurance: string;
-    ACTE: string;
+    Assurance: string;
+    Designation: string;
     Totalacte: number;
     Taux: number;
     PartAssurance: number;
@@ -11,23 +11,18 @@ export interface EncaissementCaisse {
     TotalPaye: number;
     Restapayer: number;
     Medecin: string;
-    IDHOSPITALISATION: number;
+    IDHOSPITALISATION: string;
     Utilisateur: string;
     DateEncaissement: Date;
     Montantencaisse: number;
     HeureEncaissement: string;
     Modepaiement: string;
-    BanqueC: string;
-    NumCarteVisa: string;
-    NCheque: string;
-    NumCompteVisa: string;
-    IDFACTURATION: number;
-    IDCONSULTATION: number;
+    IDFACTURATION: string;
+    IDCONSULTATION: string;
     restapayerBilan: string;
     TotalapayerPatient: number;
     Assure: string;
-    IdPatient: number;
+    IdPatient: string;
     AnnulationOrdonneLe: Date;
     annulationOrdonnepar: string;
-    Nompatient: string;
 }

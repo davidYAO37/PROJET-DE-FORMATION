@@ -73,13 +73,13 @@ export async function POST(req: NextRequest) {
 
 
         const currentDate = new Date();
-        let assuranceName = '';
+        let assuranceName = header.Assurance || '';
 
-        // Si un ID d'assurance est fourni, récupérer le nom de l'assurance
-        if (header.assurance?.assuranceId) {
+        // Si un ID d'assurance est fourni mais pas de nom, récupérer le nom de l'assurance
+        if (!assuranceName && header.IDASSURANCE) {
             try {
-                const assurance = await Assurance.findById(header.assurance.assuranceId);
-                assuranceName = assurance?.desiganationassurance || '';
+                const assurance = await Assurance.findById(header.IDASSURANCE);
+                assuranceName = assurance?.designationassurance || '';
             } catch (error) {
                 console.error('Error fetching assurance:', error);
             }
@@ -122,8 +122,8 @@ export async function POST(req: NextRequest) {
 
             // Informations d'assurance
             Assurance: assuranceName,
-            ...(header.assurance?.assuranceId && {
-                IDASSURANCE: new mongoose.Types.ObjectId(header.assurance.assuranceId)
+            ...(header.IDASSURANCE && {
+                IDASSURANCE: new mongoose.Types.ObjectId(header.IDASSURANCE)
             }),
         };
 
@@ -206,7 +206,7 @@ export async function POST(req: NextRequest) {
                         statutPrescriptionMedecin: l.Statutprescription || 2,
                         coefficientClinique: l.CoefClinique || l.Coefficient || 1,
                         taxe: l.TAXE || 0,
-                        Assurance: header.Assurance?.desiganationassurance || "",
+                        Assurance: header.Assurance || "",
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
                     };

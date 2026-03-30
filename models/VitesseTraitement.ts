@@ -13,6 +13,7 @@ export interface IVitesseTraitement extends Document {
     ValeurMaxNormale: number;
     ValeurMinNormale: number;
     DejaUtilise: boolean;
+    entrepriseId?: string;
 }
 
 const VitesseTraitementSchema = new Schema<IVitesseTraitement>({
@@ -28,5 +29,6 @@ const VitesseTraitementSchema = new Schema<IVitesseTraitement>({
     ValeurMaxNormale: Number,
     ValeurMinNormale: Number,
     DejaUtilise: Boolean,
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const VitesseTraitement: Model<IVitesseTraitement> = mongoose.models.VitesseTraitement || mongoose.model<IVitesseTraitement>('VitesseTraitement', VitesseTraitementSchema);

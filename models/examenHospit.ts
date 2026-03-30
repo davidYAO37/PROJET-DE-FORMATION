@@ -88,7 +88,7 @@ export interface IExamenHospitalisation extends Document {
     IDSOCIETEASSURANCE?: Types.ObjectId;
     SOCIETE_PATIENT?: string;
     statutPrescriptionMedecin?: number;
-
+    entrepriseId?: string;
 }
 
 const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
@@ -178,6 +178,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         IDSOCIETEASSURANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
         statutPrescriptionMedecin: { type: Number },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

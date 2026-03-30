@@ -21,6 +21,7 @@ export interface IResultatLignePrestation extends Document {
     AlignerActe?: number;
     unite?: string;
     ORdonnacementAffichage?: number;
+    entrepriseId?: string;
 }
 
 const ResultatLignePrestationSchema = new Schema<IResultatLignePrestation>({
@@ -44,6 +45,7 @@ const ResultatLignePrestationSchema = new Schema<IResultatLignePrestation>({
     AlignerActe: { type: Number },
     unite: { type: String, maxlength: 50 },
     ORdonnacementAffichage: { type: Number },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 
 export const ResultatLignePrestation: Model<IResultatLignePrestation> = mongoose.models.ResultatLignePrestation || mongoose.model<IResultatLignePrestation>('ResultatLignePrestation', ResultatLignePrestationSchema);

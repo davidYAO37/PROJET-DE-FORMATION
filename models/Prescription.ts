@@ -43,6 +43,7 @@ export interface IPrescription extends Document {
     TotalapayerPatient?: number;
     IDpriseCharge?: string;
     Caissiere?: string;
+    entrepriseId?: string;
 }
 
 
@@ -89,6 +90,7 @@ const PrescriptionSchema = new Schema<IPrescription>(
         TotalapayerPatient: { type: Number },
         IDpriseCharge: { type: String },
         Caissiere: { type: String, maxlength: 60 },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

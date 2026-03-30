@@ -19,6 +19,7 @@ export interface IFactureAssur extends Document {
     TYPEACTE?: string;
     TotalPaye?: number;
     Restapayer?: number;
+    entrepriseId?: string;
 }
 
 const FactureAssurSchema = new Schema<IFactureAssur>({
@@ -40,6 +41,7 @@ const FactureAssurSchema = new Schema<IFactureAssur>({
     TYPEACTE: { type: String, maxlength: 50 },
     TotalPaye: { type: Number },
     Restapayer: { type: Number },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 
 export const FacturationAssur: Model<IFactureAssur> = mongoose.models.FactureAssur || mongoose.model<IFactureAssur>("FactureAssur", FactureAssurSchema);

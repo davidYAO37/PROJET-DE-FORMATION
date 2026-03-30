@@ -177,7 +177,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
     return (
         <Modal show={show} onHide={handleHide} size="lg" centered>
             <Modal.Header closeButton>
-                <Modal.Title>Tarif Assurance – {assurance?.desiganationassurance}</Modal.Title>
+                <Modal.Title>Tarif Assurance – {assurance?.designationassurance}</Modal.Title>
             </Modal.Header>
             <Modal.Body>
                 {loading ? (
@@ -456,7 +456,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
 //         <Modal show={show} onHide={handleHide} size="lg" centered>
 //             <Modal.Header closeButton>
 //                 <Modal.Title>
-//                     Tarif Assurance – {assurance?.desiganationassurance}
+//                     Tarif Assurance – {assurance?.designationassurance}
 //                 </Modal.Title>
 //             </Modal.Header>
 //             <Modal.Body>

@@ -10,6 +10,7 @@ export interface IDocumentFichePatient extends Document {
     CODEDOSSIER?: string;
     Patient?: Types.ObjectId;
     ExtensionF?: string;
+    entrepriseId?: string;
 }
 
 const DocumentFichePatientSchema = new Schema<IDocumentFichePatient>(
@@ -23,6 +24,7 @@ const DocumentFichePatientSchema = new Schema<IDocumentFichePatient>(
         CODEDOSSIER: { type: String, maxlength: 50 },
         Patient: { type: Schema.Types.ObjectId, ref: 'Patient' },
         ExtensionF: { type: String, maxlength: 50 },
+        entrepriseId: { type: String },
     },
     { timestamps: true }
 );

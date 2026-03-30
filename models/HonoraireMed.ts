@@ -24,6 +24,7 @@ export interface IHonoraireMed extends Document {
     Totalretenue?: number;
     createdAt?: Date;
     updatedAt?: Date;
+    entrepriseId?: string;
 }
 
 
@@ -49,5 +50,6 @@ const HonoraireMedSchema = new Schema<IHonoraireMed>({
     partexcu: { type: Number },
     Totalnetapayer: { type: Number },
     Totalretenue: { type: Number },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const HonraireMed: Model<IHonoraireMed> = mongoose.models.HonoraireMed || mongoose.model<IHonoraireMed>("HonoraireMed", HonoraireMedSchema);

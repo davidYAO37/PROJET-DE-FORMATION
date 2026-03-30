@@ -37,7 +37,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
                         const res = await fetch("/api/societeassurance", {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({ societe: assurance.desiganationassurance, assuranceId: assurance._id })
+                            body: JSON.stringify({ societe: assurance.designationassurance, assuranceId: assurance._id })
                         });
                         if (res.ok) {
                             const societes = await res.json();
@@ -109,7 +109,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>
                     <i className="bi bi-building me-2" />
-                    Sociétés d'assurance de : <span className="fw-bold">{assurance?.desiganationassurance}</span>
+                    Sociétés d'assurance de : <span className="fw-bold">{assurance?.designationassurance}</span>
                 </Modal.Title>
             </Modal.Header>
             <Modal.Body className="bg-light">

@@ -30,7 +30,7 @@ export interface IPatientPrescription extends Document {
     SOCIETE_PATIENT?: string;
     Assurance?: string;
     IDASSURANCE?: string;
-
+    entrepriseId?: string;
 }
 
 const PatientPrescriptionSchema = new Schema<IPatientPrescription>({
@@ -62,6 +62,7 @@ const PatientPrescriptionSchema = new Schema<IPatientPrescription>({
     SOCIETE_PATIENT: String,
     Assurance: String,
     IDASSURANCE: String,
+    entrepriseId: String,
 });
 
 export const PatientPrescription: Model<IPatientPrescription> = mongoose.models.PatientPrescription || mongoose.model<IPatientPrescription>("PatientPrescription", PatientPrescriptionSchema);

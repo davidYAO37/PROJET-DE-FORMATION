@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
         // Si aucune ligne n'est trouvée (par exemple parce que le champ n'existait pas sur les anciennes données),
         // essayer également de filtrer sur PatientP pour préserver la rétrocompatibilité.
         let prescriptions = await Prescription.find({ $or: [{ IdPatient: patientId }, { PatientP: patientId }] })
-            .populate("IDASSURANCE", "desiganationassurance")
+            .populate("IDASSURANCE", "designationassurance")
             .populate("IDMEDECIN", "nom prenoms")
             .sort({ DatePres: -1 })
             .lean();

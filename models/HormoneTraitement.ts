@@ -18,6 +18,7 @@ export interface IHormoneTraitement extends Document {
     ValeurMinNormale: number;
     ValeurMaxNormale: number;
     DejaUtilise: boolean;
+    entrepriseId?: string;
 }
 
 const HormoneTraitementSchema = new Schema<IHormoneTraitement>({
@@ -38,5 +39,6 @@ const HormoneTraitementSchema = new Schema<IHormoneTraitement>({
     ValeurMinNormale: Number,
     ValeurMaxNormale: Number,
     DejaUtilise: Boolean,
+    entrepriseId: String,
 }, { timestamps: true });
 export const HonoraireTraitement: Model<IHormoneTraitement> = mongoose.models.HormoneTraitement || mongoose.model<IHormoneTraitement>("HormoneTraitement", HormoneTraitementSchema);

@@ -10,6 +10,7 @@ export interface IApprovisionnement extends Document {
     Observations?: string;
     SaisiPar?: string;
     SaisiLe?: string | Date;
+    entrepriseId?: string;
 }
 
 const ApprovisionnementSchema = new Schema<IApprovisionnement>({
@@ -21,5 +22,6 @@ const ApprovisionnementSchema = new Schema<IApprovisionnement>({
     Observations: { type: String, maxlength: 120 },
     SaisiPar: { type: String, maxlength: 40 },
     SaisiLe: { type: Date },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 export const Approvisionnement: Model<IApprovisionnement> = mongoose.models.Approvisionnement || mongoose.model<IApprovisionnement>("Approvisionnement", ApprovisionnementSchema);

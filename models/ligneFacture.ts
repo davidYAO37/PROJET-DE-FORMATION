@@ -21,6 +21,7 @@ export interface ILigneFacture extends Document {
     IDCHIRURGIE?: Types.ObjectId;
     Beneficiaire?: string;
     SOCIETE_PATIENT?: string;
+    entrepriseId?: string;
 }
 
 const LigneFactureSchema = new Schema<ILigneFacture>({
@@ -44,6 +45,7 @@ const LigneFactureSchema = new Schema<ILigneFacture>({
     IDCHIRURGIE: { type: Schema.Types.ObjectId, ref: 'Chirurgie' },
     Beneficiaire: { type: String, maxlength: 60 },
     SOCIETE_PATIENT: { type: String, maxlength: 60 },
+    entrepriseId: { type: String },
 }, { timestamps: true });
 
 export const LigneFacture: Model<ILigneFacture> = mongoose.models.LigneFacture || mongoose.model<ILigneFacture>('LigneFacture', LigneFactureSchema);

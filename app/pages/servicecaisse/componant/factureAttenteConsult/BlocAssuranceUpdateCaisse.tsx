@@ -87,7 +87,7 @@ export default function BlocAssuranceUpdateCaisse({
                             >
                                 <option value="">-- Sélectionner --</option>
                                 {assurances.map(a => (
-                                    <option key={a._id} value={a._id}>{a.desiganationassurance}</option>
+                                    <option key={a._id} value={a._id}>{a.designationassurance}</option>
                                 ))}
                             </Form.Select>
                         </Col>

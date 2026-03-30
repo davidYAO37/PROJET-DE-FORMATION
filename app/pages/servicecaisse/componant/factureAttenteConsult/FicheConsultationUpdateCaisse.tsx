@@ -435,7 +435,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                             PatientP: currentConsultation.PatientP|| "",
                             assurance: selectedAssurance
                             ? assurances.find(a => a._id === selectedAssurance)
-                                ?.desiganationassurance || "NON ASSURE"
+                                ?.designationassurance || "NON ASSURE"
                             : "NON ASSURE",
                             tauxAssurance: Number(taux) || 0,
                             numero_carte: matricule,

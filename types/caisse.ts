@@ -17,4 +17,5 @@ export interface Caisse {
     IDOpération?: number;
     IDHonoraireMed?: string;
     IDMEDECIN?: string;
+    entrepriseId?: string;
 }

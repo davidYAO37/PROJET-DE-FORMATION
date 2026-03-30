@@ -526,7 +526,7 @@ export default function HospitalisationPage() {
                                 CodePrestation: CodePrestation || formData.patientId, // fallback si besoin
                                 Rclinique: formData.renseignementclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
-                                Assurance: formData.assurance || "",
+                                Assurance: formData.assurance?.designationassurance || "",
                                 Souscripteur: formData.assurance.adherent || "",
                                 Taux: formData.assurance.taux || 0,
                                 IdPatient: formData.patientId,
