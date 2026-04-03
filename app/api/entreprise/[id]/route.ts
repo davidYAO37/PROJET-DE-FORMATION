@@ -64,11 +64,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         LogoE: logoPath,
         NCC
       };
-      
-      console.log("Données FormData reçues pour modification entreprise:", {
-        ...updateData,
-        hasNewLogoFile: !!logoFile
-      });
+     
     } else {
       // Gérer JSON (ancien format)
       const body = await req.json();

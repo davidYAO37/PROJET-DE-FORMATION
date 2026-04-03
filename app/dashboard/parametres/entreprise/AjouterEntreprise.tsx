@@ -177,11 +177,6 @@ export default function AjouterEntreprise({
                               <i className="bi bi-trash"></i>
                             </Button>
                           </div>
-                          <div className="mt-2">
-                            <small className="text-muted fw-medium">
-                              {LogoE}
-                            </small>
-                          </div>
                         </div>
                       ) : (
                         <div
