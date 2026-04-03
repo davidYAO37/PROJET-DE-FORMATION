@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
-import { Button, Container, Row, Col, Navbar, Nav, Form, Alert, Spinner } from 'react-bootstrap';
-import { FaUserMd, FaHospitalAlt, FaEnvelope, FaUser, FaRegEnvelope, FaCommentDots, FaRegBell, FaHeartbeat } from 'react-icons/fa';
+import { Button, Container, Row, Col, Navbar, Nav, Form, Alert, Spinner, Carousel } from 'react-bootstrap';
+import { FaUserMd, FaHospitalAlt, FaEnvelope, FaUser, FaRegEnvelope, FaCommentDots, FaRegBell, FaHeartbeat, FaChevronLeft, FaChevronRight } from 'react-icons/fa';
 
 export default function Home() {
   // --- Gestion du formulaire de contact ---
@@ -17,6 +17,32 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   // État pour la création du super admin
   const [creatingSuperAdmin, setCreatingSuperAdmin] = useState(false);
+  // État pour les entreprises partenaires
+  const [entreprises, setEntreprises] = useState<any[]>([]);
+  const [loadingEntreprises, setLoadingEntreprises] = useState(false);
+
+  // Fonction pour charger les entreprises partenaires
+  const chargerEntreprises = async () => {
+    setLoadingEntreprises(true);
+    try {
+      const response = await fetch('/api/entreprises');
+      if (response.ok) {
+        const data = await response.json();
+        setEntreprises(data.data || []);
+      } else {
+        console.error('Erreur lors du chargement des entreprises');
+      }
+    } catch (error) {
+      console.error('Erreur:', error);
+    } finally {
+      setLoadingEntreprises(false);
+    }
+  };
+
+  // Charger les entreprises au montage du composant
+  useEffect(() => {
+    chargerEntreprises();
+  }, []);
 
   // Fonction pour créer le super admin si nécessaire
   const createSuperAdminIfNeeded = async () => {
@@ -231,11 +257,56 @@ export default function Home() {
                 premier plan afin de garantir une qualité de service optimale et
                 une innovation continue.
               </p>
-              <div className="d-flex flex-wrap justify-content-center gap-4 mt-4 partenaires-logos-medical">
-                {/* Logos des partenaires (exemple) */}
-                <img src="/images/auth.jpg" alt="Partenaire 1" className="partenaire-logo-medical js-hover" />
-                <img src="/images/auth1.jpg" alt="Partenaire 2" className="partenaire-logo-medical js-hover" />
-                <img src="/images/inscription.jpeg" alt="Partenaire 3" className="partenaire-logo-medical js-hover" />
+              <div className="mt-4">
+                {loadingEntreprises ? (
+                  <div className="text-center">
+                    <Spinner animation="border" role="status">
+                      <span className="visually-hidden">Chargement...</span>
+                    </Spinner>
+                  </div>
+                ) : entreprises.length > 0 ? (
+                  <Carousel 
+                    indicators={true}
+                    controls={true}
+                    interval={3000}
+                    pause="hover"
+                    className="partenaires-carousel"
+                    prevIcon={<span className="carousel-control-prev-icon" />}
+                    nextIcon={<span className="carousel-control-next-icon" />}
+                  >
+                    {entreprises.reduce((acc: any[][], entreprise, index) => {
+                      // Grouper les entreprises par 4 par slide
+                      const chunkIndex = Math.floor(index / 4);
+                      if (!acc[chunkIndex]) {
+                        acc[chunkIndex] = [];
+                      }
+                      if (entreprise.LogoE) {
+                        acc[chunkIndex].push(entreprise);
+                      }
+                      return acc;
+                    }, []).filter((chunk) => chunk.length > 0).map((chunk, chunkIndex) => (
+                      <Carousel.Item key={chunkIndex}>
+                        <div className="d-flex justify-content-center gap-4 partenaires-slide">
+                          {chunk.map((entreprise, index) => (
+                            <div key={index} className="text-center partenaire-item">
+                              <img 
+                                src={entreprise.LogoE} 
+                                alt={entreprise.NomSociete || `Partenaire ${chunkIndex * 4 + index + 1}`} 
+                                className="partenaire-logo-medical js-hover" 
+                                title={entreprise.NomSociete || ''}
+                              />
+                              <p className="mt-2 mb-0 small text-muted fw-semibold">
+                                {entreprise.NomSociete || `Partenaire ${chunkIndex * 4 + index + 1}`}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </Carousel.Item>
+                    ))}
+                  </Carousel>
+                ) : (
+                  <p className="text-muted">Aucun partenaire à afficher</p>
+                )}
               </div>
             </Col>
           </Row>

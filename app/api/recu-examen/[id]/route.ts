@@ -44,7 +44,7 @@ export async function GET(req: Request, context: { params: Promise<{ id: string 
 /* ================= ASSURANCE ================= */
     let designationassurance = "";
     if (facturation.Assurance) {
-      const assurance = await Assurance.findById(facturation.Assurance).lean();
+      const assurance = await Assurance.findById(facturation.IDASSURANCE).lean();
       if (assurance) {
         designationassurance = assurance.designationassurance || "";
       }

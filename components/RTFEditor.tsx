@@ -127,12 +127,13 @@ export default function RTFEditor({
           <Form.Select
             size="sm"
             style={{ width: '80px' }}
+            defaultValue="3"
             onChange={(e) => handleSizeChange(e.target.value)}
             title="Choisir la taille du texte"
           >
             <option value="1">Très petit</option>
             <option value="2">Petit</option>
-            <option value="3" selected>Normal</option>
+            <option value="3">Normal</option>
             <option value="4">Moyen</option>
             <option value="5">Grand</option>
             <option value="6">Très grand</option>

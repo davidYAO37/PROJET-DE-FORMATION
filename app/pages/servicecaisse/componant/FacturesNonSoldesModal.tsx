@@ -29,7 +29,7 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'patient' | 'designation' | 'date'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
-  
+
   // États pour le modal de paiement
   const [showPaiementModal, setShowPaiementModal] = useState(false);
   const [selectedFacture, setSelectedFacture] = useState<FactureNonSoldee | null>(null);
@@ -38,21 +38,34 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
   const [modePaiement, setModePaiement] = useState('');
   const [loadingPaiement, setLoadingPaiement] = useState(false);
 
+  const fetchOptsNoCache: RequestInit = {
+    cache: 'no-store',
+    headers: { 'Cache-Control': 'no-cache', Pragma: 'no-cache' },
+  };
+
+  const extraireListeFacturesApi = (data: unknown): any[] => {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === 'object' && Array.isArray((data as { data?: unknown }).data)) {
+      return (data as { data: any[] }).data;
+    }
+    return [];
+  };
+
   useEffect(() => {
     if (show) {
-      chargerFactures();
+      void chargerFactures();
     }
   }, [show]);
 
-  const chargerFactures = async () => {
+  const chargerFactures = async (options?: { retryIfSuspiciousEmpty?: boolean; countBefore?: number }) => {
     setLoading(true);
     setError('');
     try {
-      const response = await fetch('/api/facturesnonsoldees');
+      const response = await fetch('/api/facturesnonsoldees', fetchOptsNoCache);
       if (response.ok) {
         const data = await response.json();
-        const facturesBrutes = Array.isArray(data) ? data : [];
-        
+        const facturesBrutes = extraireListeFacturesApi(data);
+
         // Appliquer la logique de vérification des encaissements
         const facturesFiltrees = await Promise.all(
           facturesBrutes.map(async (facture) => {
@@ -60,32 +73,41 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
             if (facture.montantRestant <= 0) {
               return null;
             }
-            
-            // Vérifier dans les encaissements selon le type
-            let encaissements;
-            if (facture.type === 'consultation') {
-              // Pour les consultations, chercher par IDCONSULTATION
-              encaissements = await fetch(`/api/encaissementcaisse?idConsultation=${facture.id}`);
-            } else {
-              // Pour les facturations, chercher par IDFACTURATION
-              encaissements = await fetch(`/api/encaissementcaisse?idFacturation=${facture.id}`);
+
+            const idBrut = facture.id != null ? String(facture.id).trim() : '';
+            if (!idBrut) {
+              return facture;
             }
-            
+
+            const idEnc = encodeURIComponent(idBrut);
+            let encaissements: Response;
+            if (facture.type === 'consultation') {
+              encaissements = await fetch(
+                `/api/encaissementcaisse?idConsultation=${idEnc}`,
+                fetchOptsNoCache
+              );
+            } else {
+              encaissements = await fetch(
+                `/api/encaissementcaisse?idFacturation=${idEnc}`,
+                fetchOptsNoCache
+              );
+            }
+
             if (encaissements.ok) {
               const encaissementsData = await encaissements.json();
               const sommeEncaissements = encaissementsData.data?.reduce(
-                (sum: number, enc: any) => sum + (enc.Montantencaisse || 0), 
+                (sum: number, enc: any) => sum + (enc.Montantencaisse || 0),
                 0
               ) || 0;
-              
+
               // Calculer le reste réel à payer
               const resteReel = facture.montantRestant - sommeEncaissements;
-              
+
               // Si le reste à payer - la somme des encaissements = 0, on n'affiche pas
               if (resteReel <= 0) {
                 return null;
               }
-              
+
               // Sinon on affiche avec le reste réel
               return {
                 ...facture,
@@ -97,10 +119,19 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
             }
           })
         );
-        
+
         // Filtrer les null et mettre à jour les factures
-        const facturesValidées = facturesFiltrees.filter(f => f !== null);
+        const facturesValidées = facturesFiltrees.filter((f): f is NonNullable<typeof f> => f !== null);
         setFactures(facturesValidées);
+
+        if (
+          options?.retryIfSuspiciousEmpty &&
+          (options.countBefore ?? 0) > 1 &&
+          facturesValidées.length === 0
+        ) {
+          await new Promise((r) => setTimeout(r, 900));
+          await chargerFactures();
+        }
       } else {
         setError('Erreur lors du chargement des factures');
         setFactures([]);
@@ -171,30 +202,40 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
 
     setLoadingPaiement(true);
     try {
+      // utilisateur connecté
+      const utilisateur = localStorage.getItem('nom_utilisateur') || '';
       const response = await fetch('/api/encaissementcaisse', {
         method: 'POST',
+        cache: 'no-store',
         headers: {
           'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
         },
         body: JSON.stringify({
           type: selectedFacture.type,
           TotalapayerPatient: selectedFacture.montantRestant || 0,
           Montantencaisse: parseFloat(montantClient),
           Modepaiement: modePaiement,
-          Utilisateur: 'Utilisateur',
+          Utilisateur: utilisateur,
           IDFACTURATION: selectedFacture.type === 'consultation' ? '' : selectedFacture.id,
           IDCONSULTATION: selectedFacture.type === 'consultation' ? selectedFacture.id : undefined
-          
+
         }),
       });
 
       if (response.ok) {
+        const countAvantRefresh = factures.length;
         alert('Paiement enregistré avec succès');
         setShowPaiementModal(false);
         setMontantClient('');
         setModePaiement('');
         setSelectedFacture(null);
-        chargerFactures(); // Recharger la liste
+        // Laisser le temps au POST d’être visible côté MongoDB (serverless / latence réseau).
+        await new Promise((r) => setTimeout(r, 450));
+        await chargerFactures({
+          retryIfSuspiciousEmpty: true,
+          countBefore: countAvantRefresh,
+        });
       } else {
         alert('Erreur lors de l\'enregistrement du paiement');
       }
@@ -210,10 +251,10 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
     const variant = type === 'facturation' ? '#0d6efd' : '#198754';
     const icon = type === 'facturation' ? <FaFileInvoice /> : <FaMoneyBillWave />;
     return (
-      <span 
-        className="d-flex align-items-center gap-1" 
-        style={{ 
-          fontSize: '0.75rem', 
+      <span
+        className="d-flex align-items-center gap-1"
+        style={{
+          fontSize: '0.75rem',
           padding: '0.25rem 0.5rem',
           backgroundColor: variant,
           color: 'white',
@@ -232,9 +273,9 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
   const getStatutBadge = (statut: string) => {
     const variant = statut === 'Payé' ? '#198754' : statut === 'En cours de Paiement' ? '#ffc107' : '#dc3545';
     return (
-      <span 
-        style={{ 
-          fontSize: '0.75rem', 
+      <span
+        style={{
+          fontSize: '0.75rem',
           padding: '0.25rem 0.5rem',
           backgroundColor: variant,
           color: 'white',
@@ -247,12 +288,12 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
       </span>
     );
   };
-   // Récupérer les modes de paiement depuis l'API
+  // Récupérer les modes de paiement depuis l'API
   useEffect(() => {
     const fetchModesPaiement = async () => {
       try {
         const response = await fetch('/api/modepaiement');
-        
+
         if (!response.ok) {
           console.error('Erreur HTTP:', response.status);
           // Utiliser des modes de paiement par défaut
@@ -264,7 +305,7 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
           ]);
           return;
         }
-        
+
         const result = await response.json();
         if (result && result.data && Array.isArray(result.data)) {
           setModesPaiement(result.data);
@@ -293,9 +334,9 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
   }, []);
 
   return (
-    <Modal 
-      show={show} 
-      onHide={onHide} 
+    <Modal
+      show={show}
+      onHide={onHide}
       size="xl"
       centered
       backdrop="static"
@@ -307,7 +348,7 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
           Factures à Solder
         </Modal.Title>
       </Modal.Header>
-      
+
       <Modal.Body className="p-4">
         {/* Interface de recherche et de tri */}
         <div className="row mb-4">
@@ -456,7 +497,7 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
             </Table>
           </div>
         )}
-        
+
         {!loading && !error && getSortedAndFilteredFactures().length > 0 && (
           <div className="mt-3 p-3 bg-light rounded">
             <div className="row text-center">
@@ -480,13 +521,13 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
           </div>
         )}
       </Modal.Body>
-      
+
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
           Fermer
         </Button>
         {!loading && !error && factures.length > 0 && (
-          <Button variant="primary" onClick={chargerFactures}>
+          <Button variant="primary" onClick={() => { void chargerFactures(); }}>
             <i className="bi bi-arrow-clockwise me-2"></i>
             Actualiser
           </Button>
@@ -494,7 +535,7 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
       </Modal.Footer>
 
       {/* Modal de paiement */}
-      <Modal 
+      <Modal
         show={showPaiementModal}
         onHide={() => setShowPaiementModal(false)}
         size="lg"
@@ -541,24 +582,24 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
                   />
                 </Form.Group>
 
-                 <Form.Group className="mb-1">
-  <Form.Label>Mode de Paiement</Form.Label>
-  <Form.Select
-  className="border-info fw-bold text-info"
-  size="lg"
-  name="modePaiement"
-  value={modePaiement} // ✅ OK
-  onChange={(e: any) => setModePaiement(e.target.value)}
->
-  <option value="">-- Sélectionner --</option>
+                <Form.Group className="mb-1">
+                  <Form.Label>Mode de Paiement</Form.Label>
+                  <Form.Select
+                    className="border-info fw-bold text-info"
+                    size="lg"
+                    name="modePaiement"
+                    value={modePaiement} // ✅ OK
+                    onChange={(e: any) => setModePaiement(e.target.value)}
+                  >
+                    <option value="">-- Sélectionner --</option>
 
-  {modesPaiement.map((mode) => (
-    <option key={mode._id} value={mode.Modepaiement}>
-      {mode.Modepaiement}
-    </option>
-  ))}
-</Form.Select>
-</Form.Group>
+                    {modesPaiement.map((mode) => (
+                      <option key={mode._id} value={mode.Modepaiement}>
+                        {mode.Modepaiement}
+                      </option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
 
                 <div className="alert alert-warning">
                   <strong>Reste à payer après paiement:</strong>{" "}
@@ -572,8 +613,8 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
           <Button variant="secondary" onClick={() => setShowPaiementModal(false)}>
             Annuler
           </Button>
-          <Button 
-            variant="success" 
+          <Button
+            variant="success"
             onClick={handlePaiement}
             disabled={loadingPaiement || !montantClient || !modePaiement}
           >

@@ -48,6 +48,107 @@
   left: 0;
   opacity: 0.18;
 }
+
+/* Styles pour le carrousel des partenaires */
+.partenaires-carousel {
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.partenaires-carousel .carousel-indicators {
+  bottom: -40px;
+}
+
+.partenaires-carousel .carousel-indicators [data-bs-target] {
+  background-color: #6c757d;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  margin: 0 4px;
+  opacity: 0.5;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.partenaires-carousel .carousel-indicators .active {
+  background-color: #0d6efd;
+  opacity: 1;
+  transform: scale(1.2);
+}
+
+.partenaires-carousel .carousel-control-prev,
+.partenaires-carousel .carousel-control-next {
+  width: 40px;
+  height: 40px;
+  background-color: rgba(13, 110, 253, 0.1);
+  border-radius: 50%;
+  top: 50%;
+  transform: translateY(-50%);
+  opacity: 0;
+  transition: opacity 0.3s, background-color 0.3s;
+}
+
+.partenaires-carousel:hover .carousel-control-prev,
+.partenaires-carousel:hover .carousel-control-next {
+  opacity: 1;
+}
+
+.partenaires-carousel .carousel-control-prev:hover,
+.partenaires-carousel .carousel-control-next:hover {
+  background-color: rgba(13, 110, 253, 0.2);
+}
+
+.partenaires-carousel .carousel-control-prev {
+  left: -20px;
+}
+
+.partenaires-carousel .carousel-control-next {
+  right: -20px;
+}
+
+.partenaires-slide {
+  padding: 20px;
+  min-height: 200px;
+  align-items: center;
+}
+
+.partenaire-item {
+  flex: 1;
+  min-width: 180px;
+  max-width: 200px;
+  padding: 15px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 0.3s cubic-bezier(.4,0,.2,1), box-shadow 0.3s;
+}
+
+.partenaire-item:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(13, 110, 253, 0.15);
+}
+
+.partenaire-item .partenaire-logo-medical {
+  width: 100%;
+  max-width: 120px;
+  height: auto;
+  margin-bottom: 10px;
+}
+
+@media (max-width: 768px) {
+  .partenaires-slide {
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  .partenaire-item {
+    max-width: 160px;
+  }
+  
+  .partenaires-carousel .carousel-control-prev,
+  .partenaires-carousel .carousel-control-next {
+    display: none;
+  }
+}
 .hero-btn-animated:active {
   box-shadow: 0 2px 16px #0d6efd33;
 }

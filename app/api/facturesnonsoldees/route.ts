@@ -3,6 +3,8 @@ import { Consultation } from "@/models/consultation";
 import { Facturation } from "@/models/Facturation";
 import { db } from "@/db/mongoConnect";
 
+export const dynamic = "force-dynamic";
+
 export async function GET(req: NextRequest) {
     await db();
 
@@ -90,7 +92,12 @@ export async function GET(req: NextRequest) {
             }).filter(Boolean)
         ];
 
-        return NextResponse.json(result);
+        return NextResponse.json(result, {
+            headers: {
+                "Cache-Control": "no-store, max-age=0",
+                Vary: "*",
+            },
+        });
 
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Erreur inconnue';

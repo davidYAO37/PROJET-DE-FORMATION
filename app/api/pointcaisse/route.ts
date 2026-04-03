@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
 import { db } from '@/db/mongoConnect';
 import { EncaissementCaisse } from '@/models/EncaissementCaisse';
 import { Consultation } from '@/models/consultation';
 import { Facturation } from '@/models/Facturation';
+import { LignePrestation } from '@/models/lignePrestation';
+import { PatientPrescription } from '@/models/PatientPrescription';
 
 export async function GET(request: NextRequest) {
   try {
@@ -14,7 +15,7 @@ export async function GET(request: NextRequest) {
     const dateDebut = searchParams.get('dateDebut');
     const dateFin = searchParams.get('dateFin');
     const modeAffichage = searchParams.get('modeAffichage') || 'famille';
-    const ongletActif = searchParams.get('ongletActif') || 'sansNom';
+    const ongletActif = searchParams.get('ongletActif') || 'parCaissiere';
     const modePaiement = searchParams.get('modePaiement') || 'TOUS LES PAIEMENTS';
     const typePatient = searchParams.get('typePatient') || '';
     const caissiere = searchParams.get('caissiere') || '';
@@ -29,6 +30,8 @@ export async function GET(request: NextRequest) {
     const debutDate = new Date(dateDebut);
     const finDate = new Date(dateFin);
     finDate.setHours(23, 59, 59, 999); // Inclure toute la journée de fin
+
+    const normaliser = (valeur?: string) => (valeur || '').trim().toLowerCase();
 
     let donneesCompletees: any[] = [];
 
@@ -69,19 +72,60 @@ export async function GET(request: NextRequest) {
       ]
     });
 
+    const formatListeNumerotee = (items: string[]) =>
+      items.map((item, index) => `${index + 1}. ${item}`).join('\n');
+
+    const facturationIds = facturations.map((f) => f._id);
+    const [lignesPrestation, lignesPrescription] = await Promise.all([
+      LignePrestation.find({ idFacturation: { $in: facturationIds } }).lean(),
+      PatientPrescription.find({ facturation: { $in: facturationIds } }).lean()
+    ]);
+
+    const prestationsParFacturation = new Map<string, string[]>();
+    for (const ligne of lignesPrestation) {
+      const cle = String(ligne.idFacturation || '');
+      if (!cle) continue;
+      const items = prestationsParFacturation.get(cle) || [];
+      if (ligne.prestation) items.push(ligne.prestation);
+      prestationsParFacturation.set(cle, items);
+    }
+
+    const prescriptionsParFacturation = new Map<string, string[]>();
+    for (const prescription of lignesPrescription) {
+      const cle = String(prescription.facturation || '');
+      if (!cle) continue;
+      const items = prescriptionsParFacturation.get(cle) || [];
+      if (prescription.nomMedicament) items.push(prescription.nomMedicament);
+      prescriptionsParFacturation.set(cle, items);
+    }
+
     for (const facturation of facturations) {      
       
       let designationDetaillee = facturation.Designationtypeacte || '';
       
-      // Logique WinDev: Gérer PHARMACIE vs PRESTATION
-      if (designationDetaillee === 'PHARMACIE') {
-        // Logique pour récupérer les médicaments (simplifiée pour l'instant)
-        // POUR TOUT PARTIENT_PRESCRIPTION AVEC IDFACTURATION=FACTURATION.IDFACTURATION
-        designationDetaillee = 'PHARMACIE';
-      } else {
-        // Logique pour récupérer les prestations (simplifiée pour l'instant)
-        // POUR TOUT LIGNE_PRESTATION AVEC IDFACTURATION=FACTURATION.IDFACTURATION
-        designationDetaillee = 'PRESTATION';
+      if (modeAffichage === 'detail') {
+        const facturationId = String(facturation._id);
+        const designationNormalisee = normaliser(designationDetaillee);
+
+        // En mode detail, afficher les lignes liées à la facturation.
+        if (designationNormalisee === 'pharmacie') {
+          const listeMedicaments = prescriptionsParFacturation.get(facturationId) || [];
+          designationDetaillee = listeMedicaments.length
+            ? formatListeNumerotee(listeMedicaments)
+            : 'PHARMACIE';
+        } else if (designationNormalisee === 'prestation') {
+          const listePrestations = prestationsParFacturation.get(facturationId) || [];
+          designationDetaillee = listePrestations.length
+            ? formatListeNumerotee(listePrestations)
+            : 'PRESTATION';
+        } else {
+          // Fallback: tenter d'afficher ce qui existe même si le type est atypique.
+          const listeFallback = (prestationsParFacturation.get(facturationId) || [])
+            .concat(prescriptionsParFacturation.get(facturationId) || []);
+          if (listeFallback.length) {
+            designationDetaillee = formatListeNumerotee(listeFallback);
+          }
+        }
       }
 
       donneesCompletees.push({
@@ -138,8 +182,8 @@ export async function GET(request: NextRequest) {
     // Logique WinDev: SELON SEL_AFFICHAGE_ACTE
     if (modeAffichage === 'famille') {
       // PAR FAMILLE
-      if (ongletActif === 'sansNom') {
-        // CAS 1 - Sans Nom
+      if (ongletActif === 'parCaissiere') {
+        // CAS 1 - Par Caissière
         if (modePaiement !== 'TOUS LES PAIEMENTS' && modePaiement !== '') {
           // Logique WinDev: Paiement_par_mode_de_paiement()
           donneesFiltrees = donneesFiltrees.filter(item => 
@@ -147,30 +191,46 @@ export async function GET(request: NextRequest) {
           );
         }
         // Sinon: Logique WinDev: TOUS_LES_PAIEMENT_CAISSE()
-      } else {
-        // AUTRE CAS - Avec Nom
+      } else if (ongletActif === 'statutPatient') {
+        // CAS 2 - Par Statut Patient
         // Logique WinDev: Tous_paiement_par_typePatient()
         if (typePatient !== '') {
-          donneesFiltrees = donneesFiltrees.filter(item => 
-            item.Assure === typePatient
-          );
+          donneesFiltrees = donneesFiltrees.filter(item => {
+            // Mapper les valeurs du type patient aux valeurs du champ Assure
+            if (typePatient === 'NON ASSURE') {
+              return item.Assure === 'NON' || item.Assure === '';
+            } else if (typePatient === 'TARIF MUTUALISTE') {
+              return item.Assure === 'MUTUALISTE';
+            } else if (typePatient === 'TARIF ASSURE') {
+              return item.Assure === 'OUI' || item.Assure === 'ASSURE';
+            }
+            return false;
+          });
         }
       }
     } else {
       // PAR DETAIL - même logique que PAR FAMILLE
-      if (ongletActif === 'sansNom') {
+      if (ongletActif === 'parCaissiere') {
         if (modePaiement !== 'TOUS LES PAIEMENTS' && modePaiement !== '') {
           // Logique WinDev: Paiement_par_mode_de_paiement_detail()
           donneesFiltrees = donneesFiltrees.filter(item => 
             item.Modepaiement === modePaiement
           );
         }
-      } else {
+      } else if (ongletActif === 'statutPatient') {
         if (typePatient !== '') {
           // Logique WinDev: Tous_paiement_par_typePatient_detail()
-          donneesFiltrees = donneesFiltrees.filter(item => 
-            item.Assure === typePatient
-          );
+          donneesFiltrees = donneesFiltrees.filter(item => {
+            // Mapper les valeurs du type patient aux valeurs du champ Assure
+            if (typePatient === 'NON ASSURE') {
+              return item.Assure === 'NON' || item.Assure === '';
+            } else if (typePatient === 'TARIF MUTUALISTE') {
+              return item.Assure === 'MUTUALISTE';
+            } else if (typePatient === 'TARIF ASSURE') {
+              return item.Assure === 'OUI' || item.Assure === 'ASSURE';
+            }
+            return false;
+          });
         }
       }
     }
@@ -181,9 +241,8 @@ export async function GET(request: NextRequest) {
     //   Tous_paiement_par_caissière()
     // FIN
     if (caissiere !== '') {
-      donneesFiltrees = donneesFiltrees.filter(item => 
-        item.Caissiere === caissiere
-      );
+      const caissiereNormalisee = normaliser(caissiere);
+      donneesFiltrees = donneesFiltrees.filter(item => normaliser(item.Caissiere) === caissiereNormalisee);
     }
 
     // Logique WinDev: TableTrie(TABLE_ESPECE,"+COL_DateActe")
