@@ -1,8 +1,7 @@
-  import { db } from "@/db/mongoConnect";
+import { db } from "@/db/mongoConnect";
 import { Entreprise } from "@/models/entreprise";
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { buildLogoDataUrlFromUpload } from "@/lib/entrepriseLogo";
 
 export async function GET() {
   await db();
@@ -29,31 +28,23 @@ export async function POST(req: Request) {
 
     let logoPath = LogoE; // Par défaut, utilise le nom du fichier
 
-    // Si un fichier est fourni, le sauvegarder
-    if (logoFile) {
+    // Logo : stockage data URL en base (Vercel n'a pas de disque persistant pour public/uploads)
+    if (logoFile && typeof logoFile !== "string") {
       try {
-        // Créer le répertoire uploads/logos s'il n'existe pas
-        const uploadsDir = join(process.cwd(), 'public', 'uploads', 'logos');
-        await mkdir(uploadsDir, { recursive: true });
-
-        // Générer un nom de fichier unique
-        const timestamp = Date.now();
-        const fileExtension = logoFile.name.split('.').pop();
-        const fileName = `${timestamp}_${logoFile.name}`;
-        const filePath = join(uploadsDir, fileName);
-
-        // Sauvegarder le fichier
         const bytes = await logoFile.arrayBuffer();
         const buffer = Buffer.from(bytes);
-        await writeFile(filePath, buffer);
-
-        // Stocker le chemin relatif pour l'affichage
-        logoPath = `/uploads/logos/${fileName}`;
-        
-        console.log("Fichier logo sauvegardé:", logoPath);
+        logoPath = buildLogoDataUrlFromUpload(logoFile, buffer);
       } catch (fileError) {
-        console.error("Erreur sauvegarde fichier:", fileError);
-        // Continuer avec le nom du fichier si la sauvegarde échoue
+        console.error("Erreur traitement logo:", fileError);
+        return NextResponse.json(
+          {
+            error:
+              fileError instanceof Error
+                ? fileError.message
+                : "Erreur lors du traitement du logo",
+          },
+          { status: 400 }
+        );
       }
     }
 

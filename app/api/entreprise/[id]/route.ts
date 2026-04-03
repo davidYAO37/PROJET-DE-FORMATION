@@ -1,8 +1,7 @@
 import { db } from "@/db/mongoConnect";
 import { Entreprise } from "@/models/entreprise";
 import { NextResponse } from "next/server";
-import { writeFile, mkdir } from "fs/promises";
-import { join } from "path";
+import { buildLogoDataUrlFromUpload } from "@/lib/entrepriseLogo";
 
 export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
   await db();
@@ -39,31 +38,22 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
       let logoPath = LogoE; // Par défaut, garde le chemin existant
 
-      // Si un nouveau fichier est fourni, le sauvegarder
-      if (logoFile) {
+      if (logoFile && typeof logoFile !== "string") {
         try {
-          // Créer le répertoire uploads/logos s'il n'existe pas
-          const uploadsDir = join(process.cwd(), 'public', 'uploads', 'logos');
-          await mkdir(uploadsDir, { recursive: true });
-
-          // Générer un nom de fichier unique
-          const timestamp = Date.now();
-          const fileExtension = logoFile.name.split('.').pop();
-          const fileName = `${timestamp}_${logoFile.name}`;
-          const filePath = join(uploadsDir, fileName);
-
-          // Sauvegarder le fichier
           const bytes = await logoFile.arrayBuffer();
           const buffer = Buffer.from(bytes);
-          await writeFile(filePath, buffer);
-
-          // Stocker le chemin relatif pour l'affichage
-          logoPath = `/uploads/logos/${fileName}`;
-          
-          console.log("Nouveau fichier logo sauvegardé:", logoPath);
+          logoPath = buildLogoDataUrlFromUpload(logoFile, buffer);
         } catch (fileError) {
-          console.error("Erreur sauvegarde fichier:", fileError);
-          // Continuer avec le chemin existant si la sauvegarde échoue
+          console.error("Erreur traitement logo:", fileError);
+          return NextResponse.json(
+            {
+              error:
+                fileError instanceof Error
+                  ? fileError.message
+                  : "Erreur lors du traitement du logo",
+            },
+            { status: 400 }
+          );
         }
       }
 
