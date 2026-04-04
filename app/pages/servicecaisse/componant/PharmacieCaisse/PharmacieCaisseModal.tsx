@@ -126,14 +126,14 @@ export default function PharmacieCaisseModal({
     try {
       // Utiliser la nouvelle API recu-pharmacie pour récupérer toutes les données
       const response = await fetch(`/api/recu-pharmacie/${facturationId}`);
-      
+
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || 'Erreur lors du chargement du reçu pharmacie');
       }
 
       const data = await response.json();
-      
+
       setRecuFacturation(data.facturation);
       setRecuLignes(data.lignes);
       setShowRecuModal(true);
@@ -702,7 +702,7 @@ export default function PharmacieCaisseModal({
       Assurance: consultation.assurance || "",
       IDASSURANCE: consultation.IDASSURANCE || "",
       IDMEDECIN: consultation.IDMEDECIN || "",
-      StatutFacture: true,
+      StatutFacture: false, // Toujours false à la création, la logique de validation se fait au niveau de la prescription
       Modepaiement: modePaiement,
       StatutPaiement: "Facture payée",
       typefacture: "PHARMACIE"

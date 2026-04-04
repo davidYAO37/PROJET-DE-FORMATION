@@ -15,8 +15,11 @@ export interface Facture {
     TotalPaye?: number;
     reduction?: number;
     Restapayer?: number;
-    SaisiPar?: string
-    // Ajoutez d'autres champs si nécessaire
+    SaisiPar?: string;
+    StatutFacture?: boolean;
+    Ordonnerlannulation?: boolean;
+    AnnulOrdonnerPar?: string;
+    AnnulationOrdonneLe?: Date;
 }
 
 interface ListeFactureModalProps {
@@ -86,14 +89,14 @@ export default function ListeFactureModal({
         try {
             // Utiliser la nouvelle API recu-pharmacie pour récupérer toutes les données
             const response = await fetch(`/api/recu-pharmacie/${factureId}`);
-            
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.error || 'Erreur lors du chargement du reçu pharmacie');
             }
 
             const data = await response.json();
-            
+
             setSelectedFactureId(factureId);
             setSelectedFacture(data.facturation);
             setFactureLignes(data.lignes);
@@ -109,6 +112,61 @@ export default function ListeFactureModal({
         setSelectedFactureId(null);
         setSelectedFacture(null);
         setFactureLignes([]);
+    };
+
+    const handleAnnulerFacture = async (facture: Facture) => {
+        // Vérifier si la facture du mois est fermée
+        if (facture.StatutFacture) {
+            alert("Impossible d'ordonner cette annulation\nFacture du mois fermé pour cette prestation");
+            return;
+        }
+
+        // Demander confirmation
+        const confirmAnnulation = window.confirm("Voulez-vous ordonner l'annulation de cette facture ?");
+        if (!confirmAnnulation) return;
+
+        // Confirmer à nouveau
+        const confirmFinal = window.confirm("Voulez-vous confirmer cette annulation ?");
+        if (!confirmFinal) return;
+
+        try {
+            const utilisateur = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || 'Utilisateur inconnu';
+
+            const response = await fetch(`/api/facturation/${facture._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    Ordonnerlannulation: true,
+                    AnnulOrdonnerPar: utilisateur,
+                    AnnulationOrdonneLe: new Date(),
+                }),
+            });
+
+            if (response.ok) {
+                alert("Annulation ordonnée avec succès");
+                // Mettre à jour l'état local immédiatement pour la surbrillance
+                const utilisateur = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || 'Utilisateur inconnu';
+                setFactures(prevFactures =>
+                    prevFactures.map(f =>
+                        f._id === facture._id
+                            ? {
+                                ...f,
+                                Ordonnerlannulation: true,
+                                AnnulOrdonnerPar: utilisateur,
+                                AnnulationOrdonneLe: new Date()
+                            }
+                            : f
+                    )
+                );
+            } else {
+                alert("Erreur lors de l'annulation");
+            }
+        } catch (error) {
+            console.error('Erreur annulation:', error);
+            alert("Erreur de connexion");
+        }
     };
 
     return (
@@ -163,7 +221,13 @@ export default function ListeFactureModal({
                                 </thead>
                                 <tbody>
                                     {factures.map((facture) => (
-                                        <tr key={facture._id}>
+                                        <tr
+                                            key={facture._id}
+                                            style={{
+                                                backgroundColor: facture.Ordonnerlannulation ? '#ffe6e6' : 'inherit',
+                                                borderLeft: facture.Ordonnerlannulation ? '4px solid #dc3545' : 'none'
+                                            }}
+                                        >
                                             <td>{formatFactureId(facture._id)}</td>
                                             <td>{facture.DatePres ? new Date(facture.DatePres).toLocaleDateString() : 'N/A'}</td>
                                             <td>{facture.PatientP}</td>
@@ -174,16 +238,51 @@ export default function ListeFactureModal({
                                             <td>{facture.TotalPaye}</td>
                                             <td>{facture.reduction}</td>
                                             <td>{facture.Restapayer}</td>
-                                            <td>{facture.SaisiPar}</td>
+                                            <td>
+                                                {facture.Ordonnerlannulation ? (
+                                                    <span style={{
+                                                        fontSize: '0.75rem',
+                                                        padding: '0.25rem 0.5rem',
+                                                        backgroundColor: '#dc3545',
+                                                        color: 'white',
+                                                        borderRadius: '0.375rem',
+                                                        display: 'inline-block',
+                                                        fontWeight: 500
+                                                    }}>
+                                                        <i className="bi bi-x-circle-fill me-1"></i>Annulation en cours
+                                                    </span>
+                                                ) : (
+                                                    facture.SaisiPar
+                                                )}
+                                            </td>
                                             <td style={{ position: 'sticky', right: 0, background: 'white', zIndex: 1 }}>
-                                                <Button
-                                                    variant="outline-primary"
-                                                    size="sm"
-                                                    className="me-2"
-                                                    onClick={() => handlePrintFacture(facture._id)}
-                                                >
-                                                    <FaPrint className="me-1" /> PDF
-                                                </Button>
+                                                {facture.Ordonnerlannulation ? (
+                                                    <Button variant="outline-secondary" size="sm" disabled className="me-2">
+                                                        <FaPrint className="me-1" /> PDF
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        className="me-2"
+                                                        onClick={() => handlePrintFacture(facture._id)}
+                                                    >
+                                                        <FaPrint className="me-1" /> PDF
+                                                    </Button>
+                                                )}
+                                                {facture.Ordonnerlannulation ? (
+                                                    <Button variant="outline-secondary" size="sm" disabled>
+                                                        <i className="bi bi-x-circle"></i> Annuler
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="outline-danger"
+                                                        size="sm"
+                                                        onClick={() => handleAnnulerFacture(facture)}
+                                                    >
+                                                        <i className="bi bi-x-circle"></i> Annuler
+                                                    </Button>
+                                                )}
                                             </td>
                                         </tr>
                                     ))}

@@ -23,7 +23,37 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    await db();
 
+    try {
+        const { id } = await params;
+        const data = await req.json();
+
+        const consultation = await Consultation.findById(id);
+        if (!consultation) {
+            return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
+        }
+
+        // Mise à jour partielle des champs fournis
+        Object.keys(data).forEach(key => {
+            if (data[key] !== undefined) {
+                (consultation as any)[key] = data[key];
+            }
+        });
+
+        await consultation.save();
+
+        return NextResponse.json({
+            success: true,
+            consultation,
+            message: "Consultation mise à jour avec succès"
+        });
+    } catch (error: any) {
+        console.error('Erreur API PATCH /api/consultation/[id]:', error);
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+}
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await db();
 

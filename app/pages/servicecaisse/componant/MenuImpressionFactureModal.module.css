@@ -1,0 +1,225 @@
+.professionalModal {
+  --bs-modal-border-radius: 12px;
+}
+
+.professionalModal :global(.modal-content) {
+  border: 1px solid #e0e7ff;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 
+              0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+}
+
+.modalHeader {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  padding: 24px;
+  border-bottom: 1px solid #e0e7ff;
+}
+
+.headerContent {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  color: white;
+}
+
+.modalTitle {
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: white !important;
+  margin: 0;
+}
+
+.modalHeader :global(.btn-close) {
+  filter: brightness(0) invert(1);
+  opacity: 0.8;
+}
+
+.modalHeader :global(.btn-close:focus) {
+  opacity: 1;
+}
+
+.modalBody {
+  padding: 32px;
+  background: linear-gradient(to bottom, #fafbff, #ffffff);
+}
+
+.formGroup {
+  margin-bottom: 28px;
+}
+
+.formLabel {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #2d3748;
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+  letter-spacing: -0.3px;
+}
+
+.formLabel i {
+  color: #667eea;
+}
+
+.formControl {
+  border: 2px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 0.95rem;
+  font-weight: 500;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: #f8fafc;
+}
+
+.formControl:focus {
+  border-color: #667eea;
+  background-color: #ffffff;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.formControl::placeholder {
+  color: #a0aec0;
+  font-weight: 500;
+}
+
+.separator {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, #e2e8f0, transparent);
+  margin: 24px 0;
+}
+
+.menuContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.menuSection {
+  transition: opacity 0.2s ease;
+}
+
+.menuSection:hover {
+  transform: none;
+}
+
+.menuButton {
+  width: 100%;
+  padding: 14px 18px;
+  border: 2px solid #cbd5e0;
+  border-radius: 10px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #2d3748;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background-color: #f8fafc;
+  text-align: left;
+}
+
+.menuButton i:first-child {
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+
+.menuButton:hover {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-color: #667eea;
+  box-shadow: 0 10px 20px rgba(102, 126, 234, 0.15);
+}
+
+.menuButton:hover i {
+  color: white;
+}
+
+.menuButton:hover i:last-child {
+  transform: translateX(4px);
+  transition: transform 0.3s ease;
+}
+
+.buttonLabel {
+  flex: 1;
+  letter-spacing: -0.3px;
+}
+
+.dropdownMenu {
+  min-width: 170px !important;
+  max-width: 220px !important;
+  right: 0 !important;
+  left: auto !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 10px !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
+              0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+  padding: 8px 0 !important;
+  animation: slideIn 0.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(-8px);
+  }
+}
+
+.dropdownItem {
+  padding: 12px 16px !important;
+  font-weight: 500;
+  font-size: 0.9rem;
+  color: #4a5568 !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 10px !important;
+  transition: all 0.2s ease !important;
+  border-left: 3px solid transparent !important;
+}
+
+.dropdownItem i {
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  color: #667eea;
+}
+
+.dropdownItem:hover {
+  background-color: #f0f4ff !important;
+  color: #667eea !important;
+  border-left-color: #667eea !important;
+}
+
+.dropdownItem:hover i {
+  color: #667eea;
+}
+
+/* Responsive adjustments */
+@media (max-width: 576px) {
+  .modalBody {
+    padding: 20px;
+  }
+
+  .modalTitle {
+    font-size: 1.1rem;
+  }
+
+  .menuButton {
+    padding: 12px 14px;
+    font-size: 0.85rem;
+  }
+
+  .buttonLabel {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .dropdownMenu {
+    min-width: 180px !important;
+  }
+}

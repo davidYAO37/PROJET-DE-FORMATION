@@ -8,6 +8,8 @@ import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/componan
 import PharmacieCaisseModal from '@/app/pages/servicecaisse/componant/PharmacieCaisse/PharmacieCaisseModal';
 import FacturesNonSoldesModal from '@/app/pages/servicecaisse/componant/FacturesNonSoldesModal';
 import PointCaisseModal from '@/app/pages/servicecaisse/componant/PointCaisseModal';
+import ListeEncaissementModal from '@/app/pages/servicecaisse/componant/ListeEncaissementModal';
+import MenuImpressionFactureModal from '@/app/pages/servicecaisse/componant/MenuImpressionFactureModal';
 
 
 const menu = [
@@ -15,10 +17,11 @@ const menu = [
   { label: 'Factures en attente', path: '/pages/servicecaisse/listefactures', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
   { label: 'Saisir une Facture Exam-Hospit...', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i>, style: { cursor: 'pointer' } },
   { label: 'Facturer une pharmacie', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-warning"></i>, style: { cursor: 'pointer' } },
-  { label: 'Caution Patient', path: '/salle-attente', icon: <i className="bi bi-people-fill me-2 text-secondary"></i> },
   { label: 'Facture à solder', path: '#', isModal: true, icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i>, style: { cursor: 'pointer' } },
   { label: 'Point de caisse', path: '#', isModal: true, icon: <i className="bi bi-cash-stack me-2 text-success"></i>, style: { cursor: 'pointer' } },
-  { label: 'Imprimer Facture', path: '/planning-medecin', icon: <i className="bi bi-printer-fill me-2 text-primary"></i> },
+  { label: 'Liste encaissement', path: '#', isModal: true, icon: <i className="bi bi-card-list me-2 text-info"></i>, style: { cursor: 'pointer' } },
+  { label: 'Imprimer Facture', path: '#', isModal: true, icon: <i className="bi bi-printer-fill me-2 text-primary"></i>, style: { cursor: 'pointer' } },
+  { label: 'Mot de passe', path: '/salle-attente', icon: <i className="bi bi-people-fill me-2 text-secondary"></i> },
 ];
 
 export default function Sidebarcaisse() {
@@ -29,6 +32,8 @@ export default function Sidebarcaisse() {
   const [showPaiementPharmacieModal, setShowPaiementPharmacieModal] = useState(false);
   const [showFacturesNonSoldesModal, setShowFacturesNonSoldesModal] = useState(false);
   const [showPointCaisseModal, setShowPointCaisseModal] = useState(false);
+  const [showListeEncaissementModal, setShowListeEncaissementModal] = useState(false);
+  const [showMenuImpressionModal, setShowMenuImpressionModal] = useState(false);
   const [facturesEnAttenteCount, setFacturesEnAttenteCount] = useState(0);
 
 
@@ -55,7 +60,7 @@ export default function Sidebarcaisse() {
         const prescriptions = prescRes.ok ? await prescRes.json() : [];
 
         // Calculer le total
-        const totalCount = 
+        const totalCount =
           (Array.isArray(consultations) ? consultations.length : 0) +
           (Array.isArray(prestations) ? prestations.length : 0) +
           (Array.isArray(prescriptions) ? prescriptions.length : 0);
@@ -68,10 +73,10 @@ export default function Sidebarcaisse() {
     };
 
     fetchFacturesEnAttente();
-    
+
     // Rafraîchir toutes les 30 secondes
     const interval = setInterval(fetchFacturesEnAttente, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -91,7 +96,7 @@ export default function Sidebarcaisse() {
       const prescriptions = prescRes.ok ? await prescRes.json() : [];
 
       // Calculer le total
-      const totalCount = 
+      const totalCount =
         (Array.isArray(consultations) ? consultations.length : 0) +
         (Array.isArray(prestations) ? prestations.length : 0) +
         (Array.isArray(prescriptions) ? prescriptions.length : 0);
@@ -139,6 +144,20 @@ export default function Sidebarcaisse() {
     setOpen(false);
   };
 
+  // ouvre le modal Liste encaissement et ferme la sidebar en mobile
+  const handleListeEncaissementClick = () => {
+    setShowListeEncaissementModal(true);
+    setOpen(false);
+  };
+
+  // ouvre le modal Menu Impression Facture et ferme la sidebar en mobile
+  const handleMenuImpressionClick = () => {
+    setShowMenuImpressionModal(true);
+    setOpen(false);
+  };
+
+
+
   return (
     <>
       {/* Bouton burger visible sur mobile */}
@@ -174,13 +193,17 @@ export default function Sidebarcaisse() {
                 <div
                   className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''} cursor-pointer`}
                   onClick={
-                    item.label === 'Facturer une pharmacie' 
-                      ? handlePaiementPharmacieClick 
+                    item.label === 'Facturer une pharmacie'
+                      ? handlePaiementPharmacieClick
                       : item.label === 'Facture à solder'
-                      ? handleFacturesNonSoldesClick
-                      : item.label === 'Point de caisse'
-                      ? handlePointCaisseClick
-                      : handleFactureClick
+                        ? handleFacturesNonSoldesClick
+                        : item.label === 'Point de caisse'
+                          ? handlePointCaisseClick
+                          : item.label === 'Liste encaissement'
+                            ? handleListeEncaissementClick
+                            : item.label === 'Imprimer Facture'
+                              ? handleMenuImpressionClick
+                              : handleFactureClick
                   }
                 >
                   {item.icon}
@@ -230,6 +253,18 @@ export default function Sidebarcaisse() {
       <PointCaisseModal
         show={showPointCaisseModal}
         onHide={() => setShowPointCaisseModal(false)}
+      />
+
+      {/* Modal pour la liste des encaissements */}
+      <ListeEncaissementModal
+        show={showListeEncaissementModal}
+        onHide={() => setShowListeEncaissementModal(false)}
+      />
+
+      {/* Modal pour le menu impression facture */}
+      <MenuImpressionFactureModal
+        show={showMenuImpressionModal}
+        onHide={() => setShowMenuImpressionModal(false)}
       />
 
     </>

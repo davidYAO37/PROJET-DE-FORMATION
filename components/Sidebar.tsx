@@ -4,9 +4,11 @@ import Link from 'next/link';
 import { Accordion, Button } from 'react-bootstrap';
 import { useState } from 'react';
 import { useAuthUser } from '@/hooks/useAuthUser';
+import ListeAnnulationFactureModal from '@/app/pages/servicecaisse/componant/ListeAnnulationFactureModal';
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
+  const [showListeAnnulationModal, setShowListeAnnulationModal] = useState(false);
   const { user, loading } = useAuthUser();
 
   return (
@@ -97,6 +99,17 @@ export default function Sidebar() {
                   <Link href="/pages/servicecaisse/tcaisse" className="sidebar-link-medical d-flex align-items-center">
                     <i className="bi bi-cash-coin me-2 text-warning"></i> Gestion caisse
                   </Link>
+                </li>
+              </ul>
+              <ul className="nav flex-column gap-2">
+                <li>
+                  <button
+                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                    onClick={() => setShowListeAnnulationModal(true)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className="bi bi-exclamation-triangle-fill me-2 text-danger"></i> Liste à annuler
+                  </button>
                 </li>
               </ul>
             </Accordion.Body>
@@ -241,23 +254,29 @@ export default function Sidebar() {
                     <i className="bi bi-cart-check-fill me-2 text-primary"></i> Gestion Achats
                   </Link>
                 </li>
-                 <li>
+                <li>
                   <Link href="/dashboard/parametres/modepaiement" className="sidebar-link-medical d-flex align-items-center">
                     <i className="bi bi-credit-card-fill me-2 text-primary"></i> Mode Paiement
                   </Link>
                 </li>
-                 {!loading && user && user.type === 'adminsuper' && (
+                {!loading && user && user.type === 'adminsuper' && (
                   <li>
                     <Link href="/dashboard/parametres/entreprise" className="sidebar-link-medical d-flex align-items-center">
                       <i className="bi bi-building me-2 text-primary"></i> Gestion entreprise
                     </Link>
                   </li>
-                 )}
+                )}
               </ul>
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
       </aside>
+
+      {/* Modal pour la liste des annulations de factures */}
+      <ListeAnnulationFactureModal
+        show={showListeAnnulationModal}
+        onHide={() => setShowListeAnnulationModal(false)}
+      />
     </>
   );
 }

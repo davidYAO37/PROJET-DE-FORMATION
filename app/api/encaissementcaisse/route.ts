@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { EncaissementCaisse, IEncaissementCaisse } from '@/models/EncaissementCaisse';
+import { EncaissementCaisseAnnule } from '@/models/EncaissementCaisseAnnule';
 import { db } from '@/db/mongoConnect';
 import { Facturation } from '@/models/Facturation';
 import { Consultation } from '@/models/consultation';
@@ -137,15 +138,16 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const idFacturation = searchParams.get('idFacturation');
     const idConsultation = searchParams.get('idConsultation');
+    const all = searchParams.get('all');
 
     let encaissements: IEncaissementCaisse[] = [];
 
-    if (idConsultation && idConsultation.trim() !== '') {
-      encaissements = await EncaissementCaisse.find({ IDCONSULTATION: idConsultation.trim() })
-        .sort({ DateEncaissement: -1 });
+    if (all === '1' || all === 'true') {
+      encaissements = await EncaissementCaisse.find().sort({ DateEncaissement: -1 });
+    } else if (idConsultation && idConsultation.trim() !== '') {
+      encaissements = await EncaissementCaisse.find({ IDCONSULTATION: idConsultation.trim() }).sort({ DateEncaissement: -1 });
     } else if (idFacturation && idFacturation.trim() !== '') {
-      encaissements = await EncaissementCaisse.find({ IDFACTURATION: idFacturation.trim() })
-        .sort({ DateEncaissement: -1 });
+      encaissements = await EncaissementCaisse.find({ IDFACTURATION: idFacturation.trim() }).sort({ DateEncaissement: -1 });
     }
 
     return NextResponse.json(
@@ -168,6 +170,54 @@ export async function GET(request: NextRequest) {
       {
         success: false,
         message: 'Erreur lors de la récupération des encaissements',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    await db();
+
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get('id');
+    const body = await request.json().catch(() => ({}));
+
+    if (!id) {
+      id = body?.id;
+    }
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'ID d\'encaissement requis' }, { status: 400 });
+    }
+
+    const encaissement = await EncaissementCaisse.findById(id);
+
+    if (!encaissement) {
+      return NextResponse.json({ success: false, message: 'Encaissement introuvable' }, { status: 404 });
+    }
+
+    const annuler = new EncaissementCaisseAnnule({
+      ...encaissement.toObject(),
+      Annulerle: new Date(),
+      AnnulerPar: body?.utilisateur || 'Utilisateur inconnu',
+      motifAnnulation: body?.motifAnnulation || 'Annulé depuis Liste encaissement',
+      AnnulationOrdonneLe: new Date(),
+      annulationOrdonnepar: body?.utilisateur || 'Utilisateur inconnu'
+    });
+
+    await annuler.save();
+    await EncaissementCaisse.findByIdAndDelete(id);
+
+    return NextResponse.json({ success: true, message: 'Encaissement annulé avec succès' });
+  } catch (error) {
+    console.error('Erreur lors de l\'annulation de l\'encaissement:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Erreur lors de l\'annulation de l\'encaissement',
         error: error instanceof Error ? error.message : 'Erreur inconnue'
       },
       { status: 500 }

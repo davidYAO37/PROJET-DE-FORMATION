@@ -40,6 +40,9 @@ export async function GET(req: NextRequest) {
             Numfacture: facture.Numfacture || "",
             StatutFacture: facture.StatutFacture || false,
             Modepaiement: facture.Modepaiement || "",
+            Ordonnerlannulation: facture.Ordonnerlannulation || false,
+            AnnulOrdonnerPar: facture.AnnulOrdonnerPar || "",
+            AnnulationOrdonneLe: facture.AnnulationOrdonneLe || null,
             // Ajouter d'autres champs si nécessaire
         }));
 

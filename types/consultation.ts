@@ -49,4 +49,10 @@ export interface ConsultationType {
     Modepaiement?: string;
     Caissiere?: string;
 
+    // Champs pour l'annulation
+    StatutFacturation?: boolean;
+    Ordonnerlannulation?: boolean;
+    AnnulOrdonnerPar?: string;
+    AnnulationOrdonneLe?: Date;
+
 }

@@ -25,6 +25,10 @@ interface Consultation {
     Medecin?: string;
     StatutC?: boolean;
     IdPatient?: string;
+    Statutfacturation?: boolean; // Ajout du champ pour vérifier si la consultation est facturée
+    Ordonnerlannulation?: boolean; // Champ pour indiquer si l'annulation est ordonnée
+    AnnulOrdonnerPar?: string; // Utilisateur qui a ordonné l'annulation
+    AnnulationOrdonneLe?: Date; // Date de l'annulation
 }
 
 interface Prescription {
@@ -57,7 +61,7 @@ interface Prestation {
 export default function PatientServicesModal({ show, onHide, patientId }: PatientServicesModalProps) {
     const [activeTab, setActiveTab] = useState('consultations');
     const [selectedPatient, setSelectedPatient] = useState<any>(null);
-    
+
     // États pour les consultations
     const [consultations, setConsultations] = useState<Consultation[]>([]);
     const [consultationsLoading, setConsultationsLoading] = useState(false);
@@ -65,7 +69,7 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
     const [selectedConsult, setSelectedConsult] = useState<Consultation | null>(null);
     const [showRecuModal, setShowRecuModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
-    
+
     // États pour les prescriptions
     const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
     const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
@@ -74,7 +78,7 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
     const [showFactureModal, setShowFactureModal] = useState(false);
     const [showListeFactureModal, setShowListeFactureModal] = useState(false);
     const [prescriptionModalKey, setPrescriptionModalKey] = useState(0);
-    
+
     // États pour les prestations
     const [prestations, setPrestations] = useState<Prestation[]>([]);
     const [prestationsLoading, setPrestationsLoading] = useState(false);
@@ -109,16 +113,16 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
     // Charger les consultations
     const loadConsultations = async () => {
         if (!patientId) return;
-        
+
         setConsultationsLoading(true);
         setConsultationsError('');
-        
+
         try {
             const response = await fetch(`/api/consultation?patientId=${patientId}`);
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des consultations');
             }
-            
+
             const data = await response.json();
             setConsultations(Array.isArray(data) ? data : []);
         } catch (error) {
@@ -133,18 +137,18 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
     // Charger les prescriptions
     const loadPrescriptions = async () => {
         if (!patientId) return;
-        
+
         setPrescriptionsLoading(true);
         setPrescriptionsError('');
-        
+
         try {
             const response = await fetch(`/api/ListePrescription?patientId=${patientId}`);
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des prescriptions');
             }
-            
+
             const data = await response.json();
-            const formattedPrescriptions = Array.isArray(data) 
+            const formattedPrescriptions = Array.isArray(data)
                 ? data.map((p: any) => ({
                     ...p,
                     code: p.codePrestation || p.CodePrestation || "", // Ajout du champ code pour compatibilité
@@ -167,18 +171,18 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
     // Charger les prestations
     const loadPrestations = async () => {
         if (!patientId) return;
-        
+
         setPrestationsLoading(true);
         setPrestationsError('');
-        
+
         try {
             const response = await fetch(`/api/ListeAutreActes?patientId=${patientId}`);
             if (!response.ok) {
                 throw new Error('Erreur lors du chargement des prestations');
             }
-            
+
             const data = await response.json();
-            const formattedPrestations = Array.isArray(data) 
+            const formattedPrestations = Array.isArray(data)
                 ? data.map((p: any) => ({
                     ...p,
                     date: p.date ? new Date(p.date) : new Date(),
@@ -208,11 +212,7 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
             alert("⚠️ Cette consultation est déjà validée et ne peut plus être facturée.");
             return;
         }
-        
-        // Debug pour vérifier les données
-        console.log("Consultation sélectionnée:", consult);
-        console.log("CodePrestation:", consult.CodePrestation);
-        
+
         setSelectedConsult(consult);
         setShowUpdateModal(true);
     };
@@ -226,17 +226,58 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
         }
     };
 
+    // Fonction pour annuler une consultation
+    const handleAnnulerConsultation = async (consultation: Consultation) => {
+        // Vérifier si la consultation est déjà facturée (StatutC = true)
+        if (consultation.Statutfacturation) {
+            alert("Impossible d'ordonner cette annulation\nFacture du mois fermé pour cette prestation");
+            return;
+        }
+
+        // Demander confirmation
+        const confirmAnnulation = window.confirm("Voulez-vous ordonner l'annulation de cette facture ?");
+        if (!confirmAnnulation) return;
+
+        // Confirmer à nouveau
+        const confirmFinal = window.confirm("Voulez-vous confirmer cette annulation ?");
+        if (!confirmFinal) return;
+
+        try {
+            const utilisateur = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || 'Utilisateur inconnu';
+
+            const response = await fetch(`/api/consultation/${consultation._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    Ordonnerlannulation: true,
+                    AnnulOrdonnerPar: utilisateur,
+                    AnnulationOrdonneLe: new Date(),
+                }),
+            });
+
+            if (response.ok) {
+                alert("Annulation ordonnée avec succès");
+                // Recharger les consultations
+                loadConsultations();
+            } else {
+                alert("Erreur lors de l'annulation");
+            }
+        } catch (error) {
+            console.error('Erreur annulation:', error);
+            alert("Erreur de connexion");
+        }
+    };
+
     // Fonctions de gestion des actions pour les prescriptions
     const handleFacturerPrescription = (prescription: Prescription) => {
         if (prescription.statut) {
             alert("⚠️ Cette prescription est déjà validée et ne peut plus être facturée.");
             return;
         }
-        
-        // Debug pour vérifier les données
-        console.log("Prescription sélectionnée:", prescription);
-        console.log("CodePrestation:", prescription.codePrestation);
-        
+
+
         setSelectedPrescription(prescription);
         setShowFactureModal(true);
     };
@@ -315,8 +356,8 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                     onSelect={handleTabSelect}
                     className="mb-4"
                 >
-                    <Tab 
-                        eventKey="consultations" 
+                    <Tab
+                        eventKey="consultations"
                         title={
                             <span className="d-flex align-items-center gap-2">
                                 <FaStethoscope />
@@ -350,7 +391,13 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                                     </thead>
                                     <tbody>
                                         {consultations.map((consult) => (
-                                            <tr key={consult._id}>
+                                            <tr
+                                                key={consult._id}
+                                                style={{
+                                                    backgroundColor: consult.Ordonnerlannulation ? '#ffe6e6' : 'inherit',
+                                                    borderLeft: consult.Ordonnerlannulation ? '4px solid #dc3545' : 'none'
+                                                }}
+                                            >
                                                 <td><code>{consult.CodePrestation}</code></td>
                                                 <td>{consult.designationC}</td>
                                                 <td>{consult.montantapayer || consult.PrixClinique || 0} FCFA</td>
@@ -358,29 +405,46 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                                                 <td>{consult.Recupar || '-'}</td>
                                                 <td>{consult.Medecin || '-'}</td>
                                                 <td>
-                                                    <span 
-                                                        style={{ 
-                                                            fontSize: '0.75rem', 
-                                                            padding: '0.25rem 0.5rem',
-                                                            backgroundColor: consult.StatutC ? '#198754' : '#ffc107',
-                                                            color: 'white',
-                                                            borderRadius: '0.375rem',
-                                                            display: 'inline-block',
-                                                            fontWeight: 500
-                                                        }}
-                                                    >
-                                                        {consult.StatutC ? (
-                                                            <>
-                                                                <i className="bi bi-check-circle-fill me-1"></i>
-                                                                Facturée
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <i className="bi bi-clock-fill me-1"></i>
-                                                                En attente
-                                                            </>
-                                                        )}
-                                                    </span>
+                                                    {consult.Ordonnerlannulation ? (
+                                                        <span
+                                                            style={{
+                                                                fontSize: '0.75rem',
+                                                                padding: '0.25rem 0.5rem',
+                                                                backgroundColor: '#dc3545',
+                                                                color: 'white',
+                                                                borderRadius: '0.375rem',
+                                                                display: 'inline-block',
+                                                                fontWeight: 500
+                                                            }}
+                                                        >
+                                                            <i className="bi bi-x-circle-fill me-1"></i>
+                                                            Annulation en cours
+                                                        </span>
+                                                    ) : (
+                                                        <span
+                                                            style={{
+                                                                fontSize: '0.75rem',
+                                                                padding: '0.25rem 0.5rem',
+                                                                backgroundColor: consult.StatutC ? '#198754' : '#ffc107',
+                                                                color: 'white',
+                                                                borderRadius: '0.375rem',
+                                                                display: 'inline-block',
+                                                                fontWeight: 500
+                                                            }}
+                                                        >
+                                                            {consult.StatutC ? (
+                                                                <>
+                                                                    <i className="bi bi-check-circle-fill me-1"></i>
+                                                                    Facturée
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <i className="bi bi-clock-fill me-1"></i>
+                                                                    En attente
+                                                                </>
+                                                            )}
+                                                        </span>
+                                                    )}
                                                 </td>
                                                 <td>
                                                     <div className="d-flex gap-1 justify-content-center">
@@ -418,6 +482,32 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                                                                 <FaPencilAlt />
                                                             </Button>
                                                         )}
+                                                        {consult.Ordonnerlannulation ? (
+                                                            <OverlayTrigger
+                                                                placement="top"
+                                                                overlay={<Tooltip>Cette consultation est en cours d'annulation</Tooltip>}
+                                                            >
+                                                                <span className="d-inline-block">
+                                                                    <Button
+                                                                        size="sm"
+                                                                        variant="outline-secondary"
+                                                                        disabled
+                                                                        style={{ pointerEvents: 'none' }}
+                                                                    >
+                                                                        <i className="bi bi-x-circle"></i>
+                                                                    </Button>
+                                                                </span>
+                                                            </OverlayTrigger>
+                                                        ) : (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline-danger"
+                                                                onClick={() => handleAnnulerConsultation(consult)}
+                                                                title="Annuler la consultation"
+                                                            >
+                                                                <i className="bi bi-x-circle"></i>
+                                                            </Button>
+                                                        )}
                                                     </div>
                                                 </td>
                                             </tr>
@@ -428,8 +518,8 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                         )}
                     </Tab>
 
-                    <Tab 
-                        eventKey="prescriptions" 
+                    <Tab
+                        eventKey="prescriptions"
                         title={
                             <span className="d-flex align-items-center gap-2">
                                 <FaPills />
@@ -467,9 +557,9 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                                                 <td>{presc.designation}</td>
                                                 <td>{presc.montant.toLocaleString()} FCFA</td>
                                                 <td>
-                                                    <span 
-                                                        style={{ 
-                                                            fontSize: '0.75rem', 
+                                                    <span
+                                                        style={{
+                                                            fontSize: '0.75rem',
                                                             padding: '0.25rem 0.5rem',
                                                             backgroundColor: presc.statut ? '#198754' : '#ffc107',
                                                             color: 'white',
@@ -520,8 +610,8 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                         )}
                     </Tab>
 
-                    <Tab 
-                        eventKey="prestations" 
+                    <Tab
+                        eventKey="prestations"
                         title={
                             <span className="d-flex align-items-center gap-2">
                                 <FaHospital />
@@ -559,9 +649,9 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                                                 <td>{prest.designation}</td>
                                                 <td>{prest.montant.toLocaleString()} FCFA</td>
                                                 <td>
-                                                    <span 
-                                                        style={{ 
-                                                            fontSize: '0.75rem', 
+                                                    <span
+                                                        style={{
+                                                            fontSize: '0.75rem',
                                                             padding: '0.25rem 0.5rem',
                                                             backgroundColor: prest.statut === 'Validé' ? '#198754' : '#ffc107',
                                                             color: 'white',
@@ -649,7 +739,7 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => setShowRecuModal(false)}>
                         Fermer
-                    </Button>                    
+                    </Button>
                 </Modal.Footer>
             </Modal>
 

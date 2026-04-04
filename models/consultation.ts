@@ -65,6 +65,15 @@ export interface IConsultation extends Document {
   Caissiere?: string;
   entrepriseId?: string;
 
+  // Champs pour l'annulation
+  StatutFacturation: boolean;
+  Ordonnerlannulation: number;
+  AnnulOrdonnerPar: string;
+  AnnulationOrdonneLe: Date;
+  MotifAnnulationFacture?: string;
+  Annulerle?: Date;
+  AnnulerPar?: string;
+
 }
 
 const ConsultationSchema: Schema<IConsultation> = new Schema(
@@ -128,6 +137,15 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     Modepaiement: { type: String },
     Caissiere: { type: String },
     entrepriseId: { type: String },
+
+    // Champs pour l'annulation
+    StatutFacturation: { type: Boolean, default: false },
+    Ordonnerlannulation: { type: Number, default: 0 },
+    AnnulOrdonnerPar: { type: String },
+    AnnulationOrdonneLe: { type: Date },
+    MotifAnnulationFacture: { type: String },
+    Annulerle: { type: Date },
+    AnnulerPar: { type: String },
 
   },
   { timestamps: true }

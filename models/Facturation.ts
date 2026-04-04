@@ -84,6 +84,7 @@ export interface IFacturation extends Document {
     AnnulationOrdonneLe?: Date;
     AnnulerPar?: string;
     Annulerle?: Date;
+    Ordonnerlannulation?: boolean;
     StatutPaiement?: string;
     MotifRetour?: string;
     MotifAnnulationFacture?: string;
@@ -183,6 +184,7 @@ const FacturationSchema = new Schema<IFacturation>(
         AnnulationOrdonneLe: { type: Date },
         AnnulerPar: { type: String, maxlength: 50 },
         Annulerle: { type: Date },
+        Ordonnerlannulation: { type: Boolean, default: false },
         StatutPaiement: { type: String, maxlength: 50 },
         MotifRetour: { type: String, maxlength: 500 },
         MotifAnnulationFacture: { type: String, maxlength: 500 },
