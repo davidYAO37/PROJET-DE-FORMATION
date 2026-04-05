@@ -2,19 +2,18 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaPlus, FaPlusCircle, FaHospitalUser } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaPlusCircle } from 'react-icons/fa';
 import AjouterPatient from './AjouterPatient';
 import { Patient } from '@/types/patient';
 import { BiSolidBookAdd } from 'react-icons/bi';
 import { CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
 import dayjs from 'dayjs';
-import ListeConsultationsModal from '../componant/ListeConsultationsModal';
 import ExamenHospitalisationModal from '../componant/ExamenHospitModal';
 import ModifierPatient from './ModifierPatient';
 import FicheConsultation from '../componant/ConsultationAdd/FicheConsultation';
-import ListeExamenHospitModalAccueil from '../componant/ListeExamenHospitModalAccueil';
 import PharmacieModalPharmAccueil from '../../PharmacieAccueil/PharmacieModalPharmAccueil';
+import PatientServiceModalAccueil from '../componant/PatientServiceModalAccueil';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -32,10 +31,15 @@ export default function Page() {
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
   const [toastVariant, setToastVariant] = useState<'success' | 'info' | 'danger'>('info');
-  const [showListeConsultModal, setShowListeConsultModal] = useState(false);
-  const [patientIdConsultModal, setPatientIdConsultModal] = useState<string | null>(null);
-  const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
+
   const [showPharmacieModalPharmAccueil, setShowPharmacieModalPharmAccueil] = useState(false);
+  const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
+  const [showConsultationModal, setShowConsultationModal] = useState(false);
+  const [consultationJour, setConsultationJour] = useState<string | null>(null);
+
+  // États pour le modal PatientServiceModalAccueil
+  const [showPatientServiceModal, setShowPatientServiceModal] = useState(false);
+  const [patientIdServiceModal, setPatientIdServiceModal] = useState<string | null>(null);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
     setToastMessage(message);
@@ -44,9 +48,6 @@ export default function Page() {
     setTimeout(() => setShowToast(false), 3000);
   };
 
-  // États pour le modal des examens d'hospitalisation
-  const [showListeExamenHospitModal, setShowListeExamenHospitModal] = useState(false);
-  const [patientIdExamenHospitModal, setPatientIdExamenHospitModal] = useState<string | null>(null);
 
   // ✅ Charger les patients depuis MongoDB via API
   useEffect(() => {
@@ -82,22 +83,63 @@ export default function Page() {
     setPatients(updatedList);
     showNotification(`📝 Patient "${updatedPatient.Nom}" modifié.`, 'info');
   };
-  const [showConsultationModal, setShowConsultationModal] = useState(false);
-  const [consultationJour, setConsultationJour] = useState<string | null>(null);
 
   // ✅ Supprimer patient avec loader par id
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+  const [patientsWithConsultations, setPatientsWithConsultations] = useState<Set<string>>(new Set());
+
+  // Vérifier quels patients ont des consultations
+  useEffect(() => {
+    const checkPatientsConsultations = async () => {
+      const patientsWithConsults = new Set<string>();
+      
+      for (const patient of patients) {
+        try {
+          const response = await fetch(`/api/consultation?patientId=${patient._id}`);
+          if (response.ok) {
+            const consultations = await response.json();
+            if (consultations.length > 0 && patient._id) {
+              patientsWithConsults.add(patient._id);
+            }
+          }
+        } catch (error) {
+          console.error('Erreur vérification consultations:', error);
+        }
+      }
+      
+      setPatientsWithConsultations(patientsWithConsults);
+    };
+
+    if (patients.length > 0) {
+      checkPatientsConsultations();
+    }
+  }, [patients]);
+
   const handleDeletePatient = async (id?: string) => {
     if (!id) return;
+    
+    // Demander confirmation avant suppression
+    const confirmDelete = window.confirm("Êtes-vous sûr de vouloir supprimer ce patient ?");
+    if (!confirmDelete) return;
+    
     setDeleteLoadingId(id);
     try {
       const response = await fetch(`/api/patients/${id}`, { method: 'DELETE' });
+      const data = await response.json();
+      
       if (response.ok) {
         setPatients((prev) => prev.filter((p) => p._id !== id));
-        showNotification(`🗑️ Patient supprimé.`, 'danger');
+        showNotification(`🗑️ Patient supprimé avec succès.`, 'success');
+      } else {
+        if (response.status === 400 && data.message.includes("consultations")) {
+          showNotification(`❌ ${data.message}`, 'danger');
+        } else {
+          showNotification(`❌ Erreur lors de la suppression: ${data.message}`, 'danger');
+        }
       }
-    } catch {
-      showNotification('Erreur suppression', 'danger');
+    } catch (error) {
+      console.error('Erreur suppression patient:', error);
+      showNotification('❌ Erreur de connexion lors de la suppression', 'danger');
     } finally {
       setDeleteLoadingId(null);
     }
@@ -165,7 +207,7 @@ export default function Page() {
           />
         </Col>
         {/* Bouton pour ouvrir PharmacieAccueil */}
-         <Col xs={12} md={2}>
+        <Col xs={12} md={2}>
           <Button
             variant="outline-warning"
             title="Ajouter une ordonnance"
@@ -254,7 +296,7 @@ export default function Page() {
                           } catch (e) {
                             // console.error("Erreur vérification consultation", e);
                           }
-                          // sinon -> pas de consultation aujourd’hui, ouvrir la fiche
+                          // sinon -> pas de consultation aujourd'hui, ouvrir la fiche
                           setConsultationJour(null);
                           setShowConsultationModal(true);
                         }}
@@ -264,40 +306,17 @@ export default function Page() {
 
                       <Button
                         variant="outline-success"
-                        title="Liste des consultations ou visites du patient"
+                        title="Voir les consultations- Prestations-Prescriptions du patient"
                         size="sm"
-                         className="me-4"
+                        className="me-4"
                         onClick={() => {
-                          setPatientIdConsultModal(patient._id || '');
-                          setShowListeConsultModal(true);
+                          setPatientIdServiceModal(patient._id || '');
+                          setShowPatientServiceModal(true);
                         }}
                       >
-                        <CgUserList />
+                        <CgUserList style={{ marginRight: '0.5rem' }} />
+                        Service Patient
                       </Button>
-                      {/* Modal liste consultations/visites */}
-                      <ListeConsultationsModal
-                        show={showListeConsultModal}
-                        onHide={() => setShowListeConsultModal(false)}
-                        patientId={patientIdConsultModal || ''}
-                      />
-                      <Button
-                          variant="outline-info"
-                          title="Voir les examens ,hospitalisation et autres actes"
-                          size="sm"
-                          className="me-4"
-                          onClick={() => {
-                            setPatientIdExamenHospitModal(patient._id || '');
-                            setShowListeExamenHospitModal(true);
-                          }}
-                        >
-                          <FaHospitalUser />
-                        </Button>
-                        {/* Modal liste des examens d'hospitalisation */}
-                        <ListeExamenHospitModalAccueil
-                          show={showListeExamenHospitModal}
-                          onHide={() => setShowListeExamenHospitModal(false)}
-                          patientId={patientIdExamenHospitModal || ''}
-                        />
                     </td>
 
                     <td className="bg-primary bg-opacity-10">
@@ -311,16 +330,24 @@ export default function Page() {
                         <FaEdit />
                       </Button>
                       <Button
-                        variant="outline-danger"
-                        title="Supprimer le patient"
+                        variant={patient._id && patientsWithConsultations.has(patient._id) ? "outline-secondary" : "outline-danger"}
+                        title={patient._id && patientsWithConsultations.has(patient._id) 
+                          ? "Ce patient a des consultations et ne peut pas être supprimé" 
+                          : "Supprimer le patient"}
                         size="sm"
                         onClick={() => handleDeletePatient(patient._id)}
-                        disabled={deleteLoadingId === patient._id}
+                        disabled={deleteLoadingId === patient._id || Boolean(patient._id && patientsWithConsultations.has(patient._id))}
                       >
                         {deleteLoadingId === patient._id ? (
                           <Spinner as="span" animation="border" size="sm" />
                         ) : (
-                          <FaTrash />
+                          <>
+                            {patient._id && patientsWithConsultations.has(patient._id) ? (
+                              <i className="bi bi-lock-fill"></i>
+                            ) : (
+                              <FaTrash />
+                            )}
+                          </>
                         )}
                       </Button>
                     </td>
@@ -366,6 +393,13 @@ export default function Page() {
           <Toast.Body className="text-white">{toastMessage}</Toast.Body>
         </Toast>
       </ToastContainer>
+
+      {/* Modal PatientServiceModalAccueil */}
+      <PatientServiceModalAccueil
+        show={showPatientServiceModal}
+        onHide={() => setShowPatientServiceModal(false)}
+        patientId={patientIdServiceModal || ''}
+      />
 
       {/* Modales */}
       <AjouterPatient

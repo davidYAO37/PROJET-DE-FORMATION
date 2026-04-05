@@ -5,10 +5,12 @@ import { Accordion, Button } from 'react-bootstrap';
 import { useState } from 'react';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import ListeAnnulationFactureModal from '@/app/pages/servicecaisse/componant/ListeAnnulationFactureModal';
+import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
   const [showListeAnnulationModal, setShowListeAnnulationModal] = useState(false);
+  const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const { user, loading } = useAuthUser();
 
   return (
@@ -259,6 +261,15 @@ export default function Sidebar() {
                     <i className="bi bi-credit-card-fill me-2 text-primary"></i> Mode Paiement
                   </Link>
                 </li>
+                <li>
+                  <button
+                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                    onClick={() => setShowModifierMotDePasseModal(true)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className="bi bi-key-fill me-2 text-primary"></i> Mot de passe
+                  </button>
+                </li>
                 {!loading && user && user.type === 'adminsuper' && (
                   <li>
                     <Link href="/dashboard/parametres/entreprise" className="sidebar-link-medical d-flex align-items-center">
@@ -276,6 +287,12 @@ export default function Sidebar() {
       <ListeAnnulationFactureModal
         show={showListeAnnulationModal}
         onHide={() => setShowListeAnnulationModal(false)}
+      />
+
+      {/* Modal pour modifier le mot de passe */}
+      <ModifierMotDePasseModal
+        show={showModifierMotDePasseModal}
+        onHide={() => setShowModifierMotDePasseModal(false)}
       />
     </>
   );

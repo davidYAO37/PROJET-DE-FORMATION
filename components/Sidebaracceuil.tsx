@@ -6,6 +6,8 @@ import { Nav } from 'react-bootstrap';
 import TransfertPatientModal from '@/app/pages/serviceaccueil/componant/TransfertPatientModal';
 import SalleAttenteModal from '@/app/pages/serviceaccueil/componant/SalleAttenteModal';
 import SalleConstante from '@/app/pages/serviceaccueil/componant/SalleConstante';
+import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
+import PlanningModal from '@/components/PlanningModal';
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
@@ -13,11 +15,11 @@ const menu = [
   { label: 'Transférer un patient', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
   { label: 'Salle d\'attente', path: '#', isModal: true, icon: <i className="bi bi-people-fill me-2 text-warning"></i> },
   { label: 'Constantes', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
-  { label: 'Planning Médecin', path: '/planning-medecin', icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
+  { label: 'Planning Médecin', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
   { label: 'Disponibilité Médecin', path: '/disponibilite-medecin', icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
   { label: 'Gestion Rendez-Vous', path: '/rendez-vous', icon: <i className="bi bi-clock-fill me-2 text-info"></i> },
-  { label: 'POINT DE SAISIE', path: '/point-saisie', icon: <i className="bi bi-pencil-square me-2 text-secondary"></i> },
-  { label: 'Gérer mon Mot De Passe', path: '/mot-de-passe', icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
+  { label: 'Point de saisie', path: '/point-saisie', icon: <i className="bi bi-pencil-square me-2 text-secondary"></i> },
+  { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
 export default function Sidebaracceuil() {
@@ -26,6 +28,8 @@ export default function Sidebaracceuil() {
   const [showTransfertModal, setShowTransfertModal] = useState(false);
   const [showSalleAttenteModal, setShowSalleAttenteModal] = useState(false);
   const [showSalleConstanteModal, setShowSalleConstanteModal] = useState(false);
+  const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
+  const [showPlanningModal, setShowPlanningModal] = useState(false);
   const [user, setUser] = useState('');
 
   // Charger l'utilisateur connecté au montage
@@ -56,6 +60,20 @@ export default function Sidebaracceuil() {
   const handleSalleConstanteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowSalleConstanteModal(true);
+    setOpen(false);
+  };
+
+  // Ouvre le modal de modification du mot de passe
+  const handleMotDePasseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowModifierMotDePasseModal(true);
+    setOpen(false);
+  };
+
+  // Ouvre le modal de planning médecin
+  const handlePlanningClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowPlanningModal(true);
     setOpen(false);
   };
 
@@ -103,7 +121,7 @@ export default function Sidebaracceuil() {
                 <a
                   href="#"
                   className="sidebar-link-medical d-flex align-items-center"
-                  onClick={item.label === 'Transférer un patient' ? handleTransfertClick : handleSalleAttenteClick}
+                  onClick={item.label === 'Transférer un patient' ? handleTransfertClick : item.label === 'Salle d\'attente' ? handleSalleAttenteClick : item.label === 'Mot de passe' ? handleMotDePasseClick : item.label === 'Planning Médecin' ? handlePlanningClick : undefined}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -143,6 +161,18 @@ export default function Sidebaracceuil() {
         show={showSalleConstanteModal}
         onHide={() => setShowSalleConstanteModal(false)}
         user={user}
+      />
+
+      {/* Modal de modification du mot de passe */}
+      <ModifierMotDePasseModal
+        show={showModifierMotDePasseModal}
+        onHide={() => setShowModifierMotDePasseModal(false)}
+      />
+
+      {/* Modal de planning médecin */}
+      <PlanningModal
+        show={showPlanningModal}
+        onHide={() => setShowPlanningModal(false)}
       />
     </>
   );

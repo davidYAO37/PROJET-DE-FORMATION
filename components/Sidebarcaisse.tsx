@@ -10,6 +10,7 @@ import FacturesNonSoldesModal from '@/app/pages/servicecaisse/componant/Factures
 import PointCaisseModal from '@/app/pages/servicecaisse/componant/PointCaisseModal';
 import ListeEncaissementModal from '@/app/pages/servicecaisse/componant/ListeEncaissementModal';
 import MenuImpressionFactureModal from '@/app/pages/servicecaisse/componant/MenuImpressionFactureModal';
+import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 
 
 const menu = [
@@ -21,7 +22,7 @@ const menu = [
   { label: 'Point de caisse', path: '#', isModal: true, icon: <i className="bi bi-cash-stack me-2 text-success"></i>, style: { cursor: 'pointer' } },
   { label: 'Liste encaissement', path: '#', isModal: true, icon: <i className="bi bi-card-list me-2 text-info"></i>, style: { cursor: 'pointer' } },
   { label: 'Imprimer Facture', path: '#', isModal: true, icon: <i className="bi bi-printer-fill me-2 text-primary"></i>, style: { cursor: 'pointer' } },
-  { label: 'Mot de passe', path: '/salle-attente', icon: <i className="bi bi-people-fill me-2 text-secondary"></i> },
+  { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-secondary"></i>, style: { cursor: 'pointer' } },
 ];
 
 export default function Sidebarcaisse() {
@@ -34,6 +35,7 @@ export default function Sidebarcaisse() {
   const [showPointCaisseModal, setShowPointCaisseModal] = useState(false);
   const [showListeEncaissementModal, setShowListeEncaissementModal] = useState(false);
   const [showMenuImpressionModal, setShowMenuImpressionModal] = useState(false);
+  const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [facturesEnAttenteCount, setFacturesEnAttenteCount] = useState(0);
 
 
@@ -156,6 +158,12 @@ export default function Sidebarcaisse() {
     setOpen(false);
   };
 
+  // ouvre le modal de modification du mot de passe et ferme la sidebar en mobile
+  const handleMotDePasseClick = () => {
+    setShowModifierMotDePasseModal(true);
+    setOpen(false);
+  };
+
 
 
   return (
@@ -203,7 +211,7 @@ export default function Sidebarcaisse() {
                             ? handleListeEncaissementClick
                             : item.label === 'Imprimer Facture'
                               ? handleMenuImpressionClick
-                              : handleFactureClick
+                              : handleMotDePasseClick
                   }
                 >
                   {item.icon}
@@ -265,6 +273,12 @@ export default function Sidebarcaisse() {
       <MenuImpressionFactureModal
         show={showMenuImpressionModal}
         onHide={() => setShowMenuImpressionModal(false)}
+      />
+
+      {/* Modal pour modifier le mot de passe */}
+      <ModifierMotDePasseModal
+        show={showModifierMotDePasseModal}
+        onHide={() => setShowModifierMotDePasseModal(false)}
       />
 
     </>

@@ -38,7 +38,8 @@ export async function GET(req: NextRequest) {
             Numfacture: examen.Numfacture || "",
             Entrele: examen.Entrele,
             SortieLe: examen.SortieLe,
-            Rclinique: examen.Rclinique
+            Rclinique: examen.Rclinique,
+            NomMed: examen.NomMed || '-'
         }));
 
         return NextResponse.json(formatted);

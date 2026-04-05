@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import mongoose from "mongoose";
 import { Patient } from "@/models/patient";
+import { Consultation } from "@/models/consultation";
 
 export async function GET(
   req: Request,
@@ -29,10 +30,29 @@ export async function DELETE(
   await db();
   const { id } = await context.params;
   try {
-    const deleted = await Patient.findByIdAndDelete(id);
-    if (!deleted) {
+    // Vérifier si le patient existe
+    const patient = await Patient.findById(id);
+    if (!patient) {
       return NextResponse.json({ message: "Patient non trouvé" }, { status: 404 });
     }
+
+    // Vérifier si le patient a des consultations
+    const consultationsCount = await Consultation.countDocuments({
+      $or: [
+        { IdPatient: id },
+        { PatientP: patient.Code_dossier }
+      ]
+    });
+
+    if (consultationsCount > 0) {
+      return NextResponse.json({ 
+        message: "Impossible de supprimer ce patient car il a des consultations associées",
+        consultationsCount: consultationsCount
+      }, { status: 400 });
+    }
+
+    // Si aucune consultation, procéder à la suppression
+    const deleted = await Patient.findByIdAndDelete(id);
     return NextResponse.json({ message: "Patient supprimé" }, { status: 200 });
   } catch (error) {
     console.error('Erreur API DELETE /api/patients/[id]:', error);

@@ -39,7 +39,8 @@ export async function GET(req: NextRequest) {
             Numfacture: prescription.Numfacture || "",
             dateDebut: prescription.DatePres,
             dateFin: prescription.DatePres,
-            remarques: prescription.Rclinique || ""
+            remarques: prescription.Rclinique || "",
+            NomMed: prescription.NomMed || '-'
         }));
 
         return NextResponse.json(formatted);

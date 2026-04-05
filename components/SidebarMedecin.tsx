@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
+import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicemedecin/tmedecin', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
@@ -15,12 +16,13 @@ const menu = [
   { label: 'Mon planning', path: '/disponibilite-medecin', icon: <i className="bi bi-clipboard-check-fill me-2 text-success"></i> },
   { label: 'Mes comptes rendus', path: '/rendez-vous', icon: <i className="bi bi-file-earmark-text-fill me-2 text-secondary"></i> },
   { label: 'Statistiques', path: '/point-saisie', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
-  { label: 'Gérer mon Mot De Passe', path: '/mot-de-passe', icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
+  { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
 export default function SidebarMedecin() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [user, setUser] = useState('');
 
   // Charger l'utilisateur connecté au montage
@@ -28,9 +30,16 @@ export default function SidebarMedecin() {
     const storedUser = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || '';
     setUser(storedUser);
   }, []);
-  
+
   // Ferme la sidebar quand on clique sur un lien (mobile)
   const handleLinkClick = () => setOpen(false);
+
+  // Ouvre le modal de modification du mot de passe
+  const handleMotDePasseClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowModifierMotDePasseModal(true);
+    setOpen(false);
+  };
 
   return (
     <>
@@ -49,32 +58,49 @@ export default function SidebarMedecin() {
       {open && <div className="sidebar-overlay-medical" onClick={() => setOpen(false)}></div>}
 
       <aside className={`sidebar-medical${open ? ' open' : ''}`}>
-      {/* Logo médical moderne */}
-      <div className="sidebar-logo-medical mb-4">
-        <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <rect x="20" y="8" width="8" height="32" rx="4" fill="#fff" />
-          <rect x="8" y="20" width="32" height="8" rx="4" fill="#fff" />
-          <rect x="22" y="10" width="4" height="28" rx="2" fill="#38bdf8" />
-          <rect x="10" y="22" width="28" height="4" rx="2" fill="#38bdf8" />
-        </svg>
-        <span className="sidebar-title-medical ms-2">EasyMedical</span>
-      </div>
-      <hr className="sidebar-separator-medical" />
-      <Nav className="flex-column px-3">
-        {menu.map((item, index) => (
-          <Nav.Item key={index} className="mb-2">
-            <Link
-              href={item.path}
-              className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''}`}
-              onClick={handleLinkClick}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </Link>
-          </Nav.Item>
-        ))}
-      </Nav>
-    </aside>
+        {/* Logo médical moderne */}
+        <div className="sidebar-logo-medical mb-4">
+          <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+            <rect x="20" y="8" width="8" height="32" rx="4" fill="#fff" />
+            <rect x="8" y="20" width="32" height="8" rx="4" fill="#fff" />
+            <rect x="22" y="10" width="4" height="28" rx="2" fill="#38bdf8" />
+            <rect x="10" y="22" width="28" height="4" rx="2" fill="#38bdf8" />
+          </svg>
+          <span className="sidebar-title-medical ms-2">EasyMedical</span>
+        </div>
+        <hr className="sidebar-separator-medical" />
+        <Nav className="flex-column px-3">
+          {menu.map((item, index) => (
+            <Nav.Item key={index} className="mb-2">
+              {item.isModal ? (
+                <a
+                  href="#"
+                  className="sidebar-link-medical d-flex align-items-center"
+                  onClick={handleMotDePasseClick}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </a>
+              ) : (
+                <Link
+                  href={item.path}
+                  className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''}`}
+                  onClick={handleLinkClick}
+                >
+                  {item.icon}
+                  <span>{item.label}</span>
+                </Link>
+              )}
+            </Nav.Item>
+          ))}
+        </Nav>
+      </aside>
+
+      {/* Modal de modification du mot de passe */}
+      <ModifierMotDePasseModal
+        show={showModifierMotDePasseModal}
+        onHide={() => setShowModifierMotDePasseModal(false)}
+      />
     </>
   );
 }
