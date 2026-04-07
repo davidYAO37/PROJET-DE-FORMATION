@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { Container, Row, Col, Card, Button, Badge } from "react-bootstrap";
 import { FaUsers, FaCalendarCheck, FaUserMd, FaSignOutAlt } from "react-icons/fa";
 import { useState, useEffect } from "react";
+import PlanningRdvMed from "@/components/PlanningRdvMed";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -66,18 +67,18 @@ export default function DashboardPage() {
         {/* Contenu principal */}
         <div className="flex-grow-1 bg-light">
           <Container className="py-4">
-            <div className="d-flex justify-content-between align-items-center mb-4">
-              <h1 className="text-primary fw-bold mb-0">
+             <div className="d-flex justify-content-between align-items-center mb-2">
+          <h2 className="mb-0 text-primary fw-bold">
                 <FaUserMd className="me-2" />
                 Tableau de bord Administrateur
-              </h1>
+              </h2>
               <Button variant="outline-danger" onClick={handleLogout}>
                 <FaSignOutAlt className="me-1" />
                 Se déconnecter
               </Button>
             </div>
 
-            <Row className="g-4 my-4">
+            <Row className="g-4 my-1">
               <Col md={4}>
                 <Card className="shadow h-75 border-0 my-3" style={{ 
                   background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
@@ -134,6 +135,13 @@ export default function DashboardPage() {
                     </div>
                   </Card.Body>
                 </Card>
+              </Col>
+            </Row>
+
+            {/* Section Planning des Rendez-vous */}
+            <Row className="g-4 my-1">
+              <Col md={12}>
+                <PlanningRdvMed />
               </Col>
             </Row>
           </Container>

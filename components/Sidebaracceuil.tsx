@@ -7,8 +7,9 @@ import TransfertPatientModal from '@/app/pages/serviceaccueil/componant/Transfer
 import SalleAttenteModal from '@/app/pages/serviceaccueil/componant/SalleAttenteModal';
 import SalleConstante from '@/app/pages/serviceaccueil/componant/SalleConstante';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
-import PlanningModal from '@/components/PlanningModal';
-
+import ListePlanningModal from './ListePlanningModal';
+import PlanningModal from './PlanningModal';
+import DisponibiliteMedecinModal from './DisponibiliteMedecinModal';
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
   { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
@@ -16,7 +17,7 @@ const menu = [
   { label: 'Salle d\'attente', path: '#', isModal: true, icon: <i className="bi bi-people-fill me-2 text-warning"></i> },
   { label: 'Constantes', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
   { label: 'Planning Médecin', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
-  { label: 'Disponibilité Médecin', path: '/disponibilite-medecin', icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
+  { label: 'Disponibilité Médecin', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
   { label: 'Gestion Rendez-Vous', path: '/rendez-vous', icon: <i className="bi bi-clock-fill me-2 text-info"></i> },
   { label: 'Point de saisie', path: '/point-saisie', icon: <i className="bi bi-pencil-square me-2 text-secondary"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
@@ -29,7 +30,9 @@ export default function Sidebaracceuil() {
   const [showSalleAttenteModal, setShowSalleAttenteModal] = useState(false);
   const [showSalleConstanteModal, setShowSalleConstanteModal] = useState(false);
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
+  const [showListePlanningModal, setShowListePlanningModal] = useState(false);
   const [showPlanningModal, setShowPlanningModal] = useState(false);
+  const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
   const [user, setUser] = useState('');
 
   // Charger l'utilisateur connecté au montage
@@ -67,6 +70,20 @@ export default function Sidebaracceuil() {
   const handleMotDePasseClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowModifierMotDePasseModal(true);
+    setOpen(false);
+  };
+
+  // Ouvre le modal de liste des plannings
+  const handleListePlanningClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowListePlanningModal(true);
+    setOpen(false);
+  };
+
+  // Ouvre le modal de disponibilité médecin
+  const handleDisponibiliteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowDisponibiliteModal(true);
     setOpen(false);
   };
 
@@ -121,7 +138,7 @@ export default function Sidebaracceuil() {
                 <a
                   href="#"
                   className="sidebar-link-medical d-flex align-items-center"
-                  onClick={item.label === 'Transférer un patient' ? handleTransfertClick : item.label === 'Salle d\'attente' ? handleSalleAttenteClick : item.label === 'Mot de passe' ? handleMotDePasseClick : item.label === 'Planning Médecin' ? handlePlanningClick : undefined}
+                  onClick={item.label === 'Transférer un patient' ? handleTransfertClick : item.label === 'Salle d\'attente' ? handleSalleAttenteClick : item.label === 'Mot de passe' ? handleMotDePasseClick : item.label === 'Planning Médecin' ? handleListePlanningClick : item.label === 'Disponibilité Médecin' ? handleDisponibiliteClick : undefined}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -169,10 +186,22 @@ export default function Sidebaracceuil() {
         onHide={() => setShowModifierMotDePasseModal(false)}
       />
 
+      {/* Modal de liste des plannings */}
+      <ListePlanningModal
+        show={showListePlanningModal}
+        onHide={() => setShowListePlanningModal(false)}
+      />
+
       {/* Modal de planning médecin */}
       <PlanningModal
         show={showPlanningModal}
         onHide={() => setShowPlanningModal(false)}
+      />
+
+      {/* Modal de disponibilité médecin */}
+      <DisponibiliteMedecinModal
+        show={showDisponibiliteModal}
+        onHide={() => setShowDisponibiliteModal(false)}
       />
     </>
   );

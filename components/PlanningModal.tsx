@@ -65,7 +65,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
     setNbRdvParJour(0);
   };
 
-  // Réinitialiser les états à chaque ouverture du modal
+  // Réinitialiser les états à chaque ouverture du modal (mais pas à la fermeture)
   useEffect(() => {
     if (show) {
       resetForm();

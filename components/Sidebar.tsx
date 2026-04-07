@@ -1,8 +1,11 @@
 'use client';
 
-import Link from 'next/link';
-import { Accordion, Button } from 'react-bootstrap';
 import { useState } from 'react';
+import { Accordion, Button } from 'react-bootstrap';
+import { usePathname } from 'next/navigation';
+import Link from 'next/link';
+import ListePlanningModal from './ListePlanningModal';
+import DisponibiliteMedecinModal from './DisponibiliteMedecinModal';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import ListeAnnulationFactureModal from '@/app/pages/servicecaisse/componant/ListeAnnulationFactureModal';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
@@ -11,7 +14,20 @@ export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
   const [showListeAnnulationModal, setShowListeAnnulationModal] = useState(false);
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
+  const [showListePlanningModal, setShowListePlanningModal] = useState(false);
+  const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
   const { user, loading } = useAuthUser();
+  const pathname = usePathname();
+
+  const handleListePlanningClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowListePlanningModal(true);
+  };
+
+  const handleDisponibiliteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowDisponibiliteModal(true);
+  };
 
   return (
     <>
@@ -85,6 +101,28 @@ export default function Sidebar() {
                   <Link href="/pages/servicemedecin/tmedecin" className="sidebar-link-medical d-flex align-items-center">
                     <i className="bi bi-person-fill-gear me-2 text-success"></i> Gestion Médecin
                   </Link>
+                </li>
+              </ul>
+               <ul className="nav flex-column gap-2">
+                <li>
+                  <button
+                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                    onClick={handleListePlanningClick}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className="bi bi-calendar-check-fill me-2 text-primary"></i> Planning Médecin
+                  </button>
+                </li>
+              </ul>
+               <ul className="nav flex-column gap-2">
+                <li>
+                  <button
+                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                    onClick={handleDisponibiliteClick}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className="bi bi-clock-fill me-2 text-warning"></i> Disponibilité Médecin
+                  </button>
                 </li>
               </ul>
             </Accordion.Body>
@@ -293,6 +331,18 @@ export default function Sidebar() {
       <ModifierMotDePasseModal
         show={showModifierMotDePasseModal}
         onHide={() => setShowModifierMotDePasseModal(false)}
+      />
+
+      {/* Modal pour la liste des plannings */}
+      <ListePlanningModal
+        show={showListePlanningModal}
+        onHide={() => setShowListePlanningModal(false)}
+      />
+
+      {/* Modal pour les disponibilités médecin */}
+      <DisponibiliteMedecinModal
+        show={showDisponibiliteModal}
+        onHide={() => setShowDisponibiliteModal(false)}
       />
     </>
   );

@@ -1,0 +1,194 @@
+.listePlanningModal {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.modalHeader {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+}
+
+.modalTitle {
+  font-weight: 600;
+  font-size: 1.25rem;
+}
+
+.modalBody {
+  background-color: #f8f9fa;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.planningCard {
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 12px;
+  margin-bottom: 2rem;
+}
+
+.cardHeader {
+  background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+  color: white;
+  border: none;
+  border-radius: 12px 12px 0 0;
+  padding: 1rem 1.5rem;
+}
+
+.calendarContainer {
+  overflow-x: auto;
+  max-height: 60vh;
+}
+
+.planningTable {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 0.875rem;
+}
+
+.headerCell {
+  background: #343a40;
+  color: white;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  border: 1px solid #495057;
+  min-width: 100px;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.headerCell div {
+  font-size: 0.8rem;
+}
+
+.dateNumber {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #ffc107;
+  margin-top: 0.25rem;
+}
+
+.timeCell {
+  background: #6c757d;
+  color: white;
+  padding: 0.75rem;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border: 1px solid #495057;
+  position: sticky;
+  left: 0;
+  z-index: 5;
+}
+
+.creneauCell {
+  padding: 0.5rem;
+  text-align: center;
+  border: 1px solid #dee2e6;
+  min-width: 100px;
+  height: 50px;
+  vertical-align: middle;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.creneauCell:hover {
+  background-color: #e9ecef;
+  transform: scale(1.05);
+}
+
+.disponible {
+  background-color: #d4edda;
+  color: #155724;
+}
+
+.disponible:hover {
+  background-color: #c3e6cb;
+}
+
+.pris {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.pris:hover {
+  background-color: #f5c6cb;
+}
+
+.indisponible {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.indisponible:hover {
+  background-color: #ffeaa7;
+}
+
+.legendContainer {
+  margin-top: 1.5rem;
+  padding: 1rem;
+  background: #e9ecef;
+  border-radius: 8px;
+  border-left: 4px solid #007bff;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  font-size: 0.875rem;
+  margin-right: 1rem;
+}
+
+/* Animations */
+.bi-circle-fill,
+.bi-x-circle-fill,
+.bi-dash-circle-fill {
+  font-size: 1.2rem;
+  transition: transform 0.2s ease;
+}
+
+.creneauCell:hover .bi-circle-fill,
+.creneauCell:hover .bi-x-circle-fill,
+.creneauCell:hover .bi-dash-circle-fill {
+  transform: scale(1.2);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .planningTable {
+    font-size: 0.75rem;
+  }
+  
+  .headerCell,
+  .creneauCell {
+    min-width: 80px;
+    padding: 0.5rem;
+  }
+  
+  .timeCell {
+    font-size: 0.7rem;
+    padding: 0.5rem;
+  }
+}
+
+/* Scrollbar styling */
+.calendarContainer::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.calendarContainer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.calendarContainer::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.calendarContainer::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}

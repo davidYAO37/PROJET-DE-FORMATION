@@ -66,13 +66,16 @@ function SearchableMedicamentSelect({ medicaments, selectedId, onSelect }: Searc
   useEffect(() => {
     if (showDropdown && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
+      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
+      
       setDropdownPosition({
-        top: rect.top - 10, // Position au-dessus de l'input
-        left: rect.left,
+        top: rect.top + scrollTop - 10, // Position au-dessus de l'input avec scroll
+        left: rect.left + scrollLeft,
         width: rect.width,
       });
     }
-  }, [showDropdown]);
+  }, [showDropdown, searchTerm]); // Ajout de searchTerm pour éviter les recalculs intempestifs
 
   // Fermer le dropdown si on clique à l'extérieur
   useEffect(() => {
@@ -115,10 +118,11 @@ function SearchableMedicamentSelect({ medicaments, selectedId, onSelect }: Searc
           ref={dropdownRef}
           className="searchable-acte-dropdown"
           style={{
+            position: 'fixed',
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
-            transform: "translateY(-100%)",
+            zIndex: 1000,
           }}
         >
           {searchTerm && (
@@ -527,11 +531,11 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
                     selectedId={ligne.medicamentId}
                     onSelect={(medicament) => handleSelectMedicament(ligne.id, medicament)}
                   />
-                  {ligne.payePar && (
+                  {/* {ligne.payePar && (
                     <small className="text-muted d-block">
                       Par: {ligne.payePar} le {ligne.payeLe} à {ligne.payeA}
                     </small>
-                  )}
+                  )} */}
                 </td>
                 <td>
                   <Form.Control

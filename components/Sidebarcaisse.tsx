@@ -32,6 +32,7 @@ export default function Sidebarcaisse() {
   const [showFactureModal, setShowFactureModal] = useState(false);
   const [showPaiementPharmacieModal, setShowPaiementPharmacieModal] = useState(false);
   const [showFacturesNonSoldesModal, setShowFacturesNonSoldesModal] = useState(false);
+  const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
   const [showPointCaisseModal, setShowPointCaisseModal] = useState(false);
   const [showListeEncaissementModal, setShowListeEncaissementModal] = useState(false);
   const [showMenuImpressionModal, setShowMenuImpressionModal] = useState(false);
@@ -134,6 +135,12 @@ export default function Sidebarcaisse() {
     setOpen(false);
   };
 
+  // ouvre le modal ExamenHospitalisationModal et ferme la sidebar en mobile
+  const handleExamenHospitalisationClick = () => {
+    setShowExamenHospitalisationModal(true);
+    setOpen(false);
+  };
+
   // ouvre le modal des factures non soldées et ferme la sidebar en mobile
   const handleFacturesNonSoldesClick = () => {
     setShowFacturesNonSoldesModal(true);
@@ -201,17 +208,19 @@ export default function Sidebarcaisse() {
                 <div
                   className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''} cursor-pointer`}
                   onClick={
-                    item.label === 'Facturer une pharmacie'
-                      ? handlePaiementPharmacieClick
-                      : item.label === 'Facture à solder'
-                        ? handleFacturesNonSoldesClick
-                        : item.label === 'Point de caisse'
-                          ? handlePointCaisseClick
-                          : item.label === 'Liste encaissement'
-                            ? handleListeEncaissementClick
-                            : item.label === 'Imprimer Facture'
-                              ? handleMenuImpressionClick
-                              : handleMotDePasseClick
+                    item.label === 'Saisir une Facture Exam-Hospit...'
+                      ? handleFactureClick
+                      : item.label === 'Facturer une pharmacie'
+                        ? handlePaiementPharmacieClick
+                        : item.label === 'Facture à solder'
+                          ? handleFacturesNonSoldesClick
+                          : item.label === 'Point de caisse'
+                            ? handlePointCaisseClick
+                            : item.label === 'Liste encaissement'
+                              ? handleListeEncaissementClick
+                              : item.label === 'Imprimer Facture'
+                                ? handleMenuImpressionClick
+                                : handleMotDePasseClick
                   }
                 >
                   {item.icon}
@@ -239,7 +248,7 @@ export default function Sidebarcaisse() {
         </Nav>
       </aside>
 
-      {/* Modal pour la saisie de facture */}
+      {/* Modal pour la facture */}
       <ExamenHospitalisationModalCaisse
         show={showFactureModal}
         onHide={() => setShowFactureModal(false)}
