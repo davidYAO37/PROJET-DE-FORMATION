@@ -49,7 +49,7 @@ const EncaissementCaisseAnnuleSchema = new Schema<IEncaissementCaisseAnnule>(
         Utilisateur: { type: String, maxlength: 50 },
         DateEncaissement: { type: Date },
         Montantencaisse: { type: Number },
-        HeureEncaissement: { type: String, maxlength: 10 },
+        HeureEncaissement: { type: String, maxlength: 50 },
         Modepaiement: { type: String, maxlength: 50 },
         NCheque: { type: String, maxlength: 50 },
         NumCompteVisa: { type: String, maxlength: 50 },

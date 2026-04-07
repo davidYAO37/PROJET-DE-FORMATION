@@ -11,6 +11,8 @@ export interface IMedicament {
   CodeBarre?: string;
   PrixVente?: number;
   StockDisponible?: number;
+  SeuilAlert?: number; // Seuil d'alerte de stock (optionnel)
+  SeuilCritique?: number; // Seuil critique de stock (optionnel)
   // ... autres champs si nécessaire
 }
 
@@ -34,152 +36,64 @@ export interface ILigneMedicament {
   reference?: string; // Ajout du champ reference
 }
 
-// Composant de recherche de médicament avec autocomplétion
-interface SearchableMedicamentSelectProps {
+// Fonction pour déterminer le statut du stock
+function getStockStatus(medicament: IMedicament): { 
+  status: 'normal' | 'alert' | 'critical' | 'out'; 
+  color: string; 
+  icon: string; 
+  label: string;
+} {
+  const stock = medicament.StockDisponible || 0;
+  const seuilAlert = medicament.SeuilAlert || 10; // Valeur par défaut
+  const seuilCritique = medicament.SeuilCritique || 5; // Valeur par défaut
+
+  if (stock === 0) {
+    return { status: 'out', color: 'danger', icon: '🚫', label: 'Rupture' };
+  } else if (stock <= seuilCritique) {
+    return { status: 'critical', color: 'danger', icon: '⚠️', label: 'Critique' };
+  } else if (stock <= seuilAlert) {
+    return { status: 'alert', color: 'warning', icon: '⚡', label: 'Alerte' };
+  } else {
+    return { status: 'normal', color: 'success', icon: '✅', label: 'Normal' };
+  }
+}
+
+// Composant de sélection de médicament simplifié
+interface MedicamentSelectProps {
   medicaments: IMedicament[];
   selectedId: string;
   onSelect: (medicament: IMedicament) => void;
 }
 
-function SearchableMedicamentSelect({ medicaments, selectedId, onSelect }: SearchableMedicamentSelectProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-
-  // Trouver le médicament sélectionné
-  const selectedMedicament = medicaments.find(m => m._id === selectedId);
-  const displayValue = selectedMedicament ? selectedMedicament.Designation : "";
-
-  // Filtrer les médicaments selon la recherche - Si pas de recherche, afficher tous les médicaments en stock
-  const filteredMedicaments = searchTerm
-    ? medicaments.filter(
-      (m) =>
-        m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-    : medicaments; // Afficher tous les médicaments en stock si pas de recherche
-
-  // Calculer la position du dropdown
-  useEffect(() => {
-    if (showDropdown && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-      const scrollLeft = window.pageXOffset || document.documentElement.scrollLeft;
-      
-      setDropdownPosition({
-        top: rect.top + scrollTop - 10, // Position au-dessus de l'input avec scroll
-        left: rect.left + scrollLeft,
-        width: rect.width,
-      });
+function MedicamentSelect({ medicaments, selectedId, onSelect }: MedicamentSelectProps) {
+  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const medicament = medicaments.find(m => m._id === e.target.value);
+    if (medicament) {
+      onSelect(medicament);
     }
-  }, [showDropdown, searchTerm]); // Ajout de searchTerm pour éviter les recalculs intempestifs
-
-  // Fermer le dropdown si on clique à l'extérieur
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
-        setSearchTerm("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleSelect = (medicament: IMedicament) => {
-    onSelect(medicament);
-    setSearchTerm("");
-    setShowDropdown(false);
   };
 
   return (
-    <div ref={inputRef} className="searchable-acte-container">
-      <Form.Control
-        type="text"
-        size="sm"
-        placeholder="Rechercher un médicament..."
-        value={showDropdown ? searchTerm : displayValue}
-        onChange={(e) => {
-          setSearchTerm(e.target.value);
-          setShowDropdown(true);
-        }}
-        onFocus={() => setShowDropdown(true)}
-      />
-      {showDropdown && (
-        <div
-          ref={dropdownRef}
-          className="searchable-acte-dropdown"
-          style={{
-            position: 'fixed',
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
-            zIndex: 1000,
-          }}
-        >
-          {searchTerm && (
-            <div className="searchable-acte-counter">
-              {filteredMedicaments.length} résultat
-              {filteredMedicaments.length > 1 ? "s" : ""} trouvé
-              {filteredMedicaments.length > 1 ? "s" : ""}
-            </div>
-          )}
-          {filteredMedicaments.length === 0 ? (
-            <div className="searchable-acte-empty">
-              <div className="searchable-acte-empty-icon">🔍</div>
-              <div>Aucun médicament trouvé</div>
-              <div className="searchable-acte-empty-hint">
-                Essayez un autre terme de recherche
-              </div>
-            </div>
-          ) : (
-            <div className="searchable-acte-list">
-              {filteredMedicaments.map((medicament) => (
-                <div
-                  key={medicament._id}
-                  onClick={() => handleSelect(medicament)}
-                  className={`searchable-acte-item ${medicament._id === selectedId ? "selected" : ""}`}
-                >
-                  <div className="searchable-acte-title">
-                    {medicament.Designation}
-                  </div>
-                  <div className="searchable-acte-badges">
-                    {medicament.StockDisponible !== undefined && (
-                      <span className="searchable-acte-badge-stock">
-                        📦 Stock: {medicament.StockDisponible}
-                      </span>
-                    )}
-                    {medicament.Reference && (
-                      <span className="searchable-acte-badge-ref">
-                        📋 {medicament.Reference}
-                      </span>
-                    )}
-                    {medicament.CodeBarre && (
-                      <span className="searchable-acte-badge-key">
-                        🔑 {medicament.CodeBarre}
-                      </span>
-                    )}
-                    {medicament.PrixVente && (
-                      <span className="searchable-acte-badge-mutuel">
-                        🏥 Vente: {medicament.PrixVente} FCFA
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
+    <Form.Select 
+      size="sm"
+      value={selectedId}
+      onChange={handleSelect}
+      style={{ fontSize: '13px' }}
+    >
+      <option value="">Sélectionner un médicament...</option>
+      {medicaments.map((medicament) => {
+        const stockStatus = getStockStatus(medicament);
+        return (
+          <option key={medicament._id} value={medicament._id}>
+            {stockStatus.icon} {medicament.Designation} 
+            {medicament.Reference && ` - ${medicament.Reference}`}
+            {medicament.StockDisponible !== undefined && 
+              ` (${stockStatus.label}: ${medicament.StockDisponible})`
+            }
+          </option>
+        );
+      })}
+    </Form.Select>
   );
 }
 
@@ -526,16 +440,11 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
                   />
                 </td>
                 <td>
-                  <SearchableMedicamentSelect
+                  <MedicamentSelect
                     medicaments={medicamentsEnStock}
                     selectedId={ligne.medicamentId}
-                    onSelect={(medicament) => handleSelectMedicament(ligne.id, medicament)}
+                    onSelect={(medicament: IMedicament) => handleSelectMedicament(ligne.id, medicament)}
                   />
-                  {/* {ligne.payePar && (
-                    <small className="text-muted d-block">
-                      Par: {ligne.payePar} le {ligne.payeLe} à {ligne.payeA}
-                    </small>
-                  )} */}
                 </td>
                 <td>
                   <Form.Control

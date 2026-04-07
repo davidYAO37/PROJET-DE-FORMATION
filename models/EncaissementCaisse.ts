@@ -26,14 +26,16 @@ export interface IEncaissementCaisse extends Document {
     IdPatient?: string;
     AnnulationOrdonneLe?: Date;
     annulationOrdonnepar?: string;
+    Ordonnerlannulation?: boolean;
+    StatutOrdonner?: number;
     entrepriseId?: string;
 }
 
 const EncaissementCaisseSchema: Schema = new Schema({
     DatePrest: { type: Date },
-    Patient: { type: String },
+    Patient: { type: String, maxlength: 60 },
     Assurance: { type: String },
-    Designation: { type: String },
+    Designation: { type: String, maxlength: 100 },
     Totalacte: { type: Number },
     Taux: { type: Number },
     PartAssurance: { type: Number },
@@ -41,20 +43,22 @@ const EncaissementCaisseSchema: Schema = new Schema({
     REMISE: { type: Number },
     TotalPaye: { type: Number },
     Restapayer: { type: Number },
-    Medecin: { type: String },
-    Utilisateur: { type: String },
+    Medecin: { type: String, maxlength: 60 },
+    Utilisateur: { type: String, maxlength: 50 },
     DateEncaissement: { type: Date },
     Montantencaisse: { type: Number },
-    HeureEncaissement: { type: String },
-    Modepaiement: { type: String },
+    HeureEncaissement: { type: String, maxlength: 50 },
+    Modepaiement: { type: String, maxlength: 50 },
     IDFACTURATION: { type: String },
     IDCONSULTATION: { type: String },
-    restapayerBilan: { type: String },
+    restapayerBilan: { type: String, maxlength: 50 },
     TotalapayerPatient: { type: Number },
     Assure: { type: String },
     IdPatient: { type: String },
     AnnulationOrdonneLe: { type: Date },
-    annulationOrdonnepar: { type: String },
+    annulationOrdonnepar: { type: String, maxlength: 50 },
+    Ordonnerlannulation: { type: Boolean, default: false },
+    StatutOrdonner: { type: Number, default: 0 },
     entrepriseId: { type: String },
 });
 export const EncaissementCaisse: Model<IEncaissementCaisse> = mongoose.models.EncaissementCaisse || mongoose.model<IEncaissementCaisse>('EncaissementCaisse', EncaissementCaisseSchema);

@@ -44,17 +44,33 @@ export default function ListeEncaissementModal({ show, onHide }: ListeEncaisseme
         }
     };
 
-    const handleAnnuler = async (encaissementId: string) => {
-        const confirmation = window.confirm('Confirmez-vous l\'annulation de cet encaissement ?');
-        if (!confirmation) return;
+    const handleAnnuler = async (encaissement: any) => {
+        // Récupérer l'utilisateur connecté
+        const currentUser = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || 'Utilisateur';
+        
+        // Vérifier si l'utilisateur connecté est celui qui a encaissé
+        if (encaissement.Utilisateur !== currentUser) {
+            alert(`Seul ${encaissement.Utilisateur} peut ordonner cette annulation`);
+            return;
+        }
+
+        // Première confirmation : "Voulez-vous ordonner l'annulation de ce encaissement"
+        const confirmation1 = window.confirm(`Voulez-vous ordonner l'annulation de cet encaissement ?`);
+        if (!confirmation1) return;
+
+        // Deuxième confirmation : "Voulez-vous confirmer cette annulation"
+        const confirmation2 = window.confirm(`Voulez-vous confirmer cette annulation ?`);
+        if (!confirmation2) return;
 
         try {
             setLoading(true);
-            const user = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || 'Utilisateur';
-            const res = await fetch(`/api/encaissementcaisse?id=${encaissementId}`, {
-                method: 'DELETE',
+            
+            const res = await fetch(`/api/encaissementcaisse?id=${encaissement._id || encaissement.id}`, {
+                method: 'PATCH', // Utiliser PATCH pour la mise à jour (équivalent de HModifie)
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ utilisateur: user })
+                body: JSON.stringify({ 
+                    utilisateur: currentUser
+                })
             });
 
             if (!res.ok) {
@@ -64,6 +80,10 @@ export default function ListeEncaissementModal({ show, onHide }: ListeEncaisseme
             const data = await res.json();
             if (!data.success) throw new Error(data.message || 'Erreur d\'annulation');
 
+            // Afficher le message de succès
+            alert('Annulation ordonnée avec succès');
+            
+            // Recharger la liste
             await chargerEncaissements();
         } catch (err) {
             console.error(err);
@@ -237,25 +257,70 @@ export default function ListeEncaissementModal({ show, onHide }: ListeEncaisseme
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    {paginatedEncaissements.map((encaissement) => (
-                                        <tr key={encaissement._id || encaissement.id} className="align-middle">
-                                            <td>{new Date(encaissement.DateEncaissement || encaissement.DatePrest || Date.now()).toLocaleString()}</td>
-                                            <td>{encaissement.Patient || 'N/A'}</td>
-                                            <td>{encaissement.Utilisateur || 'N/A'}</td>
-                                            <td>{encaissement.Montantencaisse != null ? encaissement.Montantencaisse : '-'}</td>
-                                            <td>{encaissement.Modepaiement || '-'}</td>
-                                            <td>
-                                                <Button
-                                                    size="sm"
-                                                    variant="outline-danger"
-                                                    className="rounded-pill"
-                                                    onClick={() => void handleAnnuler(encaissement._id || encaissement.id)}
-                                                >
-                                                    Annuler
-                                                </Button>
-                                            </td>
-                                        </tr>
-                                    ))}
+                                    {paginatedEncaissements.map((encaissement) => {
+                                        const hasAnnulationDemande = encaissement.annulationOrdonnepar && encaissement.AnnulationOrdonneLe;
+                                        const isAnnulationRefusee = encaissement.StatutOrdonner === 1 && !encaissement.annulationOrdonnepar && !encaissement.AnnulationOrdonneLe;
+                                        return (
+                                            <tr 
+                                                key={encaissement._id || encaissement.id} 
+                                                className={`align-middle ${
+                                                    hasAnnulationDemande ? 'table-warning' : 
+                                                    isAnnulationRefusee ? 'table-secondary' : ''
+                                                }`}
+                                            >
+                                                <td>
+                                                    <div className="d-flex align-items-center flex-wrap">
+                                                        <span>{new Date(encaissement.DateEncaissement || encaissement.DatePrest || Date.now()).toLocaleString()}</span>
+                                                        {hasAnnulationDemande && (
+                                                            <span className="ms-2  bg-warning text-dark" title="Demande d'annulation effectuée">
+                                                                <i className="bi bi-clock-history me-1"></i>
+                                                                En attente
+                                                            </span>
+                                                        )}
+                                                        {isAnnulationRefusee && (
+                                                            <span className="ms-2  bg-secondary text-white" title="Annulation refusée">
+                                                                <i className="bi bi-x-circle me-1"></i>
+                                                                Refusée
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
+                                                <td>{encaissement.Patient || 'N/A'}</td>
+                                                <td>{encaissement.Utilisateur || 'N/A'}</td>
+                                                <td>{encaissement.Montantencaisse != null ? encaissement.Montantencaisse : '-'}</td>
+                                                <td>{encaissement.Modepaiement || '-'}</td>
+                                                <td>
+                                                    {hasAnnulationDemande ? (
+                                                        <div className="d-flex align-items-center">
+                                                            <span className="text-muted small me-2">
+                                                                Demandé par {encaissement.annulationOrdonnepar}
+                                                            </span>
+                                                            <span className="text-muted small">
+                                                                le {new Date(encaissement.AnnulationOrdonneLe).toLocaleDateString()}
+                                                            </span>
+                                                        </div>
+                                                    ) : isAnnulationRefusee ? (
+                                                        <div className="d-flex align-items-center">
+                                                            <span className="text-muted small me-2">
+                                                                <i className="bi bi-x-circle text-secondary me-1"></i>
+                                                                Annulation refusée
+                                                            </span>
+                                                        </div>
+                                                    ) : (
+                                                        <Button
+                                                            size="sm"
+                                                            variant="outline-danger"
+                                                            className="rounded-pill"
+                                                            onClick={() => void handleAnnuler(encaissement)}
+                                                            title={`Annuler cet encaissement (encaissé par: ${encaissement.Utilisateur || 'N/A'})`}
+                                                        >
+                                                            Annuler
+                                                        </Button>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
                                 </tbody>
                             </Table>
                         </div>

@@ -8,11 +8,13 @@ import ListePlanningModal from './ListePlanningModal';
 import DisponibiliteMedecinModal from './DisponibiliteMedecinModal';
 import { useAuthUser } from '@/hooks/useAuthUser';
 import ListeAnnulationFactureModal from '@/app/pages/servicecaisse/componant/ListeAnnulationFactureModal';
+import ListeAnnulationEncaissementModal from '@/app/pages/servicecaisse/componant/ListeAnnulationEncaissementModal';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
   const [showListeAnnulationModal, setShowListeAnnulationModal] = useState(false);
+  const [showListeEncaissementAnnulationModal, setShowListeEncaissementAnnulationModal] = useState(false);
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [showListePlanningModal, setShowListePlanningModal] = useState(false);
   const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
@@ -149,6 +151,17 @@ export default function Sidebar() {
                     style={{ cursor: 'pointer' }}
                   >
                     <i className="bi bi-exclamation-triangle-fill me-2 text-danger"></i> Liste à annuler
+                  </button>
+                </li>
+              </ul>
+              <ul className="nav flex-column gap-2">
+                <li>
+                  <button
+                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                    onClick={() => setShowListeEncaissementAnnulationModal(true)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    <i className="bi bi-exclamation-triangle-fill me-2 text-danger"></i> Encaissements à annuler
                   </button>
                 </li>
               </ul>
@@ -326,7 +339,13 @@ export default function Sidebar() {
         show={showListeAnnulationModal}
         onHide={() => setShowListeAnnulationModal(false)}
       />
-
+      
+      {/* Modal pour la liste des annulations d'encaissements */}
+      <ListeAnnulationEncaissementModal
+        show={showListeEncaissementAnnulationModal}
+        onHide={() => setShowListeEncaissementAnnulationModal(false)}
+      />
+      
       {/* Modal pour modifier le mot de passe */}
       <ModifierMotDePasseModal
         show={showModifierMotDePasseModal}

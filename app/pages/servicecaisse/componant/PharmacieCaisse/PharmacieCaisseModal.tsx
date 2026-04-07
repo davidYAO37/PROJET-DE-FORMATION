@@ -949,17 +949,28 @@ export default function PharmacieCaisseModal({
 
   return (
     <>
-      <Modal show={show} onHide={handleHide} size="xl" centered backdrop="static" keyboard={false}>
-        <Modal.Header closeButton>
-          <Modal.Title>CAISSE PHARMACIE</Modal.Title>
+      <Modal 
+        show={show} 
+        onHide={handleHide} 
+        fullscreen={true}
+        centered 
+        backdrop="static" 
+        keyboard={false}
+      >
+        <Modal.Header closeButton className="bg-primary text-white">
+          <Modal.Title className="fs-4 fw-bold">
+            <i className="bi bi-cash-stack me-2"></i>
+            CAISSE PHARMACIE
+          </Modal.Title>
         </Modal.Header>
 
-        <Modal.Body>
+        <Modal.Body className="p-0">
           {errorMessage && (
             <Alert
               variant="danger"
               onClose={() => setErrorMessage(null)}
               dismissible
+              className="m-3"
             >
               {errorMessage}
             </Alert>
@@ -970,57 +981,69 @@ export default function PharmacieCaisseModal({
               variant="info"
               onClose={() => setInfoMessage(null)}
               dismissible
+              className="m-3"
             >
               {infoMessage}
             </Alert>
           )}
 
-          <Row>
+          <Row className="g-0 h-100">
             {/* Colonne de gauche : Informations patient */}
-            <Col md={4}>
-              <InfoPatient
-                onPatientChange={handlePatientChange}
-                onConsultationChange={handleConsultationChange}
-                onPrescriptionChange={handlePrescriptionChangeUpdated}
-                onCodePrestationChange={handleCodePrestationChange}
-                onPatientPrescriptionsChange={handlePatientPrescriptionsChange}
-                initialCodePrestation={codePrestation}
-              />
+            <Col lg={4} xl={3} className="border-end bg-light">
+              <div className="p-3">
+                <InfoPatient
+                  onPatientChange={handlePatientChange}
+                  onConsultationChange={handleConsultationChange}
+                  onPrescriptionChange={handlePrescriptionChangeUpdated}
+                  onCodePrestationChange={handleCodePrestationChange}
+                  onPatientPrescriptionsChange={handlePatientPrescriptionsChange}
+                  initialCodePrestation={codePrestation}
+                />
+              </div>
             </Col>
 
             {/* Colonne de droite : Médicaments et paiement */}
-            <Col md={8}>
-              {/* Tableau des médicaments */}
-              <Card className="shadow-sm">
-                <Card.Header className="bg-light">
-                  Médicaments Prescrits
-                </Card.Header>
-                <Card.Body>
-                  <TableMedicaments
-                    medicaments={medicaments}
-                    onLignesChange={handleLignesChange}
-                    tauxAssurance={consultation.tauxAssurance || 0}
-                    onTotauxChange={handleTotauxChange}
-                    remise={totaux.remise}
-                    presetLines={presetLines}
-                    externalResetKey={resetKey}
-                  />
-                </Card.Body>
-              </Card>
+            <Col lg={8} xl={9} className="d-flex flex-column">
+              <div className="flex-grow-1 overflow-auto">
+                {/* Tableau des médicaments */}
+                <Card className="shadow-sm border-0 h-100">
+                  <Card.Header className="bg-primary text-white py-3">
+                    <h5 className="mb-0">
+                      <i className="bi bi-capsule me-2"></i>
+                      Médicaments Prescrits
+                    </h5>
+                  </Card.Header>
+                  <Card.Body className="p-3">
+                    <div style={{ maxHeight: "calc(100vh - 400px)", overflow: "auto" }}>
+                      <TableMedicaments
+                        medicaments={medicaments}
+                        onLignesChange={handleLignesChange}
+                        tauxAssurance={consultation.tauxAssurance || 0}
+                        onTotauxChange={handleTotauxChange}
+                        remise={totaux.remise}
+                        presetLines={presetLines}
+                        externalResetKey={resetKey}
+                      />
+                    </div>
+                  </Card.Body>
+                </Card>
+              </div>
 
-              {/* Totaux et paiement */}
-              <ModePaiement
-                formData={formData}
-                setFormData={handleFormDataChange}
-                modePaiement={modePaiement}
-                setModePaiement={setModePaiement}
-                montantEncaisse={montantEncaisse}
-                setMontantEncaisse={handleMontantEncaisseChange}
-                totaux={totaux}
-              />
+              {/* Section paiement fixe en bas */}
+              <div className="border-top bg-white p-3">
+                <ModePaiement
+                  formData={formData}
+                  setFormData={handleFormDataChange}
+                  modePaiement={modePaiement}
+                  setModePaiement={setModePaiement}
+                  montantEncaisse={montantEncaisse}
+                  setMontantEncaisse={handleMontantEncaisseChange}
+                  totaux={totaux}
+                />
 
-              {/* Bouton de validation */}
-              <ValidationPaiement onValidate={handleValiderPaiement} onHide={onHide} />
+                {/* Bouton de validation */}
+                <ValidationPaiement onValidate={handleValiderPaiement} onHide={onHide} />
+              </div>
             </Col>
           </Row>
         </Modal.Body>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Consultation } from "@/models/consultation";
 import { Facturation } from "@/models/Facturation";
+import { Medecin } from "@/models/medecin";
+import { Patient } from "@/models/patient";
 import { db } from "@/db/mongoConnect";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +22,7 @@ export async function GET(req: NextRequest) {
             .populate({
                 path: 'IdPatient',
                 select: 'Nom Prenoms',
-                model: 'Patient'
+                model: Patient
             })
             .sort({ DateFacturation: -1 })
             .lean();
@@ -37,12 +39,12 @@ export async function GET(req: NextRequest) {
             .populate({
                 path: 'IdPatient',
                 select: 'Nom Prenoms',
-                model: 'Patient'
+                model: Patient
             })
             .populate({
                 path: 'IDMEDECIN',
                 select: 'nom',
-                model: 'Medecin'
+                model: Medecin
             })
             .sort({ Date_consulation: -1 })
             .lean();

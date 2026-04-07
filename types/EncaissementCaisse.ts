@@ -25,4 +25,5 @@ export interface EncaissementCaisse {
     IdPatient: string;
     AnnulationOrdonneLe: Date;
     annulationOrdonnepar: string;
+    Ordonnerlannulation:boolean;
 }

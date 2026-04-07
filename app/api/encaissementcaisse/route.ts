@@ -139,11 +139,17 @@ export async function GET(request: NextRequest) {
     const idFacturation = searchParams.get('idFacturation');
     const idConsultation = searchParams.get('idConsultation');
     const all = searchParams.get('all');
+    const patient = searchParams.get('patient');
 
     let encaissements: IEncaissementCaisse[] = [];
 
     if (all === '1' || all === 'true') {
       encaissements = await EncaissementCaisse.find().sort({ DateEncaissement: -1 });
+    } else if (patient && patient.trim() !== '') {
+      // Équivalent de : POUR TOUT ENCAISSEMENT_CAISSE AVEC Nompatient=SAI_SAISIE_PATIENT
+      encaissements = await EncaissementCaisse.find({ 
+        Patient: { $regex: patient.trim(), $options: 'i' } 
+      }).sort({ DateEncaissement: -1 });
     } else if (idConsultation && idConsultation.trim() !== '') {
       encaissements = await EncaissementCaisse.find({ IDCONSULTATION: idConsultation.trim() }).sort({ DateEncaissement: -1 });
     } else if (idFacturation && idFacturation.trim() !== '') {
@@ -177,6 +183,71 @@ export async function GET(request: NextRequest) {
   }
 }
 
+export async function PATCH(request: NextRequest) {
+  try {
+    await db();
+
+    const { searchParams } = new URL(request.url);
+    let id = searchParams.get('id');
+    const body = await request.json().catch(() => ({}));
+
+    if (!id) {
+      id = body?.id;
+    }
+
+    if (!id) {
+      return NextResponse.json({ success: false, message: 'ID d\'encaissement requis' }, { status: 400 });
+    }
+
+    // Équivalent de HLitRecherche(ENCAISSEMENT_CAISSE,IDPOINT_CAISSE,TABLE_ENCAISSEMENT_CAISSE.COL_IDPOINT_CAISSE)
+    const encaissement = await EncaissementCaisse.findById(id);
+
+    if (!encaissement) {
+      return NextResponse.json({ success: false, message: 'Encaissement introuvable' }, { status: 404 });
+    }
+
+    // Équivalent de votre logique Windev :
+    // ENCAISSEMENT_CAISSE.annulationOrdonnepar=gsUtilisateur
+    // ENCAISSEMENT_CAISSE.AnnulationOrdonneLe=DateSys()
+    // HModifie(ENCAISSEMENT_CAISSE)
+    
+    // Gestion du refus d'annulation
+    if (body?.Ordonnerlannulation === false) {
+      // Réinitialiser les champs d'annulation
+      encaissement.annulationOrdonnepar = "";
+      encaissement.AnnulationOrdonneLe = undefined;
+      encaissement.Ordonnerlannulation = false;
+      encaissement.StatutOrdonner = 1; // Statut 1 = Annulation refusée
+    } else {
+      // Ordonner l'annulation
+      encaissement.annulationOrdonnepar = body?.utilisateur || 'Utilisateur inconnu';
+      encaissement.AnnulationOrdonneLe = new Date();
+      encaissement.Ordonnerlannulation = true;
+      encaissement.StatutOrdonner = 1; // Statut 1 = Demande d'annulation
+    }
+    
+
+    await encaissement.save(); // Équivalent de HModifie()
+
+    return NextResponse.json({ 
+      success: true, 
+      message: body?.Ordonnerlannulation === false ? 'Annulation refusée avec succès' : 'Annulation ordonnée avec succès',
+      data: encaissement
+    });
+  } catch (error) {
+    console.error('Erreur lors de l\'ordonnancement de l\'annulation:', error);
+    return NextResponse.json(
+      {
+        success: false,
+        message: 'Erreur lors de l\'ordonnancement de l\'annulation',
+        error: error instanceof Error ? error.message : 'Erreur inconnue'
+      },
+      { status: 500 }
+    );
+  }
+}
+
+// Garder DELETE pour l'annulation effective si nécessaire plus tard
 export async function DELETE(request: NextRequest) {
   try {
     await db();
@@ -199,6 +270,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Encaissement introuvable' }, { status: 404 });
     }
 
+    // Créer l'enregistrement dans la table d'annulation
     const annuler = new EncaissementCaisseAnnule({
       ...encaissement.toObject(),
       Annulerle: new Date(),
