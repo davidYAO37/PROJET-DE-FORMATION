@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IParamLabo extends Document {
+    _id: string;
     NUM_PARAM?: number;
     ParamAbrege?: string;
     Param_designation?: string;
@@ -22,6 +23,11 @@ export interface IParamLabo extends Document {
     ValeurMinNormale?: number;
     ValeurMaxNormale?: number;
     TypeTexte?: boolean;
+    SigneNormale?: string;
+    SigneNé?: string;
+    SigneEnfant?: string;
+    SigneFemme?: string;
+    SigneHomme?: string;
 }
 
 const ParamLaboSchema = new Schema<IParamLabo>({
@@ -46,6 +52,11 @@ const ParamLaboSchema = new Schema<IParamLabo>({
     ValeurMinNormale: { type: Number },
     ValeurMaxNormale: { type: Number },
     TypeTexte: { type: Boolean, default: false },
+    SigneNormale: { type: String, maxlength: 5, default: "-" },
+    SigneNé: { type: String, maxlength: 5, default: "-" },
+    SigneEnfant: { type: String, maxlength: 5, default: "-" },
+    SigneFemme: { type: String, maxlength: 5, default: "-" },
+    SigneHomme: { type: String, maxlength: 5, default: "-" },
 }, { timestamps: true });
 
 export const ParamLabo: Model<IParamLabo> = mongoose.models.ParamLabo || mongoose.model<IParamLabo>('ParamLabo', ParamLaboSchema);

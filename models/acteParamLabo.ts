@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document, Types, Model } from 'mongoose';
 
 export interface IActeParamLabo extends Document {
+    _id: string;
     IDPARAM_LABO?: Types.ObjectId;
     IDACTEP?: Types.ObjectId;
     PlageMaxEnfant?: number;
@@ -23,6 +24,12 @@ export interface IActeParamLabo extends Document {
     ValeurMaxNormale?: number;
     ValeurMinNormale?: number;
     TypeTexte?: boolean;
+    SigneNormale?: string;
+    SigneNé?: string;
+    SigneEnfant?: string;
+    SigneFemme?: string;
+    SigneHomme?: string;
+    ORdonnacementAffichage?:number;
 }
 
 const ActeParamLaboSchema = new Schema<IActeParamLabo>({
@@ -48,6 +55,12 @@ const ActeParamLaboSchema = new Schema<IActeParamLabo>({
     ValeurMaxNormale: { type: Number },
     ValeurMinNormale: { type: Number },
     TypeTexte: { type: Boolean, default: false },
+    SigneNormale: { type: String, maxlength: 5, default: "-" },
+    SigneNé: { type: String, maxlength: 5, default: "-" },
+    SigneEnfant: { type: String, maxlength: 5, default: "-" },
+    SigneFemme: { type: String, maxlength: 5, default: "-" },
+    SigneHomme: { type: String, maxlength: 5, default: "-" },
+    ORdonnacementAffichage: {type:Number},
 }, { timestamps: true });
 
 export const ActeParamLabo: Model<IActeParamLabo> = mongoose.models.ActeParamLabo || mongoose.model<IActeParamLabo>('ActeParamLabo', ActeParamLaboSchema);

@@ -1,4 +1,5 @@
 export interface ParamLabo {
+    _id?: string;
     NUM_PARAM?: number;
     ParamAbrege?: string;
     Param_designation?: string;
@@ -20,4 +21,10 @@ export interface ParamLabo {
     ValeurMinNormale?: number;
     ValeurMaxNormale?: number;
     TypeTexte?: boolean;
+    // Ajouter les champs de signe
+    SigneNormale?: string;
+    SigneNé?: string;
+    SigneEnfant?: string;
+    SigneFemme?: string;
+    SigneHomme?: string;
 }
