@@ -33,43 +33,38 @@ export interface ILigneMedicament {
   posologie?: string; // Ajout du champ posologie
 }
 
-// Composant de recherche de médicament avec autocomplétion
-interface SearchableMedicamentSelectProps {
+// Composant de sélection de médicament avec recherche
+interface MedicamentSelectProps {
   medicaments: IMedicament[];
   selectedId: string;
   onSelect: (medicament: IMedicament) => void;
   disabled?: boolean; // Ajout de la propriété disabled
 }
 
-function SearchableMedicamentSelect({ medicaments, selectedId, onSelect, disabled = false }: SearchableMedicamentSelectProps) {
+function MedicamentSelect({ medicaments, selectedId, onSelect, disabled = false }: MedicamentSelectProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
-  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-  // Trouver le médicament sélectionné
-  const selectedMedicament = selectedId ? medicaments.find(m => m._id === selectedId) : null;
-  const displayValue = selectedMedicament ? (selectedMedicament.Designation || "") : "";
-
-  // Filtrer les médicaments selon la recherche - Si pas de recherche, afficher tous les médicaments
+  // Filtrer les médicaments selon la recherche
   const filteredMedicaments = searchTerm
-    ? medicaments.filter(
-      (m) =>
+    ? medicaments.filter(m =>
         m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase()),
-    )
-    : medicaments; // Afficher tous les médicaments si pas de recherche
+        m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : medicaments;
 
   // Calculer la position du dropdown
   useEffect(() => {
     if (showDropdown && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.top - 10, // Position au-dessus de l'input
+        top: rect.bottom + 5, // Position en dessous de l'input
         left: rect.left,
-        width: rect.width,
+        width: rect.width
       });
     }
   }, [showDropdown]);
@@ -77,14 +72,9 @@ function SearchableMedicamentSelect({ medicaments, selectedId, onSelect, disable
   // Fermer le dropdown si on clique à l'extérieur
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          inputRef.current && !inputRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
-        setSearchTerm("");
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -97,8 +87,16 @@ function SearchableMedicamentSelect({ medicaments, selectedId, onSelect, disable
     setShowDropdown(false);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setShowDropdown(true);
+  };
+
+  const selectedMedicament = medicaments.find(m => m._id === selectedId);
+
   // Si le composant est désactivé, afficher simplement le médicament sélectionné en lecture seule
   if (disabled) {
+    const displayValue = selectedMedicament ? selectedMedicament.Designation || "" : "";
     return (
       <Form.Control
         value={displayValue}
@@ -111,80 +109,78 @@ function SearchableMedicamentSelect({ medicaments, selectedId, onSelect, disable
   }
 
   return (
-    <div ref={inputRef} className="searchable-acte-container">
+    <div style={{ position: 'relative' }}>
       <Form.Control
+        ref={inputRef}
         type="text"
         size="sm"
         placeholder="Rechercher un médicament..."
-        value={showDropdown ? (searchTerm || "") : (displayValue || "")}
-        onChange={(e) => {
-          setSearchTerm(e.target.value);
-          setShowDropdown(true);
-        }}
+        value={searchTerm || (selectedMedicament?.Designation || "")}
+        onChange={handleInputChange}
         onFocus={() => setShowDropdown(true)}
+        style={{ fontSize: '13px' }}
+        disabled={disabled}
       />
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="searchable-acte-dropdown"
           style={{
+            position: 'fixed',
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
-            transform: "translateY(-100%)",
+            maxHeight: '200px',
+            overflow: 'auto',
+            backgroundColor: 'white',
+            border: '1px solid #dee2e6',
+            borderRadius: '0.375rem',
+            boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+            zIndex: 1000
           }}
         >
-          {searchTerm && (
-            <div className="searchable-acte-counter">
-              {filteredMedicaments.length} résultat
-              {filteredMedicaments.length > 1 ? "s" : ""} trouvé
-              {filteredMedicaments.length > 1 ? "s" : ""}
-            </div>
-          )}
           {filteredMedicaments.length === 0 ? (
-            <div className="searchable-acte-empty">
-              <div className="searchable-acte-empty-icon">🔍</div>
-              <div>Aucun médicament trouvé</div>
-              <div className="searchable-acte-empty-hint">
-                Essayez un autre terme de recherche
-              </div>
+            <div style={{ padding: '8px', color: '#6c757d', fontSize: '13px' }}>
+              Aucun médicament trouvé
             </div>
           ) : (
-            <div className="searchable-acte-list">
-              {filteredMedicaments.map((medicament) => (
-                <div
-                  key={medicament._id}
-                  onClick={() => handleSelect(medicament)}
-                  className={`searchable-acte-item ${medicament._id === selectedId ? "selected" : ""}`}
-                >
-                  <div className="searchable-acte-title">
-                    {medicament.Designation}
-                  </div>
-                  <div className="searchable-acte-badges">
-                    {medicament.StockDisponible !== undefined && (
-                      <span className="searchable-acte-badge-stock">
-                        📦 Stock: {medicament.StockDisponible}
-                      </span>
-                    )}
-                    {medicament.Reference && (
-                      <span className="searchable-acte-badge-ref">
-                        📋 {medicament.Reference}
-                      </span>
-                    )}
-                    {medicament.CodeBarre && (
-                      <span className="searchable-acte-badge-key">
-                        🔑 {medicament.CodeBarre}
-                      </span>
-                    )}
-                    {medicament.PrixVente && (
-                      <span className="searchable-acte-badge-mutuel">
-                        🏥 Vente: {medicament.PrixVente} FCFA
-                      </span>
-                    )}
-                  </div>
+            filteredMedicaments.map((medicament) => (
+              <div
+                key={medicament._id}
+                onClick={() => handleSelect(medicament)}
+                style={{
+                  padding: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  borderBottom: '1px solid #f8f9fa',
+                  backgroundColor: medicament._id === selectedId ? '#e3f2fd' : 'white'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.backgroundColor = '#f8f9fa';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.backgroundColor = medicament._id === selectedId ? '#e3f2fd' : 'white';
+                }}
+              >
+                <div>
+                  <strong>{medicament.Designation}</strong>
                 </div>
-              ))}
-            </div>
+                {medicament.Reference && (
+                  <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                    📋 {medicament.Reference}
+                  </div>
+                )}
+                {medicament.StockDisponible !== undefined && (
+                  <div style={{ fontSize: '11px', color: '#007bff' }}>
+                    📦 Stock: {medicament.StockDisponible}
+                  </div>
+                )}
+                {medicament.PrixVente && (
+                  <div style={{ fontSize: '11px', color: '#28a745' }}>
+                    💰 {medicament.PrixVente} FCFA
+                  </div>
+                )}
+              </div>
+            ))
           )}
         </div>
       )}
@@ -547,10 +543,10 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
                     />
                   </td>
                   <td>
-                    <SearchableMedicamentSelect
+                    <MedicamentSelect
                       medicaments={medicaments}
                       selectedId={ligne.medicamentId || ""}
-                      onSelect={(medicament) => handleSelectMedicament(ligne.id, medicament)}
+                      onSelect={(medicament: IMedicament) => handleSelectMedicament(ligne.id, medicament)}
                       disabled={isLigneLocked}
                     />
                   </td>

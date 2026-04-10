@@ -69,38 +69,34 @@ export interface ILignePrestation {
 }
 // utilise Assurance et le taux de assurance info
 
-// Composant de recherche d'acte avec autocomplétion
-interface SearchableActeSelectProps {
+// Composant de sélection d'acte avec recherche
+interface ActeSelectProps {
     actes: IActeClinique[];
     selectedId: string;
-    onSelect: (acteId: string) => void;
+    onSelect: (acte: IActeClinique) => void;
 }
 
-function SearchableActeSelect({ actes, selectedId, onSelect }: SearchableActeSelectProps) {
+function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-    // Trouver l'acte sélectionné
-    const selectedActe = actes.find(a => a._id === selectedId);
-    const displayValue = selectedActe ? selectedActe.Designation || "" : "";
-
-    // Filtrer les actes selon la recherche - Si pas de recherche, afficher tous les actes
-    const filteredActes = searchTerm 
-        ? actes.filter(a => 
+    // Filtrer les actes selon la recherche
+    const filteredActes = searchTerm
+        ? actes.filter(a =>
             a.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             a.LettreCle?.toLowerCase().includes(searchTerm.toLowerCase())
-          )
-        : actes; // Afficher tous les actes si pas de recherche
+        )
+        : actes;
 
     // Calculer la position du dropdown
     useEffect(() => {
         if (showDropdown && inputRef.current) {
             const rect = inputRef.current.getBoundingClientRect();
             setDropdownPosition({
-                top: rect.top - 10, // Position au-dessus de l'input
+                top: rect.bottom + 5, // Position en dessous de l'input
                 left: rect.left,
                 width: rect.width
             });
@@ -113,99 +109,92 @@ function SearchableActeSelect({ actes, selectedId, onSelect }: SearchableActeSel
             if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
                 inputRef.current && !inputRef.current.contains(event.target as Node)) {
                 setShowDropdown(false);
-                setSearchTerm("");
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    const handleSelect = (acteId: string) => {
-        onSelect(acteId);
+    const handleSelect = (acte: IActeClinique) => {
+        onSelect(acte);
         setSearchTerm("");
         setShowDropdown(false);
     };
 
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        setShowDropdown(true);
+    };
+
+    const selectedActe = actes.find(a => a._id === selectedId);
+
     return (
-        <div ref={inputRef} className="searchable-acte-container">
+        <div style={{ position: 'relative' }}>
             <Form.Control
-                as="textarea"
-                rows={2}
+                ref={inputRef}
+                type="text"
                 size="sm"
                 placeholder="Rechercher un acte..."
-                value={showDropdown ? searchTerm : displayValue}
-                onChange={(e) => {
-                    setSearchTerm(e.target.value);
-                    setShowDropdown(true);
-                }}
+                value={searchTerm || (selectedActe?.Designation || "")}
+                onChange={handleInputChange}
                 onFocus={() => setShowDropdown(true)}
-                style={{ 
-                    resize: 'none', 
-                    overflow: 'hidden',
-                    fontSize: '13px',
-                    lineHeight: '1.3'
-                }}
+                style={{ fontSize: '13px' }}
             />
             {showDropdown && (
-                <div 
+                <div
                     ref={dropdownRef}
-                    className="searchable-acte-dropdown"
                     style={{
+                        position: 'fixed',
                         top: `${dropdownPosition.top}px`,
                         left: `${dropdownPosition.left}px`,
                         width: `${dropdownPosition.width}px`,
-                        transform: 'translateY(-100%)'
+                        maxHeight: '200px',
+                        overflow: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '0.375rem',
+                        boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+                        zIndex: 1000
                     }}
                 >
-                    {searchTerm && (
-                        <div className="searchable-acte-counter">
-                            {filteredActes.length} résultat{filteredActes.length > 1 ? 's' : ''} trouvé{filteredActes.length > 1 ? 's' : ''}
-                        </div>
-                    )}
                     {filteredActes.length === 0 ? (
-                        <div className="searchable-acte-empty">
-                            <div className="searchable-acte-empty-icon">🔍</div>
-                            <div>Aucun acte trouvé</div>
-                            <div className="searchable-acte-empty-hint">
-                                Essayez un autre terme de recherche
-                            </div>
+                        <div style={{ padding: '8px', color: '#6c757d', fontSize: '13px' }}>
+                            Aucun acte trouvé
                         </div>
                     ) : (
-                        <div className="searchable-acte-list">
-                            {filteredActes.map((acte) => (
-                                <div
-                                    key={acte._id}
-                                    onClick={() => handleSelect(acte._id)}
-                                    className={`searchable-acte-item ${acte._id === selectedId ? 'selected' : ''}`}
-                                >
-                                    <div className="searchable-acte-title">
-                                        {acte.Designation}
-                                    </div>
-                                    <div className="searchable-acte-badges">
-                                        {acte.LettreCle && (
-                                            <span className="searchable-acte-badge-key">
-                                                🔑 {acte.LettreCle}
-                                            </span>
-                                        )}
-                                        {acte.Prix && (
-                                            <span className="searchable-acte-badge-price">
-                                                💰 {acte.Prix} FCFA
-                                            </span>
-                                        )}
-                                        {acte.PrixMutualiste && (
-                                            <span className="searchable-acte-badge-mutuel">
-                                                🏥 Mutuel: {acte.PrixMutualiste} FCFA
-                                            </span>
-                                        )}
-                                        {acte.PrixAssure && (
-                                            <span className="searchable-acte-badge-assure">
-                                                🛡️ Assuré: {acte.PrixAssure} FCFA
-                                            </span>
-                                        )}
-                                    </div>
+                        filteredActes.map((acte) => (
+                            <div
+                                key={acte._id}
+                                onClick={() => handleSelect(acte)}
+                                style={{
+                                    padding: '8px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    borderBottom: '1px solid #f8f9fa',
+                                    backgroundColor: acte._id === selectedId ? '#e3f2fd' : 'white'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = acte._id === selectedId ? '#e3f2fd' : 'white';
+                                }}
+                            >
+                                <div>
+                                    <strong>{acte.Designation}</strong>
                                 </div>
-                            ))}
-                        </div>
+                                {acte.LettreCle && (
+                                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                                        🔑 {acte.LettreCle}
+                                    </div>
+                                )}
+                                {acte.Prix && (
+                                    <div style={{ fontSize: '11px', color: '#28a745' }}>
+                                        💰 {acte.Prix} FCFA
+                                    </div>
+                                )}
+                            </div>
+                        ))
                     )}
                 </div>
             )}
@@ -906,25 +895,18 @@ export default function TablePrestationsUpdate({ assuranceId = 1, saiTaux = 0, a
         );
     }
 
-    // Quand un champ clé change et nécessité recalcul
-    function onFieldChangeAndRecalc(lineId: string, field: keyof ILignePrestation, value: any) {
-        setErrorMsg(null);
-        setLignes((prev) =>
-            prev.map((l) => {
-                if (l.IDLignePrestation !== lineId) return l;
-                const copy = { ...l, [field]: value };
+        return copy;
+    })
+);
+}
 
-                // Recalculs importants si changement sur quantité, exclusion, accepter/refuser, prix unitaire
-                const acte = findActeById(copy.IDACTE);
-                // si acte existe, appliquer prixActe (en fonction de assuranceId et tarifs)
-                if (acte) {
-                    // si assurance active, on peut rechopper le tarif correspondant
-                    if (assuranceId === 1) {
-                        tarifActeClinique(copy, acte, 1);
-                    } else {
-                        // chercher tarif correspondant - si absent, tarifActeAssurance gère l'erreur
-                        tarifActeAssurance(copy, acte, assuranceId);
-                    }
+// Quand un champ clé change et nécessité recalcul
+function onFieldChangeAndRecalc(lineId: string, field: keyof ILignePrestation, value: any) {
+setErrorMsg(null);
+setLignes((prev) =>
+    prev.map((l) => {
+        if (l.IDLignePrestation !== lineId) return l;
+        const copy = { ...l, [field]: value };
                     prixActe(copy, acte);
                 } else {
                     // pas d'acte sélectionné -> recalcul simple
@@ -988,10 +970,10 @@ export default function TablePrestationsUpdate({ assuranceId = 1, saiTaux = 0, a
                                 {/* Acte */}
                                 <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
                                     {isEditable ? (
-                                        <SearchableActeSelect
+                                        <ActeSelect
                                             actes={actes}
                                             selectedId={l.IDACTE || ""}
-                                            onSelect={(acteId: string) => onSelectActe(l.IDLignePrestation, acteId)}
+                                            onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
                                         />
                                     ) : (
                                         <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">

@@ -12,25 +12,25 @@ interface Props {
 
 export default function AjouterParam({ show, onHide, onAdd }: Props) {
     const [form, setForm] = useState({
-        NUM_PARAM: 0,
+        NUM_PARAM: null,
         ParamAbrege: "",
         Param_designation: "",
-        PlageRefMinNe: 0,
-        PlageRefMaxNé: 0,
+        PlageRefMinNe: null,
+        PlageRefMaxNé: null,
         UnitéParam: "",
         PlageMinMaxNé: "",
-        PlageMinEnfant: 0,
-        PlageMaxEnfant: 0,
+        PlageMinEnfant: null,
+        PlageMaxEnfant: null,
         PlageMinMaxEnfant: "",
-        PLageMinFemme: 0,
-        PlageMaxFemme: 0,
+        PLageMinFemme: null,
+        PlageMaxFemme: null,
         PlageMinMaxFemme: "",
-        PlageMinHomme: 0,
-        PlageMaxHomme: 0,
+        PlageMinHomme: null,
+        PlageMaxHomme: null,
         PlageMinMaxHomme: "",
         ValeurNormale: "",
-        ValeurMinNormale: 0,
-        ValeurMaxNormale: 0,
+        ValeurMinNormale: null,
+        ValeurMaxNormale: null,
         TypeTexte: false,
         // Ajouter les signes pour chaque section
         SigneNormale: "-",
@@ -51,47 +51,48 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
             const checked = (e.target as HTMLInputElement).checked;
             updatedForm = { ...updatedForm, [name]: checked };
         } else if (type === "number") {
-            const numValue = Number(value);
+            // Permettre les valeurs nulles ou zéro
+            const numValue = value === "" ? null : Number(value);
             updatedForm = { ...updatedForm, [name]: numValue };
             
             // Logique pour remplir automatiquement les champs Plage Min Max
             if (name === "ValeurMinNormale" || name === "ValeurMaxNormale") {
                 const minVal = name === "ValeurMinNormale" ? numValue : updatedForm.ValeurMinNormale;
                 const maxVal = name === "ValeurMaxNormale" ? numValue : updatedForm.ValeurMaxNormale;
-                if (minVal || maxVal) {
-                    updatedForm.ValeurNormale = `${minVal}${updatedForm.SigneNormale}${maxVal} ${updatedForm.UnitéParam || ""}`.trim();
+                if (minVal !== null || maxVal !== null) {
+                    updatedForm.ValeurNormale = `${minVal ?? ''}${updatedForm.SigneNormale}${maxVal ?? ''} ${updatedForm.UnitéParam || ""}`.trim();
                 }
             }
             
             if (name === "PlageRefMinNe" || name === "PlageRefMaxNé") {
                 const minVal = name === "PlageRefMinNe" ? numValue : updatedForm.PlageRefMinNe;
                 const maxVal = name === "PlageRefMaxNé" ? numValue : updatedForm.PlageRefMaxNé;
-                if (minVal || maxVal) {
-                    updatedForm.PlageMinMaxNé = `${minVal}${updatedForm.SigneNé}${maxVal}`;
+                if (minVal !== null || maxVal !== null) {
+                    updatedForm.PlageMinMaxNé = `${minVal ?? ''}${updatedForm.SigneNé}${maxVal ?? ''}`;
                 }
             }
             
             if (name === "PlageMinEnfant" || name === "PlageMaxEnfant") {
                 const minVal = name === "PlageMinEnfant" ? numValue : updatedForm.PlageMinEnfant;
                 const maxVal = name === "PlageMaxEnfant" ? numValue : updatedForm.PlageMaxEnfant;
-                if (minVal || maxVal) {
-                    updatedForm.PlageMinMaxEnfant = `${minVal}${updatedForm.SigneEnfant}${maxVal}`;
+                if (minVal !== null || maxVal !== null) {
+                    updatedForm.PlageMinMaxEnfant = `${minVal ?? ''}${updatedForm.SigneEnfant}${maxVal ?? ''}`;
                 }
             }
             
             if (name === "PLageMinFemme" || name === "PlageMaxFemme") {
                 const minVal = name === "PLageMinFemme" ? numValue : updatedForm.PLageMinFemme;
                 const maxVal = name === "PlageMaxFemme" ? numValue : updatedForm.PlageMaxFemme;
-                if (minVal || maxVal) {
-                    updatedForm.PlageMinMaxFemme = `${minVal}${updatedForm.SigneFemme}${maxVal}`;
+                if (minVal !== null || maxVal !== null) {
+                    updatedForm.PlageMinMaxFemme = `${minVal ?? ''}${updatedForm.SigneFemme}${maxVal ?? ''}`;
                 }
             }
             
             if (name === "PlageMinHomme" || name === "PlageMaxHomme") {
                 const minVal = name === "PlageMinHomme" ? numValue : updatedForm.PlageMinHomme;
                 const maxVal = name === "PlageMaxHomme" ? numValue : updatedForm.PlageMaxHomme;
-                if (minVal || maxVal) {
-                    updatedForm.PlageMinMaxHomme = `${minVal}${updatedForm.SigneHomme}${maxVal}`;
+                if (minVal !== null || maxVal !== null) {
+                    updatedForm.PlageMinMaxHomme = `${minVal ?? ''}${updatedForm.SigneHomme}${maxVal ?? ''}`;
                 }
             }
         } else {
@@ -169,25 +170,25 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
             onAdd(data);
             // Reset form
             setForm({
-                NUM_PARAM: 0,
+                NUM_PARAM: null,
                 ParamAbrege: "",
                 Param_designation: "",
-                PlageRefMinNe: 0,
-                PlageRefMaxNé: 0,
+                PlageRefMinNe: null,
+                PlageRefMaxNé: null,
                 UnitéParam: "",
                 PlageMinMaxNé: "",
-                PlageMinEnfant: 0,
-                PlageMaxEnfant: 0,
+                PlageMinEnfant: null,
+                PlageMaxEnfant: null,
                 PlageMinMaxEnfant: "",
-                PLageMinFemme: 0,
-                PlageMaxFemme: 0,
+                PLageMinFemme: null,
+                PlageMaxFemme: null,
                 PlageMinMaxFemme: "",
-                PlageMinHomme: 0,
-                PlageMaxHomme: 0,
+                PlageMinHomme: null,
+                PlageMaxHomme: null,
                 PlageMinMaxHomme: "",
                 ValeurNormale: "",
-                ValeurMinNormale: 0,
-                ValeurMaxNormale: 0,
+                ValeurMinNormale: null,
+                ValeurMaxNormale: null,
                 TypeTexte: false,
                 SigneNormale: "-",
                 SigneNé: "-",
@@ -228,7 +229,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                         <Form.Control 
                                             name="NUM_PARAM" 
                                             type="number" 
-                                            value={form.NUM_PARAM} 
+                                            value={form.NUM_PARAM ?? ""} 
                                             onChange={handleChange}
                                             className="border-0 bg-light"
                                         />
@@ -318,7 +319,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                         <Form.Control 
                                             name="ValeurMinNormale" 
                                             type="number" 
-                                            value={form.ValeurMinNormale} 
+                                            value={form.ValeurMinNormale ?? ""} 
                                             onChange={handleChange}
                                             className="border-0 bg-light"
                                         />
@@ -347,7 +348,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                         <Form.Control 
                                             name="ValeurMaxNormale" 
                                             type="number" 
-                                            value={form.ValeurMaxNormale} 
+                                            value={form.ValeurMaxNormale ?? ""} 
                                             onChange={handleChange}
                                             className="border-0 bg-light"
                                         />
@@ -387,7 +388,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                                 <Form.Control 
                                                     name="PlageRefMinNe" 
                                                     type="number" 
-                                                    value={form.PlageRefMinNe} 
+                                                    value={form.PlageRefMinNe ?? ""} 
                                                     onChange={handleChange}
                                                     className="border-0 bg-light"
                                                 />
@@ -416,7 +417,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                                 <Form.Control 
                                                     name="PlageRefMaxNé" 
                                                     type="number" 
-                                                    value={form.PlageRefMaxNé} 
+                                                    value={form.PlageRefMaxNé ?? ""} 
                                                     onChange={handleChange}
                                                     className="border-0 bg-light"
                                                 />
@@ -454,7 +455,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                                 <Form.Control 
                                                     name="PlageMinEnfant" 
                                                     type="number" 
-                                                    value={form.PlageMinEnfant} 
+                                                    value={form.PlageMinEnfant ?? ""} 
                                                     onChange={handleChange}
                                                     className="border-0 bg-light"
                                                 />
@@ -483,7 +484,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                                 <Form.Control 
                                                     name="PlageMaxEnfant" 
                                                     type="number" 
-                                                    value={form.PlageMaxEnfant} 
+                                                    value={form.PlageMaxEnfant ?? ""} 
                                                     onChange={handleChange}
                                                     className="border-0 bg-light"
                                                 />
@@ -525,7 +526,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                                 <Form.Control 
                                                     name="PLageMinFemme" 
                                                     type="number" 
-                                                    value={form.PLageMinFemme} 
+                                                    value={form.PLageMinFemme ?? ""} 
                                                     onChange={handleChange}
                                                     className="border-0 bg-light"
                                                 />
@@ -554,7 +555,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                                 <Form.Control 
                                                     name="PlageMaxFemme" 
                                                     type="number" 
-                                                    value={form.PlageMaxFemme} 
+                                                    value={form.PlageMaxFemme ?? ""} 
                                                     onChange={handleChange}
                                                     className="border-0 bg-light"
                                                 />
@@ -592,7 +593,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                                 <Form.Control 
                                                     name="PlageMinHomme" 
                                                     type="number" 
-                                                    value={form.PlageMinHomme} 
+                                                    value={form.PlageMinHomme ?? ""} 
                                                     onChange={handleChange}
                                                     className="border-0 bg-light"
                                                 />
@@ -621,7 +622,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                                                 <Form.Control 
                                                     name="PlageMaxHomme" 
                                                     type="number" 
-                                                    value={form.PlageMaxHomme} 
+                                                    value={form.PlageMaxHomme ?? ""} 
                                                     onChange={handleChange}
                                                     className="border-0 bg-light"
                                                 />

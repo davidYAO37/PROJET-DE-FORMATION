@@ -58,7 +58,7 @@ function getStockStatus(medicament: IMedicament): {
   }
 }
 
-// Composant de sélection de médicament simplifié
+// Composant de sélection de médicament avec recherche
 interface MedicamentSelectProps {
   medicaments: IMedicament[];
   selectedId: string;
@@ -66,34 +66,132 @@ interface MedicamentSelectProps {
 }
 
 function MedicamentSelect({ medicaments, selectedId, onSelect }: MedicamentSelectProps) {
-  const handleSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const medicament = medicaments.find(m => m._id === e.target.value);
-    if (medicament) {
-      onSelect(medicament);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [showDropdown, setShowDropdown] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+
+  // Filtrer les médicaments selon la recherche
+  const filteredMedicaments = searchTerm
+    ? medicaments.filter(m =>
+        m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : medicaments;
+
+  // Calculer la position du dropdown
+  useEffect(() => {
+    if (showDropdown && inputRef.current) {
+      const rect = inputRef.current.getBoundingClientRect();
+      setDropdownPosition({
+        top: rect.bottom + 5, // Position en dessous de l'input
+        left: rect.left,
+        width: rect.width
+      });
     }
+  }, [showDropdown]);
+
+  // Fermer le dropdown si on clique à l'extérieur
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+          inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        setShowDropdown(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const handleSelect = (medicament: IMedicament) => {
+    onSelect(medicament);
+    setSearchTerm("");
+    setShowDropdown(false);
   };
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value);
+    setShowDropdown(true);
+  };
+
+  const selectedMedicament = medicaments.find(m => m._id === selectedId);
+
   return (
-    <Form.Select 
-      size="sm"
-      value={selectedId}
-      onChange={handleSelect}
-      style={{ fontSize: '13px' }}
-    >
-      <option value="">Sélectionner un médicament...</option>
-      {medicaments.map((medicament) => {
-        const stockStatus = getStockStatus(medicament);
-        return (
-          <option key={medicament._id} value={medicament._id}>
-            {stockStatus.icon} {medicament.Designation} 
-            {medicament.Reference && ` - ${medicament.Reference}`}
-            {medicament.StockDisponible !== undefined && 
-              ` (${stockStatus.label}: ${medicament.StockDisponible})`
-            }
-          </option>
-        );
-      })}
-    </Form.Select>
+    <div style={{ position: 'relative' }}>
+      <Form.Control
+        ref={inputRef}
+        type="text"
+        size="sm"
+        placeholder="Rechercher un médicament..."
+        value={searchTerm || (selectedMedicament?.Designation || "")}
+        onChange={handleInputChange}
+        onFocus={() => setShowDropdown(true)}
+        style={{ fontSize: '13px' }}
+      />
+      {showDropdown && (
+        <div
+          ref={dropdownRef}
+          style={{
+            position: 'fixed',
+            top: `${dropdownPosition.top}px`,
+            left: `${dropdownPosition.left}px`,
+            width: `${dropdownPosition.width}px`,
+            maxHeight: '200px',
+            overflow: 'auto',
+            backgroundColor: 'white',
+            border: '1px solid #dee2e6',
+            borderRadius: '0.375rem',
+            boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+            zIndex: 1000
+          }}
+        >
+          {filteredMedicaments.length === 0 ? (
+            <div style={{ padding: '8px', color: '#6c757d', fontSize: '13px' }}>
+              Aucun médicament trouvé
+            </div>
+          ) : (
+            filteredMedicaments.map((medicament) => {
+              const stockStatus = getStockStatus(medicament);
+              return (
+                <div
+                  key={medicament._id}
+                  onClick={() => handleSelect(medicament)}
+                  style={{
+                    padding: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    borderBottom: '1px solid #f8f9fa',
+                    backgroundColor: medicament._id === selectedId ? '#e3f2fd' : 'white'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = medicament._id === selectedId ? '#e3f2fd' : 'white';
+                  }}
+                >
+                  <div>
+                    <strong>{stockStatus.icon} {medicament.Designation}</strong>
+                  </div>
+                  {medicament.Reference && (
+                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                      {stockStatus.icon} {medicament.Reference}
+                    </div>
+                  )}
+                  {medicament.StockDisponible !== undefined && (
+                    <div style={{ fontSize: '11px', color: stockStatus.color === 'danger' ? '#dc3545' : stockStatus.color === 'warning' ? '#ffc107' : stockStatus.color === 'success' ? '#28a745' : '#6c757d' }}>
+                      {stockStatus.icon} {stockStatus.label}: {medicament.StockDisponible}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
