@@ -10,6 +10,7 @@ import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import ListePlanningModal from './ListePlanningModal';
 import PlanningModal from './PlanningModal';
 import DisponibiliteMedecinModal from './DisponibiliteMedecinModal';
+import ModalPointSaisieAccueil from './ModalPointSaisieAccueil';
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
   { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
@@ -18,8 +19,8 @@ const menu = [
   { label: 'Constantes', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
   { label: 'Planning Médecin', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
   { label: 'Disponibilité Médecin', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
-  { label: 'Gestion Rendez-Vous', path: '/rendez-vous', icon: <i className="bi bi-clock-fill me-2 text-info"></i> },
-  { label: 'Point de saisie', path: '/point-saisie', icon: <i className="bi bi-pencil-square me-2 text-secondary"></i> },
+ // { label: 'Gestion Rendez-Vous', path: '/rendez-vous', icon: <i className="bi bi-clock-fill me-2 text-info"></i> },
+  { label: 'Point de saisie', path: '#', isModal: true, icon: <i className="bi bi-pencil-square me-2 text-secondary"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
@@ -33,6 +34,7 @@ export default function Sidebaracceuil() {
   const [showListePlanningModal, setShowListePlanningModal] = useState(false);
   const [showPlanningModal, setShowPlanningModal] = useState(false);
   const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
+  const [showPointSaisieModal, setShowPointSaisieModal] = useState(false);
   const [user, setUser] = useState('');
 
   // Charger l'utilisateur connecté au montage
@@ -94,6 +96,13 @@ export default function Sidebaracceuil() {
     setOpen(false);
   };
 
+  // Ouvre le modal de point de saisie
+  const handlePointSaisieClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowPointSaisieModal(true);
+    setOpen(false);
+  };
+
   return (
     <>
       {/* Bouton burger visible sur mobile */}
@@ -138,7 +147,7 @@ export default function Sidebaracceuil() {
                 <a
                   href="#"
                   className="sidebar-link-medical d-flex align-items-center"
-                  onClick={item.label === 'Transférer un patient' ? handleTransfertClick : item.label === 'Salle d\'attente' ? handleSalleAttenteClick : item.label === 'Mot de passe' ? handleMotDePasseClick : item.label === 'Planning Médecin' ? handleListePlanningClick : item.label === 'Disponibilité Médecin' ? handleDisponibiliteClick : undefined}
+                  onClick={item.label === 'Transférer un patient' ? handleTransfertClick : item.label === 'Salle d\'attente' ? handleSalleAttenteClick : item.label === 'Mot de passe' ? handleMotDePasseClick : item.label === 'Planning Médecin' ? handleListePlanningClick : item.label === 'Disponibilité Médecin' ? handleDisponibiliteClick : item.label === 'Point de saisie' ? handlePointSaisieClick : undefined}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -202,6 +211,13 @@ export default function Sidebaracceuil() {
       <DisponibiliteMedecinModal
         show={showDisponibiliteModal}
         onHide={() => setShowDisponibiliteModal(false)}
+      />
+
+      {/* Modal de point de saisie */}
+      <ModalPointSaisieAccueil
+        show={showPointSaisieModal}
+        onHide={() => setShowPointSaisieModal(false)}
+        user={user}
       />
     </>
   );

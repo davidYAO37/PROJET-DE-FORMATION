@@ -895,27 +895,32 @@ export default function TablePrestationsUpdate({ assuranceId = 1, saiTaux = 0, a
         );
     }
 
-        return copy;
-    })
-);
-}
-
 // Quand un champ clé change et nécessité recalcul
 function onFieldChangeAndRecalc(lineId: string, field: keyof ILignePrestation, value: any) {
-setErrorMsg(null);
-setLignes((prev) =>
-    prev.map((l) => {
-        if (l.IDLignePrestation !== lineId) return l;
-        const copy = { ...l, [field]: value };
+    setErrorMsg(null);
+    setLignes((prev) =>
+        prev.map((l) => {
+            if (l.IDLignePrestation !== lineId) return l;
+            const copy = { ...l, [field]: value };
+            
+            // Si l'acte est sélectionné, recalculer avec prixActe
+            if (l.IDACTE) {
+                const acte = findActeById(l.IDACTE);
+                if (acte) {
                     prixActe(copy, acte);
                 } else {
                     // pas d'acte sélectionné -> recalcul simple
                     copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
                 }
-                return copy;
-            })
-        );
-    }
+            } else {
+                // pas d'acte sélectionné -> recalcul simple
+                copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
+            }
+            
+            return copy;
+        })
+    );
+}
 
     // ---------- UI ----------
     return (
