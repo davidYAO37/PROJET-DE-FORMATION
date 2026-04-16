@@ -678,6 +678,7 @@ export default function PharmacieCaisseModal({
       Payéoupas: true,
       PatientP: patient.Nom + " " + patient.Prenoms || "",
       IdPatient: consultation.IdPatient || consultation.patientId || patient._id || "",
+      Code_dossier: consultation.Code_dossier || "",
       IDPARTIENT: patient._id || "",
       Numcarte: consultation.NumBon || "",
       NumBon: consultation.NumBon || "",

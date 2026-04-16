@@ -48,7 +48,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
         const nom = localStorage.getItem("nom_utilisateur");
         if (nom) setRecuPar(nom);
 
-        fetch("/api/actes")
+        fetch("/api/actes?consultationviste=true")
             .then((res) => res.json())
             .then((data) => setActes(Array.isArray(data) ? data : []));
 

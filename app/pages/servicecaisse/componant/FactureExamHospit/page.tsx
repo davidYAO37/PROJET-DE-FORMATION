@@ -18,6 +18,7 @@ interface PageProps {
         CodePrestation?: string;
         Designationtypeacte?: string;
         PatientP?: string;
+        Code_dossier?: string;
         examenHospitId?: string;
         dateEntree?: string;
         dateSortie?: string;
@@ -47,6 +48,7 @@ export default function HospitalisationPageCaisse({
         CodePrestation = "",
         Designationtypeacte = "",
         PatientP = "",
+        Code_dossier = "",
         examenHospitId: propExamenHospitId = "",
         dateEntree = "",
         dateSortie = "",
@@ -57,7 +59,8 @@ export default function HospitalisationPageCaisse({
     const [formData, setFormData] = useState<ExamenHospitalisationForm>({
         ...defaultFormData,
         CodePrestation: CodePrestation || "",
-        typeacte: Designationtypeacte || ""
+        typeacte: Designationtypeacte || "",
+        Code_dossier: String(Code_dossier) || ""
     });
 
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -550,6 +553,7 @@ export default function HospitalisationPageCaisse({
                     <PatientInfoCaisse
                         formData={formData}
                         setFormData={setFormData}
+                        initialCodeDossier={String(Code_dossier)}
                         //initialPatientP={initialPatientP}
                         onCodePrestationChange={(code) => {
                             setCodePrestation(code);

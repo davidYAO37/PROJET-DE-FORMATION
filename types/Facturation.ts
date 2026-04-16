@@ -2,6 +2,7 @@ export interface Facturation {
     CodePrestation?: string;
     NomMed?: string;
     PatientP?: string;
+    Code_dossier: string;
     DatePres?: Date;
     SaisiPar?: string;
     Rclinique?: string;

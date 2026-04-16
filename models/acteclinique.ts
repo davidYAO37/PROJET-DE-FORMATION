@@ -17,6 +17,7 @@ export interface IActeClinique extends Document {
     TypeResultat?: number;
     Interpretation?: string;
     ORdonnacementAffichage?: number;
+    consultationviste?: boolean
 
 }
 
@@ -37,5 +38,6 @@ const ActeCliniqueSchema: Schema<IActeClinique> = new Schema({
     TypeResultat: { type: Number },
     Interpretation: { type: String },
     ORdonnacementAffichage: { type: Number },
+    consultationviste: { type: Boolean, default: false }
 }, { timestamps: true });
 export const ActeClinique: Model<IActeClinique> = mongoose.models.ActeClinique || mongoose.model<IActeClinique>("ActeClinique", ActeCliniqueSchema);

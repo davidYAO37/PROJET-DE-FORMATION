@@ -91,6 +91,7 @@ export type ExamenHospitalisationForm = {
     TotaleTaxe?: number;
     //Assure?: boolean;
     IDMEDECIN?: string;
+    Code_dossier?: string;
 
 };
 

@@ -85,6 +85,7 @@ export default function ActionsButtonsCaisse({
         ...(modeModification && examenHospitId ? { _id: examenHospitId } : {}),
         PatientP: formData.PatientP || "",
         IdPatient: formData.patientId,
+        Code_dossier: formData.Code_dossier || "",
         DatePres: formData.DatePres.toISOString(),
         Rclinique: formData.renseignementclinique || "",
         Montanttotal: formData.factureTotal || 0,
@@ -203,6 +204,7 @@ export default function ActionsButtonsCaisse({
 
       CodePrestation: formData.CodePrestation || "",
       PatientP: formData.PatientP || "",
+      Code_dossier: formData.Code_dossier || "",
       DatePres: formData.dateEntree || new Date().toISOString(),
       Montanttotal: formData.factureTotal || 0,
       MontantRecu: formData.MontantRecu || formData.TotalPaye || 0,
@@ -259,6 +261,7 @@ export default function ActionsButtonsCaisse({
       const lignePayload = {
         ...ligneSansId,
         IDHOSPO: examenId, // Utiliser le paramètre examenId
+        Code_dossier: formData.Code_dossier || "",
         statutPrescriptionMedecin: ligne.AFacturer === 'Payé' ? 3 : 1, // 3 = Payé, 1 = Non payé
         datePaiementCaisse: ligne.AFacturer === 'Payé' ? new Date().toISOString() : null,
         payePar: ligne.AFacturer === 'Payé' ? localStorage.getItem("nom_utilisateur") || 'Système' : null

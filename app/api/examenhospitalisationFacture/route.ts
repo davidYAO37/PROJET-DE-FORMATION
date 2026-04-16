@@ -127,11 +127,12 @@ export async function POST(req: NextRequest) {
         if (header.CodePrestation) {
             const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
             consultationData = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean() || {};
-            console.log("📋 Données de la consultation récupérées:", {
+            console.log(" Données de la consultation récupérées:", {
                 IdPatient: consultationData.IdPatient,
                 PatientP: consultationData.PatientP,
                 Medecin: consultationData.Medecin,
-                IDMEDECIN: consultationData.IDMEDECIN
+                IDMEDECIN: consultationData.IDMEDECIN,
+                Code_dossier: consultationData.Code_dossier
             });
         }
 
@@ -147,6 +148,7 @@ export async function POST(req: NextRequest) {
             IdPatient: consultationData.IdPatient ?
                 new mongoose.Types.ObjectId(consultationData.IdPatient) : null,
             PatientP: consultationData.PatientP || header.PatientP || "",
+            Code_dossier: consultationData.Code_dossier || header.Code_dossier || "",
 
             //StatutPrescription
             statutPrescriptionMedecin: header.Statutprescription || 3,
@@ -192,6 +194,7 @@ export async function POST(req: NextRequest) {
                 CodePrestation: header.CodePrestation || "",
                 NomMed: consultationData.Medecin || header.NomMed || "Non renseigné",
                 PatientP: consultationData.PatientP || header.PatientP || "Non renseigné",
+                Code_dossier: consultationData.Code_dossier || header.Code_dossier || "",
                 DatePres: header.DatePres ? new Date(header.DatePres) : currentDate,
                 SaisiPar: Recupar || header.SaisiPar || "",
                 Rclinique: header.Rclinique || "",
@@ -316,6 +319,7 @@ export async function POST(req: NextRequest) {
                         Assurance: header.Assurance || "",
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
+                        Code_dossier: consultationData.Code_dossier || header.Code_dossier || "",
                     };
 
                     // Ajouter idTypeActe et idFamille si fournis

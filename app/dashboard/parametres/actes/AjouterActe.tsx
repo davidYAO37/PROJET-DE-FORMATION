@@ -21,6 +21,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
         prixPreferentiel: 0,
         MontantAuMed: 0,
         IDFAMILLE_ACTE_BIOLOGIE: "",
+        consultationviste: false,
     });
     const [famillesActe, setFamillesActe] = useState<FamilleActe[]>([]);
     const [loading, setLoading] = useState(false);
@@ -61,7 +62,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
             if (!res.ok) throw new Error("Erreur lors de l'ajout");
             const data = await res.json();
             onAdd(data);
-            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, IDFAMILLE_ACTE_BIOLOGIE: "" });
+            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, IDFAMILLE_ACTE_BIOLOGIE: "", consultationviste: false });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -134,6 +135,15 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                             <option value="0">Non</option>
                             <option value="1">Oui</option>
                         </Form.Select>
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Check 
+                            type="checkbox" 
+                            label="Consultation ou visite" 
+                            name="consultationviste"
+                            checked={form.consultationviste}
+                            onChange={(e) => setForm({ ...form, consultationviste: e.target.checked })}
+                        />
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>

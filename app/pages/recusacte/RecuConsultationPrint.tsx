@@ -45,6 +45,7 @@ const styles = {
     info: {
         fontSize: 14,
         marginBottom: 2,
+        marginLeft: 15,
     },
     bold: {
         fontWeight: 'bold' as const,
@@ -106,7 +107,7 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
             )}
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
                 <div>
-                    <div className="d-flex space-between">
+                    <div className="d-flex justify-content-between">
                         <div className="me-5" style={styles.bold} >RECU N° {consultation.CodePrestation || ''}</div>
                         <div style={styles.info}> Prescripteur : {consultation.Medecin} &nbsp; Admis(e) le : {consultation.Date_consulation ? new Date(consultation.Date_consulation).toLocaleDateString() : ''}</div>
                     </div>
@@ -120,7 +121,7 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
                 </div>                
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13 }}>
-                <div style={styles.info}>Mode de paiement : Espèce</div>
+                <div style={styles.info}>Mode de paiement :{consultation.Modepaiement || 'Espèce'}</div>
                 <div style={styles.info}>Facturé(e) par : {consultation.Recupar}</div>
             </div>
             <table style={styles.table}>

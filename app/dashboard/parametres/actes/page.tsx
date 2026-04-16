@@ -56,7 +56,12 @@ export default function ActesPage() {
 
     return (
         <div className="container py-4">
-            <h2 className="mb-3">Liste et Tarifs actes Cliniques</h2>
+            <div className="d-flex justify-content-between align-items-center">
+                <h2 className="mb-3">Liste et Tarifs actes Cliniques</h2>
+                <Button variant="success" onClick={() => setShowAdd(true)}>
+                    + Ajouter un acte
+                </Button>
+            </div>
 
             {error && <Alert variant="danger">{error}</Alert>}
 
@@ -66,9 +71,9 @@ export default function ActesPage() {
                 </div>
             ) : (
                 <>
-                    <Button variant="success" onClick={() => setShowAdd(true)} className="mb-3">
+                  {/*   <Button variant="success" onClick={() => setShowAdd(true)} className="mb-3">
                         + Ajouter un acte
-                    </Button>
+                    </Button> */}
 
                     {actes.length === 0 ? (
                         <p className="text-muted">Aucun acte disponible.</p>

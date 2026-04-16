@@ -71,6 +71,7 @@ export interface ILignePrestation extends Document {
     SOCIETE_PATIENT?: string;
     ordonnancementAffichage?: number;
     entrepriseId?: string;
+    Code_dossier?: string;
 }
 
 const LignePrestationSchema = new Schema<ILignePrestation>(
@@ -144,6 +145,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         SOCIETE_PATIENT: { type: String },
         ordonnancementAffichage: { type: Number },
         entrepriseId: { type: String },
+        Code_dossier: { type: String },
     },
     { timestamps: true }
 );

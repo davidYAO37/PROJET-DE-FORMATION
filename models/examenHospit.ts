@@ -6,6 +6,7 @@ export interface IExamenHospitalisation extends Document {
     CodePrestation?: string;
     NomMed?: string;
     PatientP?: string;
+    Code_dossier?: string;
     DatePres?: Date;
     SaisiPar?: string;
     Rclinique?: string;
@@ -96,6 +97,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         CodePrestation: { type: String, maxlength: 50 },
         NomMed: { type: String, maxlength: 50 },
         PatientP: { type: String, maxlength: 50 },
+        Code_dossier: { type: String },
         DatePres: { type: Date },
         SaisiPar: { type: String, maxlength: 60 },
         Rclinique: { type: String, maxlength: 250 },

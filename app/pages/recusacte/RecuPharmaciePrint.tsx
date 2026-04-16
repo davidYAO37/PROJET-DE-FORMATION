@@ -217,7 +217,7 @@ const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
                 <strong>Patient :</strong> {facturation?.PatientP || ""}
               </div>
               <div style={styles.info}>
-                <strong>Dossier N° :</strong> {facturation?.NumBon || ""}
+                <strong>Dossier N° :</strong> {facturation?.Code_dossier || ""}
               </div>
             </div>
             <div

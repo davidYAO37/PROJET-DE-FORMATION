@@ -221,7 +221,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                                     <td>{a.prixClinique}</td>
                                     <td>{a.prixMutuel}</td>
                                     <td>{a.prixPreferentiel}</td>
-                                    <td className="bg-primary bg-opacity-10">
+                                    <td className="bg-primary bg-opacity-10 d-flex justify-content-center">
                                         <Button 
                                             size="sm" 
                                             variant="outline-primary" 

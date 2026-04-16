@@ -9,11 +9,13 @@ type Props = {
     setFormData: React.Dispatch<React.SetStateAction<ExamenHospitalisationForm>>;
     onCodePrestationChange?: (code: string) => void;
     initialPatientP?: string;
+    initialCodeDossier?: string;
 };
 
-export default function PatientInfoCaisse({ formData, setFormData, onCodePrestationChange, initialPatientP }: Props) {
+export default function PatientInfoCaisse({ formData, setFormData, onCodePrestationChange, initialPatientP, initialCodeDossier }: Props) {
     const [CodePrestation, setCodePrestation] = useState(formData.CodePrestation || "");
     const [patientNom, setPatientNom] = useState(initialPatientP || "");
+    const [codeDossier, setCodeDossier] = useState(initialCodeDossier || "");
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -27,6 +29,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
     // Fonction pour vider complètement le formulaire
     const resetForm = () => {
         setPatientNom("");
+        setCodeDossier("");
         setFormData(defaultFormData);
         setInfoMessage(null);
         setErrorMessage(null);
@@ -63,6 +66,9 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
 
                 // Nom complet du patient
                 setPatientNom(data.patient || "");
+                
+                // Mettre à jour le code dossier
+                setCodeDossier(data.Code_dossier || "");
 
                 // Charger les données de la consultation
                 setFormData((prev) => ({
@@ -73,6 +79,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                     medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
                     renseignementclinique: data.designationC || prev.renseignementclinique,
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
+                    Code_dossier: data.Code_dossier || prev.Code_dossier,
                     assurance: {
                         assuranceId: data.idAssurance || prev.assurance.assuranceId,
                         designationassurance: data.assurance || prev.assurance.designationassurance,
@@ -109,8 +116,8 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                         }}
                         placeholder="Saisir le code prestation"
                         isInvalid={!!errorMessage}
-                        readOnly={!!initialPatientP}
-                        style={initialPatientP ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : {}}
+                        readOnly={!!initialPatientP || !!initialCodeDossier}
+                        style={initialPatientP || initialCodeDossier ? { backgroundColor: '#e9ecef', cursor: 'not-allowed' } : {}}
                     />
                     {errorMessage && <div className="invalid-feedback d-block">{errorMessage}</div>}
                 </Form.Group>
@@ -123,7 +130,11 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                     <Form.Label>Patient</Form.Label>
                     <Form.Control value={patientNom} readOnly />
                 </Form.Group>
-
+                {/* Code dossier patient */}
+                <Form.Group className="mb-1">
+                    <Form.Label>Code dossier</Form.Label>
+                    <Form.Control value={codeDossier} readOnly />
+                </Form.Group>
 
             </Card.Body>
         </Card>

@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
@@ -962,6 +962,33 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         );
     }
 
+    // Fonctions toggle pour les checkboxes
+    const togglePaye = useCallback((lineId: string) => {
+        setLignes(prev => {
+            const ligne = prev.find(l => l.IDLignePrestation === lineId);
+            if (!ligne) return prev;
+            
+            const newValue = ligne.AFacturer === 'Payé' ? 'Non Payé' : 'Payé';
+            
+            // Utiliser la même logique que onFieldChangeAndRecalc
+            onFieldChangeAndRecalc(lineId, 'AFacturer', newValue);
+            return prev;
+        });
+    }, [onFieldChangeAndRecalc]);
+
+    const toggleExclusion = useCallback((lineId: string) => {
+        setLignes(prev => {
+            const ligne = prev.find(l => l.IDLignePrestation === lineId);
+            if (!ligne) return prev;
+            
+            const newValue = ligne.Exclusion === 'Accepter' ? 'Refuser' : 'Accepter';
+            
+            // Utiliser la même logique que onFieldChangeAndRecalc
+            onFieldChangeAndRecalc(lineId, 'Exclusion', newValue);
+            return prev;
+        });
+    }, [onFieldChangeAndRecalc]);
+
     // ---------- UI ----------
     return (
         <div>
@@ -981,15 +1008,15 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
                         <tr>
                             {/* Colonnes visibles */}
-                            <th style={{ width: '120px' }}>Payé/NonPayé</th>
+                            <th style={{ width: '80px', textAlign: 'center' }}>Payé</th>
                             <th style={{ width: '120px' }}>Date</th>
                             <th style={{ minWidth: '220px' }}>Acte</th>
                             <th style={{ width: '80px' }}>Coeffi</th>
                             <th style={{ width: '70px' }}>Qtité</th>
                             <th style={{ width: '120px' }}>Prix unitaire</th>
                             <th style={{ width: '120px' }}>Montant Total</th>
-                            <th style={{ width: '120px' }}>Exclusion</th>
-                            <th style={{ width: '60px', textAlign: 'center' }}>🗑️</th>
+                            <th style={{ width: '80px', textAlign: 'center' }}>Accepter</th>
+                            <th style={{ width: '60px', textAlign: 'center' }}>Action</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -1004,30 +1031,16 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                                     {/* Mentionner payé ou pas */}
 
 
-                                    <td style={{ padding: '4px' }}>
-                                        <Form.Select
-                                            size="sm"
-                                            value={l.AFacturer}
-                                            onChange={(e) =>
-                                                onFieldChangeAndRecalc(
-                                                    l.IDLignePrestation,
-                                                    "AFacturer",
-                                                    e.target.value
-                                                )
-                                            }
-                                            style={{
-                                                fontSize: '13px',
-                                                backgroundColor: l.AFacturer === 'Payé' ? '#d4edda' : 'inherit',
-                                                color: l.AFacturer === 'Payé' ? '#155724' : 'inherit'
-                                            }}
+                                    <td className="text-center">
+                                        <Form.Check
+                                            type="checkbox"
+                                            checked={l.AFacturer === 'Payé'}
+                                            onChange={() => togglePaye(l.IDLignePrestation)}
                                             disabled={!isEditable}
                                             title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                        >
-                                            <option value="Non Payé">✗ Non Payé</option>
-                                            <option value="Payé">✓ Payé</option>
-                                        </Form.Select>
+                                        />
                                         {l.AFacturer === 'Payé' && l.datePaiementCaisse && (
-                                            <div style={{ fontSize: '10px', color: '#28a745' }}>
+                                            <div style={{ fontSize: '10px', color: '#28a745', marginTop: '4px' }}>
                                                 {l.datePaiementCaisse} {l.heurePaiement}
                                                 {l.payePar && ` par ${l.payePar}`}
                                             </div>
@@ -1116,24 +1129,14 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                                     </td>
 
                                     {/* Exclusion */}
-                                    <td style={{ padding: '4px' }}>
-                                        <Form.Select
-                                            size="sm"
-                                            value={l.Exclusion}
-                                            onChange={(e) =>
-                                                onFieldChangeAndRecalc(
-                                                    l.IDLignePrestation,
-                                                    "Exclusion",
-                                                    e.target.value === "Accepter" ? "Accepter" : "Refuser"
-                                                )
-                                            }
-                                            style={{ fontSize: '13px' }}
+                                    <td className="text-center">
+                                        <Form.Check
+                                            type="checkbox"
+                                            checked={l.Exclusion === 'Accepter'}
+                                            onChange={() => toggleExclusion(l.IDLignePrestation)}
                                             disabled={!isEditable}
                                             title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                        >
-                                            <option value="Accepter">✓Accepter</option>
-                                            <option value="Refuser">✗Refuser</option>
-                                        </Form.Select>
+                                        />
                                     </td>
 
                                     {/* Action */}

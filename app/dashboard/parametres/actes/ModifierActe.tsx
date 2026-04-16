@@ -22,6 +22,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
         prixPreferentiel: 0,
         MontantAuMed: 0,
         IDFAMILLE_ACTE_BIOLOGIE: "",
+        consultationviste: false,
     });
     const [famillesActe, setFamillesActe] = useState<FamilleActe[]>([]);
     const [loading, setLoading] = useState(false);
@@ -55,6 +56,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 prixPreferentiel: acte.prixPreferentiel || 0,
                 MontantAuMed: acte.MontantAuMed || 0,
                 IDFAMILLE_ACTE_BIOLOGIE: acte.IDFAMILLE_ACTE_BIOLOGIE || "",
+                consultationviste: acte.consultationviste || false,
             });
         }
     }, [acte]);
@@ -71,6 +73,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 prixPreferentiel: 0,
                 MontantAuMed: 0,
                 IDFAMILLE_ACTE_BIOLOGIE: "",
+                consultationviste: false,
             });
             setError("");
         }
@@ -209,6 +212,15 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                             <option value="0">Non</option>
                             <option value="1">Oui</option>
                         </Form.Select>
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Check 
+                            type="checkbox" 
+                            label="Consultation ou visite" 
+                            name="consultationviste"
+                            checked={form.consultationviste}
+                            onChange={(e) => setForm({ ...form, consultationviste: e.target.checked })}
+                        />
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>

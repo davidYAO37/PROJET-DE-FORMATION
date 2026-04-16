@@ -8,6 +8,7 @@ export interface ActeClinique {
     coefficient: number;
     MontantAuMed?: number;
     IDFAMILLE_ACTE_BIOLOGIE?: string;
+    consultationviste?: boolean;
 }
 /* export interface ActeClinique {
     _id: string;

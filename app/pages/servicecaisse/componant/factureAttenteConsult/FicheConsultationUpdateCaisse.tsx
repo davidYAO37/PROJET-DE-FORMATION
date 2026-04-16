@@ -63,7 +63,8 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
         const nom = localStorage.getItem("nom_utilisateur");
         if (nom) setRecuPar(nom);
 
-        fetch("/api/actes")
+        /* fetch("/api/actes") */
+        fetch("/api/actes?consultationviste=true")
             .then((res) => res.json())
             .then((data) => setActes(Array.isArray(data) ? data : []));
 
@@ -446,6 +447,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                             currentConsultation.Date_consulation || new Date(),
                             Restapayer: Math.max(0, totalPatient - montantEncaisse),
                             NumBon: numBon,
+                            Modepaiement: modePaiement,
                         }}
                         />
                     )}
@@ -453,7 +455,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                 </Modal.Body>
 
                 <Modal.Footer>
-                    <Button variant="primary" onClick={() => {
+                    {/* <Button variant="primary" onClick={() => {
                         if (recuRef.current) {
                             const printContents = recuRef.current.innerHTML;
                             const printWindow = window.open('', '', 'height=800,width=900');
@@ -465,7 +467,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                                 printWindow.close();           
                             }
                         }
-                    }}>Imprimer</Button>
+                    }}>Imprimer</Button> */}
                     <Button variant="secondary" onClick={() => setShowPrintModal(false)}>
                     Fermer
                     </Button>

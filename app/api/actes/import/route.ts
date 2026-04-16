@@ -47,6 +47,16 @@ export async function POST(req: NextRequest) {
             const prixPreferentiel = cleanNumber(
                 row.prixPreferentiel || row["Prix Préférentiel"] || row["prixPreferentiel"]
             );
+            
+            // Gestion du champ consultationviste
+            let consultationviste = false;
+            const consultationValue = row.consultationviste || row["Consultation ou visite"] || row["consultationviste"] || "";
+            if (typeof consultationValue === "boolean") {
+                consultationviste = consultationValue;
+            } else if (typeof consultationValue === "string") {
+                const cleanValue = consultationValue.toString().toLowerCase().trim();
+                consultationviste = ["true", "1", "oui", "yes", "on"].includes(cleanValue);
+            }
 
             let rowError = "";
             if (!designationacte) rowError += "Champ 'designationacte' manquant. ";
@@ -67,6 +77,7 @@ export async function POST(req: NextRequest) {
                 prixPreferentiel,
                 MontantAuMed: 0,
                 IDFAMILLE_ACTE_BIOLOGIE: "",
+                consultationviste,
             };
         });
 
