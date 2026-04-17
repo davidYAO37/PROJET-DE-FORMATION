@@ -9,7 +9,7 @@ import type { ConsultationType } from "@/types/consultation";
 import InfosPatientUpdateCaisse from "./InfosPatientUpdateCaisse";
 import BlocAssuranceUpdateCaisse from "./BlocAssuranceUpdateCaisse";
 import ResumeMontantsUpdateCaisse from "./ResumeMontantsUpdateCaisse";
-import RecuConsultationPrint from "@/app/pages/recusacte/RecuConsultationPrint";
+import RecuConsultationPrint from "@/app/pages/MesImpressions/recusacte/RecuConsultationPrint";
 
 type FicheConsultationUpdateProps = {
     patient: Patient | null;

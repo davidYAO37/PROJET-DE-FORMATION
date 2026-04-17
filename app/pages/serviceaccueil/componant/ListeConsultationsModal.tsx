@@ -3,7 +3,7 @@ import { Modal, Table, Button, Form, Spinner, Badge, OverlayTrigger, Tooltip } f
 import { FaPencilAlt, FaEye, FaCircle } from 'react-icons/fa';
 import FicheConsultationUpdate from './ConsultationUpdate/FicheConsultationUpdate';
 import { SlLogin } from 'react-icons/sl';
-import RecuConsultationPrint from '../../recusacte/RecuConsultationPrint';
+import RecuConsultationPrint from '../../MesImpressions/recusacte/RecuConsultationPrint';
 
 
 interface Consultation {

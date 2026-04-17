@@ -7,7 +7,7 @@ import TableMedicaments, { IMedicament, ILigneMedicament } from "./TableMedicame
 import ModePaiement from "./ModePaiement";
 import ValidationPaiement from "./ValidationPaiement";
 import { PrescriptionForm } from "@/types/Prescription";
-import RecuPharmaciePrint from "@/app/pages/recusacte/RecuPharmaciePrint";
+import RecuPharmaciePrint from "@/app/pages/MesImpressions/recusacte/RecuPharmaciePrint";
 
 // Types pour la validation
 type ValidationResult = {

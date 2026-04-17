@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Modal, Table, Button, Spinner } from 'react-bootstrap';
 import { FaPrint } from 'react-icons/fa';
-import RecuPharmaciePrint from '@/app/pages/recusacte/RecuPharmaciePrint';
+import RecuPharmaciePrint from '@/app/pages/MesImpressions/recusacte/RecuPharmaciePrint';
 
 export interface Facture {
     _id: string;

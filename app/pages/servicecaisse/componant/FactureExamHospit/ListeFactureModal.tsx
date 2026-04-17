@@ -5,7 +5,7 @@ import dynamic from 'next/dynamic';
 
 // Dynamically import RecuExamenPrint with SSR disabled
 const RecuExamenPrint = dynamic(
-    () => import('@/app/pages/recusacte/RecuExamenPrint'),
+    () => import('@/app/pages/MesImpressions/recusacte/RecuExamenPrint'),
     { ssr: false }
 );
 

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Tabs, Tab, Button, Spinner, Alert, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaUser, FaStethoscope, FaPills, FaHospital, FaEye, FaPencilAlt, FaFileContract, FaReceipt } from 'react-icons/fa';
-import RecuConsultationPrint from '@/app/pages/recusacte/RecuConsultationPrint';
+import RecuConsultationPrint from '@/app/pages/MesImpressions/recusacte/RecuConsultationPrint';
 import FicheConsultationUpdateCaisse from './factureAttenteConsult/FicheConsultationUpdateCaisse';
 import PharmacieCaisseModal from './PharmacieCaisse/PharmacieCaisseModal';
 import ListeFactureModal from './PharmacieCaisse/ListeFacturePescriptionModal';
