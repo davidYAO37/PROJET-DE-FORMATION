@@ -346,10 +346,10 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                 <strong>Montant à Payer:</strong> {(consultation.montantapayer || 0).toLocaleString()} FCFA
                             </div>   
                             <div style={{ marginBottom: '6px' }}>
-                                <strong>Montant Payé:</strong> {(consultation.montantPaye || 0).toLocaleString()} FCFA
+                                <strong>Montant Payé:</strong> {(consultation.montantapayer || 0).toLocaleString()} FCFA
                             </div>    
                             <div style={{ marginBottom: '6px' }}>
-                                <strong>Reste à Payer:</strong> {(consultation.resteapayer || 0).toLocaleString()} FCFA
+                                <strong>Reste à Payer:</strong> {(consultation.Restapayer || 0).toLocaleString()} FCFA
                             </div>                       
                         </div>
                     </div>
