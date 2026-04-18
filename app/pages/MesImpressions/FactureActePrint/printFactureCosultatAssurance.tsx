@@ -7,7 +7,7 @@ interface PrintFactureCosultatAssuranceProps {
     consultation: any;
 }
 
-const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureCosultatAssuranceProps>(({ consultation }, ref) => {
+const PrintFactureCosultatAssurance = forwardRef<HTMLDivElement, PrintFactureCosultatAssuranceProps>(({ consultation }, ref) => {
     const { entreprise } = useEntreprise();
 
     const handlePrint = () => {
@@ -344,13 +344,7 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                             </div>
                             <div style={{ marginBottom: '6px' }}>
                                 <strong>Montant à Payer:</strong> {(consultation.montantapayer || 0).toLocaleString()} FCFA
-                            </div>   
-                            <div style={{ marginBottom: '6px' }}>
-                                <strong>Montant Payé:</strong> {(consultation.montantPaye || 0).toLocaleString()} FCFA
-                            </div>    
-                            <div style={{ marginBottom: '6px' }}>
-                                <strong>Reste à Payer:</strong> {(consultation.resteapayer || 0).toLocaleString()} FCFA
-                            </div>                       
+                            </div>                            
                         </div>
                     </div>
 
@@ -377,8 +371,8 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                     padding: '4px 8px',
                                     borderRadius: '4px',
                                     background: '#e0e0e0',
-                                    color: 'rgba(85, 79, 79, 0.78)',
-                                    fontSize: '14px',
+                                    color: '#333333',
+                                    fontSize: '11px',
                                     fontWeight: '600'
                                 }}>
                                     <strong>{(consultation.PartAssurance || 0).toLocaleString()} FCFA</strong>
@@ -418,6 +412,6 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
     );
 });
 
-printFactureConsultationPatient.displayName = 'printFactureConsultationPatient';
+PrintFactureCosultatAssurance.displayName = 'PrintFactureCosultatAssurance';
 
-export default printFactureConsultationPatient;
+export default PrintFactureCosultatAssurance;

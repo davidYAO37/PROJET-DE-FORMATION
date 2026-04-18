@@ -320,19 +320,32 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
         setPrestationModalKey(prev => prev + 1); // Forcer le rechargement du modal
     };
 
+    // Réinitialiser les données quand le patient change
+    useEffect(() => {
+        if (!show || !patientId) return;
+        
+        // Réinitialiser toutes les données quand le patient change
+        setConsultations([]);
+        setPrescriptions([]);
+        setPrestations([]);
+        setConsultationsError('');
+        setPrescriptionsError('');
+        setPrestationsError('');
+    }, [patientId, show]);
+
     // Charger les données quand on change d'onglet
     useEffect(() => {
         if (!show || !patientId) return;
 
         switch (activeTab) {
             case 'consultations':
-                if (consultations.length === 0) loadConsultations();
+                loadConsultations(); // Toujours charger quand on accède à l'onglet
                 break;
             case 'prescriptions':
-                if (prescriptions.length === 0) loadPrescriptions();
+                loadPrescriptions(); // Toujours charger quand on accède à l'onglet
                 break;
             case 'prestations':
-                if (prestations.length === 0) loadPrestations();
+                loadPrestations(); // Toujours charger quand on accède à l'onglet
                 break;
         }
     }, [activeTab, show, patientId]);
