@@ -1,635 +1,1071 @@
-import React, { useState, useRef } from 'react';
-import { Modal, Form } from 'react-bootstrap';
-import { createPrintWindow, generatePrintHeader, generatePrintFooter } from '@/utils/printRecu';
-import styles from './MenuImpressionFactureModal.module.css';
-import PrintFactureCosultatAssurance from '../../MesImpressions/FactureActePrint/printFactureCosultatAssurance';
-import PrintFactureConsultationPatient from '../../MesImpressions/FactureActePrint/printFactureConsultationPatient';
+import React, { useState, useRef, useEffect } from "react";
+import { Modal, Form } from "react-bootstrap";
+import {
+  createPrintWindow,
+  generatePrintHeader,
+  generatePrintFooter,
+} from "@/utils/printRecu";
+import styles from "./MenuImpressionFactureModal.module.css";
+import PrintFactureCosultatAssurance from "../../MesImpressions/FactureActePrint/printFactureCosultatAssurance";
+import PrintFactureConsultationPatient from "../../MesImpressions/FactureActePrint/printFactureConsultationPatient";
+import PrintFactureExamenAssurance from "../../MesImpressions/FactureActePrint/printFactureExamenAssurance";
+import PrintFactureDetailléAssurance from "../../MesImpressions/FactureActePrint/printFactureDetailléAssurance";
+import PrintFactureDetailléPatient from "../../MesImpressions/FactureActePrint/printFactureDetailléPatient";
+import PrintFactureExamenPatient from "../../MesImpressions/FactureActePrint/printFactureExamenPatient";
+import PrintFacturePharmacieAssurance from "../../MesImpressions/FactureActePrint/printFacturePharmacieAssurance";
+import PrintFacturePharmaciePatient from "../../MesImpressions/FactureActePrint/printFacturePharmaciePatient";
+import PrintFactureRecapAssurance from "../../MesImpressions/FactureActePrint/printFactureRecapAssurance";
+import PrintFactureRecapPatient from "../../MesImpressions/FactureActePrint/printFactureRecapPatient";
 
 interface MenuImpressionFactureModalProps {
-    show: boolean;
-    onHide: () => void;
+  show: boolean;
+  onHide: () => void;
 }
 
-const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({ show, onHide }) => {
-    const [codeVisiteur, setCodeVisiteur] = useState('');
-    const [consultationData, setConsultationData] = useState<any>(null);
-    const [showPrintModal, setShowPrintModal] = useState(false);
-    const [showPrintAssuranceModal, setShowPrintAssuranceModal] = useState(false);
-    const [showPrintPatientModal, setShowPrintPatientModal] = useState(false);
-    const [consultationAssuranceData, setConsultationAssuranceData] = useState<any>(null);
-    const [consultationPatientData, setConsultationPatientData] = useState<any>(null);
-    const printRef = useRef<HTMLDivElement>(null);
-    const printAssuranceRef = useRef<HTMLDivElement>(null);
-    const printPatientRef = useRef<HTMLDivElement>(null);
+const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
+  show,
+  onHide,
+}) => {
+  const [codeVisiteur, setCodeVisiteur] = useState("");
+  const [consultationData, setConsultationData] = useState<any>(null);
+  const [showPrintModal, setShowPrintModal] = useState(false);
+  const [showPrintAssuranceModal, setShowPrintAssuranceModal] = useState(false);
+  const [showPrintPatientModal, setShowPrintPatientModal] = useState(false);
+  const [showPrintExamenModal, setShowPrintExamenModal] = useState(false);
+  const [showPrintDetailléAssuranceModal, setShowPrintDetailléAssuranceModal] = useState(false);
+  const [showPrintDetailléPatientModal, setShowPrintDetailléPatientModal] = useState(false);
+  const [showPrintExamenPatientModal, setShowPrintExamenPatientModal] = useState(false);
+  const [showPrintPharmacieAssuranceModal, setShowPrintPharmacieAssuranceModal] = useState(false);
+  const [showPrintPharmaciePatientModal, setShowPrintPharmaciePatientModal] = useState(false);
+  const [showPrintRecapAssuranceModal, setShowPrintRecapAssuranceModal] = useState(false);
+  const [showPrintRecapPatientModal, setShowPrintRecapPatientModal] = useState(false);
+  
+  const [consultationAssuranceData, setConsultationAssuranceData] =
+    useState<any>(null);
+  const [consultationPatientData, setConsultationPatientData] =
+    useState<any>(null);
+  const [consultationExamenData, setConsultationExamenData] =
+    useState<any>(null);
+  const [consultationDetailléAssuranceData, setConsultationDetailléAssuranceData] =
+    useState<any>(null);
+  const [consultationDetailléPatientData, setConsultationDetailléPatientData] =
+    useState<any>(null);
+  const [consultationExamenPatientData, setConsultationExamenPatientData] =
+    useState<any>(null);
+  const [consultationPharmacieAssuranceData, setConsultationPharmacieAssuranceData] =
+    useState<any>(null);
+  const [consultationPharmaciePatientData, setConsultationPharmaciePatientData] =
+    useState<any>(null);
+  const [consultationRecapAssuranceData, setConsultationRecapAssuranceData] =
+    useState<any>(null);
+  const [consultationRecapPatientData, setConsultationRecapPatientData] =
+    useState<any>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [hasFacturesNonSoldees, setHasFacturesNonSoldees] = useState<
+    boolean | null
+  >(null);
+  const [showButtons, setShowButtons] = useState(false);
+  const [searchError, setSearchError] = useState("");
+  const printRef = useRef<HTMLDivElement>(null);
+  const printAssuranceRef = useRef<HTMLDivElement>(null);
+  const printPatientRef = useRef<HTMLDivElement>(null);
+  const printExamenRef = useRef<HTMLDivElement>(null);
+  const printDetailléAssuranceRef = useRef<HTMLDivElement>(null);
+  const printDetailléPatientRef = useRef<HTMLDivElement>(null);
+  const printExamenPatientRef = useRef<HTMLDivElement>(null);
+  const printPharmacieAssuranceRef = useRef<HTMLDivElement>(null);
+  const printPharmaciePatientRef = useRef<HTMLDivElement>(null);
+  const printRecapAssuranceRef = useRef<HTMLDivElement>(null);
+  const printRecapPatientRef = useRef<HTMLDivElement>(null);
 
-    const printFactureRecapAssurance = () => {
-        const headerHTML = generatePrintHeader(null);
-        const footerHTML = generatePrintFooter(null);
-        const contentHTML = `
+  // Réinitialiser à la réouverture du modal
+  useEffect(() => {
+    if (show) {
+      setCodeVisiteur("");
+      setShowButtons(false);
+      setHasFacturesNonSoldees(null);
+      setSearchError("");
+    }
+  }, [show]);
+
+  // Masquer les boutons à chaque changement de code visiteur
+  useEffect(() => {
+    if (codeVisiteur) {
+      setShowButtons(false);
+      setHasFacturesNonSoldees(null);
+      setSearchError("");
+    }
+  }, [codeVisiteur]);
+
+  const printFactureRecapAssuranceDirect = () => {
+    const headerHTML = generatePrintHeader(null);
+    const footerHTML = generatePrintFooter(null);
+    const contentHTML = `
             <div class="print-area">
                 <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:20px; font-size:13px;">
                     <div style="flex:1; min-width:220px; line-height:1.6;">
                         <div><strong>Patient</strong> ZIEHI EPSE SIAN MESSIEKOI</div>
                         <div><strong>Assurance</strong> NON ASSURE</div>
-                        <div><strong>NCC</strong></div>
-                        <div><strong>Médecin Prescripteur</strong> DR BROUH YAPO LYDIE KORE</div>
-                        <div><strong>Facturée par</strong> YAO</div>
-                        <div><strong>Code Visiteur</strong> ${codeVisiteur || 'N/A'}</div>
                     </div>
-                    <div style="flex:1; min-width:220px; line-height:1.6; font-size:13px; text-align:right;">
-                        <div><strong>Contact</strong> 0747262289</div>
-                        <div><strong>N° Dossier</strong> 28973</div>
-                        <div><strong>N° Bon</strong></div>
-                        <div><strong>Matricule</strong></div>
-                        <div><strong>Souscripteur</strong></div>
-                        <div><strong>Admis(e) le</strong> 10/12/2025</div>
+                    <div style="flex:1; min-width:220px; line-height:1.6;">
+                        <div><strong>Code</strong> 0000000001</div>
+                        <div><strong>Date</strong> ${new Date().toLocaleDateString("fr-FR")}</div>
                     </div>
                 </div>
-                <div style="display:flex; justify-content:center; align-items:center; gap:12px; margin:24px 0;">
-                    <div style="background:#e2e8f0; padding:12px 20px; border-radius:12px; font-size:0.95rem; font-weight:700; letter-spacing:1px;">FACTURE N°</div>
-                    <div style="font-size:2rem; font-weight:800; text-decoration:underline;">CAD1910</div>
-                </div>
-                <table style="width:100%; border-collapse:collapse; margin-top:16px; font-size:13px;">
+                <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
                     <thead>
-                        <tr>
-                            <th style="border:1px solid #000; padding:10px; background:#f1f5f9; text-align:left;">Actes</th>
-                            <th style="border:1px solid #000; padding:10px; background:#f1f5f9;">Montant Total</th>
-                            <th style="border:1px solid #000; padding:10px; background:#f1f5f9;">Part assurance</th>
-                            <th style="border:1px solid #000; padding:10px; background:#f1f5f9;">Part Patient</th>
+                        <tr style="background:#f8f9fa;">
+                            <th style="border:1px solid #dee2e6; padding:8px; text-align:left;">Désignation</th>
+                            <th style="border:1px solid #dee2e6; padding:8px; text-align:right;">Quantité</th>
+                            <th style="border:1px solid #dee2e6; padding:8px; text-align:right;">Prix Unit.</th>
+                            <th style="border:1px solid #dee2e6; padding:8px; text-align:right;">Montant</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
-                            <td style="border:1px solid #000; padding:10px; text-align:left;">Consultation</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">17 500</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">0</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">17 500</td>
-                        </tr>
-                        <tr>
-                            <td style="border:1px solid #000; padding:10px; text-align:left;">Pharmacie</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">25 100</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">0</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">25 100</td>
-                        </tr>
-                        <tr>
-                            <td style="border:1px solid #000; padding:10px; text-align:left;">ACTE DE RADIOLOGIE</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">70 000</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">0</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">70 000</td>
-                        </tr>
-                        <tr>
-                            <td style="border:1px solid #000; padding:10px; text-align:left;">EXAMEN BIOLOGIQUE</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">61 250</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">0</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right;">61 250</td>
-                        </tr>
-                        <tr>
-                            <td style="border:1px solid #000; padding:10px; text-align:left; font-weight:700;">Total</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right; font-weight:700;">173 850</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right; font-weight:700;">0</td>
-                            <td style="border:1px solid #000; padding:10px; text-align:right; font-weight:700;">173 850</td>
+                            <td style="border:1px solid #dee2e6; padding:8px;">Consultation générale</td>
+                            <td style="border:1px solid #dee2e6; padding:8px; text-align:right;">1</td>
+                            <td style="border:1px solid #dee2e6; padding:8px; text-align:right;">5 000</td>
+                            <td style="border:1px solid #dee2e6; padding:8px; text-align:right;">5 000</td>
                         </tr>
                     </tbody>
+                    <tfoot>
+                        <tr style="background:#f8f9fa; font-weight:bold;">
+                            <td colspan="3" style="border:1px solid #dee2e6; padding:8px; text-align:right;">Total:</td>
+                            <td style="border:1px solid #dee2e6; padding:8px; text-align:right;">5 000 FCFA</td>
+                        </tr>
+                    </tfoot>
                 </table>
-                <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:12px; margin-top:18px; font-size:13px;">
-                    <div><strong>Total Général</strong> 173 850</div>
-                    <div style="display:flex; gap:16px; align-items:center; font-size:13px;">
-                        <div><strong>Total Remise</strong> 0</div>
-                        <div style="background:#f1f5f9; padding:10px 16px; border-radius:10px; font-weight:700;">173 850</div>
-                    </div>
-                </div>
-                <div style="margin-top:18px; font-size:14px; line-height:1.6;">
-                    <strong>Arrêté la facture à la somme de :</strong> Cent soixante-treize mille huit cent cinquante FRANCS CFA
-                </div>
-                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:12px; margin-top:28px; font-size:12px; color:#4a5568;">
-                    <div>Imprimé par YAO</div>
-                    <div>Le 04/04/2026 à 08:31</div>
-                </div>
             </div>
         `;
-        createPrintWindow('Facture Recap Assurance', headerHTML, contentHTML, footerHTML);
-    };
-
-    const printFactureCosultatAssurance = async () => {
-        if (!codeVisiteur || codeVisiteur.trim() === '') {
-            alert('Veuillez saisir le code visiteur à imprimer svp');
-            return;
-        }
-
-        try {
-            // Appeler l'API pour récupérer les données de consultation
-            const response = await fetch(`/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`);
-            
-            if (!response.ok) {
-                if (response.status === 404) {
-                    alert('Consultation non trouvée pour ce code visiteur');
-                } else {
-                    alert('Erreur lors de la récupération des données');
-                }
-                return;
-            }
-
-            const consultationData = await response.json();
-            setConsultationAssuranceData(consultationData);
-            setShowPrintAssuranceModal(true);
-        } catch (error) {
-            console.error('Erreur:', error);
-            alert('Erreur lors de la récupération des données');
-        }
-    };
-
-    const printFactureConsultationPatient = async () => {
-        if (!codeVisiteur || codeVisiteur.trim() === '') {
-            alert('Veuillez saisir le code visiteur à imprimer svp');
-            return;
-        }
-
-        try {
-            // Appeler l'API pour récupérer les données de consultation
-            const response = await fetch(`/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`);
-            
-            if (!response.ok) {
-                if (response.status === 404) {
-                    alert('Consultation non trouvée pour ce code visiteur');
-                } else {
-                    alert('Erreur lors de la récupération des données');
-                }
-                return;
-            }
-
-            const consultationData = await response.json();
-            setConsultationPatientData(consultationData);
-            setShowPrintPatientModal(true);
-        } catch (error) {
-            console.error('Erreur:', error);
-            alert('Erreur lors de la récupération des données');
-        }
-    };
-
-    const handlePrint = (type: string, by: string) => {
-        if (type === 'recap' && by === 'assurance') {
-            printFactureRecapAssurance();
-        } else if (type === 'consultation' && by === 'assurance') {
-            printFactureCosultatAssurance();
-        } else if (type === 'consultation' && by === 'patient') {
-            printFactureConsultationPatient();
-        } else {
-            console.log(`Printing ${type} by ${by}`);
-            return;
-        }
-    };
-
-    return (
-        <>
-            <Modal show={show} onHide={onHide} size="lg" centered className={styles.professionalModal}>
-                <Modal.Header closeButton className={styles.modalHeader}>
-                    <div className={styles.headerContent}>
-                        <i className="bi bi-printer-fill" style={{ fontSize: '1.75rem', marginRight: '12px' }}></i>
-                        <Modal.Title className={styles.modalTitle}>Menu Impression Facture</Modal.Title>
-                    </div>
-                </Modal.Header>
-                <Modal.Body className={styles.modalBody}>
-                    <Form.Group className={styles.formGroup}>
-                        <Form.Label className={styles.formLabel}>
-                            <i className="bi bi-key-fill me-2"></i> Code Visiteur
-                        </Form.Label>
-                        <Form.Control
-                            type="text"
-                            placeholder="Insérez le code visiteur ici"
-                            value={codeVisiteur}
-                            onChange={(e) => setCodeVisiteur(e.target.value)}
-                            className={styles.formControl}
-                        />
-                    </Form.Group>
-
-                    <div className={styles.separator}></div>
-
-                    <div className={styles.menuContainer}>
-                        {/* Éditer la Facture Détaillée */}
-                        <div className={styles.menuSection}>
-                            <div className="btn-group dropend w-100" role="group">
-                                <button
-                                    type="button"
-                                    className={`btn btn-outline-primary ${styles.menuButton}`}
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    <i className="bi bi-file-earmark-text"></i>
-                                    <span className={styles.buttonLabel}>Éditer Facture Détaillée</span>
-                                    <i className="bi bi-chevron-right ms-auto"></i>
-                                </button>
-                                <ul className={`dropdown-menu dropdown-menu-end ${styles.dropdownMenu}`}>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('detailed', 'patient');
-                                            }}
-                                        >
-                                            <i className="bi bi-person-circle"></i>
-                                            <span>Par patient</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('detailed', 'assurance');
-                                            }}
-                                        >
-                                            <i className="bi bi-shield-check"></i>
-                                            <span>Par Assurance</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Éditer la Facture Recap */}
-                        <div className={styles.menuSection}>
-                            <div className="btn-group dropend w-100" role="group">
-                                <button
-                                    type="button"
-                                    className={`btn btn-outline-primary ${styles.menuButton}`}
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    <i className="bi bi-file-earmark-pdf"></i>
-                                    <span className={styles.buttonLabel}>Facture Recap</span>
-                                    <i className="bi bi-chevron-right ms-auto"></i>
-                                </button>
-                                <ul className={`dropdown-menu dropdown-menu-end ${styles.dropdownMenu}`}>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('recap', 'patient');
-                                            }}
-                                        >
-                                            <i className="bi bi-person-circle"></i>
-                                            <span>Par patient</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('recap', 'assurance');
-                                            }}
-                                        >
-                                            <i className="bi bi-shield-check"></i>
-                                            <span>Par Assurance</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Détail Consultation */}
-                        <div className={styles.menuSection}>
-                            <div className="btn-group dropend w-100" role="group">
-                                <button
-                                    type="button"
-                                    className={`btn btn-outline-primary ${styles.menuButton}`}
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    <i className="bi bi-chat-dots"></i>
-                                    <span className={styles.buttonLabel}>Détail Consultation</span>
-                                    <i className="bi bi-chevron-right ms-auto"></i>
-                                </button>
-                                <ul className={`dropdown-menu dropdown-menu-end ${styles.dropdownMenu}`}>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('consultation', 'patient');
-                                            }}
-                                        >
-                                            <i className="bi bi-person-circle"></i>
-                                            <span>Par patient</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('consultation', 'assurance');
-                                            }}
-                                        >
-                                            <i className="bi bi-shield-check"></i>
-                                            <span>Par Assurance</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Détail Examen et Autres Actes */}
-                        <div className={styles.menuSection}>
-                            <div className="btn-group dropend w-100" role="group">
-                                <button
-                                    type="button"
-                                    className={`btn btn-outline-primary ${styles.menuButton}`}
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    <i className="bi bi-microscope"></i>
-                                    <span className={styles.buttonLabel}>Examen et Autres Actes</span>
-                                    <i className="bi bi-chevron-right ms-auto"></i>
-                                </button>
-                                <ul className={`dropdown-menu dropdown-menu-end ${styles.dropdownMenu}`}>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('exam', 'patient');
-                                            }}
-                                        >
-                                            <i className="bi bi-person-circle"></i>
-                                            <span>Par patient</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('exam', 'assurance');
-                                            }}
-                                        >
-                                            <i className="bi bi-shield-check"></i>
-                                            <span>Par Assurance</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-
-                        {/* Détail Pharmacie */}
-                        <div className={styles.menuSection}>
-                            <div className="btn-group dropend w-100" role="group">
-                                <button
-                                    type="button"
-                                    className={`btn btn-outline-primary ${styles.menuButton}`}
-                                    data-bs-toggle="dropdown"
-                                    aria-expanded="false"
-                                >
-                                    <i className="bi bi-capsule"></i>
-                                    <span className={styles.buttonLabel}>Détail Pharmacie</span>
-                                    <i className="bi bi-chevron-right ms-auto"></i>
-                                </button>
-                                <ul className={`dropdown-menu dropdown-menu-end ${styles.dropdownMenu}`}>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('pharmacy', 'patient');
-                                            }}
-                                        >
-                                            <i className="bi bi-person-circle"></i>
-                                            <span>Par patient</span>
-                                        </a>
-                                    </li>
-                                    <li>
-                                        <a
-                                            className={`dropdown-item ${styles.dropdownItem}`}
-                                            href="#"
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                handlePrint('pharmacy', 'assurance');
-                                            }}
-                                        >
-                                            <i className="bi bi-shield-check"></i>
-                                            <span>Par Assurance</span>
-                                        </a>
-                                    </li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-                </Modal.Body>
-            </Modal>
-
-            {/* Modal pour l'impression de FactureCosultatAssurance */}
-            <Modal 
-                show={showPrintModal} 
-                onHide={() => setShowPrintModal(false)} 
-                size="xl" 
-                centered 
-                className={styles.professionalModal}
-            >
-                <Modal.Header closeButton className={styles.modalHeader}>
-                    <div className={styles.headerContent}>
-                        <i className="bi bi-printer-fill" style={{ fontSize: '1.75rem', marginRight: '12px' }}></i>
-                        <Modal.Title className={styles.modalTitle}>Facture Consultation Assurance</Modal.Title>
-                    </div>
-                </Modal.Header>
-                <Modal.Body className={styles.modalBody}>
-                    {consultationData && (
-                        <div style={{ display: 'none' }}>
-                            <PrintFactureCosultatAssurance
-                                ref={printRef} 
-                                consultation={consultationData} 
-                            />
-                        </div>
-                    )}
-                    <div className="text-center">
-                        <p>Voulez-vous imprimer cette facture consultation assurance ?</p>
-                        <div className="d-flex justify-content-center gap-3">
-                            <button 
-                                className="btn btn-primary"
-                                onClick={() => {
-                                    if (printRef.current) {
-                                        const printContent = printRef.current.innerHTML;
-                                        const printWindow = window.open('', '_blank');
-                                        if (printWindow) {
-                                            printWindow.document.write(`
-                                                <html>
-                                                    <head>
-                                                        <title>Facture Consultation Assurance</title>
-                                                        <style>
-                                                            body { font-family: Arial, sans-serif; margin: 20px; }
-                                                            @media print { body { margin: 0; } }
-                                                        </style>
-                                                    </head>
-                                                    <body>
-                                                        ${printContent}
-                                                    </body>
-                                                </html>
-                                            `);
-                                            printWindow.document.close();
-                                            printWindow.print();
-                                        }
-                                    }
-                                    setShowPrintModal(false);
-                                }}
-                            >
-                                <i className="bi bi-printer me-2"></i>
-                                Imprimer
-                            </button>
-                            <button 
-                                className="btn btn-secondary"
-                                onClick={() => setShowPrintModal(false)}
-                            >
-                                <i className="bi bi-x-circle me-2"></i>
-                                Annuler
-                            </button>
-                        </div>
-                    </div>
-                </Modal.Body>
-            </Modal>
-
-            {/* Modal pour l'impression de FactureCosultatAssurance */}
-            <Modal 
-                show={showPrintAssuranceModal} 
-                onHide={() => setShowPrintAssuranceModal(false)} 
-                size="xl" 
-                centered 
-                className={styles.professionalModal}
-            >
-                <Modal.Header closeButton className={styles.modalHeader}>
-                    <div className={styles.headerContent}>
-                        <i className="bi bi-printer-fill" style={{ fontSize: '1.75rem', marginRight: '12px' }}></i>
-                        <Modal.Title className={styles.modalTitle}>Facture Consultation Assurance</Modal.Title>
-                    </div>
-                </Modal.Header>
-                <Modal.Body className={styles.modalBody}>
-                    {consultationAssuranceData && (
-                        <PrintFactureCosultatAssurance
-                            ref={printAssuranceRef} 
-                            consultation={consultationAssuranceData} 
-                        />
-                    )}
-                    <div className="text-center mt-3">
-                        <button 
-                            className="btn btn-primary me-2"
-                            onClick={() => {
-                                if (printAssuranceRef.current) {
-                                    const printContent = printAssuranceRef.current.querySelector('#print-content');
-                                    if (printContent) {
-                                        const printWindow = window.open('', '_blank');
-                                        if (printWindow) {
-                                            printWindow.document.write(`
-                                                <html>
-                                                    <head>
-                                                        <title>Facture Consultation Assurance</title>
-                                                        <style>
-                                                            body { font-family: Arial, sans-serif; margin: 20px; }
-                                                            @media print { body { margin: 0; } }
-                                                        </style>
-                                                    </head>
-                                                    <body>
-                                                        ${printContent.innerHTML}
-                                                    </body>
-                                                </html>
-                                            `);
-                                            printWindow.document.close();
-                                            printWindow.print();
-                                        }
-                                    }
-                                    }
-                                    setShowPrintAssuranceModal(false);
-                                }}
-                            >
-                                <i className="bi bi-printer me-2"></i>
-                                Imprimer
-                            </button>
-                            <button 
-                                className="btn btn-secondary"
-                                onClick={() => setShowPrintAssuranceModal(false)}
-                            >
-                                <i className="bi bi-x-circle me-2"></i>
-                                Fermer
-                            </button>
-                        </div>
-                </Modal.Body>
-            </Modal>
-
-            {/* Modal pour l'impression de FactureConsultationPatient */}
-            <Modal 
-                show={showPrintPatientModal} 
-                onHide={() => setShowPrintPatientModal(false)} 
-                size="xl" 
-                centered 
-                className={styles.professionalModal}
-            >
-                <Modal.Header closeButton className={styles.modalHeader}>
-                    <div className={styles.headerContent}>
-                        <i className="bi bi-printer-fill" style={{ fontSize: '1.75rem', marginRight: '12px' }}></i>
-                        <Modal.Title className={styles.modalTitle}>Facture Consultation Patient</Modal.Title>
-                    </div>
-                </Modal.Header>
-                <Modal.Body className={styles.modalBody}>
-                    {consultationPatientData && (
-                        <PrintFactureConsultationPatient
-                            ref={printPatientRef} 
-                            consultation={consultationPatientData} 
-                        />
-                    )}
-                    <div className="text-center mt-3">
-                        <button 
-                            className="btn btn-primary me-2"
-                            onClick={() => {
-                                if (printPatientRef.current) {
-                                    const printContent = printPatientRef.current.querySelector('#print-content');
-                                    if (printContent) {
-                                        const printWindow = window.open('', '_blank');
-                                        if (printWindow) {
-                                            printWindow.document.write(`
-                                                <html>
-                                                    <head>
-                                                        <title>Facture Consultation Patient</title>
-                                                        <style>
-                                                            body { font-family: Arial, sans-serif; margin: 20px; }
-                                                            @media print { body { margin: 0; } }
-                                                        </style>
-                                                    </head>
-                                                    <body>
-                                                        ${printContent.innerHTML}
-                                                    </body>
-                                                </html>
-                                            `);
-                                            printWindow.document.close();
-                                            printWindow.print();
-                                        }
-                                    }
-                                    }
-                                    setShowPrintPatientModal(false);
-                                }}
-                            >
-                                <i className="bi bi-printer me-2"></i>
-                                Imprimer
-                            </button>
-                            <button 
-                                className="btn btn-secondary"
-                                onClick={() => setShowPrintPatientModal(false)}
-                            >
-                                <i className="bi bi-x-circle me-2"></i>
-                                Fermer
-                            </button>
-                        </div>
-                </Modal.Body>
-            </Modal>
-        </>
+    createPrintWindow(
+      "Facture Recap Assurance",
+      headerHTML,
+      contentHTML,
+      footerHTML,
     );
+  };
+
+  const printFactureCosultatAssurance = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données de consultation...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationAssuranceData(consultationData);
+        setShowPrintAssuranceModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFactureConsultationPatient = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données de consultation...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationPatientData(consultationData);
+        setShowPrintPatientModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFactureExamenAssurance = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données d'examen...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/DetailFactureExamenActe?ParamCODEcONSULTATION=${encodeURIComponent(codeVisiteur)}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationExamenData(consultationData);
+        setShowPrintExamenModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFactureDetailléAssurance = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données détaillées...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationDetailléAssuranceData(consultationData);
+        setShowPrintDetailléAssuranceModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFactureDetailléPatient = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données détaillées...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationDetailléPatientData(consultationData);
+        setShowPrintDetailléPatientModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFactureExamenPatient = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données d'examen...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+       const response = await fetch(
+        `/api/consultationFacture/DetailFactureExamenActe?ParamCODEcONSULTATION=${encodeURIComponent(codeVisiteur)}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationExamenData(consultationData);
+        setShowPrintPatientModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFacturePharmacieAssurance = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données de pharmacie...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationPharmacieAssuranceData(consultationData);
+        setShowPrintPharmacieAssuranceModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFacturePharmaciePatient = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données de pharmacie...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationPharmaciePatientData(consultationData);
+        setShowPrintPharmaciePatientModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFactureRecapAssurance = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données récapitulatives...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationRecapAssuranceData(consultationData);
+        setShowPrintRecapAssuranceModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const printFactureRecapPatient = async () => {
+    setIsLoading(true);
+    setLoadingMessage("Chargement des données récapitulatives...");
+
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+      );
+
+      const consultationData = await response.json();
+
+      setTimeout(() => {
+        setConsultationRecapPatientData(consultationData);
+        setShowPrintRecapPatientModal(true);
+        setIsLoading(false);
+        setLoadingMessage("");
+      }, 50);
+    } catch (error) {
+      console.error("Erreur:", error);
+      setIsLoading(false);
+      setLoadingMessage("");
+    }
+  };
+
+  const extraireListeFacturesApi = (data: unknown): any[] => {
+    if (Array.isArray(data)) return data;
+    if (
+      data &&
+      typeof data === "object" &&
+      Array.isArray((data as { data?: unknown }).data)
+    ) {
+      return (data as { data: any[] }).data;
+    }
+    return [];
+  };
+
+  const fetchOptsNoCache: RequestInit = {
+    cache: "no-store",
+    headers: { "Cache-Control": "no-cache", Pragma: "no-cache" },
+  };
+
+  const verifierExistenceCodeVisiteur = async (codeVisiteur: string) => {
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 10));
+      
+      // Vérifier d'abord si le code visiteur existe dans les consultations
+      const response = await fetch(
+        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${encodeURIComponent(codeVisiteur)}`,
+        { cache: 'no-store' }
+      );
+      
+      if (response.ok) {
+        const consultationData = await response.json();
+        if (consultationData && !consultationData.error) {
+          return { existe: true, consultation: consultationData };
+        }
+      }
+      
+      return { existe: false, consultation: null };
+    } catch (error) {
+      console.error("Erreur lors de la vérification du code visiteur:", error);
+      return { existe: false, consultation: null };
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!codeVisiteur || codeVisiteur.trim() === "") {
+      alert("Veuillez saisir le code visiteur pour rechercher");
+      return;
+    }
+
+    setIsSearching(true);
+    setSearchError("");
+    setHasFacturesNonSoldees(null);
+
+    try {
+      // Étape 1: Vérifier l'existence du code visiteur
+      const verificationResult = await verifierExistenceCodeVisiteur(codeVisiteur);
+      
+      if (!verificationResult.existe) {
+        setSearchError("Mauvais code ou Code inexistant");
+        setIsSearching(false);
+        return;
+      }
+
+      // Étape 2: Si le code existe, vérifier les factures à solder
+      await new Promise((resolve) => setTimeout(resolve, 10));
+
+      // Récupérer toutes les factures non soldées (comme dans FacturesNonSoldesModal)
+      const response = await fetch("/api/facturesnonsoldees", fetchOptsNoCache);
+      
+      if (!response.ok) {
+        setSearchError("Erreur lors de la vérification des factures");
+        return;
+      }
+
+      const data = await response.json();
+      const facturesBrutes = extraireListeFacturesApi(data);
+
+      // Appliquer la logique exacte de FacturesNonSoldesModal
+      const facturesFiltrees = await Promise.all(
+        facturesBrutes.map(async (facture) => {
+          // Si le reste à payer est <= 0, on n'affiche pas
+          if (facture.montantRestant <= 0) {
+            return null;
+          }
+
+          const idBrut = facture.id != null ? String(facture.id).trim() : "";
+          if (!idBrut) {
+            return facture;
+          }
+
+          const idEnc = encodeURIComponent(idBrut);
+          let encaissements: Response;
+          if (facture.type === "consultation") {
+            encaissements = await fetch(
+              `/api/encaissementcaisse?idConsultation=${idEnc}`,
+              fetchOptsNoCache,
+            );
+          } else {
+            encaissements = await fetch(
+              `/api/encaissementcaisse?idFacturation=${idEnc}`,
+              fetchOptsNoCache,
+            );
+          }
+
+          if (encaissements.ok) {
+            const encaissementsData = await encaissements.json();
+            const sommeEncaissements =
+              encaissementsData.data?.reduce(
+                (sum: number, enc: any) => sum + (enc.Montantencaisse || 0),
+                0,
+              ) || 0;
+
+            // Calculer le reste réel à payer
+            const resteReel = facture.montantRestant - sommeEncaissements;
+
+            // Si le reste à payer - la somme des encaissements = 0, on n'affiche pas
+            if (resteReel <= 0) {
+              return null;
+            }
+
+            // Sinon on affiche avec le reste réel
+            return {
+              ...facture,
+              montantRestant: resteReel,
+            };
+          } else {
+            // Si pas trouvé dans encaissements, on affiche directement
+            return facture;
+          }
+        }),
+      );
+
+      // Filtrer les null
+      const facturesValidées = facturesFiltrees.filter(
+        (f): f is NonNullable<typeof f> => f !== null,
+      );
+
+      // Filtrer pour le code visiteur spécifique
+      const facturesVisiteur = facturesValidées.filter(
+        (facture: any) => facture.code === codeVisiteur.trim(),
+      );
+
+      setTimeout(() => {
+        if (facturesVisiteur.length > 0) {
+          setSearchError("Ce code visiteur a des factures à solder. Veuillez régler d'abord.");
+          setHasFacturesNonSoldees(true);
+          setShowButtons(false);
+        } else {
+          setSearchError("");
+          setHasFacturesNonSoldees(false);
+          setShowButtons(true);
+        }
+        setIsSearching(false);
+      }, 50);
+    } catch (error) {
+      console.error("Erreur lors de la recherche:", error);
+      setSearchError("Erreur de connexion");
+      setIsSearching(false);
+    }
+  };
+
+  const handlePrint = (type: string, by: string) => {
+    setTimeout(() => {
+      if (type === "recap" && by === "assurance") {
+        printFactureRecapAssuranceDirect();
+      } else if (type === "recap" && by === "patient") {
+        printFactureRecapPatient();
+      } else if (type === "consultation" && by === "assurance") {
+        printFactureCosultatAssurance();
+      } else if (type === "consultation" && by === "patient") {
+        printFactureConsultationPatient();
+      } else if (type === "detaillé" && by === "assurance") {
+        printFactureDetailléAssurance();
+      } else if (type === "detaillé" && by === "patient") {
+        printFactureDetailléPatient();
+      } else if (type === "examen" && by === "assurance") {
+        printFactureExamenAssurance();
+      } else if (type === "examen" && by === "patient") {
+        printFactureExamenPatient();
+      } else if (type === "pharmacie" && by === "assurance") {
+        printFacturePharmacieAssurance();
+      } else if (type === "pharmacie" && by === "patient") {
+        printFacturePharmaciePatient();
+      } else {
+        console.log(`Printing ${type} by ${by}`);
+        return;
+      }
+    }, 0);
+  };
+
+  return (
+    <>
+      <Modal
+        show={show}
+        onHide={onHide}
+        size="lg"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Menu Impression Facture
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          <div className="mb-4">
+            <label className={`form-label ${styles.formLabel}`}>
+              <i className="bi bi-person-badge me-2"></i>
+              Code Visiteur
+            </label>
+            <div className="input-group">
+              <Form.Control
+                type="text"
+                placeholder="Entrez le code visiteur..."
+                value={codeVisiteur}
+                onChange={(e) => setCodeVisiteur(e.target.value)}
+                className={`${styles.formControl}`}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleSearch();
+                  }
+                }}
+              />
+              <button
+                className="btn btn-primary"
+                type="button"
+                onClick={handleSearch}
+                disabled={isSearching}
+              >
+                {isSearching ? (
+                  <>
+                    <span
+                      className="spinner-border spinner-border-sm me-2"
+                      role="status"
+                      aria-hidden="true"
+                    ></span>
+                    Recherche...
+                  </>
+                ) : (
+                  <>
+                    <i className="bi bi-search me-2"></i>
+                    Rechercher
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+
+          {searchError && (
+            <div className="alert alert-danger mb-3">
+              <i className="bi bi-exclamation-triangle me-2"></i>
+              {searchError}
+            </div>
+          )}
+
+          {hasFacturesNonSoldees === true && (
+            <div className="alert alert-warning mb-3">
+              <i className="bi bi-exclamation-triangle-fill me-2"></i>
+              Veuillez vérifier la liste des factures à solder avant cette
+              opération
+            </div>
+          )}
+
+          {hasFacturesNonSoldees === false && (
+            <div className="alert alert-success mb-3">
+              <i className="bi bi-check-circle-fill me-2"></i>
+              Aucune facture à solder trouvée pour ce code visiteur
+            </div>
+          )}
+
+          <div className={styles.separator}></div>
+
+          {showButtons && (
+            <div className={styles.menuContainer}>
+              {/* Facture Détaillée */}
+              <div className={styles.menuSection}>
+                <div className="btn-group dropend w-100" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-outline-primary ${styles.menuButton}`}
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i className="bi bi-pencil-square me-2"></i>
+                    Éditer la Facture Détaillée
+                  </button>
+                  <ul className={`dropdown-menu ${styles.dropdownMenu}`}>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("detaillé", "facture");
+                        }}
+                      >
+                        <i className="bi bi-file-earmark-text"></i>
+                        <span>Facture</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("detaillé", "consultation");
+                        }}
+                      >
+                        <i className="bi bi-clipboard2-pulse"></i>
+                        <span>Consultation</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+                {/* Facture Recap */}
+              <div className={styles.menuSection}>
+                <div className="btn-group dropend w-100" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-outline-primary ${styles.menuButton}`}
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i className="bi bi-file-earmark-pdf me-2"></i>
+                    Facture Recap
+                  </button>
+                  <ul className={`dropdown-menu ${styles.dropdownMenu}`}>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("recap", "patient");
+                        }}
+                      >
+                        <i className="bi bi-person-circle"></i>
+                        <span>Par patient</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("recap", "assurance");
+                        }}
+                      >
+                        <i className="bi bi-shield-check"></i>
+                        <span>Par Assurance</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              {/* Détail Consultation */}
+              <div className={styles.menuSection}>
+                <div className="btn-group dropend w-100" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-outline-primary ${styles.menuButton}`}
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i className="bi bi-receipt me-2"></i>
+                    Détail Consultation
+                  </button>
+                  <ul className={`dropdown-menu ${styles.dropdownMenu}`}>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("consultation", "patient");
+                        }}
+                      >
+                        <i className="bi bi-person-circle"></i>
+                        <span>Par patient</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("consultation", "assurance");
+                        }}
+                      >
+                        <i className="bi bi-shield-check"></i>
+                        <span>Par Assurance</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+              {/*  Détail Examens-Autres actes */}
+              <div className={styles.menuSection}>
+                <div className="btn-group dropend w-100" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-outline-primary ${styles.menuButton}`}
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i className="bi bi-receipt me-2"></i>
+                    Détail Examens-Autres actes
+                  </button>
+
+                  <ul className={`dropdown-menu ${styles.dropdownMenu}`}>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("examen", "patient");
+                        }}
+                      >
+                        <i className="bi bi-person-circle"></i>
+                        <span>Par patient</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("examen", "assurance");
+                        }}
+                      >
+                        <i className="bi bi-shield-check"></i>
+                        <span>Par Assurance</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/*  Détail Pharmacie */}
+              <div className={styles.menuSection}>
+                <div className="btn-group dropend w-100" role="group">
+                  <button
+                    type="button"
+                    className={`btn btn-outline-primary ${styles.menuButton}`}
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i className="bi bi-receipt me-2"></i>
+                    Détail Pharmacie
+                  </button>
+
+                  <ul className={`dropdown-menu ${styles.dropdownMenu}`}>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("pharmacie", "patient");
+                        }}
+                      >
+                        <i className="bi bi-person-circle"></i>
+                        <span>Par patient</span>
+                      </a>
+                    </li>
+                    <li>
+                      <a
+                        className={`dropdown-item ${styles.dropdownItem}`}
+                        href="#"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          handlePrint("pharmacie", "assurance");
+                        }}
+                      >
+                        <i className="bi bi-shield-check"></i>
+                        <span>Par Assurance</span>
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {isLoading && (
+            <div className="text-center mb-3">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Chargement...</span>
+              </div>
+              <div className="mt-2 text-muted">{loadingMessage}</div>
+            </div>
+          )}
+        </Modal.Body>
+      </Modal>
+
+      {/* Modal pour l'impression de FactureCosultatAssurance */}
+      <Modal
+        show={showPrintAssuranceModal}
+        onHide={() => setShowPrintAssuranceModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Consultation Assurance
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationAssuranceData && (
+            <PrintFactureCosultatAssurance
+              ref={printAssuranceRef}
+              consultation={consultationAssuranceData}
+            />
+          )}
+          <div className="text-center mt-3">
+              <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintAssuranceModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+
+      {/* Modal pour l'impression de FactureConsultationPatient */}
+      <Modal
+        show={showPrintPatientModal}
+        onHide={() => setShowPrintPatientModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Consultation Patient
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationPatientData && (
+            <PrintFactureConsultationPatient
+              ref={printPatientRef}
+              consultation={consultationPatientData}
+            />
+          )}
+          <div className="text-center mt-3">           
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintPatientModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+          {/* Modal pour l'impression de FactureExamenPatient */}
+           <Modal
+        show={showPrintPatientModal}
+        onHide={() => setShowPrintPatientModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Examens Patient
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationExamenData && (
+            <PrintFactureExamenPatient
+              ref={printExamenPatientRef}
+              consultation={consultationExamenData}
+            />
+          )}
+          <div className="text-center mt-3">          
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintPatientModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+      {/* Modal pour l'impression de FactureExamenAssurance */}
+      <Modal
+        show={showPrintExamenModal}
+        onHide={() => setShowPrintExamenModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Examens Assurance
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationExamenData && (
+            <PrintFactureExamenAssurance
+              ref={printExamenRef}
+              consultation={consultationExamenData}
+            />
+          )}
+          <div className="text-center mt-3">           
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintExamenModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+    </>
+  );
 };
 
 export default MenuImpressionFactureModal;

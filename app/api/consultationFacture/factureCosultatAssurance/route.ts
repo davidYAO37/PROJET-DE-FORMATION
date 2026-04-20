@@ -17,7 +17,6 @@ export async function GET(req: NextRequest) {
         // Recherche de la consultation avec les critères spécifiés
         const consultation = await Consultation.findOne({
             CodePrestation: ParamCode_consultation,
-            Toutencaisse: true
         }).populate('IdPatient', 'Nom Contact sexe Age_partient Souscripteur SOCIETE_PATIENT');
 
         if (!consultation) {
@@ -79,7 +78,6 @@ export async function POST(req: NextRequest) {
         // Recherche de la consultation avec les critères spécifiés
         const consultation = await Consultation.findOne({
             CodePrestation: ParamCode_consultation,
-            Toutencaisse: true
         }).populate('IdPatient', 'Nom Contact sexe Age_partient Souscripteur SOCIETE_PATIENT');
 
         if (!consultation) {
