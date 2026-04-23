@@ -21,6 +21,8 @@ interface Ligne {
 interface PrintFactureExamenAssuranceProps {
     consultation: any;
 }
+// Récupérer l'utilisateur connecté
+const Utilisateur = localStorage.getItem("nom_utilisateur");
 
 // Fonction utilitaire pour formater les nombres
 const formatNumber = (num: number | undefined | null): string => {
@@ -395,7 +397,7 @@ const PrintFactureExamenAssurance = forwardRef<HTMLDivElement, PrintFactureExame
                         color: '#666666',
                         marginBottom: '5px'
                     }}>
-                        Imprimé le: {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                       Imprimé le: {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} par {Utilisateur}
                     </div>
 
                 </div>

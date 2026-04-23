@@ -37,7 +37,6 @@ export async function POST(request: Request) {
             Designation: body.Designation || "PHARMACIE",
             CodePrestation: body.CodePrestation,
             PatientP: body.PatientP,
-            IdPatient: body.IdPatient || body.IDPARTIENT || "", // Unified field - supports both parameter names
             DatePres: body.DatePres ? new Date(body.DatePres) : new Date(),
             SaisiPar: body.Caissiere,
             Rclinique: body.Rclinique || "",
@@ -48,11 +47,9 @@ export async function POST(request: Request) {
             Remise: body.REMISE || body.Remise,
             MotifRemise: body.MotifRemise,
             Assurance: body.Assurance,
-            IDASSURANCE: body.IDASSURANCE,
             MontantRecu: body.MontantRecu || body.Montanttotal,
             Restapayer: body.Restapayer,
             NomMed: body.NomMed,
-            IDMEDECIN: body.IDMEDECIN,
             StatutFacture: true,
             //Numfacture: body.Numfacture,
             NumBon: body.NumBon || body.Numcarte,
@@ -80,7 +77,7 @@ export async function POST(request: Request) {
         }
 
         if (body.IDMEDECIN && body.IDMEDECIN.trim() !== "") {
-            prescriptionData.idMedecin = body.IDMEDECIN;
+            prescriptionData.IDMEDECIN = body.IDMEDECIN;
         }
 
         if (body.IdPatient && body.IdPatient.trim() !== "") {

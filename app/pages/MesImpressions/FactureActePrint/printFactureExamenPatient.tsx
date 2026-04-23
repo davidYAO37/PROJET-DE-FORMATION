@@ -1,4 +1,4 @@
-import React, { forwardRef } from 'react';
+import React, { forwardRef, useEffect, useState } from 'react';
 import { Button } from 'react-bootstrap';
 import { useEntreprise } from "@/hooks/useEntreprise";
 import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader, extractContentWithoutHeaderAndFooter } from "@/utils/printRecu";
@@ -21,6 +21,9 @@ interface Ligne {
 interface PrintFactureExamenPatientProps {
     consultation: any;
 }
+
+// Récupérer l'utilisateur connecté
+const Utilisateur = localStorage.getItem("nom_utilisateur");
 
 // Fonction utilitaire pour formater les nombres
 const formatNumber = (num: number | undefined | null): string => {
@@ -90,6 +93,26 @@ const PrintFactureExamenPatient = forwardRef<HTMLDivElement, PrintFactureExamenP
     ({ consultation }, ref) => {
         const { entreprise } = useEntreprise();
         const { patient, consultation: consultationData, examens } = consultation || {};
+        const [remises, setRemises] = useState<any[]>([]);
+        // Récupérer les remises de facturation
+        useEffect(() => {
+            const fetchRemises = async () => {
+                try {
+                    const response = await fetch(`/api/EtatFactureCaisse/reductionFactureExamen?codeVisiteur=${consultation.consultation?.Code_consultation}`);
+                    const data = await response.json();
+                            
+                            if (data && Array.isArray(data)) {
+                                setRemises(data);
+                            }
+                        } catch (error) {
+                            console.error('Erreur lors de la récupération des remises:', error);
+                        }
+                    };
+        
+                    if (consultation.consultation?.Code_consultation) {
+                        fetchRemises();
+                    }
+                }, [consultation.consultation?.Code_consultation]);
 
         const handlePrint = () => {
             const printContent = document.getElementById('print-content');
@@ -158,6 +181,12 @@ const PrintFactureExamenPatient = forwardRef<HTMLDivElement, PrintFactureExamenP
         const totalGeneral = sum(toutesLesLignes, 'total');
         const montantAssurance = sum(toutesLesLignes, 'partAssurance');
         const montantPatient = sum(toutesLesLignes, 'partAssure');
+        
+        // Calculer le total des remises
+        const totalRemises = remises.reduce((total: number, remise: any) => total + remise.reduction, 0);
+        
+        // Calculer le montant payé après remise (remise appliquée sur la part patient)
+        const montantPaye = Math.max(0, montantPatient - totalRemises);
 
         return (
             <>
@@ -333,6 +362,72 @@ const PrintFactureExamenPatient = forwardRef<HTMLDivElement, PrintFactureExamenP
                         ))}
                     </div>
 
+                    {/* Détail des remises si elles existent */}
+                    {remises.length > 0 && (
+                        <div style={{ 
+                            marginTop: '15px',
+                            border: '1px solid #dee2e6',
+                            borderRadius: '8px',
+                            overflow: 'hidden'
+                        }}>
+                            <div style={{ 
+                                backgroundColor: '#6c757d',
+                                color: '#ffffff',
+                                padding: '8px',
+                                textAlign: 'center',
+                                fontWeight: 'bold',
+                                fontSize: '11px'
+                            }}>
+                                DÉTAIL DES REMISES
+                            </div>
+                            <div style={{ padding: '10px', backgroundColor: '#f8f9fa' }}>
+                                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '10px' }}>
+                                    <thead>
+                                        <tr style={{ backgroundColor: '#e9ecef' }}>
+                                            <th style={{ border: '1px solid #dee2e6', padding: '4px', textAlign: 'left' }}>Désignation</th>
+                                            <th style={{ border: '1px solid #dee2e6', padding: '4px', textAlign: 'left' }}>Motif</th>
+                                            <th style={{ border: '1px solid #dee2e6', padding: '4px', textAlign: 'right' }}>Montant</th>
+                                            <th style={{ border: '1px solid #dee2e6', padding: '4px', textAlign: 'center' }}>Date</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {remises.map((remise, index) => (
+                                            <tr key={index}>
+                                                <td style={{ border: '1px solid #dee2e6', padding: '3px' }}>
+                                                    {remise.designation}
+                                                </td>
+                                                <td style={{ border: '1px solid #dee2e6', padding: '3px' }}>
+                                                    {remise.motif}
+                                                </td>
+                                                <td style={{ border: '1px solid #dee2e6', padding: '3px', textAlign: 'right', fontWeight: 'bold' }}>
+                                                    {formatNumber(remise.reduction)} FCFA
+                                                </td>
+                                                <td style={{ border: '1px solid #dee2e6', padding: '3px', textAlign: 'center' }}>
+                                                    {new Date(remise.date).toLocaleDateString('fr-FR', { 
+                                                        day: '2-digit', 
+                                                        month: '2-digit', 
+                                                        year: 'numeric' 
+                                                    })}
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                    <tfoot>
+                                        <tr style={{ fontWeight: 'bold', backgroundColor: '#e9ecef' }}>
+                                            <td colSpan={2} style={{ textAlign: 'right', padding: '4px', border: '1px solid #dee2e6' }}>
+                                                TOTAL REMISES:
+                                            </td>
+                                            <td style={{ textAlign: 'right', padding: '4px', border: '1px solid #dee2e6', color: '#dc3545' }}>
+                                                {formatNumber(totalRemises)} FCFA
+                                            </td>
+                                            <td style={{ border: '1px solid #dee2e6', padding: '4px' }}></td>
+                                        </tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Récapitulatif financier - Design professionnel */}
                     <div style={{ 
                         marginTop: '20px',
@@ -369,6 +464,18 @@ const PrintFactureExamenPatient = forwardRef<HTMLDivElement, PrintFactureExamenP
                                     {montantPatient.toLocaleString('fr-FR')} FCFA
                                 </div>
                             </div>
+                            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+                                <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '5px' }}>REMISES</div>
+                                <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#dc3545' }}>
+                                    {totalRemises.toLocaleString('fr-FR')} FCFA
+                                </div>
+                            </div>
+                            <div style={{ textAlign: 'center', minWidth: '120px' }}>
+                                <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '5px' }}>Montant Payé</div>
+                                <div style={{ fontSize: '16px', fontWeight: 'bold', color: '#6f42c1' }}>
+                                    {montantPaye.toLocaleString('fr-FR')} FCFA
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -384,7 +491,7 @@ const PrintFactureExamenPatient = forwardRef<HTMLDivElement, PrintFactureExamenP
                     }}>
                         <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '5px' }}>ARRÊTÉ DE FACTURE PATIENT</div>
                         <div style={{ fontSize: '12px', fontWeight: 'bold', color: '#2c3e50', fontStyle: 'italic' }}>
-                            La somme de: {NumberToLetter(montantPatient)} FRANCS CFA
+                            La somme de: {NumberToLetter(montantPaye)} FRANCS CFA
                         </div>
                     </div>
 
@@ -395,7 +502,7 @@ const PrintFactureExamenPatient = forwardRef<HTMLDivElement, PrintFactureExamenP
                         color: '#666666',
                         marginBottom: '5px'
                     }}>
-                        Imprimé le: {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+                       Imprimé le: {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} par {Utilisateur}
                     </div>
 
                 </div>

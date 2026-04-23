@@ -9,8 +9,8 @@ import styles from "./MenuImpressionFactureModal.module.css";
 import PrintFactureCosultatAssurance from "../../MesImpressions/FactureActePrint/printFactureCosultatAssurance";
 import PrintFactureConsultationPatient from "../../MesImpressions/FactureActePrint/printFactureConsultationPatient";
 import PrintFactureExamenAssurance from "../../MesImpressions/FactureActePrint/printFactureExamenAssurance";
-import PrintFactureDetailléAssurance from "../../MesImpressions/FactureActePrint/printFactureDetailléAssurance";
-import PrintFactureDetailléPatient from "../../MesImpressions/FactureActePrint/printFactureDetailléPatient";
+import PrintFactureDetailleAssurance from "../../MesImpressions/FactureActePrint/printFactureDetailleAssurance";
+import PrintFactureDetaillePatient from "../../MesImpressions/FactureActePrint/printFactureDetaillePatient";
 import PrintFactureExamenPatient from "../../MesImpressions/FactureActePrint/printFactureExamenPatient";
 import PrintFacturePharmacieAssurance from "../../MesImpressions/FactureActePrint/printFacturePharmacieAssurance";
 import PrintFacturePharmaciePatient from "../../MesImpressions/FactureActePrint/printFacturePharmaciePatient";
@@ -31,10 +31,10 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
   const [showPrintModal, setShowPrintModal] = useState(false);
   const [showPrintAssuranceModal, setShowPrintAssuranceModal] = useState(false);
   const [showPrintPatientModal, setShowPrintPatientModal] = useState(false);
-  const [showPrintExamenModal, setShowPrintExamenModal] = useState(false);
-  const [showPrintDetailléAssuranceModal, setShowPrintDetailléAssuranceModal] = useState(false);
-  const [showPrintDetailléPatientModal, setShowPrintDetailléPatientModal] = useState(false);
+  const [showPrintExamenAssuranceModal, setShowPrintExamenAssuranceModal] = useState(false);
   const [showPrintExamenPatientModal, setShowPrintExamenPatientModal] = useState(false);
+  const [showPrintDetailleAssuranceModal, setShowPrintDetailleAssuranceModal] = useState(false);
+  const [showPrintDetaillePatientModal, setShowPrintDetaillePatientModal] = useState(false);
   const [showPrintPharmacieAssuranceModal, setShowPrintPharmacieAssuranceModal] = useState(false);
   const [showPrintPharmaciePatientModal, setShowPrintPharmaciePatientModal] = useState(false);
   const [showPrintRecapAssuranceModal, setShowPrintRecapAssuranceModal] = useState(false);
@@ -46,9 +46,9 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
     useState<any>(null);
   const [consultationExamenData, setConsultationExamenData] =
     useState<any>(null);
-  const [consultationDetailléAssuranceData, setConsultationDetailléAssuranceData] =
+  const [consultationDetailleAssuranceData, setConsultationDetailleAssuranceData] =
     useState<any>(null);
-  const [consultationDetailléPatientData, setConsultationDetailléPatientData] =
+  const [consultationDetaillePatientData, setConsultationDetaillePatientData] =
     useState<any>(null);
   const [consultationExamenPatientData, setConsultationExamenPatientData] =
     useState<any>(null);
@@ -72,8 +72,8 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
   const printAssuranceRef = useRef<HTMLDivElement>(null);
   const printPatientRef = useRef<HTMLDivElement>(null);
   const printExamenRef = useRef<HTMLDivElement>(null);
-  const printDetailléAssuranceRef = useRef<HTMLDivElement>(null);
-  const printDetailléPatientRef = useRef<HTMLDivElement>(null);
+  const printDetailleAssuranceRef = useRef<HTMLDivElement>(null);
+  const printDetaillePatientRef = useRef<HTMLDivElement>(null);
   const printExamenPatientRef = useRef<HTMLDivElement>(null);
   const printPharmacieAssuranceRef = useRef<HTMLDivElement>(null);
   const printPharmaciePatientRef = useRef<HTMLDivElement>(null);
@@ -99,55 +99,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
     }
   }, [codeVisiteur]);
 
-  const printFactureRecapAssuranceDirect = () => {
-    const headerHTML = generatePrintHeader(null);
-    const footerHTML = generatePrintFooter(null);
-    const contentHTML = `
-            <div class="print-area">
-                <div style="display:flex; justify-content:space-between; flex-wrap:wrap; gap:14px; margin-bottom:20px; font-size:13px;">
-                    <div style="flex:1; min-width:220px; line-height:1.6;">
-                        <div><strong>Patient</strong> ZIEHI EPSE SIAN MESSIEKOI</div>
-                        <div><strong>Assurance</strong> NON ASSURE</div>
-                    </div>
-                    <div style="flex:1; min-width:220px; line-height:1.6;">
-                        <div><strong>Code</strong> 0000000001</div>
-                        <div><strong>Date</strong> ${new Date().toLocaleDateString("fr-FR")}</div>
-                    </div>
-                </div>
-                <table style="width:100%; border-collapse:collapse; margin-bottom:20px;">
-                    <thead>
-                        <tr style="background:#f8f9fa;">
-                            <th style="border:1px solid #dee2e6; padding:8px; text-align:left;">Désignation</th>
-                            <th style="border:1px solid #dee2e6; padding:8px; text-align:right;">Quantité</th>
-                            <th style="border:1px solid #dee2e6; padding:8px; text-align:right;">Prix Unit.</th>
-                            <th style="border:1px solid #dee2e6; padding:8px; text-align:right;">Montant</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td style="border:1px solid #dee2e6; padding:8px;">Consultation générale</td>
-                            <td style="border:1px solid #dee2e6; padding:8px; text-align:right;">1</td>
-                            <td style="border:1px solid #dee2e6; padding:8px; text-align:right;">5 000</td>
-                            <td style="border:1px solid #dee2e6; padding:8px; text-align:right;">5 000</td>
-                        </tr>
-                    </tbody>
-                    <tfoot>
-                        <tr style="background:#f8f9fa; font-weight:bold;">
-                            <td colspan="3" style="border:1px solid #dee2e6; padding:8px; text-align:right;">Total:</td>
-                            <td style="border:1px solid #dee2e6; padding:8px; text-align:right;">5 000 FCFA</td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        `;
-    createPrintWindow(
-      "Facture Recap Assurance",
-      headerHTML,
-      contentHTML,
-      footerHTML,
-    );
-  };
-
+ 
   const printFactureCosultatAssurance = async () => {
     setIsLoading(true);
     setLoadingMessage("Chargement des données de consultation...");
@@ -156,7 +108,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+        `/api/EtatFactureCaisse/DetatilFactureConsultation?ParamCode_consultation=${codeVisiteur}`,
       );
 
       const consultationData = await response.json();
@@ -182,7 +134,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+        `/api/EtatFactureCaisse/DetatilFactureConsultation?ParamCode_consultation=${codeVisiteur}`,
       );
 
       const consultationData = await response.json();
@@ -208,14 +160,14 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/DetailFactureExamenActe?ParamCODEcONSULTATION=${encodeURIComponent(codeVisiteur)}`,
+        `/api/EtatFactureCaisse/DetailFactureExamenActe?ParamCODEcONSULTATION=${encodeURIComponent(codeVisiteur)}`,
       );
 
       const consultationData = await response.json();
 
       setTimeout(() => {
         setConsultationExamenData(consultationData);
-        setShowPrintExamenModal(true);
+        setShowPrintExamenAssuranceModal(true);
         setIsLoading(false);
         setLoadingMessage("");
       }, 50);
@@ -226,7 +178,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
     }
   };
 
-  const printFactureDetailléAssurance = async () => {
+  const printFactureDetailleAssurance = async () => {
     setIsLoading(true);
     setLoadingMessage("Chargement des données détaillées...");
 
@@ -234,14 +186,14 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+        `/api/EtatFactureCaisse/FactureDetailleActe?ParamCode_consultation=${encodeURIComponent(codeVisiteur)}`,
       );
 
       const consultationData = await response.json();
 
       setTimeout(() => {
-        setConsultationDetailléAssuranceData(consultationData);
-        setShowPrintDetailléAssuranceModal(true);
+        setConsultationDetailleAssuranceData(consultationData);
+        setShowPrintDetailleAssuranceModal(true);
         setIsLoading(false);
         setLoadingMessage("");
       }, 50);
@@ -252,7 +204,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
     }
   };
 
-  const printFactureDetailléPatient = async () => {
+  const handlePrintDetaillePatient = async () => {
     setIsLoading(true);
     setLoadingMessage("Chargement des données détaillées...");
 
@@ -260,14 +212,14 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+        `/api/EtatFactureCaisse/FactureDetailleActe?ParamCode_consultation=${codeVisiteur}`,
       );
 
       const consultationData = await response.json();
 
       setTimeout(() => {
-        setConsultationDetailléPatientData(consultationData);
-        setShowPrintDetailléPatientModal(true);
+        setConsultationDetaillePatientData(consultationData);
+        setShowPrintDetaillePatientModal(true);
         setIsLoading(false);
         setLoadingMessage("");
       }, 50);
@@ -286,14 +238,14 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
        const response = await fetch(
-        `/api/consultationFacture/DetailFactureExamenActe?ParamCODEcONSULTATION=${encodeURIComponent(codeVisiteur)}`,
+        `/api/EtatFactureCaisse/DetailFactureExamenActe?ParamCODEcONSULTATION=${encodeURIComponent(codeVisiteur)}`,
       );
 
       const consultationData = await response.json();
 
       setTimeout(() => {
         setConsultationExamenData(consultationData);
-        setShowPrintPatientModal(true);
+        setShowPrintExamenPatientModal(true);
         setIsLoading(false);
         setLoadingMessage("");
       }, 50);
@@ -312,7 +264,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+        `/api/EtatFactureCaisse/DetailFacturePharmacie?ParamCODEcONSULTATION=${encodeURIComponent(codeVisiteur)}`,
       );
 
       const consultationData = await response.json();
@@ -338,7 +290,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+        `/api/EtatFactureCaisse/DetailFacturePharmacie?ParamCODEcONSULTATION=${encodeURIComponent(codeVisiteur)}`,
       );
 
       const consultationData = await response.json();
@@ -364,7 +316,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+        `/api/EtatFactureCaisse/FactureRecap?ParamCode_consultation=${codeVisiteur}`,
       );
 
       const consultationData = await response.json();
@@ -390,7 +342,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       await new Promise((resolve) => setTimeout(resolve, 10));
 
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${codeVisiteur}`,
+        `/api/EtatFactureCaisse/FactureRecap?ParamCode_consultation=${codeVisiteur}`,
       );
 
       const consultationData = await response.json();
@@ -431,7 +383,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       
       // Vérifier d'abord si le code visiteur existe dans les consultations
       const response = await fetch(
-        `/api/consultationFacture/factureCosultatAssurance?ParamCode_consultation=${encodeURIComponent(codeVisiteur)}`,
+        `/api/EtatFactureCaisse/DetatilFactureConsultation?ParamCode_consultation=${encodeURIComponent(codeVisiteur)}`,
         { cache: 'no-store' }
       );
       
@@ -570,17 +522,17 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
   const handlePrint = (type: string, by: string) => {
     setTimeout(() => {
       if (type === "recap" && by === "assurance") {
-        printFactureRecapAssuranceDirect();
+        printFactureRecapAssurance();
       } else if (type === "recap" && by === "patient") {
         printFactureRecapPatient();
       } else if (type === "consultation" && by === "assurance") {
         printFactureCosultatAssurance();
       } else if (type === "consultation" && by === "patient") {
         printFactureConsultationPatient();
-      } else if (type === "detaillé" && by === "assurance") {
-        printFactureDetailléAssurance();
-      } else if (type === "detaillé" && by === "patient") {
-        printFactureDetailléPatient();
+      } else if (type === "Detaille" && by === "assurance") {
+        printFactureDetailleAssurance();
+      } else if (type === "Detaille" && by === "patient") {
+        handlePrintDetaillePatient();
       } else if (type === "examen" && by === "assurance") {
         printFactureExamenAssurance();
       } else if (type === "examen" && by === "patient") {
@@ -699,18 +651,18 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
                     <i className="bi bi-pencil-square me-2"></i>
                     Éditer la Facture Détaillée
                   </button>
-                  <ul className={`dropdown-menu ${styles.dropdownMenu}`}>
+                   <ul className={`dropdown-menu ${styles.dropdownMenu}`}>
                     <li>
                       <a
                         className={`dropdown-item ${styles.dropdownItem}`}
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          handlePrint("detaillé", "facture");
+                          handlePrint("Detaille", "patient");
                         }}
                       >
-                        <i className="bi bi-file-earmark-text"></i>
-                        <span>Facture</span>
+                        <i className="bi bi-person-circle"></i>
+                        <span>Par patient</span>
                       </a>
                     </li>
                     <li>
@@ -719,11 +671,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
                         href="#"
                         onClick={(e) => {
                           e.preventDefault();
-                          handlePrint("detaillé", "consultation");
+                          handlePrint("Detaille", "assurance");
                         }}
                       >
-                        <i className="bi bi-clipboard2-pulse"></i>
-                        <span>Consultation</span>
+                        <i className="bi bi-shield-check"></i>
+                        <span>Par Assurance</span>
                       </a>
                     </li>
                   </ul>
@@ -992,8 +944,8 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       </Modal>
           {/* Modal pour l'impression de FactureExamenPatient */}
            <Modal
-        show={showPrintPatientModal}
-        onHide={() => setShowPrintPatientModal(false)}
+        show={showPrintExamenPatientModal}
+        onHide={() => setShowPrintExamenPatientModal(false)}
         size="xl"
         centered
         className={styles.professionalModal}
@@ -1019,7 +971,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
           <div className="text-center mt-3">          
             <button
               className="btn btn-secondary"
-              onClick={() => setShowPrintPatientModal(false)}
+              onClick={() => setShowPrintExamenPatientModal(false)}
             >
               <i className="bi bi-x-circle me-2"></i>
               Fermer
@@ -1029,8 +981,8 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       </Modal>
       {/* Modal pour l'impression de FactureExamenAssurance */}
       <Modal
-        show={showPrintExamenModal}
-        onHide={() => setShowPrintExamenModal(false)}
+        show={showPrintExamenAssuranceModal}
+        onHide={() => setShowPrintExamenAssuranceModal(false)}
         size="xl"
         centered
         className={styles.professionalModal}
@@ -1056,7 +1008,7 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
           <div className="text-center mt-3">           
             <button
               className="btn btn-secondary"
-              onClick={() => setShowPrintExamenModal(false)}
+              onClick={() => setShowPrintExamenAssuranceModal(false)}
             >
               <i className="bi bi-x-circle me-2"></i>
               Fermer
@@ -1064,6 +1016,234 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
           </div>
         </Modal.Body>
       </Modal>
+      
+      {/* Modal pour l'impression de FacturePharmacieAssurance */}
+      <Modal
+        show={showPrintPharmacieAssuranceModal}
+        onHide={() => setShowPrintPharmacieAssuranceModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Pharmacie Assurance
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationPharmacieAssuranceData && (
+            <PrintFacturePharmacieAssurance
+              ref={printPharmacieAssuranceRef}
+              consultation={consultationPharmacieAssuranceData}
+            />
+          )}
+          <div className="text-center mt-3">           
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintPharmacieAssuranceModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+
+      {/* Modal pour l'impression de FactureDetailleAssurance */}
+      <Modal
+        show={showPrintDetailleAssuranceModal}
+        onHide={() => setShowPrintDetailleAssuranceModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Détaillée Assurance
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationDetailleAssuranceData && (
+            <PrintFactureDetailleAssurance
+              ref={printDetailleAssuranceRef}
+              consultation={consultationDetailleAssuranceData}
+            />
+          )}
+          <div className="text-center mt-3">           
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintDetailleAssuranceModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+
+           {/* Modal pour l'impression de FactureDetaillePatient */}
+      <Modal
+        show={showPrintDetaillePatientModal}
+        onHide={() => setShowPrintDetaillePatientModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Détaillée Patient
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationDetaillePatientData && (
+            <PrintFactureDetaillePatient
+              ref={printDetaillePatientRef}
+              consultation={consultationDetaillePatientData}
+            />
+          )}
+          <div className="text-center mt-3">           
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintDetaillePatientModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+
+      {/* Modal pour l'impression de FacturePharmaciePatient */}
+      <Modal
+        show={showPrintPharmaciePatientModal}
+        onHide={() => setShowPrintPharmaciePatientModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Pharmacie Patient
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationPharmaciePatientData && (
+            <PrintFacturePharmaciePatient
+              ref={printPharmaciePatientRef}
+              consultation={consultationPharmaciePatientData}
+            />
+          )}
+          <div className="text-center mt-3">           
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintPharmaciePatientModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+      {/* Modal pour l'impression de printFactureRecapAssurance */}
+      <Modal
+        show={showPrintRecapAssuranceModal}
+        onHide={() => setShowPrintRecapAssuranceModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Récapitulative Assurance
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationRecapAssuranceData && (
+            <PrintFactureRecapAssurance
+              ref={printRecapAssuranceRef}
+              consultation={consultationRecapAssuranceData}
+            />
+          )}
+          <div className="text-center mt-3">           
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintRecapAssuranceModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+      
+      {/* Modal pour l'impression de printFactureRecapPatient */}
+      <Modal
+        show={showPrintRecapPatientModal}
+        onHide={() => setShowPrintRecapPatientModal(false)}
+        size="xl"
+        centered
+        className={styles.professionalModal}
+      >
+        <Modal.Header closeButton className={styles.modalHeader}>
+          <div className={styles.headerContent}>
+            <i
+              className="bi bi-printer-fill"
+              style={{ fontSize: "1.75rem", marginRight: "12px" }}
+            ></i>
+            <Modal.Title className={styles.modalTitle}>
+              Facture Récapitulative Patient
+            </Modal.Title>
+          </div>
+        </Modal.Header>
+        <Modal.Body className={styles.modalBody}>
+          {consultationRecapPatientData && (
+            <PrintFactureRecapPatient
+              ref={printRecapPatientRef}
+              consultation={consultationRecapPatientData}
+            />
+          )}
+          <div className="text-center mt-3">           
+            <button
+              className="btn btn-secondary"
+              onClick={() => setShowPrintRecapPatientModal(false)}
+            >
+              <i className="bi bi-x-circle me-2"></i>
+              Fermer
+            </button>
+          </div>
+        </Modal.Body>
+      </Modal>
+
     </>
   );
 };

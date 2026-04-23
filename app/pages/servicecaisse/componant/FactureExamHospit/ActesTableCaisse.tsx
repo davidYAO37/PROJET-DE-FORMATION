@@ -965,23 +965,23 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
     // Fonctions toggle pour les checkboxes
     const togglePaye = useCallback((lineId: string) => {
         setLignes(prev => {
-            const ligne = prev.find(l => l.IDLignePrestation === lineId);
-            if (!ligne) return prev;
-            
-            const newValue = ligne.AFacturer === 'Payé' ? 'Non Payé' : 'Payé';
-            
-            // Utiliser la même logique que onFieldChangeAndRecalc
-            onFieldChangeAndRecalc(lineId, 'AFacturer', newValue);
-            return prev;
+            // Trouver la ligne spécifique et modifier son état sans affecter les autres
+            return prev.map(ligne => {
+                if (ligne.IDLignePrestation === lineId) {
+                    const newValue = ligne.AFacturer === 'Payé' ? 'Non Payé' : 'Payé';
+                    return { ...ligne, AFacturer: newValue };
+                }
+                return ligne;
+            });
         });
-    }, [onFieldChangeAndRecalc]);
+    }, []);
 
     const toggleExclusion = useCallback((lineId: string) => {
         setLignes(prev => {
             const ligne = prev.find(l => l.IDLignePrestation === lineId);
             if (!ligne) return prev;
             
-            const newValue = ligne.Exclusion === 'Accepter' ? 'Refuser' : 'Accepter';
+                    const newValue = ligne.Exclusion === 'Accepter' ? 'Refuser' : 'Accepter';
             
             // Utiliser la même logique que onFieldChangeAndRecalc
             onFieldChangeAndRecalc(lineId, 'Exclusion', newValue);
@@ -1039,12 +1039,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                                             disabled={!isEditable}
                                             title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
                                         />
-                                        {l.AFacturer === 'Payé' && l.datePaiementCaisse && (
-                                            <div style={{ fontSize: '10px', color: '#28a745', marginTop: '4px' }}>
-                                                {l.datePaiementCaisse} {l.heurePaiement}
-                                                {l.payePar && ` par ${l.payePar}`}
-                                            </div>
-                                        )}
+                                       
                                     </td>
                                     {/* Date */}
                                     <td style={{ padding: '4px' }}>

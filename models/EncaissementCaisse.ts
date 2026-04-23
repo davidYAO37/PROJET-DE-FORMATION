@@ -33,7 +33,7 @@ export interface IEncaissementCaisse extends Document {
 
 const EncaissementCaisseSchema: Schema = new Schema({
     DatePrest: { type: Date },
-    Patient: { type: String, maxlength: 60 },
+    Patient: { type: String, maxlength: 150 },
     Assurance: { type: String },
     Designation: { type: String, maxlength: 100 },
     Totalacte: { type: Number },

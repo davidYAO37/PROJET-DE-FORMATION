@@ -9,7 +9,10 @@ interface PrintFactureCosultatAssuranceProps {
 
 const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureCosultatAssuranceProps>(({ consultation }, ref) => {
     const { entreprise } = useEntreprise();
-
+    
+    // Récupérer l'utilisateur connecté
+    const Utilisateur = localStorage.getItem("nom_utilisateur");
+    
     const handlePrint = () => {
         const printContent = document.getElementById('print-content');
         if (!printContent) return;
@@ -409,8 +412,7 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                         color: '#666666',
                         fontStyle: 'italic'
                     }}>
-                        Imprimé par: {typeof window !== 'undefined' ? localStorage.getItem('nom_utilisateur') || "Utilisateur inconnu" : "Chargement..."} 
-                        le {new Date().toLocaleString('fr-FR')}
+                       Imprimé le: {new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })} à {new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} par {Utilisateur}
                     </div>
                 </div>
             </div>

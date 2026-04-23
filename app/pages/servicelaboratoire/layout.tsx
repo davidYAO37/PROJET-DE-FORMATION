@@ -3,7 +3,7 @@ import Sidebaraccueil from '@/components/Sidebaracceuil';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const metadata = {
-  title: 'Tableau de Bord Médical',
+  title: 'Service Laboratoire',
   description: 'Interface de gestion médicale',
 };
 

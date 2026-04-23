@@ -4,7 +4,7 @@ import SidebarMedecin from '@/components/SidebarMedecin';
 import Verifconnecion from '@/components/verifconnecion';
 
 export const metadata = {
-  title: 'Tableau de bord Médecin',
+  title: 'Service Médecin',
 };
 
 export default function Layout({ children }: { children: React.ReactNode }) {

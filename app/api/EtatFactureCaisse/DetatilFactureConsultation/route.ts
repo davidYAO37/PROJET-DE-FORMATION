@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Consultation } from "@/models/consultation";
-import { Patient } from "@/models/patient";
 import { db } from "@/db/mongoConnect";
 
 export async function GET(req: NextRequest) {
-    await db();
-    
     try {
+        await db();
+        
         const { searchParams } = new URL(req.url);
         const ParamCode_consultation = searchParams.get("ParamCode_consultation");
 
@@ -14,10 +12,14 @@ export async function GET(req: NextRequest) {
             return NextResponse.json({ error: "Le paramètre ParamCode_consultation est requis" }, { status: 400 });
         }
 
+        // Importer les modèles dynamiquement après la connexion
+        const { Consultation } = await import("@/models/consultation");
+        const { Patient } = await import("@/models/patient");
+
         // Recherche de la consultation avec les critères spécifiés
         const consultation = await Consultation.findOne({
             CodePrestation: ParamCode_consultation,
-        }).populate('IdPatient', 'Nom Contact sexe Age_partient Souscripteur SOCIETE_PATIENT');
+        }).populate('IdPatient', 'Nom Prenoms Contact sexe Age_partient Souscripteur SOCIETE_PATIENT');
 
         if (!consultation) {
             return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
@@ -59,15 +61,19 @@ export async function GET(req: NextRequest) {
 
         return NextResponse.json(factureData);
     } catch (error: any) {
-        console.error("Erreur dans factureCosultatAssurance:", error);
+        console.error("Erreur dans DetatilFactureConsultation:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
 
 export async function POST(req: NextRequest) {
-    await db();
-    
     try {
+        await db();
+        
+        // Importer les modèles dynamiquement après la connexion
+        const { Consultation } = await import("@/models/consultation");
+        const { Patient } = await import("@/models/patient");
+        
         const data = await req.json();
         const { ParamCode_consultation } = data;
 
@@ -78,7 +84,7 @@ export async function POST(req: NextRequest) {
         // Recherche de la consultation avec les critères spécifiés
         const consultation = await Consultation.findOne({
             CodePrestation: ParamCode_consultation,
-        }).populate('IdPatient', 'Nom Contact sexe Age_partient Souscripteur SOCIETE_PATIENT');
+        }).populate('IdPatient', 'Nom Prenoms Contact sexe Age_partient Souscripteur SOCIETE_PATIENT');
 
         if (!consultation) {
             return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
@@ -120,7 +126,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(factureData);
     } catch (error: any) {
-        console.error("Erreur dans factureCosultatAssurance POST:", error);
+        console.error("Erreur dans DetatilFactureConsultation POST:", error);
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
