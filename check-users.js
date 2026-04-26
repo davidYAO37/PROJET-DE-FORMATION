@@ -20,11 +20,8 @@ async function checkAndCreateSuperAdmin() {
     
     if (userCount === 0) {
       console.log("🚀 Collection vide, création du super admin...");
-      console.log("⚠️  ATTENTION: Ce processus nécessite un UID Firebase Auth valide!");
-      console.log("📝 Veuillez d'abord créer le compte Firebase Auth pour ykdavid11@gmail.com");
-      console.log("🔗 Puis utilisez l'UID obtenu pour compléter la création dans MongoDB");
       
-      // Créer le super admin avec un UID temporaire (à remplacer par le vrai UID Firebase)
+      // Créer le super admin avec un UID temporaire
       const superAdmin = {
         nom: "Yao",
         prenom: "Kouassi Davis",
@@ -35,14 +32,7 @@ async function checkAndCreateSuperAdmin() {
       };
       
       const result = await usersCollection.insertOne(superAdmin);
-      console.log("✅ Super admin créé avec succès:", result.insertedId);
-      console.log("   - Nom: Yao");
-      console.log("   - Prénom: Kouassi Davis");
-      console.log("   - Email: ykdavid11@gmail.com");
-      console.log("   - Type: adminsuper");
-      console.log("   - UID: " + superAdmin.uid + " (À remplacer par le vrai UID Firebase!)");
-    } else {
-      console.log("ℹ️ La collection contient déjà des utilisateurs");
+     
       
       // Afficher les utilisateurs existants
       const users = await usersCollection.find({}, { 

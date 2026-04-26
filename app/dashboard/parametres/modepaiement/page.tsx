@@ -15,7 +15,7 @@ export default function PageTypeActe() {
     const fetchData = async () => {
         const res = await fetch("/api/modepaiement");
         const result = await res.json();
-        setData(result);
+        setData(result.data || []);
     };
 
     useEffect(() => {

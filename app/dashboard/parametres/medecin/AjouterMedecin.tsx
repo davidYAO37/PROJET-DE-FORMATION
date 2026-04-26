@@ -20,6 +20,7 @@ export default function AjouterMedecin({ show, onHide, onAdd }: AjouterMedecinPr
   const [tauxHonoraire, setTauxHonoraire] = useState('');
   const [tauxPrescription, setTauxPrescription] = useState('');
   const [tauxExecution, setTauxExecution] = useState('');
+  const [emailMed, setEmailMed] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,6 +30,7 @@ export default function AjouterMedecin({ show, onHide, onAdd }: AjouterMedecinPr
         nom, 
         prenoms, 
         specialite, 
+        EmailMed: emailMed,
         TauxHonoraire: Number(tauxHonoraire), 
         TauxPrescription: Number(tauxPrescription), 
         TauxExecution: Number(tauxExecution) 
@@ -50,6 +52,7 @@ export default function AjouterMedecin({ show, onHide, onAdd }: AjouterMedecinPr
         setTauxHonoraire('');
         setTauxPrescription('');
         setTauxExecution('');
+        setEmailMed('');
       }
     } catch (error) {
       console.error('Erreur ajout médecin', error);
@@ -76,6 +79,10 @@ export default function AjouterMedecin({ show, onHide, onAdd }: AjouterMedecinPr
           <Form.Group className="mb-3">
             <Form.Label>Spécialité</Form.Label>
             <Form.Control value={specialite} onChange={(e) => setSpecialite(e.target.value)} required />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Email Médecin</Form.Label>
+            <Form.Control value={emailMed} onChange={(e) => setEmailMed(e.target.value)} required />
           </Form.Group>
           <Row>
             <Col className="col-4">

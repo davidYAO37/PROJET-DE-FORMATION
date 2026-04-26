@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
@@ -17,7 +17,7 @@ interface RendezVous {
   statut?: 'confirmé' | 'en attente' | 'annulé' | string;
 }
 
-export default function Dashboard() {
+export default function TpatientPage() {
   const router = useRouter();
   const [stats, setStats] = useState({ totalConsultations: 0, waitingRoomCount: 0 });
   const [loading, setLoading] = useState(true);

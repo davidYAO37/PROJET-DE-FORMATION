@@ -116,6 +116,7 @@ export default function Medecins() {
                   <th>Nom</th>
                   <th>Prénoms</th>
                   <th>Spécialité</th>
+                  <th>Email Médecin</th>
                   <th>Taux Honoraire</th>
                   <th>Taux Prescription</th>
                   <th>Taux Execution</th>
@@ -136,6 +137,7 @@ export default function Medecins() {
                       <td>{medecin.nom}</td>
                       <td>{medecin.prenoms}</td>
                       <td>{medecin.specialite}</td>
+                      <td>{medecin.EmailMed || 'N/A'}</td>
                       <td>{medecin.TauxHonoraire || 0}</td>
                       <td>{medecin.TauxPrescription || 0}</td>
                       <td>{medecin.TauxExecution || 0}</td>

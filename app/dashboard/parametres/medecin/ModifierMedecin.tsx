@@ -21,6 +21,7 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
   const [tauxPrescription, setTauxPrescription] = useState('');
   const [tauxExecution, setTauxExecution] = useState('');
   const [loading, setLoading] = useState(false);
+  const [emailMed, setEmailMed] = useState('');
 
   useEffect(() => {
     if (medecin) {
@@ -30,6 +31,7 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
       setTauxHonoraire(String(medecin?.TauxHonoraire || ''));
       setTauxPrescription(String(medecin?.TauxPrescription || ''));
       setTauxExecution(String(medecin?.TauxExecution || ''));
+      setEmailMed(medecin?.EmailMed || '');
     }
   }, [medecin]);
 
@@ -46,6 +48,7 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
           nom, 
           prenoms, 
           specialite, 
+          EmailMed: emailMed,
           TauxHonoraire: Number(tauxHonoraire), 
           TauxPrescription: Number(tauxPrescription), 
           TauxExecution: Number(tauxExecution) 
@@ -82,6 +85,10 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
           <Form.Group className="mb-3">
             <Form.Label>Spécialité</Form.Label>
             <Form.Control value={specialite} onChange={(e) => setSpecialite(e.target.value)} required />
+          </Form.Group>
+          <Form.Group className="mb-3">
+            <Form.Label>Email Médecin</Form.Label>
+            <Form.Control value={emailMed} onChange={(e) => setEmailMed(e.target.value)} required />
           </Form.Group>
           <Row>
             <Col className="col-4">

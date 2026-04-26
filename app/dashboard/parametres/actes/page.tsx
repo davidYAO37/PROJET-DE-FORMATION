@@ -3,9 +3,9 @@ import { useEffect, useState } from "react";
 import { Button, Spinner, Alert } from "react-bootstrap";
 import axios from "axios";
 import ListeActe from "./ListeActe";
-import AjouterActe from "./AjouterActe";
 import ModifierActe from "./ModifierActe";
 import { ActeClinique } from "@/types/acteclinique";
+import AjouterActe from "./AjouterActe";
 
 export default function ActesPage() {
     const [actes, setActes] = useState<ActeClinique[]>([]);

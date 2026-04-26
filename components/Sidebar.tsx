@@ -7,9 +7,9 @@ import Link from "next/link";
 import ListePlanningModal from "./ListePlanningModal";
 import DisponibiliteMedecinModal from "./DisponibiliteMedecinModal";
 import { useAuthUser } from "@/hooks/useAuthUser";
-import ListeAnnulationFactureModal from "@/app/pages/servicecaisse/componant/ListeAnnulationFactureModal";
-import ListeAnnulationEncaissementModal from "@/app/pages/servicecaisse/componant/ListeAnnulationEncaissementModal";
 import ModifierMotDePasseModal from "@/components/ModifierMotDePasseModal";
+// import ListeAnnulationFactureModal from "@/pages/servicecaisse/componant/ListeAnnulationFactureModal";
+// import ListeAnnulationEncaissementModal from "@/pages/servicecaisse/componant/ListeAnnulationEncaissementModal";
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
@@ -352,35 +352,44 @@ export default function Sidebar() {
                           className="sidebar-link-medical d-flex align-items-center"
                         >
                           <i className="bi bi-clipboard2-medical me-2 text-primary"></i>{" "}
-                          Actes Cliniques
+                          Gestion Actes Cliniques
+                        </Link>
+                      </li>
+                       <li>
+                        <Link
+                          href="/dashboard/parametres/affection"
+                          className="sidebar-link-medical d-flex align-items-center"
+                        >
+                          <i className="bi bi-clipboard2-medical me-2 text-primary"></i>{" "}
+                          Gestion Affection
                         </Link>
                       </li>
                       <li>
                         {!loading && user ? (
                           user.type === "adminsuper" ? (
                             <Link
-                              href="/signupdev"
+                              href="/dashboard/signupdev"
                               className="sidebar-link-medical d-flex align-items-center"
                             >
                               <i className="bi bi-person-plus-fill me-2 text-dark"></i>{" "}
-                              Utilisateurs
+                              Gestion Utilisateurs
                             </Link>
                           ) : (
                             <Link
-                              href="/signup"
+                              href="/dashboard/signup"
                               className="sidebar-link-medical d-flex align-items-center"
                             >
                               <i className="bi bi-person-plus-fill me-2 text-dark"></i>{" "}
-                              Utilisateurs
+                              Gestion Utilisateurs
                             </Link>
                           )
                         ) : (
                           <Link
-                            href="/signup"
+                            href="/dashboard/signup"
                             className="sidebar-link-medical d-flex align-items-center"
                           >
                             <i className="bi bi-person-plus-fill me-2 text-dark"></i>{" "}
-                            Utilisateurs
+                            Gestion Utilisateurs
                           </Link>
                         )}
                       </li>
@@ -390,7 +399,7 @@ export default function Sidebar() {
                           className="sidebar-link-medical d-flex align-items-center"
                         >
                           <i className="bi bi-person-badge-fill me-2 text-success"></i>{" "}
-                          Medecins
+                          Gestion Medecins
                         </Link>
                       </li>
                       <li>
@@ -399,7 +408,7 @@ export default function Sidebar() {
                           className="sidebar-link-medical d-flex align-items-center"
                         >
                           <i className="bi bi-shield-check me-2 text-primary"></i>{" "}
-                          Assurances
+                          Gestion Assurances
                         </Link>
                       </li>
 
@@ -409,7 +418,7 @@ export default function Sidebar() {
                           className="sidebar-link-medical d-flex align-items-center"
                         >
                           <i className="bi bi-tags-fill me-2 text-primary"></i>{" "}
-                          Type d'actes
+                          Gestion Type d'actes
                         </Link>
                       </li>
                       <li>
@@ -418,7 +427,7 @@ export default function Sidebar() {
                           className="sidebar-link-medical d-flex align-items-center"
                         >
                           <i className="bi bi-credit-card-fill me-2 text-primary"></i>{" "}
-                          Mode Paiement
+                          Gestion Mode Paiement
                         </Link>
                       </li>
                       <li>
@@ -545,16 +554,16 @@ export default function Sidebar() {
       </aside>
 
       {/* Modal pour la liste des annulations de factures */}
-      <ListeAnnulationFactureModal
+      {/* <ListeAnnulationFactureModal
         show={showListeAnnulationModal}
         onHide={() => setShowListeAnnulationModal(false)}
-      />
+      /> */}
 
       {/* Modal pour la liste des annulations d'encaissements */}
-      <ListeAnnulationEncaissementModal
+      {/* <ListeAnnulationEncaissementModal
         show={showListeEncaissementAnnulationModal}
         onHide={() => setShowListeEncaissementAnnulationModal(false)}
-      />
+      /> */}
 
       {/* Modal pour modifier le mot de passe */}
       <ModifierMotDePasseModal

@@ -1,6 +1,8 @@
+"use client";
+
+import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
 import React, { useState, useEffect } from 'react';
 import { Modal, Button, Form, Table, Alert, Spinner } from 'react-bootstrap';
-import { EncaissementCaisse, IEncaissementCaisse } from '@/models/EncaissementCaisse';
 
 interface ListeAnnulationEncaissementModalProps {
     show: boolean;

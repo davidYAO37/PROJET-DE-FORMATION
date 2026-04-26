@@ -5,17 +5,17 @@ import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
+import DisponibilitePrescriptuerModal from '@/app/pages/servicemedecin/tmedecin/composants/DisponibilitePrescripteurModal';
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicemedecin/tmedecin', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
-  { label: 'Liste des patients', path: '/pages/servicemedecin/patient', icon: <i className="bi bi-people-fill me-2 text-info"></i> },
-  { label: 'Patient en attente', path: '/transfert-patient', icon: <i className="bi bi-clock-fill me-2 text-warning"></i> },
-  { label: 'Mes Rendez-Vous', path: '/salle-attente', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i> },
+  { label: 'Patient en attente', path: '/pages/servicemedecin/ListePatientAttentes', icon: <i className="bi bi-clock-fill me-2 text-warning"></i> },
+  { label: 'Mes Rendez-Vous', path: '#', isModal: true, modalType: 'rendezvous', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i> },
   { label: 'Saisir fiche prescription', path: '/constantes', icon: <i className="bi bi-file-earmark-text-fill me-2 text-primary"></i> },
-  { label: 'Planning Médecin', path: '/planning-medecin', icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
-  { label: 'Mon planning', path: '/disponibilite-medecin', icon: <i className="bi bi-clipboard-check-fill me-2 text-success"></i> },
-  { label: 'Mes comptes rendus', path: '/rendez-vous', icon: <i className="bi bi-file-earmark-text-fill me-2 text-secondary"></i> },
-  { label: 'Statistiques', path: '/point-saisie', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
+  { label: 'Planning Médecin', path: '/planningMedecin', icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
+  { label: 'Mon planning', path: '/disponibiliteMedecin', icon: <i className="bi bi-clipboard-check-fill me-2 text-success"></i> },
+  { label: 'Mes comptes rendus', path: '/rendezVous', icon: <i className="bi bi-file-earmark-text-fill me-2 text-secondary"></i> },
+  { label: 'Statistiques', path: '/pointSaisie', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
@@ -24,8 +24,7 @@ export default function SidebarMedecin() {
   const [open, setOpen] = useState(false);
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [user, setUser] = useState('');
-
-  // Charger l'utilisateur connecté au montage
+  const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
   useEffect(() => {
     const storedUser = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || '';
     setUser(storedUser);
@@ -38,6 +37,22 @@ export default function SidebarMedecin() {
   const handleMotDePasseClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowModifierMotDePasseModal(true);
+    setOpen(false);
+  };
+
+  // ouvre le modal de disponibilité du médecin
+  const handleDisponibiliteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowDisponibiliteModal(true);
+    setOpen(false);
+  };
+
+  // Gestionnaire pour les clics sur les modaux
+  const handleModalClick = (e: React.MouseEvent, modalType: string) => {
+    e.preventDefault();
+    if (modalType === 'rendezvous') {
+      setShowDisponibiliteModal(true);
+    }
     setOpen(false);
   };
 
@@ -76,7 +91,7 @@ export default function SidebarMedecin() {
                 <a
                   href="#"
                   className="sidebar-link-medical d-flex align-items-center"
-                  onClick={handleMotDePasseClick}
+                  onClick={(e) => item.modalType === 'rendezvous' ? handleModalClick(e, 'rendezvous') : handleMotDePasseClick(e)}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -100,6 +115,12 @@ export default function SidebarMedecin() {
       <ModifierMotDePasseModal
         show={showModifierMotDePasseModal}
         onHide={() => setShowModifierMotDePasseModal(false)}
+      />
+
+      {/* Modal de disponibilité médecin prescripteur */}
+      <DisponibilitePrescriptuerModal
+        show={showDisponibiliteModal}
+        onHide={() => setShowDisponibiliteModal(false)}
       />
     </>
   );

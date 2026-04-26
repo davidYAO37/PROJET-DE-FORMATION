@@ -5,10 +5,12 @@ export interface IMedecin extends Document {
   nom: string;
   prenoms: string;
   specialite?: string;
+  EmailMed: string;
   TauxHonoraire?: number;
   TauxPrescription?: number;
   TauxExecution?: number;
   entrepriseId?: string;
+  userId?: mongoose.Types.ObjectId;
 }
 
 const MedecinSchema = new Schema<IMedecin>(
@@ -16,10 +18,12 @@ const MedecinSchema = new Schema<IMedecin>(
     nom: { type: String, required: true },
     prenoms: { type: String, required: true },
     specialite: { type: String },
+    EmailMed: {type: String},
     TauxHonoraire: { type: Number },
     TauxPrescription: { type: Number },
     TauxExecution: { type: Number },
     entrepriseId: { type: String },
+    userId: { type: Schema.Types.ObjectId, ref: 'User' },
   },
   { timestamps: true }
 );

@@ -1,7 +1,7 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
-import TopBarMedecin from './tmedecin/composants/TopBarMedecin';
 import SidebarMedecin from '@/components/SidebarMedecin';
 import Verifconnecion from '@/components/verifconnecion';
+import Page from './tmedecin/page';
 
 export const metadata = {
   title: 'Service Médecin',
@@ -15,7 +15,6 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         <SidebarMedecin/>
       </aside>
       <div className="flex-grow-1 d-flex flex-column">
-        <TopBarMedecin />
         <main className="p-3 flex-grow-1">
           {children}
         </main>

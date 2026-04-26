@@ -3,6 +3,7 @@ export type Medecin = {
   nom?: string;
   prenoms?: string;
   specialite?: string;
+  EmailMed?: string;
   TauxHonoraire?: number;
   TauxPrescription?: number;
   TauxExecution?: number;

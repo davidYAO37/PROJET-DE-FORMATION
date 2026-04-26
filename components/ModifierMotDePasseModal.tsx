@@ -1,8 +1,8 @@
 'use client';
 import { useState } from 'react';
 import { Modal, Button, Form, Alert, InputGroup } from 'react-bootstrap';
-import { auth } from '@/firebase/configConnect';
-import { updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import axios from 'axios';
+import { verifyPassword, hashPassword } from '@/utils/auth';
 
 interface ModifierMotDePasseModalProps {
     show: boolean;
@@ -124,49 +124,67 @@ export default function ModifierMotDePasseModal({ show, onHide }: ModifierMotDeP
         }
 
         try {
-            const user = auth.currentUser;
+            // Récupérer l'utilisateur connecté depuis localStorage
+            const profilStr = localStorage.getItem('profil');
+            if (!profilStr) {
+                setError('Vous n\'êtes pas connecté. Veuillez vous reconnecter.');
+                setLoading(false);
+                return;
+            }
+
+            const user = JSON.parse(profilStr);
             if (!user || !user.email) {
                 setError('Vous n\'êtes pas connecté. Veuillez vous reconnecter.');
                 setLoading(false);
                 return;
             }
 
-            // Réauthentifier l'utilisateur avec l'ancien mot de passe
+            // Vérifier l'ancien mot de passe via API
             try {
-                const credential = EmailAuthProvider.credential(user.email, ancienMotDePasse);
-                await reauthenticateWithCredential(user, credential);
-            } catch (authError: any) {
-                // L'ancien mot de passe est incorrect
+                const verifyResponse = await axios.post('/api/login', {
+                    email: user.email,
+                    password: ancienMotDePasse,
+                });
+
+                if (verifyResponse.status !== 200) {
+                    setError('L\'ancien mot de passe saisi est incorrect. Veuillez vérifier et réessayer.');
+                    setLoading(false);
+                    return;
+                }
+            } catch (verifyError: any) {
                 setError('L\'ancien mot de passe saisi est incorrect. Veuillez vérifier et réessayer.');
                 setLoading(false);
                 return;
             }
 
-            // Mettre à jour le mot de passe
+            // Mettre à jour le mot de passe via API
             try {
-                await updatePassword(user, nouveauMotDePasse);
-            } catch (updateError: any) {
-                if (updateError.code === 'auth/weak-password') {
-                    setError('Le nouveau mot de passe ne respecte pas les critères de sécurité requis.');
-                } else if (updateError.code === 'auth/requires-recent-login') {
-                    setError('Votre session a expiré. Veuillez vous reconnecter et réessayer.');
+                const updateResponse = await axios.post('/api/update-password', {
+                    email: user.email,
+                    newPassword: nouveauMotDePasse,
+                });
+
+                if (updateResponse.status === 200) {
+                    setSuccess('Mot de passe modifié avec succès.');
+                    // Réinitialiser les champs
+                    setAncienMotDePasse('');
+                    setNouveauMotDePasse('');
+                    setConfirmerMotDePasse('');
+                    // Fermer le modal après un délai
+                    setTimeout(() => {
+                        onHide();
+                        setSuccess('');
+                    }, 2000);
                 } else {
                     setError('Impossible de mettre à jour le mot de passe. Veuillez réessayer.');
                 }
-                setLoading(false);
-                return;
+            } catch (updateError: any) {
+                if (updateError.response?.status === 400) {
+                    setError(updateError.response.data.message || 'Le nouveau mot de passe ne respecte pas les critères de sécurité requis.');
+                } else {
+                    setError('Impossible de mettre à jour le mot de passe. Veuillez réessayer.');
+                }
             }
-
-            setSuccess('Mot de passe modifié avec succès.');
-            // Réinitialiser les champs
-            setAncienMotDePasse('');
-            setNouveauMotDePasse('');
-            setConfirmerMotDePasse('');
-            // Fermer le modal après un délai
-            setTimeout(() => {
-                onHide();
-                setSuccess('');
-            }, 2000);
         } catch (error: any) {
             console.error('Erreur lors de la modification du mot de passe:', error);
             setError('Une erreur inattendue s\'est produite. Veuillez réessayer.');

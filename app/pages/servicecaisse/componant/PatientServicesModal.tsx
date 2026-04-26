@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useEffect, useState } from 'react';
 import { Modal, Tabs, Tab, Button, Spinner, Alert, Badge, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { FaUser, FaStethoscope, FaPills, FaHospital, FaEye, FaPencilAlt, FaFileContract, FaReceipt } from 'react-icons/fa';

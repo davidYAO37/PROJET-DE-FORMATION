@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { Modal, Table, Button, Spinner } from 'react-bootstrap';
 import { FaPrint } from 'react-icons/fa';

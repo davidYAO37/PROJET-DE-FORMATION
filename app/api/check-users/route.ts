@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { UserCollection } from "@/models/users.model";
+import { hashPassword, generateLocalUID } from "@/utils/auth";
 
 export const GET = async () => {
   try {
@@ -8,18 +9,25 @@ export const GET = async () => {
     
     const userCount = await UserCollection.countDocuments();
     const users = await UserCollection.find({}, { 
-      nom: 1, prenom: 1, email: 1, type: 1, uid: 1 
+      _id: 1, nom: 1, prenom: 1, email: 1, type: 1, uid: 1, entrepriseId: 1, 
+      isLocked: 1, failedAttempts: 1, remainingAttempts: 1, lockedUntil: 1
     }).lean();
     
     return NextResponse.json({
       message: "État de la collection users",
       userCount,
       users: users.map(u => ({
+        _id: (u._id as any)?.toString() || "",
         nom: u.nom,
         prenom: u.prenom,
         email: u.email,
         type: u.type,
-        uid: u.uid
+        uid: u.uid,
+        entrepriseId: u.entrepriseId || "",
+        isLocked: u.isLocked || false,
+        failedAttempts: u.failedAttempts || 0,
+        remainingAttempts: u.remainingAttempts || 4,
+        lockedUntil: u.lockedUntil || null
       }))
     });
   } catch (error) {
@@ -35,31 +43,42 @@ export const POST = async () => {
     const userCount = await UserCollection.countDocuments();
     
     if (userCount === 0) {
-      // Créer le super admin avec un UID temporaire
-      // IMPORTANT: Ce UID doit être remplacé par le vrai UID Firebase Auth
-      const superAdmin = {
+      console.log("🚀 Création automatique du super admin en local...");
+      
+      // Hasher le mot de passe et générer un UID local
+      const hashedPassword = await hashPassword("Yao2026!");
+      const localUID = generateLocalUID();
+      
+      // Créer le super admin avec authentification locale
+      const superAdmin = new UserCollection({
         nom: "Yao",
-        prenom: "Kouassi Davis",
+        prenom: "Kouassi David",
         email: "ykdavid11@gmail.com",
         type: "adminsuper",
-        uid: "TEMP_UID_REPLACE_WITH_FIREBASE_UID", // À remplacer par le vrai UID
-      };
+        uid: localUID,
+        password: hashedPassword
+      });
       
-      const newUser = new UserCollection(superAdmin);
-      await newUser.save();
+      await superAdmin.save();
+      console.log("✅ Super admin créé en local avec succès!");
       
       return NextResponse.json({
-        message: "Super admin créé avec succès (UID temporaire)",
-        warning: "IMPORTANT: Utilisez le script scripts/createSuperAdmin.ts pour créer le compte Firebase Auth complet",
+        message: "Super admin créé automatiquement avec succès (authentification locale)",
         userCount: 1,
         createdUser: {
-          nom: superAdmin.nom,
-          prenom: superAdmin.prenom,
-          email: superAdmin.email,
-          type: superAdmin.type,
-          uid: superAdmin.uid
+          nom: "Yao",
+          prenom: "Kouassi David",
+          email: "ykdavid11@gmail.com",
+          type: "adminsuper",
+          uid: localUID
+        },
+        authInfo: {
+          message: "Compte créé avec authentification locale sécurisée",
+          email: "ykdavid11@gmail.com",
+          password: "Yao2026! (à changer immédiatement)"
         }
       });
+      
     } else {
       return NextResponse.json({
         message: "La collection contient déjà des utilisateurs",
@@ -67,7 +86,7 @@ export const POST = async () => {
       });
     }
   } catch (error) {
-    console.error("❌ Erreur:", error);
+    console.error("❌ Erreur lors de la création du super admin:", error);
     return NextResponse.json({ message: "Erreur lors de la création du super admin" }, { status: 500 });
   }
 };
