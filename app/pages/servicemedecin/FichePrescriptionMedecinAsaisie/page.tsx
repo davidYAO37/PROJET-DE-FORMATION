@@ -3,17 +3,20 @@ import { useState, useEffect } from 'react';
 import { Container, Card, Row, Col, Form, Button, Badge, Alert, Table, Modal, Spinner } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import PharmacieModalPharmAccueilMedecin from '../PharmacieMedecin/PharmacieModalPharmAccueilMedecin';
-import HospitalisationWrapperMedecin from '../examenhospitalisationMedecin/HospitalisationWrapperMedecin';
-
+import HospitalisationPageMedecin from '../examenhospitalisationMedecin/page';
 
 interface Patient {
   _id: string;
-  nom: string;
-  prenoms: string;
-  dateNaissance: string;
+  Nom: string;
+  Prenoms: string;
+  Date_naisse: Date;
   sexe: string;
-  telephone?: string;
-  email?: string;
+  Contact?: string;
+  Code_dossier: string;
+  Age_partient?: number;
+  Situationgeo?: string;
+  Assurance?: string;
+  Matricule?: string;
 }
 
 interface Antecedent {
@@ -49,7 +52,7 @@ interface Prescription {
   instructions?: string;
 }
 
-export default function FichePrescriptionMedecin() {
+export default function FichePrescriptionMedecinAsaisie() {
   const router = useRouter();
   
   // États pour les données
@@ -66,6 +69,16 @@ export default function FichePrescriptionMedecin() {
   const [prescriptionType, setPrescriptionType] = useState<'medicament' | 'examen'>('medicament');
   const [antecedentType, setAntecedentType] = useState<'medical' | 'chirurgical' | 'familial' | 'autre' | 'allergie'>('medical');
   
+  // États pour les nouveaux modaux
+  const [showPharmacieModal, setShowPharmacieModal] = useState(false);
+  const [showExamenModal, setShowExamenModal] = useState(false);
+  
+  // États pour les nouveaux champs
+  const [loadingExamenParaclinique, setLoadingExamenParaclinique] = useState(false);
+  const [loadingTraitementClinique, setLoadingTraitementClinique] = useState(false);
+  const [examensParacliniques, setExamensParacliniques] = useState<string[]>([]);
+  const [traitementsCliniques, setTraitementsCliniques] = useState<string[]>([]);
+  
   // Formulaires
   const [constantesForm, setConstantesForm] = useState({
     temperature: '',
@@ -79,6 +92,7 @@ export default function FichePrescriptionMedecin() {
     MotifConsultation: '',
     examenClinique: '',
     codeAffection: '',
+    codePrestation: '',
     ExamenParaclinique: '',
     TraitementClinique: '',
     ConclusionClinique: ''
@@ -104,22 +118,106 @@ export default function FichePrescriptionMedecin() {
     instructions: ''
   });
   
-  // États pour les nouveaux modaux
-  const [showPharmacieModal, setShowPharmacieModal] = useState(false);
-  const [showExamenModal, setShowExamenModal] = useState(false);
+  // États pour le Code Prestation
+  const [consultationLiee, setConsultationLiee] = useState<any>(null);
+  const [loadingConsultationLiee, setLoadingConsultationLiee] = useState(false);
+  const [errorConsultationLiee, setErrorConsultationLiee] = useState('');
   
-  // États pour les nouveaux champs
-  const [loadingExamenParaclinique, setLoadingExamenParaclinique] = useState(false);
-  const [loadingTraitementClinique, setLoadingTraitementClinique] = useState(false);
-  const [examensParacliniques, setExamensParacliniques] = useState<string[]>([]);
-  const [traitementsCliniques, setTraitementsCliniques] = useState<string[]>([]);
+  // Fonction pour rechercher la consultation liée au Code Prestation
+  const rechercherConsultationLiee = async (codePrestation: string) => {
+    if (!codePrestation.trim()) {
+      setConsultationLiee(null);
+      setErrorConsultationLiee('');
+      return;
+    }
+    
+    try {
+      setLoadingConsultationLiee(true);
+      setErrorConsultationLiee('');
+      
+      const response = await fetch(`/api/consultation/code?CodePrestation=${encodeURIComponent(codePrestation)}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        setConsultationLiee(data);
+        
+        // Initialiser la fiche avec les informations de la consultation trouvée
+        if (data) {
+          // Mettre à jour le formulaire de consultation
+          setConsultationForm({
+            MotifConsultation: data.MotifConsultation || '',
+            examenClinique: data.ExamenClinique || '',
+            codeAffection: data.CodeAffection || '',
+            codePrestation: data.CodePrestation || codePrestation,
+            ExamenParaclinique: data.ExamenParaclinique || '',
+            TraitementClinique: data.TraitementClinique || '',
+            ConclusionClinique: data.ConclusionClinique || ''
+          });
+          
+          // Mettre à jour les constantes
+          setConstantesForm({
+            temperature: data.Temperature || '',
+            poids: data.Poids || '',
+            tension: data.Tension || '',
+            glycemie: data.Glycemie || '',
+            taille: data.TailleCons || ''
+          });
+          
+          // Charger les codes CIM-10 si présents
+          if (data.CodeAffection) {
+            const codes = data.CodeAffection.split(',').map((code: string) => code.trim()).filter((code: string) => code);
+            setSelectedCim10Codes(codes);
+          }
+          
+          // Mettre à jour la consultation actuelle
+          setConsultation({
+            ...data,
+            codePrestation: data.CodePrestation || codePrestation
+          });
+          
+          // Mettre à jour le patient si disponible
+          if (data.IdPatient) {
+            setPatient({
+              _id: data.IdPatient._id,
+              Nom: data.IdPatient.Nom,
+              Prenoms: data.IdPatient.Prenoms,
+              Date_naisse: data.IdPatient.Date_naisse || new Date(),
+              sexe: data.IdPatient.sexe || '',
+              Contact: data.IdPatient.Contact || '',
+              Code_dossier: data.IdPatient.Code_dossier || '',
+              Age_partient: data.IdPatient.Age_partient || 0,
+              Situationgeo: data.IdPatient.Situationgeo || '',
+              Assurance: data.IdPatient.Assurance || '',
+              Matricule: data.IdPatient.Matricule || ''
+            });
+          }
+        }
+        
+        setSuccess('Fiche initialisée avec la consultation liée');
+        setTimeout(() => setSuccess(''), 3000);
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Consultation non trouvée');
+      }
+    } catch (err: any) {
+      setErrorConsultationLiee(err.message);
+      setConsultationLiee(null);
+    } finally {
+      setLoadingConsultationLiee(false);
+    }
+  };
   
-  // États pour les messages
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-
-  // Fonction pour récupérer les examens paracliniques (lettre clé = "B")
+  // Fonction pour la recherche manuelle via le bouton
+  const handleRechercheManuelle = () => {
+    if (consultationForm.codePrestation.trim()) {
+      rechercherConsultationLiee(consultationForm.codePrestation);
+    } else {
+      setErrorConsultationLiee('Veuillez entrer un Code Prestation');
+      setTimeout(() => setErrorConsultationLiee(''), 3000);
+    }
+  };
+  
+  // Fonction pour récupérer les examens paracliniques (lettre clé = "B", "Z", "KC", "D")
   const chargerExamensParacliniques = async (codePrestation: string) => {
     if (!codePrestation) {
       setExamensParacliniques([]);
@@ -155,13 +253,13 @@ export default function FichePrescriptionMedecin() {
         setExamensParacliniques([]);
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur lors du chargement des examens paracliniques:', error);
       setExamensParacliniques([]);
     } finally {
       setLoadingExamenParaclinique(false);
     }
   };
-
+  
   // Fonction pour récupérer les traitements cliniques (médicaments de patientprescription)
   const chargerTraitementsCliniques = async (codePrestation: string) => {
     if (!codePrestation) {
@@ -184,6 +282,7 @@ export default function FichePrescriptionMedecin() {
             const details = [];
             if (prescription.posologie) details.push(`Posologie: ${prescription.posologie}`);
             if (prescription.QteP) details.push(`Quantité: ${prescription.QteP}`);
+            if (prescription.prixUnitaire) details.push(`Prix: ${prescription.prixUnitaire}`);
             
             return `${prescription.nomMedicament}${details.length > 0 ? ' - ' + details.join(', ') : ''}`;
           });
@@ -201,24 +300,32 @@ export default function FichePrescriptionMedecin() {
         setTraitementsCliniques([]);
       }
     } catch (error) {
-      console.error('Erreur:', error);
+      console.error('Erreur lors du chargement des traitements cliniques:', error);
       setTraitementsCliniques([]);
     } finally {
       setLoadingTraitementClinique(false);
     }
   };
+  
+  // États pour les messages
+  const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
+  const [loading, setLoading] = useState(false);
 
   // Charger les données de la consultation
   useEffect(() => {
+    // Ne charger que s'il y a un consultationId dans l'URL
+    const consultationId = new URLSearchParams(window.location.search).get('consultationId');
+    
+    if (!consultationId) {
+      // Pas de consultationId, on attend que le médecin saisisse un codePrestation
+      setLoading(false);
+      return;
+    }
+    
     const chargerFicheConsultation = async () => {
       try {
         setLoading(true);
-        const consultationId = new URLSearchParams(window.location.search).get('consultationId');
-        
-        if (!consultationId) {
-          setError('ID de consultation manquant');
-          return;
-        }
         
         const response = await fetch(`/api/fichePrescriptionMedecin?consultationId=${consultationId}`);
         
@@ -260,11 +367,11 @@ export default function FichePrescriptionMedecin() {
                 description: data.antecedents.autreAnte
               });
             }
-            if (data.antecedents.allergies) {
+            if (data.antecedents.AlergiePatient) {
               antecedentsArray.push({
                 _id: 'allergies',
                 type: 'allergie',
-                description: data.antecedents.allergies
+                description: data.antecedents.AlergiePatient
               });
             }
           }
@@ -286,6 +393,7 @@ export default function FichePrescriptionMedecin() {
               MotifConsultation: data.consultation.MotifConsultation || '',
               examenClinique: data.consultation.examenClinique || '',
               codeAffection: data.consultation.codeAffection || '',
+              codePrestation: data.consultation.codePrestation || data.consultation.CodePrestation || '',
               ExamenParaclinique: data.consultation.ExamenParaclinique || '',
               TraitementClinique: data.consultation.TraitementClinique || '',
               ConclusionClinique: data.consultation.ConclusionClinique || ''
@@ -297,17 +405,17 @@ export default function FichePrescriptionMedecin() {
               codePrestation: data.consultation.codePrestation || data.consultation.CodePrestation || ''
             });
             
-            // Charger les examens paracliniques et traitements cliniques
-            const codePrestation = data.consultation.codePrestation || data.consultation.CodePrestation;
-            if (codePrestation) {
-              chargerExamensParacliniques(codePrestation);
-              chargerTraitementsCliniques(codePrestation);
-            }
-            
             // Charger les codes CIM-10 existants
             if (data.consultation.codeAffection) {
               const codes = data.consultation.codeAffection.split(',').map((code: string) => code.trim()).filter((code: string) => code);
               setSelectedCim10Codes(codes);
+            }
+            
+            // Charger les examens paracliniques et traitements cliniques
+            const codePrestationToLoad = data.consultation.codePrestation || data.consultation.CodePrestation;
+            if (codePrestationToLoad) {
+              chargerExamensParacliniques(codePrestationToLoad);
+              chargerTraitementsCliniques(codePrestationToLoad);
             }
           }
         } else {
@@ -543,9 +651,11 @@ export default function FichePrescriptionMedecin() {
   const sauvegarderConstantes = async () => {
     try {
       const consultationId = new URLSearchParams(window.location.search).get('consultationId');
+      const codePrestation = consultationForm.codePrestation;
       
-      if (!consultationId) {
-        setError('ID de consultation manquant');
+      // Pour FichePrescriptionMedecinAsaisie, on utilise le codePrestation
+      if (!codePrestation) {
+        setError('Code Prestation manquant');
         setTimeout(() => setError(''), 3000);
         return;
       }
@@ -564,7 +674,8 @@ export default function FichePrescriptionMedecin() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          consultationId,
+          consultationId: consultationId, // Garder pour compatibilité
+          codePrestation: codePrestation, // Utiliser codePrestation comme identifiant principal
           constantes: {
             temperature: constantesForm.temperature,
             poids: constantesForm.poids,
@@ -591,9 +702,11 @@ export default function FichePrescriptionMedecin() {
   const sauvegarderConsultation = async () => {
     try {
       const consultationId = new URLSearchParams(window.location.search).get('consultationId');
+      const codePrestation = consultationForm.codePrestation;
       
-      if (!consultationId) {
-        setError('ID de consultation manquant');
+      // Pour FichePrescriptionMedecinAsaisie, on utilise le codePrestation
+      if (!codePrestation) {
+        setError('Code Prestation manquant');
         setTimeout(() => setError(''), 3000);
         return;
       }
@@ -604,13 +717,20 @@ export default function FichePrescriptionMedecin() {
         return;
       }
       
+      if (!consultationForm.ConclusionClinique.trim()) {
+        setError('La conclusion clinique est requise');
+        setTimeout(() => setError(''), 3000);
+        return;
+      }
+      
       const response = await fetch('/api/fichePrescriptionMedecin', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          consultationId,
+          consultationId: consultationId, // Garder pour compatibilité
+          codePrestation: codePrestation, // Utiliser codePrestation comme identifiant principal
           MotifConsultation: consultationForm.MotifConsultation,
           examenClinique: consultationForm.examenClinique,
           codeAffection: selectedCim10Codes.join(', '),
@@ -812,17 +932,142 @@ export default function FichePrescriptionMedecin() {
 
   return (
     <Container className="py-4">
-      <div className="mb-4">
-        <Button 
-          variant="outline-primary" 
-          onClick={() => router.back()}
-          className="me-2"
-        >
-          <i className="bi bi-arrow-left me-2"></i>
-          Retour liste attente patients
-        </Button>
-       
-      </div>
+      {/* En-tête professionnel sur une seule ligne */}
+      <Card className="mb-4 shadow-sm border-0">
+        <Card.Body className="p-3">
+          <Row className="align-items-center g-3">
+            {/* Colonne gauche: Code Prestation */}
+            <Col md="4">
+              <div className="d-flex flex-column">
+                <Form.Label className="small text-muted fw-semibold mb-2">
+                  <i className="bi bi-upc-scan me-1"></i>
+                  Code Prestation
+                </Form.Label>
+                <div className="d-flex gap-2">
+                  <Form.Control
+                    type="text"
+                    value={consultationForm.codePrestation}
+                    onChange={(e) => {
+                      const newValue = e.target.value;
+                      setConsultationForm({...consultationForm, codePrestation: newValue});
+                    }}
+                    placeholder="Ex: CONS001"
+                    className={consultationForm.codePrestation.trim() ? 'border-warning' : ''}
+                    style={{ flex: 1 }}
+                  />
+                  <Button 
+                    variant="primary" 
+                    onClick={handleRechercheManuelle}
+                    disabled={loadingConsultationLiee}
+                    title="Rechercher la consultation liée"
+                    className="rounded-pill px-3"
+                  >
+                    {loadingConsultationLiee ? (
+                      <Spinner animation="border" size="sm" />
+                    ) : (
+                      <i className="bi bi-search"></i>
+                    )}
+                  </Button>
+                </div>
+                {errorConsultationLiee && (
+                  <small className="text-danger mt-1 d-block">
+                    <i className="bi bi-exclamation-triangle me-1"></i>
+                    {errorConsultationLiee}
+                  </small>
+                )}
+                {consultationLiee && (
+                  <div className="mt-2 p-2 bg-success bg-opacity-10 border border-success rounded">
+                    <small className="text-success fw-bold">
+                      <i className="bi bi-check-circle-fill me-1"></i>
+                      Consultation liée trouvée
+                    </small>
+                  </div>
+                )}
+              </div>
+            </Col>
+            
+            {/* Colonne centre: Informations patient */}
+            <Col md="6">
+              {(patient || consultationLiee) && (
+                <div className="bg-light rounded-3 p-3 border border-info border-opacity-25">
+                  <div className="d-flex align-items-center">
+                    <div className="rounded-circle bg-info bg-opacity-10 p-2 me-3">
+                      <i className="bi bi-person-fill text-info"></i>
+                    </div>
+                    <div className="flex-grow-1">
+                      <h6 className="mb-1 fw-semibold text-dark">
+                        {(() => {
+                          const nom = patient?.Nom || consultationLiee?.IdPatient?.Nom || consultationLiee?.PatientP || 'Patient';
+                          const prenoms = patient?.Prenoms || consultationLiee?.IdPatient?.Prenoms || '';
+                          return `${nom} ${prenoms}`.trim();
+                        })()}
+                      </h6>
+                      <div className="small text-muted">
+                        <span className="me-3">
+                          <i className="bi bi-calendar3 me-1"></i>
+                          {(() => {
+                            try {
+                              const dateNaiss = patient?.Date_naisse || consultationLiee?.IdPatient?.Date_naisse;
+                              if (dateNaiss) {
+                                return `${calculerAge(dateNaiss)} ans`;
+                              }
+                              return 'Âge N/C';
+                            } catch (error) {
+                              console.error('Erreur calcul âge:', error);
+                              return 'Âge err.';
+                            }
+                          })()}
+                        </span>
+                        <span className="me-3">
+                          <i className="bi bi-gender-ambiguous me-1"></i>
+                          {(() => {
+                            const sexe = patient?.sexe || consultationLiee?.IdPatient?.sexe;
+                            if (sexe) {
+                              return sexe.toUpperCase() === 'M' ? 'Homme' : sexe.toUpperCase() === 'F' ? 'Femme' : sexe;
+                            }
+                            return 'N/C';
+                          })()}
+                        </span>
+                        <span>
+                          <i className="bi bi-telephone me-1"></i>
+                          {(() => {
+                            const tel = patient?.Contact || consultationLiee?.IdPatient?.Contact || consultationLiee?.IdPatient?.Telephone;
+                            return tel || 'N/C';
+                          })()}
+                        </span>
+                      </div>
+                      {patient?.Code_dossier && (
+                        <div className="small text-primary mt-1 fw-semibold">
+                          <i className="bi bi-folder2-open me-1"></i>
+                          Dossier: {patient.Code_dossier}
+                        </div>
+                      )}
+                      {consultation?.codePrestation && (
+                        <div className="small text-primary mt-1 fw-semibold">
+                          <i className="bi bi-clipboard2-pulse me-1"></i>
+                          {consultation.codePrestation}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </Col>
+            
+            {/* Colonne droite: Bouton retour */}
+            <Col md="2" className="text-end">
+              <Button 
+                variant="outline-primary" 
+                onClick={() => router.back()}
+                className="rounded-pill px-3"
+              >
+                <i className="bi bi-arrow-left me-2"></i>
+                Retour
+              </Button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {error && (
         <Alert variant="danger" dismissible onClose={() => setError('')}>
@@ -838,27 +1083,9 @@ export default function FichePrescriptionMedecin() {
         </Alert>
       )}
 
-      {patient && (
+      {/* Afficher la fiche seulement si une consultation est trouvée */}
+      {(patient || consultationLiee) ? (
         <>
-          {/* En-tête patient - Design professionnel */}
-          <Card className="mb-4 shadow-sm border-0">
-            <Card.Header className="bg-gradient-primary text-dark">
-              <div className="d-flex align-items-center">
-                FICHE DE CONSULTATION
-                <div className="rounded-circle bg-white text-primary p-3 me-3">
-                  <i className="bi bi-person-fill fs-4"></i>
-                </div>
-                <div>
-                  <h4 className="mb-1">{patient.nom} {patient.prenoms}</h4>
-                  <p className="mb-0 opacity-75">
-                    <i className="bi bi-calendar3 me-2"></i>
-                    {calculerAge(patient.dateNaissance)} ans • {patient.sexe} • {patient.telephone || 'N/A'}
-                  </p>
-                </div>
-              </div>
-            </Card.Header>
-          </Card>
-
           {/* Section principale - Organisation en colonnes */}
           <Row className="g-4 align-items-start">
             {/* Colonne gauche - Antécédents et Constantes */}
@@ -1046,7 +1273,7 @@ export default function FichePrescriptionMedecin() {
                           </small>
                         )}
                       </Form.Group>
-                      
+                     
                       <Form.Group className="mb-3">
                         <Form.Label className="small">
                           <i className="bi bi-tag me-1"></i>
@@ -1129,6 +1356,7 @@ export default function FichePrescriptionMedecin() {
                             MotifConsultation: 'Patient consulte pour...',
                             examenClinique: 'Examen clinique en cours...',
                             codeAffection: '',
+                            codePrestation: '',
                             ExamenParaclinique: '',
                             TraitementClinique: '',
                             ConclusionClinique: ''
@@ -1691,21 +1919,47 @@ export default function FichePrescriptionMedecin() {
             if (consultation?.codePrestation) {
               chargerExamensParacliniques(consultation.codePrestation);
             }
-          }}  size="xl">
+          }} size="xl">
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-clipboard2-pulse me-2"></i>
                 Examen - Chirurgie - Biopsie - Hospitalisation - Autre Acte
               </Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-             <HospitalisationWrapperMedecin 
-                    codePrestation={consultation?.codePrestation}
-                    onSuccess={() => setShowExamenModal(false)}
-                />
+            <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+              {(() => {
+                // Stocker le codePrestation dans le localStorage pour que le composant puisse le récupérer
+                if (consultation?.codePrestation) {
+                  localStorage.setItem('codePrestationConsultation', consultation.codePrestation);
+                }
+                return <HospitalisationPageMedecin />;
+              })()}
             </Modal.Body>
           </Modal>
         </>
+      ) : (
+        /* Message d'attente si aucune consultation trouvée */
+        <Card className="shadow-sm border-0">
+          <Card.Body className="text-center py-5">
+            <i className="bi bi-search text-muted fs-1 mb-3"></i>
+            <h5 className="text-muted mb-3">Aucune consultation trouvée</h5>
+            <p className="text-muted mb-4">
+              Veuillez saisir un Code Prestation valide pour rechercher une consultation existante,
+              ou attendre qu'une consultation soit assignée.
+            </p>
+            <div className="bg-light p-3 rounded text-start" style={{ maxWidth: '500px', margin: '0 auto' }}>
+              <h6 className="text-primary mb-2">
+                <i className="bi bi-info-circle me-2"></i>
+                Comment utiliser cette page :
+              </h6>
+              <ol className="mb-0 small text-muted">
+                <li>Saisissez un Code Prestation dans le champ ci-dessus</li>
+                <li>Cliquez sur le bouton de recherche pour trouver la consultation</li>
+                <li>La fiche de consultation s'affichera automatiquement</li>
+              </ol>
+            </div>
+          </Card.Body>
+        </Card>
       )}
     </Container>
   );

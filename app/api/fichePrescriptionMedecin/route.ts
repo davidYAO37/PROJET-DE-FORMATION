@@ -11,18 +11,31 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const consultationId = searchParams.get('consultationId');
+    const codePrestation = searchParams.get('codePrestation');
     
-    if (!consultationId) {
-      return NextResponse.json({ error: 'ID de consultation requis' }, { status: 400 });
+    // Accepter soit consultationId soit codePrestation
+    if (!consultationId && !codePrestation) {
+      return NextResponse.json({ error: 'ID de consultation ou Code Prestation requis' }, { status: 400 });
     }
     
-    // Récupérer la consultation avec les informations du patient
-    const consultation = await Consultation.findById(consultationId)
-      .populate('IdPatient')
-      .populate('IDMEDECIN');
+    let consultation;
+    
+    // Rechercher par consultationId ou par codePrestation
+    if (consultationId) {
+      consultation = await Consultation.findById(consultationId)
+        .populate('IdPatient')
+        .populate('IDMEDECIN');
+    } else if (codePrestation) {
+      consultation = await Consultation.findOne({ CodePrestation: codePrestation })
+        .populate('IdPatient')
+        .populate('IDMEDECIN');
+    }
     
     if (!consultation) {
-      return NextResponse.json({ error: 'Consultation non trouvée' }, { status: 404 });
+      return NextResponse.json({ 
+        error: consultationId ? 'Consultation non trouvée' : 'Consultation avec ce Code Prestation non trouvée', 
+        status: 404 
+      });
     }
     
     // Récupérer les antécédents du patient
@@ -48,7 +61,9 @@ export async function GET(request: NextRequest) {
         sexe: patient.sexe,
         telephone: patient.Contact,
         codeDossier: patient.Code_dossier,
-        situationGeo: patient.Situationgeo
+        situationGeo: patient.Situationgeo,
+        assurance: patient.Assurance,
+        matricule: patient.Matricule
       } : null,
       consultation: {
         _id: consultation._id,
@@ -63,9 +78,12 @@ export async function GET(request: NextRequest) {
         taille: consultation.TailleCons,
         frequenceCardiaque: '', // Champ non disponible dans le modèle
         frequenceRespiratoire: '', // Champ non disponible dans le modèle
-        motifConsultation: consultation.designationC,
+        MotifConsultation: consultation.MotifConsultation,
         examenClinique: consultation.ExamenClinique || '',
         codeAffection: consultation.CodeAffection || '',
+        ExamenParaclinique: consultation.ExamenParaclinique || '',
+        TraitementClinique: consultation.TraitementClinique || '',
+        ConclusionClinique: consultation.ConclusionClinique || '',
         diagnostic: consultation.Diagnostic,
         medecin: consultation.Medecin,
         idMedecin: consultation.IDMEDECIN
@@ -83,8 +101,8 @@ export async function GET(request: NextRequest) {
         nomMedicament: presc.nomMedicament,
         qteP: presc.QteP,
         posologie: presc.posologie,
-        prixUnitaire: presc.prixUnitaire,
-        prixTotal: presc.prixTotal,
+        //prixUnitaire: presc.prixUnitaire,
+       // prixTotal: presc.prixTotal,
         datePres: presc.DatePres,
         heure: presc.heure,
         statutPrescription: presc.StatutPrescriptionMedecin,
@@ -107,33 +125,63 @@ export async function POST(request: NextRequest) {
     await db();
     
     const body = await request.json();
-    const { consultationId, motifConsultation, examenClinique, codeAffection, diagnostic } = body;
+    const { 
+      consultationId,
+      codePrestation,
+      MotifConsultation, 
+      examenClinique, 
+      codeAffection, 
+      ExamenParaclinique,
+      TraitementClinique,
+      ConclusionClinique,
+      diagnostic 
+    } = body;
     
-    if (!consultationId) {
-      return NextResponse.json({ error: 'ID de consultation requis' }, { status: 400 });
+    // Accepter soit consultationId soit codePrestation
+    if (!consultationId && !codePrestation) {
+      return NextResponse.json({ error: 'ID de consultation ou Code Prestation requis' }, { status: 400 });
     }
     
     // Importer dynamiquement pour éviter les dépendances circulaires
     const { Consultation } = await import('@/models/consultation');
     
-    // Vérifier que la consultation existe
-    const consultation = await Consultation.findById(consultationId);
+    let consultation;
+    
+    // Rechercher par consultationId ou par codePrestation
+    if (consultationId) {
+      consultation = await Consultation.findById(consultationId);
+    } else if (codePrestation) {
+      consultation = await Consultation.findOne({ CodePrestation: codePrestation });
+    }
+    
     if (!consultation) {
-      return NextResponse.json({ error: 'Consultation non trouvée' }, { status: 404 });
+      return NextResponse.json({ 
+        error: consultationId ? 'Consultation non trouvée' : 'Consultation avec ce Code Prestation non trouvée', 
+        status: 404 
+      });
     }
     
     // Préparer l'objet de mise à jour
     const updateData: any = {};
     
     // Mettre à jour les champs disponibles
-    if (motifConsultation !== undefined) {
-      updateData.designationC = motifConsultation;
+    if (MotifConsultation !== undefined) {
+      updateData.MotifConsultation = MotifConsultation;
     }
     if (examenClinique !== undefined) {
       updateData.ExamenClinique = examenClinique;
     }
     if (codeAffection !== undefined) {
       updateData.CodeAffection = codeAffection;
+    }
+    if (ExamenParaclinique !== undefined) {
+      updateData.ExamenParaclinique = ExamenParaclinique;
+    }
+    if (TraitementClinique !== undefined) {
+      updateData.TraitementClinique = TraitementClinique;
+    }
+    if (ConclusionClinique !== undefined) {
+      updateData.ConclusionClinique = ConclusionClinique;
     }
     if (diagnostic !== undefined) {
       updateData.Diagnostic = diagnostic;
@@ -152,9 +200,10 @@ export async function POST(request: NextRequest) {
       message: 'Consultation mise à jour avec succès',
       consultation: {
         ...updateData,
-        motifConsultation: updateData.designationC,
+        MotifConsultation: updateData.MotifConsultation,
         examenClinique: updateData.ExamenClinique,
-        codeAffection: updateData.CodeAffection
+        codeAffection: updateData.CodeAffection,
+        ConclusionClinique: updateData.ConclusionClinique
       }
     });
     

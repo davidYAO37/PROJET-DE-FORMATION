@@ -11,15 +11,21 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const patientId = searchParams.get("patientId");
+        const codePrestation = searchParams.get("codePrestation");
 
         let query: any = {};
+        
         if (patientId) {
             query = { $or: [{ IdPatient: patientId }, { PatientP: patientId }] };
+        }
+        
+        if (codePrestation) {
+            query.CodePrestation = codePrestation;
         }
 
         const consultations = await Consultation.find(query)
             .populate("IDASSURANCE", "designationassurance")
-            .populate("IdPatient", "Nom Prenoms")
+            .populate("IdPatient", "Nom Prenoms Date_naisse sexe Contact Code_dossier Situationgeo Assurance Matricule")
             .populate("IDMEDECIN", "nom prenoms");
 
         return NextResponse.json(consultations);

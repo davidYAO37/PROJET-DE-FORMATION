@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { Prescription } from "@/models/Prescription";
+import { Patient } from "@/models/patient";
+import { Medecin } from "@/models/medecin";
 
 export async function GET(req: NextRequest) {
     await db();

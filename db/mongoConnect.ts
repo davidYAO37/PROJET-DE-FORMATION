@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
 
+// Importer tous les modèles pour garantir leur enregistrement
+import "../models";
+
 const MONGO_URI = process.env.MONGO_URI as string;
 
 if (!MONGO_URI) {

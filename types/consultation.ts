@@ -55,4 +55,8 @@ export interface ConsultationType {
     AnnulOrdonnerPar?: string;
     AnnulationOrdonneLe?: Date;
 
+    Diagnostic?: string;
+    ExamenClinique?: string;
+    CodeAffection?: string;
+    MotifConsultation?: string;
 }

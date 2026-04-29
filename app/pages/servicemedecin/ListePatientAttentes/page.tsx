@@ -46,6 +46,46 @@ export default function ListePatientAttentes() {
     return () => clearInterval(interval);
   }, []);
 
+  // Fonction pour calculer la priorité basée sur les constantes
+  const calculerPrioriteSelonConstantes = (patient: PatientEnAttente): 'basse' | 'normale' | 'urgente' => {
+    const { temperature, tension, glycemie } = patient;
+    
+    // Conversion des valeurs en nombres si possible
+    const temp = temperature ? parseFloat(temperature.replace(',', '.')) : null;
+    const tensionValues = tension ? tension.split('/').map(v => parseFloat(v.trim())) : [];
+    const glyc = glycemie ? parseFloat(glycemie.replace(',', '.')) : null;
+    
+    // Critères d'urgence
+    let scoreUrgence = 0;
+    
+    // Température : > 39°C ou < 35°C
+    if (temp) {
+      if (temp > 39 || temp < 35) scoreUrgence += 3;
+      else if (temp > 38 || temp < 36) scoreUrgence += 1;
+    }
+    
+    // Tension : systolique > 160 ou < 90, diastolique > 100 ou < 60
+    if (tensionValues.length >= 2) {
+      const [systolique, diastolique] = tensionValues;
+      if (systolique > 160 || systolique < 90 || diastolique > 100 || diastolique < 60) {
+        scoreUrgence += 3;
+      } else if (systolique > 140 || systolique < 100 || diastolique > 90 || diastolique < 70) {
+        scoreUrgence += 1;
+      }
+    }
+    
+    // Glycémie : > 2.5 g/L ou < 0.6 g/L
+    if (glyc) {
+      if (glyc > 2.5 || glyc < 0.6) scoreUrgence += 3;
+      else if (glyc > 1.5 || glyc < 0.8) scoreUrgence += 1;
+    }
+    
+    // Détermination de la priorité
+    if (scoreUrgence >= 3) return 'urgente';
+    if (scoreUrgence >= 1) return 'normale';
+    return 'basse';
+  };
+
   const chargerPatientsEnAttente = async (isSilent = false) => {
     try {
       if (!isSilent) {
@@ -110,7 +150,11 @@ export default function ListePatientAttentes() {
         heureConsultation: consultation.Heure_Consultation || new Date().toTimeString().split(' ')[0].substring(0, 5),
         motif: consultation.designationC || 'Consultation générale',
         statut: consultation.StatutC ? 'termine' : (consultation.attenteMedecin === 1 ? 'en_cours' : 'en_attente'),
-        priorite: consultation.PrixClinique > 50000 ? 'urgente' : 'normale', // Basé sur le prix
+        priorite: calculerPrioriteSelonConstantes({
+          temperature: consultation.Temperature || '',
+          tension: consultation.Tension || '',
+          glycemie: consultation.Glycemie || ''
+        } as PatientEnAttente), // Basé sur les constantes
         medecinId: connectedMedecin._id,
         medecinNom: connectedMedecin.nom,
         medecinPrenom: connectedMedecin.prenoms,
@@ -139,13 +183,45 @@ export default function ListePatientAttentes() {
   const getPrioriteBadge = (priorite: string) => {
     switch (priorite) {
       case 'urgente':
-        return <Badge bg="danger">Urgent</Badge>;
+        return (
+          <div className="text-center">
+            <Badge bg="danger" className="p-2">
+              <i className="bi bi-exclamation-triangle-fill me-1"></i>
+              Urgent
+            </Badge>
+            <div className="small text-muted mt-1">À voir immédiatement</div>
+          </div>
+        );
       case 'normale':
-        return <Badge bg="primary">Normal</Badge>;
+        return (
+          <div className="text-center">
+            <Badge bg="primary" className="p-2">
+              <i className="bi bi-clock-fill me-1"></i>
+              Normal
+            </Badge>
+            <div className="small text-muted mt-1">À voir normalement</div>
+          </div>
+        );
       case 'basse':
-        return <Badge bg="secondary">Bas</Badge>;
+        return (
+          <div className="text-center">
+            <Badge bg="secondary" className="p-2">
+              <i className="bi bi-check-circle me-1"></i>
+              Bas
+            </Badge>
+            <div className="small text-muted mt-1">Peut attendre</div>
+          </div>
+        );
       default:
-        return <Badge bg="secondary">Normal</Badge>;
+        return (
+          <div className="text-center">
+            <Badge bg="secondary" className="p-2">
+              <i className="bi bi-clock me-1"></i>
+              Normal
+            </Badge>
+            <div className="small text-muted mt-1">À voir normalement</div>
+          </div>
+        );
     }
   };
 
