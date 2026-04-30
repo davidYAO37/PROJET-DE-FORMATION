@@ -9,6 +9,7 @@ export * from './Prescription';
 export * from './PatientPrescription';
 export * from './assurance';
 export * from './lignePrestation';
+export * from './AvisHospit';
 // Add other model exports here as needed
 
 // This ensures all models are loaded and registered with Mongoose
@@ -22,3 +23,4 @@ import './Prescription';
 import './PatientPrescription';
 import './assurance';
 import './lignePrestation';
+import './AvisHospit';

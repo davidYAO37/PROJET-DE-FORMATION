@@ -28,18 +28,33 @@ export async function GET(request: NextRequest) {
         $lte: endOfDay
       }
     })
-    .populate('IdPatient', 'nom prenoms email telephone')
+    .populate('IdPatient', 'Nom Prenoms Contact Date_naisse sexe')
     .populate('IDMEDECIN', 'nom prenoms')
     .sort({ Date_consulation: 1, Heure_Consultation: 1 })
     .lean();
     
+    // Calculer les statistiques
+    const patientsRecus = consultations.filter(consultation => 
+      consultation.attenteMedecin === 1 // Patient déjà vu par le médecin
+    ).length;
+    
+    const patientsEnAttente = consultations.filter(consultation => 
+      consultation.attenteMedecin === 0 // Patient en attente du médecin
+    ).length;
+    
     return NextResponse.json({
+      patientsRecus,
+      patientsEnAttente,
       consultations,
       total: consultations.length
     });
     
   } catch (error) {
     console.error('Erreur lors de la récupération des consultations:', error);
-    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
+    return NextResponse.json({ 
+      error: 'Erreur serveur',
+      patientsRecus: 0,
+      patientsEnAttente: 0
+    }, { status: 500 });
   }
 }

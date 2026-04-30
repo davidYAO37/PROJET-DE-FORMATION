@@ -2,15 +2,20 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Nav } from 'react-bootstrap';
+import { Nav, Badge } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import DisponibilitePrescriptuerModal from '@/app/pages/servicemedecin/tmedecin/composants/DisponibilitePrescripteurModal';
 
+interface Statistiques {
+  patientsEnAttente: number;
+  rendezVousDuJour: number;
+}
+
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicemedecin/tmedecin', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
-  { label: 'Patient en attente', path: '/pages/servicemedecin/ListePatientAttentes', icon: <i className="bi bi-clock-fill me-2 text-warning"></i> },
-  { label: 'Mes Rendez-Vous', path: '#', isModal: true, modalType: 'rendezvous', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i> },
+  { label: 'Patient en attente', path: '/pages/servicemedecin/ListePatientAttentes', icon: <i className="bi bi-clock-fill me-2 text-warning"></i>, showNotification: true, notificationKey: 'patientsEnAttente' },
+  { label: 'Mes Rendez-Vous', path: '#', isModal: true, modalType: 'rendezvous', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i>, showNotification: true, notificationKey: 'rendezVousDuJour' },
   { label: 'Saisir fiche prescription', path: '/pages/servicemedecin/FichePrescriptionMedecinAsaisie', icon: <i className="bi bi-file-earmark-text-fill me-2 text-primary"></i> },
   { label: 'Planning Médecin', path: '/planningMedecin', icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
   { label: 'Mon planning', path: '/disponibiliteMedecin', icon: <i className="bi bi-clipboard-check-fill me-2 text-success"></i> },
@@ -25,9 +30,62 @@ export default function SidebarMedecin() {
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [user, setUser] = useState('');
   const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
+  const [statistiques, setStatistiques] = useState<Statistiques>({
+    patientsEnAttente: 0,
+    rendezVousDuJour: 0
+  });
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     const storedUser = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || '';
     setUser(storedUser);
+  }, []);
+
+  // Récupérer les statistiques pour les notifications
+  useEffect(() => {
+    const fetchStatistiques = async () => {
+      try {
+        const profilStr = localStorage.getItem('profil');
+        
+        if (profilStr) {
+          const profil = JSON.parse(profilStr);
+          
+          // Récupérer tous les médecins pour trouver le médecin connecté
+          const medecinsResponse = await fetch('/api/medecins');
+          if (medecinsResponse.ok) {
+            const allMedecins = await medecinsResponse.json();
+            const connectedMedecin = allMedecins.find((medecin: any) => 
+              medecin._id.toString() === profil._id ||
+              (medecin.nom === profil.nom && medecin.prenoms === profil.prenom)
+            );
+            
+            if (connectedMedecin) {
+              // Récupérer les statistiques des consultations
+              const consultationsResponse = await fetch(`/api/consultations/statistiques?medecinId=${connectedMedecin._id}`);
+              const consultationsData = await consultationsResponse.json();
+              
+              // Récupérer les statistiques des rendez-vous
+              const rendezVousResponse = await fetch(`/api/rendez-vous/statistiques?medecinId=${connectedMedecin._id}`);
+              const rendezVousData = await rendezVousResponse.json();
+              
+              setStatistiques({
+                patientsEnAttente: consultationsData.patientsEnAttente || 0,
+                rendezVousDuJour: rendezVousData.rendezVousDuJour || 0
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Erreur lors de la récupération des statistiques:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStatistiques();
+    // Rafraîchir les statistiques toutes les 30 secondes
+    const interval = setInterval(fetchStatistiques, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   // Ferme la sidebar quand on clique sur un lien (mobile)
@@ -90,20 +148,42 @@ export default function SidebarMedecin() {
               {item.isModal ? (
                 <a
                   href="#"
-                  className="sidebar-link-medical d-flex align-items-center"
+                  className="sidebar-link-medical d-flex align-items-center justify-content-between"
                   onClick={(e) => item.modalType === 'rendezvous' ? handleModalClick(e, 'rendezvous') : handleMotDePasseClick(e)}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  <div className="d-flex align-items-center">
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                  {item.showNotification && !loading && (
+                    <Badge 
+                      bg={item.notificationKey === 'patientsEnAttente' ? 'warning' : 'success'} 
+                      pill
+                      className="ms-2"
+                    >
+                      {statistiques[item.notificationKey as keyof Statistiques]}
+                    </Badge>
+                  )}
                 </a>
               ) : (
                 <Link
                   href={item.path}
-                  className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''}`}
+                  className={`sidebar-link-medical d-flex align-items-center justify-content-between ${pathname === item.path ? 'active' : ''}`}
                   onClick={handleLinkClick}
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  <div className="d-flex align-items-center">
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                  {item.showNotification && !loading && (
+                    <Badge 
+                      bg={item.notificationKey === 'patientsEnAttente' ? 'warning' : 'success'} 
+                      pill
+                      className="ms-2"
+                    >
+                      {statistiques[item.notificationKey as keyof Statistiques]}
+                    </Badge>
+                  )}
                 </Link>
               )}
             </Nav.Item>

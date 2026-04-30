@@ -4,6 +4,7 @@ import { Container, Card, Row, Col, Form, Button, Badge, Alert, Table, Modal, Sp
 import { useRouter } from 'next/navigation';
 import PharmacieModalPharmAccueilMedecin from '../PharmacieMedecin/PharmacieModalPharmAccueilMedecin';
 import HospitalisationPageMedecin from '../examenhospitalisationMedecin/page';
+import AvisHospitModal from '../FichePrescriptionMedecin/AvisHospitModal';
 
 interface Patient {
   _id: string;
@@ -72,6 +73,8 @@ export default function FichePrescriptionMedecinAsaisie() {
   // États pour les nouveaux modaux
   const [showPharmacieModal, setShowPharmacieModal] = useState(false);
   const [showExamenModal, setShowExamenModal] = useState(false);
+  const [showAvisHospitModal, setShowAvisHospitModal] = useState(false);
+  const [avisHospitCount, setAvisHospitCount] = useState(0);
   
   // États pour les nouveaux champs
   const [loadingExamenParaclinique, setLoadingExamenParaclinique] = useState(false);
@@ -191,6 +194,9 @@ export default function FichePrescriptionMedecinAsaisie() {
               Matricule: data.IdPatient.Matricule || ''
             });
           }
+          
+          // Charger les avis d'hospitalisation pour cette consultation
+          chargerAvisHospitCount();
         }
         
         setSuccess('Fiche initialisée avec la consultation liée');
@@ -312,6 +318,22 @@ export default function FichePrescriptionMedecinAsaisie() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Charger le nombre d'avis d'hospitalisation
+  const chargerAvisHospitCount = async () => {
+    try {
+      const consultationId = new URLSearchParams(window.location.search).get('consultationId');
+      if (consultationId) {
+        const response = await fetch(`/api/avishospit?consultationId=${consultationId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setAvisHospitCount(data.total || 0);
+        }
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des avis d\'hospitalisation:', error);
+    }
+  };
+
   // Charger les données de la consultation
   useEffect(() => {
     // Ne charger que s'il y a un consultationId dans l'URL
@@ -430,7 +452,15 @@ export default function FichePrescriptionMedecinAsaisie() {
     };
     
     chargerFicheConsultation();
+    chargerAvisHospitCount();
   }, []);
+
+  // Mettre à jour le compteur d'avis d'hospitalisation lorsque le modal est fermé
+  useEffect(() => {
+    if (!showAvisHospitModal) {
+      chargerAvisHospitCount();
+    }
+  }, [showAvisHospitModal]);
 
   // Fonctions utilitaires pour les cartes dynamiques
   const hasConstantesData = () => {
@@ -1561,6 +1591,66 @@ export default function FichePrescriptionMedecinAsaisie() {
                     </div>
                   </div>
                   
+                  {/* Section Avis d'Hospitalisation */}
+                  <div className="mb-4">
+                    <div className="d-flex align-items-center justify-content-between mb-3">
+                      <div className="d-flex align-items-center">
+                        <div className="rounded-circle bg-danger bg-opacity-10 p-2 me-2">
+                          <i className="bi bi-hospital text-danger"></i>
+                        </div>
+                        <div>
+                          <label className="small text-muted fw-semibold mb-1">Avis d'Hospitalisation</label>
+                          <div className="d-flex align-items-center">
+                            <span className="badge bg-danger bg-opacity-10 text-danger me-2">
+                              <i className="bi bi-building me-1"></i>
+                              Hospitalisation
+                            </span>
+                            {avisHospitCount > 0 && (
+                              <span className="badge bg-primary bg-opacity-10 text-primary ms-2">
+                                <i className="bi bi-check-circle me-1"></i>
+                                {avisHospitCount} avis
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <Button 
+                        variant="danger" 
+                        size="sm" 
+                        className="rounded-pill px-3"
+                        onClick={() => setShowAvisHospitModal(true)}
+                      >
+                        <i className="bi bi-plus-circle me-1"></i>
+                        Ajouter
+                      </Button>
+                    </div>
+                    <div className="bg-light rounded-3 p-3 border border-danger border-opacity-25">
+                      {avisHospitCount > 0 ? (
+                        <div className="text-center">
+                          <div className="d-flex align-items-center justify-content-center mb-2">
+                            <i className="bi bi-hospital text-danger me-2"></i>
+                            <span className="text-muted small">
+                              {avisHospitCount} avis d'hospitalisation enregistré{avisHospitCount > 1 ? 's' : ''}
+                            </span>
+                          </div>
+                          <Button 
+                            variant="outline-danger" 
+                            size="sm" 
+                            onClick={() => setShowAvisHospitModal(true)}
+                          >
+                            <i className="bi bi-eye me-1"></i>
+                            Voir les avis
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="text-muted text-center py-2">
+                          <i className="bi bi-info-circle me-1"></i>
+                          Aucun avis d'hospitalisation enregistré
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
                   {prescriptions.length > 0 && (
                     <div className="mt-4">
                       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -1936,6 +2026,16 @@ export default function FichePrescriptionMedecinAsaisie() {
               })()}
             </Modal.Body>
           </Modal>
+          
+          {/* Modal Avis d'Hospitalisation */}
+          <AvisHospitModal
+            show={showAvisHospitModal}
+            onHide={() => setShowAvisHospitModal(false)}
+            consultationId={consultation?._id}
+            patientId={patient?._id}
+            patientNom={patient?.Nom}
+            patientPrenoms={patient?.Prenoms}
+          />
         </>
       ) : (
         /* Message d'attente si aucune consultation trouvée */
