@@ -4,6 +4,8 @@ interface EntrepriseInfo {
   LogoE?: string;
   EnteteSociete?: string;
   PiedPageSociete?: string;
+  NomSociete?: string;
+  NCC?: string;
 }
 
 export const useEntreprise = () => {
@@ -42,7 +44,7 @@ export const useEntreprise = () => {
         const data = await res.json();
         if (!cancelled && Array.isArray(data) && data.length > 0) {
           setEntreprise(data[0]);
-          
+
           // Sauvegarder l'ID dans localStorage pour les prochaines fois
           if (typeof window !== 'undefined' && data[0]._id) {
             localStorage.setItem('IdEntreprise', data[0]._id);

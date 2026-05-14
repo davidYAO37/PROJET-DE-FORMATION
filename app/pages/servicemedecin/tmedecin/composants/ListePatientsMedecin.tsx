@@ -7,9 +7,9 @@ import { Patient } from '@/types/patient';
 import DossiersPatientDropdown from './DossiersPatientDropdown';
 import DossierPatient from './DossierPatient';
 import ArretTravailModal from './ArretTravailModal';
-import CompteRenduOperatoireModal from './CompteRenduOperatoireModal';
 import RapportHospitalisationModal from './RapportHospitalisationModal';
 import AvisHospitModal from './AvisHospit/AvisHospitModal';
+import CompteRenduOperatoireModal from './CompteRenduOperatoireModal';
 
 
 const ITEMS_PER_PAGE = 10;
@@ -30,7 +30,7 @@ export default function ListePatientMedecin() {
   // État pour le modal unifié des Dossiers patient
   const [showPatientDossiersModal, setShowPatientDossiersModal] = useState(false);
   const [patientIdDossiersModal, setPatientIdDossiersModal] = useState<string | null>(null);
-  
+
   // États pour les modaux de gestion des dossiers
   const [showDossierPatientModal, setShowDossierPatientModal] = useState(false);
   const [showAvisHospitalisationModal, setShowAvisHospitalisationModal] = useState(false);
@@ -282,6 +282,7 @@ export default function ListePatientMedecin() {
           patientId={selectedPatientForModals._id?.toString() || ''}
           patientNom={selectedPatientForModals.Nom}
           patientPrenoms={selectedPatientForModals.Prenoms}
+          patientCodeDossier={selectedPatientForModals.Code_dossier}
         />
       )}
 

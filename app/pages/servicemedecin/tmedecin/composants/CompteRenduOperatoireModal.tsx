@@ -1,28 +1,52 @@
-'use client';
-import { useState, useEffect } from 'react';
-import { Modal, Card, Row, Col, Form, Button, Alert, Badge } from 'react-bootstrap';
-import { FaProcedures, FaPrint, FaSave } from 'react-icons/fa';
+"use client";
+import { useState, useEffect, FormEvent } from "react";
+import {
+  Modal,
+  Card,
+  Row,
+  Col,
+  Table,
+  Button,
+  Form,
+  Alert,
+  Badge,
+} from "react-bootstrap";
+import {
+  FaStethoscope,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaPrint,
+  FaFileAlt,
+} from "react-icons/fa";
+import { COMPTE_RENDU_OPERATOIRE_TYPES, COMPTE_RENDU_OPERATOIRE_STATUTS, TypeCompteRenduOperatoire, StatutCompteRenduOperatoire, COMPTE_RENDU_OPERATOIRE_LABELS } from "@/types/compteRenduOperatoire";
 
 interface CompteRenduOperatoire {
+  _id: string;
   patientId: string;
   patientNom?: string;
   patientPrenoms?: string;
-  dateIntervention: Date;
-  heureIntervention: string;
+  dateOperation: Date;
+  heureDebut?: string;
+  heureFin?: string;
   chirurgien: string;
-  anesthesiste: string;
-  typeAnesthesie: string;
-  intervention: string;
-  indication: string;
-    technique: string;
-    difficultes: string;
-    complications: string;
-    suitesOperatoires: string;
-    piecesAnatomopathologiques: string;
-    dureeIntervention: string;
-    perteSanguine: string;
-    transfusion: string;
-    observation: string;
+  assistant?: string;
+  anesthesiste?: string;
+  infirmier?: string;
+  typeOperation: TypeCompteRenduOperatoire;
+  descriptionOperation: string;
+  diagnosticPreOperatoire: string;
+  gestesRealises: string;
+  complications?: string;
+  suitesOperatoires: string;
+  traitementPostOperatoire?: string;
+  dureeOperation?: number;
+  statut: StatutCompteRenduOperatoire;
+  numeroDossier: string;
+  dateCreation: Date;
+  medecinId?: string;
+  entrepriseId?: string;
+  observations?: string;
 }
 
 interface CompteRenduOperatoireModalProps {
@@ -31,112 +55,260 @@ interface CompteRenduOperatoireModalProps {
   patientId: string;
   patientNom?: string;
   patientPrenoms?: string;
+  patientCodeDossier?: string;
 }
 
-export default function CompteRenduOperatoireModal({ 
-  show, 
-  onHide, 
-  patientId, 
-  patientNom, 
-  patientPrenoms 
+export default function CompteRenduOperatoireModal({
+  show,
+  onHide,
+  patientId,
+  patientNom,
+  patientPrenoms,
+  patientCodeDossier
 }: CompteRenduOperatoireModalProps) {
-  const [formData, setFormData] = useState<CompteRenduOperatoire>({
-    patientId,
-    patientNom,
-    patientPrenoms,
-    dateIntervention: new Date(),
-    heureIntervention: '',
-    chirurgien: '',
-    anesthesiste: '',
-    typeAnesthesie: '',
-    intervention: '',
-    indication: '',
-    technique: '',
-    difficultes: '',
-    complications: '',
-    suitesOperatoires: '',
-    piecesAnatomopathologiques: '',
-    dureeIntervention: '',
-    perteSanguine: '',
-    transfusion: '',
-    observation: ''
+  const [comptesRendus, setComptesRendus] = useState<CompteRenduOperatoire[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editingCR, setEditingCR] = useState<CompteRenduOperatoire | null>(null);
+  const currentUser = localStorage.getItem("nom_utilisateur") || localStorage.getItem("userName") || "";
+
+  const [formData, setFormData] = useState({
+    dateOperation: "",
+    heureDebut: "",
+    heureFin: "",
+    chirurgien: currentUser,
+    assistant: "",
+    anesthesiste: "",
+    infirmier: "",
+    typeOperation: "chirurgie_generale" as TypeCompteRenduOperatoire,
+    descriptionOperation: "",
+    diagnosticPreOperatoire: "",
+    gestesRealises: "",
+    complications: "",
+    suitesOperatoires: "",
+    traitementPostOperatoire: "",
+    statut: "planifie" as StatutCompteRenduOperatoire,
+    numeroDossier: "",
+    observations: "",
+    dureeOperation: 0
   });
 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const canManageCR = (cr: CompteRenduOperatoire) => {
+    return cr.chirurgien?.trim() === currentUser?.trim() && cr.statut !== "termine";
+  };
+
+  // Charger les comptes rendus opératoires du patient
+  useEffect(() => {
+    const chargerCR = async () => {
+      try {
+        setLoading(true);
+        setError("");
+
+        const response = await fetch(`/api/compterenduoperatoire?patientId=${patientId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setComptesRendus(data.data || []);
+        } else {
+          setComptesRendus([]);
+        }
+      } catch (err: any) {
+        setError(err.message);
+        setComptesRendus([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (show && patientId) {
+      chargerCR();
+    }
+  }, [show, patientId]);
 
   // Réinitialiser le formulaire
-  useEffect(() => {
-    if (show) {
-      setFormData({
+  const resetForm = () => {
+    setFormData({
+      dateOperation: "",
+      heureDebut: "",
+      heureFin: "",
+      chirurgien: currentUser,
+      assistant: "",
+      anesthesiste: "",
+      infirmier: "",
+      typeOperation: "chirurgie_generale",
+      descriptionOperation: "",
+      diagnosticPreOperatoire: "",
+      gestesRealises: "",
+      complications: "",
+      suitesOperatoires: "",
+      traitementPostOperatoire: "",
+      statut: "planifie",
+      numeroDossier: "",
+      observations: "",
+      dureeOperation: 0
+    });
+    setEditingCR(null);
+  };
+
+  // Ouvrir le modal d'ajout
+  const handleAdd = () => {
+    resetForm();
+    setShowAddModal(true);
+  };
+
+  // Ouvrir le modal d'édition
+  const handleEdit = (cr: CompteRenduOperatoire) => {
+    setFormData({
+      dateOperation: new Date(cr.dateOperation).toISOString().split("T")[0],
+      heureDebut: cr.heureDebut || "",
+      heureFin: cr.heureFin || "",
+      chirurgien: cr.chirurgien || currentUser || "",
+      assistant: cr.assistant || "",
+      anesthesiste: cr.anesthesiste || "",
+      infirmier: cr.infirmier || "",
+      typeOperation: cr.typeOperation || "chirurgie_generale",
+      descriptionOperation: cr.descriptionOperation,
+      diagnosticPreOperatoire: cr.diagnosticPreOperatoire,
+      gestesRealises: cr.gestesRealises,
+      complications: cr.complications || "",
+      suitesOperatoires: cr.suitesOperatoires,
+      traitementPostOperatoire: cr.traitementPostOperatoire || "",
+      statut: cr.statut,
+      numeroDossier: cr.numeroDossier,
+      observations: cr.observations || "",
+      dureeOperation: cr.dureeOperation || 0
+    });
+    setEditingCR(cr);
+    setShowAddModal(true);
+  };
+
+  // Sauvegarder le compte rendu opératoire
+  const handleSave = async (e: FormEvent) => {
+    e.preventDefault();
+
+    try {
+      const url = editingCR
+        ? `/api/compterenduoperatoire/${editingCR._id}`
+        : "/api/compterenduoperatoire";
+
+      const method = editingCR ? "PUT" : "POST";
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const operationDate = new Date(formData.dateOperation);
+      operationDate.setHours(0, 0, 0, 0);
+
+      if (!editingCR && operationDate < today) {
+        setError("La date d'opération ne peut pas être antérieure à aujourd'hui");
+        return;
+      }
+
+      if (editingCR) {
+        const originalDate = new Date(editingCR.dateOperation);
+        originalDate.setHours(0, 0, 0, 0);
+        if (operationDate < today && operationDate.getTime() !== originalDate.getTime()) {
+          setError("La date d'opération ne peut pas être antérieure à aujourd'hui");
+          return;
+        }
+      }
+
+      let numeroDossier = editingCR?.numeroDossier;
+      if (!numeroDossier && patientCodeDossier) {
+        const count = comptesRendus.length + 1;
+        numeroDossier = `${patientCodeDossier}-CR-${count}`;
+      } else if (!numeroDossier) {
+        numeroDossier = `CR-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+      }
+
+      const payload = {
+        ...formData,
         patientId,
         patientNom,
         patientPrenoms,
-        dateIntervention: new Date(),
-        heureIntervention: '',
-        chirurgien: '',
-        anesthesiste: '',
-        typeAnesthesie: '',
-        intervention: '',
-        indication: '',
-        technique: '',
-        difficultes: '',
-        complications: '',
-        suitesOperatoires: '',
-        piecesAnatomopathologiques: '',
-        dureeIntervention: '',
-        perteSanguine: '',
-        transfusion: '',
-        observation: ''
-      });
-    }
-  }, [show, patientId, patientNom, patientPrenoms]);
+        numeroDossier,
+      };
 
-  // Sauvegarder le compte rendu
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    try {
-      setLoading(true);
-      setError('');
-      
-      const response = await fetch('/api/compterenduoperatoire', {
-        method: 'POST',
+      const response = await fetch(url, {
+        method,
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
+          "x-user-name": currentUser,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(payload),
       });
 
-      if (response.ok) {
-        setSuccess('Compte rendu opératoire généré avec succès');
-        setTimeout(() => {
-          setSuccess('');
-          onHide();
-        }, 2000);
-      } else {
-        throw new Error('Erreur lors de la génération du compte rendu');
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erreur lors de la sauvegarde");
       }
+
+      setSuccess(result.message || (editingCR ? "Compte rendu modifié avec succès" : "Compte rendu ajouté avec succès"));
+      setTimeout(() => setSuccess(""), 3000);
+
+      // Recharger la liste
+      const crResponse = await fetch(`/api/compterenduoperatoire?patientId=${patientId}`);
+      if (crResponse.ok) {
+        const data = await crResponse.json();
+        setComptesRendus(data.data || []);
+      }
+
+      setShowAddModal(false);
+      resetForm();
     } catch (err: any) {
       setError(err.message);
-      setTimeout(() => setError(''), 3000);
-    } finally {
-      setLoading(false);
+      setTimeout(() => setError(""), 3000);
+    }
+  };
+
+  // Supprimer un compte rendu opératoire
+  const handleDelete = async (crId: string) => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce compte rendu opératoire ?")) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`/api/compterenduoperatoire/${crId}`, {
+        method: "DELETE",
+        headers: {
+          "x-user-name": currentUser,
+        },
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || "Erreur lors de la suppression");
+      }
+
+      setSuccess(result.message || "Compte rendu supprimé avec succès");
+      setTimeout(() => setSuccess(""), 3000);
+
+      setComptesRendus(comptesRendus.filter(cr => cr._id !== crId));
+    } catch (err: any) {
+      setError(err.message);
+      setTimeout(() => setError(""), 3000);
     }
   };
 
   // Imprimer le compte rendu
-  const handlePrint = () => {
-    const printWindow = window.open('', '_blank');
+  const handlePrint = (cr: CompteRenduOperatoire) => {
+    const printWindow = window.open("", "_blank");
     if (printWindow) {
+      const typeLibelle = COMPTE_RENDU_OPERATOIRE_LABELS[cr.typeOperation] || "Opération";
+      const patientFullName = `${cr.patientNom || ""} ${cr.patientPrenoms || ""}`.trim() || "Patient non renseigné";
+      const dateOperation = new Date(cr.dateOperation).toLocaleDateString("fr-FR");
+      const dateCreation = new Date(cr.dateCreation).toLocaleDateString("fr-FR");
+      const duree = cr.dureeOperation ? `${Math.floor(cr.dureeOperation / 60)}h${cr.dureeOperation % 60}min` : "Non spécifiée";
+
       const htmlContent = `
         <!DOCTYPE html>
         <html>
         <head>
           <title>Compte Rendu Opératoire</title>
           <style>
-            body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; }
+            body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #000; }
             .header { text-align: center; border-bottom: 3px double #007bff; padding-bottom: 20px; margin-bottom: 30px; }
             .section { margin-bottom: 25px; }
             .section-title { font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 16px; }
@@ -150,352 +322,456 @@ export default function CompteRenduOperatoireModal({
         <body>
           <div class="header">
             <h2>COMPTE RENDU OPÉRATOIRE</h2>
-            <p>Patient: ${formData.patientNom} ${formData.patientPrenoms}</p>
-            <p>Date: ${new Date(formData.dateIntervention).toLocaleDateString('fr-FR')}</p>
+            <p>Patient: ${patientFullName}</p>
+            <p>Date: ${dateOperation}</p>
           </div>
-          
+
           <div class="info-grid">
             <div class="info-item">
               <span class="info-label">Chirurgien:</span>
-              <span>${formData.chirurgien || 'N/A'}</span>
+              <span>${cr.chirurgien || "N/A"}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Anesthésiste:</span>
-              <span>${formData.anesthesiste || 'N/A'}</span>
+              <span class="info-label">Type d'opération:</span>
+              <span>${typeLibelle}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Heure:</span>
-              <span>${formData.heureIntervention || 'N/A'}</span>
+              <span class="info-label">Heure début:</span>
+              <span>${cr.heureDebut || "N/A"}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Type d'anesthésie:</span>
-              <span>${formData.typeAnesthesie || 'N/A'}</span>
+              <span class="info-label">Heure fin:</span>
+              <span>${cr.heureFin || "N/A"}</span>
             </div>
             <div class="info-item">
               <span class="info-label">Durée:</span>
-              <span>${formData.dureeIntervention || 'N/A'}</span>
+              <span>${duree}</span>
             </div>
             <div class="info-item">
-              <span class="info-label">Perte sanguine:</span>
-              <span>${formData.perteSanguine || 'N/A'}</span>
+              <span class="info-label">Statut:</span>
+              <span>${cr.statut}</span>
             </div>
           </div>
-          
-          <div class="section">
-            <div class="section-title">INTERVENTION</div>
-            <p>${formData.intervention || 'Non spécifié'}</p>
+
+          ${cr.assistant ? `
+          <div class="info-item" style="margin-bottom: 10px;">
+            <span class="info-label">Assistant:</span>
+            <span>${cr.assistant}</span>
           </div>
-          
-          <div class="section">
-            <div class="section-title">INDICATION</div>
-            <p>${formData.indication || 'Non spécifié'}</p>
+          ` : ""}
+
+          ${cr.anesthesiste ? `
+          <div class="info-item" style="margin-bottom: 10px;">
+            <span class="info-label">Anesthésiste:</span>
+            <span>${cr.anesthesiste}</span>
           </div>
-          
-          <div class="section">
-            <div class="section-title">TECHNIQUE CHIRURGICALE</div>
-            <p style="white-space: pre-line;">${formData.technique || 'Non spécifié'}</p>
+          ` : ""}
+
+          ${cr.infirmier ? `
+          <div class="info-item" style="margin-bottom: 10px;">
+            <span class="info-label">Infirmier:</span>
+            <span>${cr.infirmier}</span>
           </div>
-          
-          ${formData.difficultes ? `
+          ` : ""}
+
           <div class="section">
-            <div class="section-title">DIFFICULTÉS RENCONTRÉES</div>
-            <p style="white-space: pre-line;">${formData.difficultes}</p>
+            <div class="section-title">DIAGNOSTIC PRÉ-OPÉRATOIRE</div>
+            <p>${cr.diagnosticPreOperatoire || "Non spécifié"}</p>
           </div>
-          ` : ''}
-          
-          ${formData.complications ? `
+
           <div class="section">
-            <div class="section-title">COMPLICATIONS</div>
-            <p style="white-space: pre-line;">${formData.complications}</p>
+            <div class="section-title">DESCRIPTION DE L'OPÉRATION</div>
+            <p style="white-space: pre-line;">${cr.descriptionOperation || "Non spécifié"}</p>
           </div>
-          ` : ''}
-          
+
+          <div class="section">
+            <div class="section-title">GESTES RÉALISÉS</div>
+            <p style="white-space: pre-line;">${cr.gestesRealises || "Non spécifié"}</p>
+          </div>
+
+          ${cr.complications ? `
+          <div class="section">
+            <div class="section-title" style="color: #dc3545;">COMPLICATIONS</div>
+            <p style="white-space: pre-line;">${cr.complications}</p>
+          </div>
+          ` : ""}
+
           <div class="section">
             <div class="section-title">SUITES OPÉRATOIRES</div>
-            <p style="white-space: pre-line;">${formData.suitesOperatoires || 'Non spécifié'}</p>
+            <p style="white-space: pre-line;">${cr.suitesOperatoires || "Non spécifié"}</p>
           </div>
-          
+
+          ${cr.traitementPostOperatoire ? `
           <div class="section">
-            <div class="section-title">PIÈCES ANATOMOPATHOLOGIQUES</div>
-            <p>${formData.piecesAnatomopathologiques || 'Non spécifié'}</p>
+            <div class="section-title">TRAITEMENT POST-OPÉRATOIRE</div>
+            <p style="white-space: pre-line;">${cr.traitementPostOperatoire}</p>
           </div>
-          
-          ${formData.transfusion ? `
-          <div class="section">
-            <div class="section-title">TRANSFUSION</div>
-            <p>${formData.transfusion}</p>
-          </div>
-          ` : ''}
-          
-          ${formData.observation ? `
+          ` : ""}
+
+          ${cr.observations ? `
           <div class="section">
             <div class="section-title">OBSERVATIONS</div>
-            <p style="white-space: pre-line;">${formData.observation}</p>
+            <p style="white-space: pre-line;">${cr.observations}</p>
           </div>
-          ` : ''}
-          
+          ` : ""}
+
           <div class="footer">
-            <p>Fait le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</p>
+            <p>Fait le ${dateCreation}</p>
             <p>Document généré par le système de gestion médicale</p>
           </div>
         </body>
         </html>
       `;
-      
+
       printWindow.document.write(htmlContent);
       printWindow.document.close();
       printWindow.print();
     }
   };
 
+  const getTypeLibelle = (type: TypeCompteRenduOperatoire) => {
+    return COMPTE_RENDU_OPERATOIRE_LABELS[type] || "Opération";
+  };
+
+  const getStatutBadge = (statut: string) => {
+    switch (statut) {
+      case "planifie": return "secondary";
+      case "en_cours": return "warning";
+      case "termine": return "success";
+      case "annule": return "danger";
+      default: return "secondary";
+    }
+  };
+
+  const getStatutLibelle = (statut: string) => {
+    switch (statut) {
+      case "planifie": return "Planifié";
+      case "en_cours": return "En cours";
+      case "termine": return "Terminé";
+      case "annule": return "Annulé";
+      default: return statut;
+    }
+  };
+
   return (
-    <Modal show={show} onHide={onHide} size="xl">
-      <Modal.Header closeButton className="bg-info text-white">
-        <Modal.Title className="d-flex align-items-center">
-          <FaProcedures className="me-2" />
-          Génération du Compte Rendu Opératoire
-        </Modal.Title>
-      </Modal.Header>
-      <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-        {error && <Alert variant="danger">{error}</Alert>}
-        {success && <Alert variant="success">{success}</Alert>}
+    <>
+      <Modal show={show} onHide={onHide} size="xl">
+        <Modal.Header closeButton className="bg-info text-dark">
+          <Modal.Title className="d-flex align-items-center">
+            <FaStethoscope className="me-2" />
+            Gestion des Comptes Rendus Opératoires
+            <Badge bg="info" className="ms-2">{comptesRendus.length}</Badge>
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {error && <Alert variant="danger">{error}</Alert>}
+          {success && <Alert variant="success">{success}</Alert>}
 
-        <Form onSubmit={handleSave}>
-          <Card className="mb-3">
-            <Card.Header className="bg-light">
-              <h6 className="mb-0">Informations Générales</h6>
-            </Card.Header>
-            <Card.Body>
-              <Row>
-                <Col md={4}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Date d'intervention *</Form.Label>
-                    <Form.Control
-                      type="date"
-                      value={formData.dateIntervention.toISOString().split('T')[0]}
-                      onChange={(e) => setFormData({...formData, dateIntervention: new Date(e.target.value)})}
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Heure d'intervention</Form.Label>
-                    <Form.Control
-                      type="time"
-                      value={formData.heureIntervention}
-                      onChange={(e) => setFormData({...formData, heureIntervention: e.target.value})}
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={4}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Durée de l'intervention</Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="Ex: 2h30"
-                      value={formData.dureeIntervention}
-                      onChange={(e) => setFormData({...formData, dureeIntervention: e.target.value})}
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Chirurgien *</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.chirurgien}
-                      onChange={(e) => setFormData({...formData, chirurgien: e.target.value})}
-                      placeholder="Nom du chirurgien"
-                      required
-                    />
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Anesthésiste</Form.Label>
-                    <Form.Control
-                      type="text"
-                      value={formData.anesthesiste}
-                      onChange={(e) => setFormData({...formData, anesthesiste: e.target.value})}
-                      placeholder="Nom de l'anesthésiste"
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-              
-              <Row>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Type d'anesthésie</Form.Label>
-                    <Form.Select
-                      value={formData.typeAnesthesie}
-                      onChange={(e) => setFormData({...formData, typeAnesthesie: e.target.value})}
-                    >
-                      <option value="">Sélectionner...</option>
-                      <option value="generale">Anesthésie générale</option>
-                      <option value="locale">Anesthésie locale</option>
-                      <option value="locoregionale">Anesthésie locorégionale</option>
-                      <option value="rachianesthesie">Rachianesthésie</option>
-                    </Form.Select>
-                  </Form.Group>
-                </Col>
-                <Col md={6}>
-                  <Form.Group className="mb-3">
-                    <Form.Label>Perte sanguine</Form.Label>
-                    <Form.Control
-                      type="text"
-                      placeholder="Ex: 200 ml"
-                      value={formData.perteSanguine}
-                      onChange={(e) => setFormData({...formData, perteSanguine: e.target.value})}
-                    />
-                  </Form.Group>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
-
-          <Card className="mb-3">
-            <Card.Header className="bg-light">
-              <h6 className="mb-0">Détails de l'Intervention</h6>
-            </Card.Header>
-            <Card.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>Intervention *</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.intervention}
-                  onChange={(e) => setFormData({...formData, intervention: e.target.value})}
-                  placeholder="Nom de l'intervention"
-                  required
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Indication *</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={2}
-                  value={formData.indication}
-                  onChange={(e) => setFormData({...formData, indication: e.target.value})}
-                  placeholder="Indication de l'intervention..."
-                  required
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Technique chirurgicale *</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={4}
-                  value={formData.technique}
-                  onChange={(e) => setFormData({...formData, technique: e.target.value})}
-                  placeholder="Description détaillée de la technique chirurgicale..."
-                  required
-                />
-              </Form.Group>
-            </Card.Body>
-          </Card>
-
-          <Card className="mb-3">
-            <Card.Header className="bg-light">
-              <h6 className="mb-0">Complications et Suites</h6>
-            </Card.Header>
-            <Card.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>Difficultés rencontrées</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={formData.difficultes}
-                  onChange={(e) => setFormData({...formData, difficultes: e.target.value})}
-                  placeholder="Difficultés rencontrées pendant l'intervention..."
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Complications</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={formData.complications}
-                  onChange={(e) => setFormData({...formData, complications: e.target.value})}
-                  placeholder="Complications éventuelles..."
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Suites opératoires immédiates *</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={formData.suitesOperatoires}
-                  onChange={(e) => setFormData({...formData, suitesOperatoires: e.target.value})}
-                  placeholder="Description des suites opératoires immédiates..."
-                  required
-                />
-              </Form.Group>
-            </Card.Body>
-          </Card>
-
-          <Card className="mb-3">
-            <Card.Header className="bg-light">
-              <h6 className="mb-0">Informations Complémentaires</h6>
-            </Card.Header>
-            <Card.Body>
-              <Form.Group className="mb-3">
-                <Form.Label>Pièces anatomopathologiques</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.piecesAnatomopathologiques}
-                  onChange={(e) => setFormData({...formData, piecesAnatomopathologiques: e.target.value})}
-                  placeholder="Pièces envoyées en anatomopathologie..."
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Transfusion</Form.Label>
-                <Form.Control
-                  type="text"
-                  value={formData.transfusion}
-                  onChange={(e) => setFormData({...formData, transfusion: e.target.value})}
-                  placeholder="Détails de la transfusion si applicable..."
-                />
-              </Form.Group>
-              
-              <Form.Group className="mb-3">
-                <Form.Label>Observations</Form.Label>
-                <Form.Control
-                  as="textarea"
-                  rows={3}
-                  value={formData.observation}
-                  onChange={(e) => setFormData({...formData, observation: e.target.value})}
-                  placeholder="Observations supplémentaires..."
-                />
-              </Form.Group>
-            </Card.Body>
-          </Card>
-
-          <div className="d-flex justify-content-between">
-            <Button variant="outline-info" onClick={handlePrint}>
-              <FaPrint className="me-2" />
-              Aperçu Impression
+          <div className="d-flex justify-content-between align-items-center mb-4">
+            <h5 className="mb-0">
+              Patient: {patientNom} {patientPrenoms}
+            </h5>
+            <Button variant="primary" onClick={handleAdd}>
+              <FaPlus className="me-2" />
+              Nouveau CR Opératoire
             </Button>
-            <div>
-              <Button variant="secondary" className="me-2" onClick={onHide}>
-                Annuler
-              </Button>
-              <Button variant="info" type="submit" disabled={loading}>
-                <FaSave className="me-2" />
-                {loading ? 'Sauvegarde...' : 'Sauvegarder'}
+          </div>
+
+          {loading ? (
+            <div className="text-center py-5">
+              <div className="spinner-border text-primary" role="status">
+                <span className="visually-hidden">Chargement...</span>
+              </div>
+            </div>
+          ) : comptesRendus.length > 0 ? (
+            <Table striped hover responsive>
+              <thead>
+                <tr>
+                  <th>N° Dossier</th>
+                  <th>Date Opération</th>
+                  <th>Type</th>
+                  <th>Chirurgien</th>
+                  <th>Statut</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {comptesRendus.map((cr) => (
+                  <tr key={cr._id}>
+                    <td className="fw-bold">{cr.numeroDossier}</td>
+                    <td>{new Date(cr.dateOperation).toLocaleDateString("fr-FR")}</td>
+                    <td>{getTypeLibelle(cr.typeOperation)}</td>
+                    <td>{cr.chirurgien}</td>
+                    <td>
+                      <Badge bg={getStatutBadge(cr.statut)}>
+                        {getStatutLibelle(cr.statut)}
+                      </Badge>
+                    </td>
+                    <td>
+                      <div className="btn-group" role="group">
+                        <Button
+                          variant="outline-primary"
+                          size="sm"
+                          onClick={() => handleEdit(cr)}
+                          title="Modifier"
+                          disabled={!canManageCR(cr)}
+                        >
+                          <FaEdit />
+                        </Button>
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={() => handlePrint(cr)}
+                          title="Imprimer"
+                        >
+                          <FaPrint />
+                        </Button>
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          onClick={() => handleDelete(cr._id)}
+                          title="Supprimer"
+                          disabled={!canManageCR(cr)}
+                        >
+                          <FaTrash />
+                        </Button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </Table>
+          ) : (
+            <div className="text-center py-5">
+              <FaStethoscope className="text-muted fs-1 mb-3" />
+              <p className="text-muted">Aucun compte rendu opératoire trouvé</p>
+              <Button variant="primary" onClick={handleAdd}>
+                <FaPlus className="me-2" />
+                Créer le premier compte rendu opératoire
               </Button>
             </div>
-          </div>
-        </Form>
-      </Modal.Body>
-    </Modal>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={onHide}>
+            Fermer
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal Ajout/Modification */}
+      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} size="lg">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            {editingCR ? "Modifier le Compte Rendu Opératoire" : "Nouveau Compte Rendu Opératoire"}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form onSubmit={handleSave}>
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Date d'opération *</Form.Label>
+                  <Form.Control
+                    type="date"
+                    value={formData.dateOperation}
+                    onChange={(e) => setFormData({ ...formData, dateOperation: e.target.value })}
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={3}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Heure début</Form.Label>
+                  <Form.Control
+                    type="time"
+                    value={formData.heureDebut}
+                    onChange={(e) => setFormData({ ...formData, heureDebut: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={3}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Heure fin</Form.Label>
+                  <Form.Control
+                    type="time"
+                    value={formData.heureFin}
+                    onChange={(e) => setFormData({ ...formData, heureFin: e.target.value })}
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Chirurgien *</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={formData.chirurgien}
+                    onChange={(e) => setFormData({ ...formData, chirurgien: e.target.value })}
+                    placeholder="Nom du chirurgien..."
+                    required
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Type d'opération *</Form.Label>
+                  <Form.Select
+                    value={formData.typeOperation}
+                    onChange={(e) => setFormData({ ...formData, typeOperation: e.target.value as TypeCompteRenduOperatoire })}
+                    required
+                  >
+                    {COMPTE_RENDU_OPERATOIRE_TYPES.map(type => (
+                      <option key={type} value={type}>{COMPTE_RENDU_OPERATOIRE_LABELS[type]}</option>
+                    ))}
+                  </Form.Select>
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Row>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Assistant</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={formData.assistant}
+                    onChange={(e) => setFormData({ ...formData, assistant: e.target.value })}
+                    placeholder="Assistant chirurgical..."
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Anesthésiste</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={formData.anesthesiste}
+                    onChange={(e) => setFormData({ ...formData, anesthesiste: e.target.value })}
+                    placeholder="Anesthésiste..."
+                  />
+                </Form.Group>
+              </Col>
+              <Col md={4}>
+                <Form.Group className="mb-3">
+                  <Form.Label>Infirmier</Form.Label>
+                  <Form.Control
+                    type="text"
+                    value={formData.infirmier}
+                    onChange={(e) => setFormData({ ...formData, infirmier: e.target.value })}
+                    placeholder="Infirmier..."
+                  />
+                </Form.Group>
+              </Col>
+            </Row>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Diagnostic pré-opératoire *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={formData.diagnosticPreOperatoire}
+                onChange={(e) => setFormData({ ...formData, diagnosticPreOperatoire: e.target.value })}
+                placeholder="Diagnostic avant l'opération..."
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Description de l'opération *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={formData.descriptionOperation}
+                onChange={(e) => setFormData({ ...formData, descriptionOperation: e.target.value })}
+                placeholder="Description détaillée de l'opération..."
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Gestes réalisés *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={formData.gestesRealises}
+                onChange={(e) => setFormData({ ...formData, gestesRealises: e.target.value })}
+                placeholder="Gestes chirurgicaux effectués..."
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Complications</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={formData.complications}
+                onChange={(e) => setFormData({ ...formData, complications: e.target.value })}
+                placeholder="Complications survenues (si applicable)..."
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Suites opératoires *</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={formData.suitesOperatoires}
+                onChange={(e) => setFormData({ ...formData, suitesOperatoires: e.target.value })}
+                placeholder="Suites et évolution post-opératoire..."
+                required
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Traitement post-opératoire</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={formData.traitementPostOperatoire}
+                onChange={(e) => setFormData({ ...formData, traitementPostOperatoire: e.target.value })}
+                placeholder="Traitement prescrit après l'opération..."
+              />
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Statut</Form.Label>
+              <Form.Select
+                value={formData.statut}
+                onChange={(e) => setFormData({ ...formData, statut: e.target.value as StatutCompteRenduOperatoire })}
+              >
+                <option value="planifie">Planifié</option>
+                <option value="en_cours">En cours</option>
+                <option value="termine">Terminé</option>
+                <option value="annule">Annulé</option>
+              </Form.Select>
+            </Form.Group>
+
+            <Form.Group className="mb-3">
+              <Form.Label>Observations</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={2}
+                value={formData.observations}
+                onChange={(e) => setFormData({ ...formData, observations: e.target.value })}
+                placeholder="Observations supplémentaires..."
+              />
+            </Form.Group>
+
+            <div className="d-flex justify-content-end">
+              <Button variant="secondary" className="me-2" onClick={() => setShowAddModal(false)}>
+                Annuler
+              </Button>
+              <Button variant="primary" type="submit">
+                {editingCR ? "Modifier" : "Créer"}
+              </Button>
+            </div>
+          </Form>
+        </Modal.Body>
+      </Modal>
+    </>
   );
 }
