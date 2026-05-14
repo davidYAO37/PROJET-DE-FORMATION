@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { Prescription } from "@/models/Prescription";
 
-// GET /api/prescriptionMedecin/[id] - Récupérer une prescription par ID
+// GET /api/prescription/[id] - Récupérer une prescription par ID
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
     await db();
 
@@ -16,7 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
         return NextResponse.json(prescription);
     } catch (error: any) {
-        console.error("Erreur GET /api/prescriptionMedecin/[id]:", error);
+        console.error("Erreur GET /api/prescription/[id]:", error);
         return NextResponse.json({
             error: "Erreur lors de la récupération de la prescription",
             details: error.message
@@ -24,7 +24,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
 }
 
-// PUT /api/prescriptionMedecin/[id] - Mettre à jour une prescription
+// PUT /api/prescription/[id] - Mettre à jour une prescription
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await db();
 
@@ -32,7 +32,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
         const { id } = await params;
         const body = await request.json();
 
-       
+        console.log("🔄 PUT /api/prescription/[id] - ID:", id, "Body:", body);
+        console.log("📊 StatuPrescriptionMedecin reçu:", body.statutPrescriptionMedecin || body.StatuPrescriptionMedecin);
+
         // Mapper les champs du composant vers le modèle
         const prescriptionData: any = {
             Designation: body.Designation || "PHARMACIE",
@@ -117,7 +119,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             message: "Prescription mise à jour avec succès"
         });
     } catch (error: any) {
-        console.error("Erreur PUT /api/prescriptionMedecin/[id]:", error);
+        console.error("Erreur PUT /api/prescription/[id]:", error);
         return NextResponse.json({
             error: "Erreur lors de la mise à jour de la prescription",
             details: error.message

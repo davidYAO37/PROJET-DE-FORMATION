@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
       anteChirurgico: patient.AnteChirurgico || '',
       anteFamille: patient.AnteFamille || '',
       autreAnte: patient.AutreAnte || '',
-      allergies: patient.AlergiePatient || ''
+      AlergiePatient: patient.AlergiePatient || ''
     };
     
     return NextResponse.json(antecedents);
@@ -189,7 +189,7 @@ export async function POST(request: NextRequest) {
         anteChirurgico: patient.AnteChirurgico,
         anteFamille: patient.AnteFamille,
         autreAnte: patient.AutreAnte,
-        allergies: patient.AlergiePatient
+        AlergiePatient: patient.AlergiePatient
       }
     });
     

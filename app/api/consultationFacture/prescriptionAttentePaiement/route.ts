@@ -66,7 +66,9 @@ export async function GET(req: NextRequest) {
                     // Ajout des champs supplémentaires pour cohérence
                     Payéoupas: p.Payéoupas || false,
                     StatutPaiement: p.StatutPaiement || "En cours de Paiement",
-                    Rclinique: p.Rclinique || ""
+                    Rclinique: p.Rclinique || "",
+                    // Ajout de l'ID du patient pour la mise à jour
+                    IdPatient: p.IdPatient?._id?.toString() || p.IdPatient?.toString() || ""
                 };
             } catch (mapError) {
                 console.error("Erreur lors du mapping d'une prescription:", mapError);

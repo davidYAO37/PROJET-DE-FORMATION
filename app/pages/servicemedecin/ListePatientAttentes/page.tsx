@@ -24,6 +24,7 @@ interface PatientEnAttente {
   glycemie?: string;
   diagnostic?: string;
   codePrestation?: string;
+  attenteMedecin?: number;
 }
 
 export default function ListePatientAttentes() {
@@ -139,8 +140,13 @@ export default function ListePatientAttentes() {
       // Les consultations sont déjà filtrées par IDMEDECIN dans l'API
       const consultationsDuMedecin = consultationsData.consultations || [];
       
+      // Filtrer pour n'afficher que les consultations avec attenteMedecin < 2
+      const consultationsActives = consultationsDuMedecin.filter((consultation: any) => 
+        (consultation.attenteMedecin ?? 0) < 2
+      );
+      
       // Transformer les données en format PatientEnAttente
-      const patientsEnAttente: PatientEnAttente[] = consultationsDuMedecin.map((consultation: any) => ({
+      const patientsEnAttente: PatientEnAttente[] = consultationsActives.map((consultation: any) => ({
         _id: consultation._id,
         nom: consultation.PatientP || 'Non spécifié',
         prenom: consultation.IdPatient?.prenoms || '',
@@ -164,7 +170,8 @@ export default function ListePatientAttentes() {
         tension: consultation.Tension || '',
         glycemie: consultation.Glycemie || '',
         diagnostic: consultation.Diagnostic || '',
-        codePrestation: consultation.CodePrestation || ''
+        codePrestation: consultation.CodePrestation || '',
+        attenteMedecin: consultation.attenteMedecin ?? 0
       }));
 
       setPatients(patientsEnAttente);

@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { Table, Form, Button, InputGroup, Row, Col, Alert } from "react-bootstrap";
+import { Table, Form, Button, InputGroup, Row, Col, Alert, Card } from "react-bootstrap";
+import MedicamentSelectModal from "./MedicamentSelectModal";
 
 // Type pour un médicament
 export interface IMedicament {
@@ -226,13 +227,33 @@ type Props = {
   remise?: number;
   presetLines?: ILigneMedicament[]; // Lignes pré-remplies depuis patientprescription
   externalResetKey?: number; // Clé pour réinitialiser les lignes
+  prescriptionData?: { Rclinique?: string }; // Données de prescription
+  onRcliniqueChange?: (Rclinique: string) => void; // Callback pour la mise à jour
 };
 
-export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0 }: Props) {
+export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0, prescriptionData, onRcliniqueChange }: Props) {
   const [lignes, setLignes] = useState<ILigneMedicament[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentUser] = useState("Utilisateur"); // Simuler gsUtilisateur
   const [medicamentsEnStock, setMedicamentsEnStock] = useState<IMedicament[]>([]);
+  const [showMedicamentModal, setShowMedicamentModal] = useState(false);
+  const [currentLigneId, setCurrentLigneId] = useState<string | null>(null);
+  const [rclinique, setRclinique] = useState(prescriptionData?.Rclinique || "");
+
+  // Synchroniser le Rclinique avec les props de prescription
+  useEffect(() => {
+    if (prescriptionData?.Rclinique !== undefined) {
+      setRclinique(prescriptionData.Rclinique);
+    }
+  }, [prescriptionData?.Rclinique]);
+
+  // Notifier le parent des changements de Rclinique (stabilisé avec useCallback)
+  const handleRcliniqueChange = useCallback((value: string) => {
+    setRclinique(value);
+    if (onRcliniqueChange) {
+      onRcliniqueChange(value);
+    }
+  }, [onRcliniqueChange]);
 
   // Charger les lignes pré-remplies quand elles changent
   useEffect(() => {
@@ -374,9 +395,9 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
     }
   }, [lignes]); // Retirer onLignesChange des dépendances
 
-  // Ajouter une nouvelle ligne
+  // Ajouter des médicaments via le modal
   const addLigne = () => {
-    setLignes(prev => [...prev, emptyLigne()]);
+    setShowMedicamentModal(true);
   };
 
   // Mettre à jour une ligne
@@ -393,38 +414,40 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
     setLignes(prev => prev.filter(l => l.id !== id));
   };
 
-  // Gérer la sélection d'un médicament
-  const handleSelectMedicament = (id: string, medicament: IMedicament) => {
-    // HLitRecherche(PHARMACIE,Designation,MoiMême..ValeurAffichée)
-    // SI HTrouve(PHARMACIE)=Vrai ALORS	
-    if (medicament && medicament._id) {
-      // TABLE_PARTIENT_PRESCRIPTION.COL_Date=DateSys()
-      // TABLE_PARTIENT_PRESCRIPTION.COL_Exclus="NON"
-      // TABLE_PARTIENT_PRESCRIPTION.COL_QtéP=1
-      // TABLE_PARTIENT_PRESCRIPTION.COL_Prixunitaire=PHARMACIE.PrixVente
-      // TABLE_PARTIENT_PRESCRIPTION.COL_MédicamentID=PHARMACIE.IDMEDICAMENT
-      // TABLE_PARTIENT_PRESCRIPTION.COL_Reference=PHARMACIE.Reference
-      // TABLE_PARTIENT_PRESCRIPTION.COL_StatuPrescriptionMedecin=2
+  // Gérer l'ouverture du modal de sélection de médicament
+  const handleOpenMedicamentModal = (ligneId: string) => {
+    setCurrentLigneId(ligneId);
+    setShowMedicamentModal(true);
+  };
 
-      updateLigne(id, {
-        medicamentId: medicament._id, // COL_MédicamentID=PHARMACIE.IDMEDICAMENT
-        designation: medicament.Designation,
-        prixUnitaire: medicament.PrixVente || 0, // COL_Prixunitaire=PHARMACIE.PrixVente
-        quantite: 1, // COL_QtéP=1
-        total: medicament.PrixVente || 0,
-        DATE: new Date().toISOString().split('T')[0], // COL_Date=DateSys()
-        Exclus: "NON", // COL_Exclus="NON"
-        StatuPrescriptionMedecin: 2, // COL_StatuPrescriptionMedecin=2
-        reference: medicament.Reference || "", // COL_Reference=PHARMACIE.Reference
-        partAssurance: 0,
-        partAssure: medicament.PrixVente || 0
+  // Gérer la sélection multiple de médicaments depuis le modal
+  const handleMedicamentsSelect = (medicaments: IMedicament[]) => {
+    if (medicaments.length > 0) {
+      // Ajouter chaque médicament sélectionné comme une nouvelle ligne
+      const nouvellesLignes = medicaments.map(medicament => {
+        if (medicament && medicament._id) {
+          return {
+            ...emptyLigne(medicament),
+            DATE: new Date().toISOString().split('T')[0], // COL_Date=DateSys()
+            Exclus: "NON", // COL_Exclus="NON"
+            StatuPrescriptionMedecin: 2, // COL_StatuPrescriptionMedecin=2
+            partAssurance: 0,
+            partAssure: medicament.PrixVente || 0
+          };
+        }
+        return emptyLigne();
       });
 
+      // Ajouter les nouvelles lignes à la liste existante
+      setLignes(prev => [...prev, ...nouvellesLignes]);
+      
       // Facture_Pharmacie() - Calcul des totaux
       calculerTotaux();
     }
+    setCurrentLigneId(null);
   };
 
+  
   // Mettre à jour la quantité et recalculer le total
   const handleQuantiteChange = (id: string, quantite: number) => {
     const ligne = lignes.find(l => l.id === id);
@@ -513,14 +536,12 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
           <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
 
             <tr>
-              <th style={{ width: '5%' }}>#</th>
-              <th style={{ width: '15%' }}>Date</th>
-              <th style={{ width: '35%' }}>Médicament</th>
-              <th style={{ width: '10%' }}>Qté</th>
-              <th style={{ width: '15%' }}>P.U (FCFA)</th>
-              <th style={{ width: '20%' }}>Posologie</th>
-              <th style={{ width: '10%' }}>Exclusion</th>
-              <th style={{ width: '5%' }}></th>
+              <th style={{ width: '50px', minWidth: '50px' }}>#</th>
+              <th style={{ width: '120px', minWidth: '120px' }}>Date</th>
+              <th style={{ minWidth: '300px' }}>Médicament</th>
+              <th style={{ width: '80px', minWidth: '80px' }}>Qté</th>
+              <th style={{ minWidth: '200px' }}>Posologie</th>
+              <th style={{ width: '50px', minWidth: '50px' }}></th>
             </tr>
           </thead>
           <tbody>
@@ -543,12 +564,31 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
                     />
                   </td>
                   <td>
-                    <MedicamentSelect
-                      medicaments={medicaments}
-                      selectedId={ligne.medicamentId || ""}
-                      onSelect={(medicament: IMedicament) => handleSelectMedicament(ligne.id, medicament)}
-                      disabled={isLigneLocked}
-                    />
+                    {ligne.designation ? (
+                      <div className="d-flex align-items-center">
+                        <div className="flex-grow-1">
+                          <div className="fw-semibold text-truncate" title={ligne.designation}>
+                            {ligne.designation}
+                          </div>
+                          {ligne.reference && (
+                            <small className="text-muted">
+                              Réf: {ligne.reference}
+                            </small>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="outline-primary"
+                        className="w-100"
+                        onClick={() => handleOpenMedicamentModal(ligne.id)}
+                        disabled={isLigneLocked}
+                        title="Sélectionner un médicament"
+                      >
+                        <i className="bi bi-capsule me-2"></i>
+                        Sélectionner un médicament
+                      </Button>
+                    )}
                   </td>
                   <td>
                     <Form.Control
@@ -561,7 +601,6 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
                       title={isLigneLocked ? "Ligne verrouillée - statut prescription = 3" : ""}
                     />
                   </td>
-                  <td className="text-end">{ligne.prixUnitaire.toLocaleString()}</td>
                   <td>
                     <Form.Control
                       type="text"
@@ -572,18 +611,6 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
                       disabled={isLigneLocked}
                       title={isLigneLocked ? "Ligne verrouillée - statut prescription = 3" : ""}
                     />
-                  </td>
-                  <td className="text-center">
-                    <Form.Select
-                      value={ligne.Exclus || "NON"}
-                      onChange={(e) => updateLigne(ligne.id, { Exclus: e.target.value })}
-                      size="sm"
-                      disabled={isLigneLocked}
-                      title={isLigneLocked ? "Ligne verrouillée - statut prescription = 3" : ""}
-                    >
-                      <option value="NON">NON</option>
-                      <option value="OUI">OUI</option>
-                    </Form.Select>
                   </td>
                   <td className="text-center">
                     {!isLigneLocked ? (
@@ -610,7 +637,7 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
             })}
             {lignes.length === 0 && (
               <tr>
-                <td colSpan={8} className="text-center text-muted py-3">
+                <td colSpan={6} className="text-center text-muted py-3">
                   Aucun médicament ajouté. Cliquez sur "Ajouter un médicament" pour commencer.
                 </td>
               </tr>
@@ -618,6 +645,43 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
           </tbody>
         </Table>
       </div>
+
+      {/* Section Renseignement clinique */}
+      <div className="mt-4">
+        <Card className="shadow-sm">
+          <Card.Header className="bg-light">
+            <h6 className="mb-0">
+              <i className="bi bi-clipboard-pulse me-2"></i>
+              Renseignement clinique
+            </h6>
+          </Card.Header>
+          <Card.Body>
+            <Form.Group>
+              <Form.Label className="fw-semibold">Observations cliniques</Form.Label>
+              <Form.Control
+                as="textarea"
+                rows={3}
+                value={rclinique}
+                onChange={(e) => handleRcliniqueChange(e.target.value)}
+                placeholder="Ajoutez ici les observations cliniques, notes du médecin ou informations complémentaires..."
+                style={{ fontSize: '14px' }}
+              />
+            </Form.Group>
+          </Card.Body>
+        </Card>
+      </div>
+
+      {/* Modal de sélection de médicament */}
+      <MedicamentSelectModal
+        show={showMedicamentModal}
+        onHide={() => {
+          setShowMedicamentModal(false);
+          setCurrentLigneId(null);
+        }}
+        medicaments={medicamentsEnStock.length > 0 ? medicamentsEnStock : medicaments}
+        onMedicamentsSelect={handleMedicamentsSelect}
+        selectedMedicamentIds={[]}
+      />
     </div>
   );
 }

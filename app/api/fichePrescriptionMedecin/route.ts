@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
         anteChirurgico: patient.AnteChirurgico,
         anteFamille: patient.AnteFamille,
         autreAnte: patient.AutreAnte,
-        allergies: patient.AlergiePatient
+        AlergiePatient: patient.AlergiePatient
       } : {},
       prescriptions: prescriptions.map(presc => ({
         _id: presc._id,

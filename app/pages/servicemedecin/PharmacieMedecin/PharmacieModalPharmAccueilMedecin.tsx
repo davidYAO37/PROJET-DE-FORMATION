@@ -153,7 +153,7 @@ useEffect(() => {
       Designation: "PHARMACIE",
       DatePres: formData.DatePres || new Date().toISOString().split('T')[0],
       SaisiPar: currentUser || "",
-      Rclinique: formData.Rclinique || prescription.Rclinique || "",
+      Rclinique: prescription.Rclinique || "",
       CodePrestation: codePrestation, // ✅ Déjà inclus - champ requis
       StatuPrescriptionMedecin: 2,
       IDpriseCharge: gxMonidORDONNANCE || "",
@@ -231,7 +231,7 @@ useEffect(() => {
         const prescriptionData = await modifiePrescription();
 
         // HAjoute(PRESCRIPTION)
-        const prescriptionResponse = await fetch('/api/prescription', {
+        const prescriptionResponse = await fetch('/api/prescriptionMedecin', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(prescriptionData)
@@ -254,7 +254,7 @@ useEffect(() => {
         console.log("📝 nMonid≠0 - Modification prescription existante");
 
         // HLitRecherche(PRESCRIPTION,IDPRESCRIPTION,nMonid)
-        const prescriptionResponse = await fetch(`/api/prescription/${nMonid}`);
+        const prescriptionResponse = await fetch(`/api/prescriptionMedecin/${nMonid}`);
 
         if (prescriptionResponse.ok) {
           const existingPrescription = await prescriptionResponse.json();
@@ -266,7 +266,7 @@ useEffect(() => {
             const updatedPrescriptionData = await modifiePrescription();
 
             // HModifie(PRESCRIPTION)
-            const updateResponse = await fetch(`/api/prescription/${nMonid}`, {
+            const updateResponse = await fetch(`/api/prescriptionMedecin/${nMonid}`, {
               method: 'PUT',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify(updatedPrescriptionData)
@@ -424,7 +424,7 @@ const isGeneratedId = (id: string): boolean => {
 
     try {
       // Rechercher la prescription par CodePrestation
-      const prescriptionRes = await fetch(`/api/prescription?CodePrestation=${encodeURIComponent(code)}`);
+      const prescriptionRes = await fetch(`/api/prescriptionMedecin?CodePrestation=${encodeURIComponent(code)}`);
 
       if (prescriptionRes.ok) {
         const presData = await prescriptionRes.json();
@@ -879,17 +879,15 @@ const isGeneratedId = (id: string): boolean => {
                     onTotauxChange={handleTotauxChange}
                     presetLines={presetLines}
                     externalResetKey={resetKey}
+                    prescriptionData={prescription}
+                    onRcliniqueChange={(Rclinique) => {
+                      setPrescription(prev => ({ ...prev, Rclinique }));
+                    }}
                   />
                 </Card.Body>
               </Card>
 
-              {/* Totaux et paiement */}
-              <ModePaiementPharmAccueilMedecin
-                formData={formData}
-                setFormData={handleFormDataChange}
-                totaux={totaux}
-              />
-
+              
               {/* Bouton de validation */}
               <ValidationPaiementPharmAccueilMedecin onValidate={handleValiderPaiement} onHide={onHide} />
             </Col>

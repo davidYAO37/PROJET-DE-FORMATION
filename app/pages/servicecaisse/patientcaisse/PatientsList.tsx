@@ -3,6 +3,7 @@
 import React from 'react';
 import { BiEdit } from 'react-icons/bi';
 import { IoTrophySharp } from 'react-icons/io5';
+import { Spinner } from 'react-bootstrap';
 
 type Patient = {
   _id: string; // identifiant MongoDB
@@ -18,9 +19,10 @@ type Props = {
   patients: Patient[];
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
+  deleteLoadingId?: string | null; // Ajout de l'état de chargement
 };
 
-export default function PatientsList({ patients, onEdit, onDelete }: Props) {
+export default function PatientsList({ patients, onEdit, onDelete, deleteLoadingId }: Props) {
   return (
     <div className="mt-4 table-responsive">
       <table className="table table-bordered table-hover">
@@ -62,8 +64,14 @@ export default function PatientsList({ patients, onEdit, onDelete }: Props) {
                   <button
                     className="btn btn-sm btn-danger me-2 mb-1"
                     onClick={() => onDelete(patient._id)}
-                    title="Supprimer le patient"                  >
-                    <IoTrophySharp />
+                    title="Supprimer le patient"
+                    disabled={deleteLoadingId === patient._id}
+                  >
+                    {deleteLoadingId === patient._id ? (
+                      <Spinner as="span" animation="border" size="sm" />
+                    ) : (
+                      <IoTrophySharp />
+                    )}
                   </button>
                   <button
                     className="btn btn-sm btn-primary mb-1"

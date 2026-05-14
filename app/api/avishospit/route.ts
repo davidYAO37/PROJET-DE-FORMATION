@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     }
     
     const avis = await AvisHospit.find(query)
-      .populate('IDPARTIENT', 'Nom Prenoms Code_dossier')
+      .populate('IDPARTIENT', 'Nom Prenoms Code_dossier Assurance SOCIETE_PATIENT')
       .populate('IDCONSULTATION', 'CodePrestation Date_consulation')
       .sort({ createdAt: -1 })
       .lean();

@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList, FaLock } from 'react-icons/fa';
 
 import { Patient } from '@/types/patient';
 import { CgAbstract, CgUserList } from 'react-icons/cg';
@@ -71,17 +71,59 @@ export default function Page() {
 
   // ✅ Supprimer patient avec loader par id
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
+  const [patientsWithConsultations, setPatientsWithConsultations] = useState<Set<string>>(new Set());
+
+  // Vérifier quels patients ont des consultations
+  useEffect(() => {
+    const checkPatientsConsultations = async () => {
+      const patientsWithConsults = new Set<string>();
+      
+      for (const patient of patients) {
+        try {
+          const response = await fetch(`/api/consultation?patientId=${patient._id}`);
+          if (response.ok) {
+            const consultations = await response.json();
+            if (consultations.length > 0 && patient._id) {
+              patientsWithConsults.add(patient._id);
+            }
+          }
+        } catch (error) {
+          console.error('Erreur vérification consultations:', error);
+        }
+      }
+      
+      setPatientsWithConsultations(patientsWithConsults);
+    };
+
+    if (patients.length > 0) {
+      checkPatientsConsultations();
+    }
+  }, [patients]);
   const handleDeletePatient = async (id?: string) => {
     if (!id) return;
+    
+    // Demander confirmation avant suppression
+    const confirmDelete = window.confirm("Êtes-vous sûr de vouloir supprimer ce patient ?");
+    if (!confirmDelete) return;
+    
     setDeleteLoadingId(id);
     try {
       const response = await fetch(`/api/patients/${id}`, { method: 'DELETE' });
+      const data = await response.json();
+      
       if (response.ok) {
         setPatients((prev) => prev.filter((p) => p._id !== id));
-        showNotification(`🗑️ Patient supprimé.`, 'danger');
+        showNotification(`🗑️ Patient supprimé avec succès.`, 'success');
+      } else {
+        if (response.status === 400 && data.message.includes("consultations")) {
+          showNotification(`❌ ${data.message}`, 'danger');
+        } else {
+          showNotification(`❌ Erreur lors de la suppression: ${data.message}`, 'danger');
+        }
       }
-    } catch {
-      showNotification('Erreur suppression', 'danger');
+    } catch (error) {
+      console.error('Erreur suppression patient:', error);
+      showNotification('❌ Erreur de connexion lors de la suppression', 'danger');
     } finally {
       setDeleteLoadingId(null);
     }
@@ -203,16 +245,24 @@ export default function Page() {
                         <FaEdit />
                       </Button>
                       <Button
-                        variant="outline-danger"
-                        title="Supprimer le patient"
+                        variant={patient._id && patientsWithConsultations.has(patient._id) ? "outline-secondary" : "outline-danger"}
+                        title={patient._id && patientsWithConsultations.has(patient._id) 
+                          ? "Ce patient a des consultations et ne peut pas être supprimé" 
+                          : "Supprimer le patient"}
                         size="sm"
                         onClick={() => handleDeletePatient(patient._id)}
-                        disabled={deleteLoadingId === patient._id}
+                        disabled={deleteLoadingId === patient._id || Boolean(patient._id && patientsWithConsultations.has(patient._id))}
                       >
                         {deleteLoadingId === patient._id ? (
                           <Spinner as="span" animation="border" size="sm" />
                         ) : (
-                          <FaTrash />
+                          <>
+                            {patient._id && patientsWithConsultations.has(patient._id) ? (
+                              <FaLock />
+                            ) : (
+                              <FaTrash />
+                            )}
+                          </>
                         )}
                       </Button>
                     </td>

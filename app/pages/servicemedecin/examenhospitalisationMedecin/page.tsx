@@ -259,16 +259,7 @@ export default function HospitalisationPageMedecin() {
                             setResetKey((k) => k + 1);
                         }}
                     />
-                    <AssuranceInfoMedecin
-                        formData={formData}
-                        setFormData={setFormData}
-                        currentLignes={currentLignes}
-                        onRecalculateLines={() => {
-                            // Déclencher le recalcul en changeant la clé
-                            setTriggerRecalculation(prev => prev + 1);
-                        }}
-                    />
-                </Col>
+                                    </Col>
 
                 <Col md={9}>
                     <Form>
@@ -294,7 +285,7 @@ export default function HospitalisationPageMedecin() {
                                         }
 
                                         try {
-                                            const res = await fetch(`/api/examenhospitalisation?CodePrestation=${encodeURIComponent(CodePrestation)}&typeActe=${encodeURIComponent(value)}`);
+                                            const res = await fetch(`/api/examenhospitalisationMedecin?CodePrestation=${encodeURIComponent(CodePrestation)}&typeActe=${encodeURIComponent(value)}`);
 
                                             if (res.ok) {
                                                 const data = await res.json();
@@ -522,15 +513,12 @@ export default function HospitalisationPageMedecin() {
                         />
                     </Row>
                     <Row>
-                        <Col md={5}>
+                        <Col md={12}>
                             <CliniqueInfoMedecin
                                 formData={formData}
                                 setFormData={setFormData}
                                 hasActesMedecin={currentLignes.some(ligne => ligne.StatutMedecinActe === "OUI")}
                             />
-                        </Col>
-                        <Col md={7}>
-                            <PaiementInfoMedecin formData={formData} setFormData={setFormData} />
                         </Col>
                     </Row>
 
@@ -602,7 +590,7 @@ export default function HospitalisationPageMedecin() {
                             // Utiliser les lignes actuelles du composant ActesTable
                             console.log("📤 Envoi des données:", { header, lignesCount: lignesValides.length });
 
-                            const resp = await fetch('/api/examenhospitalisation', {
+                            const resp = await fetch('/api/examenhospitalisationMedecin', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({ header, lignes: lignesValides, Recupar: recuPar }),

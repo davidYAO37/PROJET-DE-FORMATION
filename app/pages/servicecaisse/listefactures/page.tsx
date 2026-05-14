@@ -142,11 +142,38 @@ const PageListeApayer = () => {
 
             console.log('Endpoint:', endpoint);
 
+            // Préparer les données à envoyer
+            let requestBody: any = { statutPrescriptionMedecin: 1 };
+            
+            // Pour les prescriptions, inclure l'ID du patient depuis les données brutes
+            if (row.type === 'PRESCRIPTION') {
+                console.log('Données brutes pour prescription:', row.raw);
+                
+                // Essayer différentes sources pour l'ID du patient
+                let patientId = null;
+                if (row.raw) {
+                    patientId = row.raw.IdPatient || row.raw.IDPARTIENT;
+                }
+                
+                // Si toujours pas trouvé, essayer depuis d'autres champs possibles
+                if (!patientId && row.raw) {
+                    // Certains APIs pourraient avoir l'ID dans d'autres formats
+                    patientId = row.raw.patientId || row.raw.idPatient;
+                }
+                
+                if (patientId) {
+                    requestBody.IdPatient = patientId;
+                    console.log('RequestBody avec ID patient:', requestBody);
+                } else {
+                    console.warn('⚠️ ID du patient non trouvé pour la prescription:', row);
+                }
+            }
+
             // Effectuer la requête
             const response = await fetch(endpoint, {
                 method: method,
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ statutPrescriptionMedecin: 1 })
+                body: JSON.stringify(requestBody)
             });
 
             // Gérer la réponse en différenciant JSON et HTML (page d'erreur)

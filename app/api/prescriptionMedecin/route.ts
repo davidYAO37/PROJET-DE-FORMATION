@@ -61,8 +61,8 @@ export async function POST(request: Request) {
             IDSOCIEPATASSUANCE: body.IDSOCIETEASSURANCE,
             // Champs supplémentaires pour la pharmacie
 
-            // Champs supplémentaires pour la pharmacie
-            StatuPrescriptionMedecin: body.StatuPrescriptionMedecin,
+            // Champs supplémentaires pour la pharmacie - statut 1 uniquement à l'ajout
+            StatuPrescriptionMedecin: 1,
             Payéoupas: body.Payéoupas,
             Payele: body.Payele,
             Heure: body.Heure,

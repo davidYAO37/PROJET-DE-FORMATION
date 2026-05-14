@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
         const consultation = await Consultation.findOne({
             CodePrestation: { $regex: `^${CodePrestation.trim()}$`, $options: "i" }
         })
-            .populate("IdPatient", "Nom Prenoms")     // ✅ avec majuscules
+            .populate("IdPatient", "Nom Prenoms sexe Date_naisse Age_partient Code_dossier Contact")     // ✅ tous les champs requis
             .populate("IDMEDECIN", "nom prenoms");     // ✅ avec minuscules
 
         if (!consultation) {

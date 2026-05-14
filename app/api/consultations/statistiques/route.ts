@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     
     // Calculer les statistiques
     const patientsRecus = consultations.filter(consultation => 
-      consultation.attenteMedecin === 1 // Patient déjà vu par le médecin
+      consultation.attenteMedecin === 2 // Patient reçu par le médecin (consultation terminée)
     ).length;
     
     const patientsEnAttente = consultations.filter(consultation => 

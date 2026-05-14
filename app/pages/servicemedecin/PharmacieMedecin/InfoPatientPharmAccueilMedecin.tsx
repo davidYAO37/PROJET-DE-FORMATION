@@ -283,7 +283,7 @@ export default function InfoPatientPharmAccueilMedecin({
             // HLitRecherchePremier(PRESCRIPTION,CodePrestation,SAI_N_Prestation)
             let prescriptionData: Prescription & { Rclinique?: string } = {};
             try {
-                const prescriptionUrl = `/api/prescription?CodePrestation=${encodeURIComponent(code)}`;
+                const prescriptionUrl = `/api/prescriptionMedecin?CodePrestation=${encodeURIComponent(code)}`;
                 const prescriptionRes = await fetch(prescriptionUrl);
                 
                 if (prescriptionRes.ok) {

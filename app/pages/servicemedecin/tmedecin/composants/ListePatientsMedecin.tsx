@@ -4,11 +4,17 @@ import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList } from 'react-icons/fa';
 import { Patient } from '@/types/patient';
+import DossiersPatientDropdown from './DossiersPatientDropdown';
+import DossierPatient from './DossierPatient';
+import ArretTravailModal from './ArretTravailModal';
+import CompteRenduOperatoireModal from './CompteRenduOperatoireModal';
+import RapportHospitalisationModal from './RapportHospitalisationModal';
+import AvisHospitModal from './AvisHospit/AvisHospitModal';
 
 
 const ITEMS_PER_PAGE = 10;
 
-export default function Page() {
+export default function ListePatientMedecin() {
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -24,6 +30,14 @@ export default function Page() {
   // État pour le modal unifié des Dossiers patient
   const [showPatientDossiersModal, setShowPatientDossiersModal] = useState(false);
   const [patientIdDossiersModal, setPatientIdDossiersModal] = useState<string | null>(null);
+  
+  // États pour les modaux de gestion des dossiers
+  const [showDossierPatientModal, setShowDossierPatientModal] = useState(false);
+  const [showAvisHospitalisationModal, setShowAvisHospitalisationModal] = useState(false);
+  const [showArretTravailModal, setShowArretTravailModal] = useState(false);
+  const [showCompteRenduOperatoireModal, setShowCompteRenduOperatoireModal] = useState(false);
+  const [showRapportHospitalisationModal, setShowRapportHospitalisationModal] = useState(false);
+  const [selectedPatientForModals, setSelectedPatientForModals] = useState<Patient | null>(null);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
     setToastMessage(message);
@@ -79,6 +93,32 @@ export default function Page() {
     } finally {
       setDeleteLoadingId(null);
     }
+  };
+
+  // Fonctions pour les actions du menu déroulant Dossiers Patient
+  const handleDossierPatient = (patient: Patient) => {
+    setSelectedPatientForModals(patient);
+    setShowDossierPatientModal(true);
+  };
+
+  const handleAvisHospitalisation = (patient: Patient) => {
+    setSelectedPatientForModals(patient);
+    setShowAvisHospitalisationModal(true);
+  };
+
+  const handleArretTravail = (patient: Patient) => {
+    setSelectedPatientForModals(patient);
+    setShowArretTravailModal(true);
+  };
+
+  const handleCompteRenduOperatoire = (patient: Patient) => {
+    setSelectedPatientForModals(patient);
+    setShowCompteRenduOperatoireModal(true);
+  };
+
+  const handleRapportHospitalisation = (patient: Patient) => {
+    setSelectedPatientForModals(patient);
+    setShowRapportHospitalisationModal(true);
   };
 
   // ✅ Filtrage + Pagination
@@ -170,19 +210,16 @@ export default function Page() {
                     <td>{patient.Contact}</td>
                     <td>{patient.Code_dossier}</td>
                     <td className="bg-secondary bg-opacity-10">
-                      <Button
-                        variant="outline-primary"
-                        title="Voir tous les Dossiers du patient (consultations, prescriptions, prestations...)"
-                        size="sm"
-                        className="me-3"
-                        onClick={() => {
-                          setPatientIdDossiersModal(patient._id?.toString() || '');
-                          setShowPatientDossiersModal(true);
-                        }}
-                      >
-                        <FaList className="me-2" />
-                        Dossiers Patient
-                      </Button>
+                      <DossiersPatientDropdown
+                        patientId={patient._id?.toString() || ''}
+                        patientNom={patient.Nom}
+                        patientPrenoms={patient.Prenoms}
+                        onDossierPatient={() => handleDossierPatient(patient)}
+                        onAvisHospitalisation={() => handleAvisHospitalisation(patient)}
+                        onArretTravail={() => handleArretTravail(patient)}
+                        onCompteRenduOperatoire={() => handleCompteRenduOperatoire(patient)}
+                        onRapportHospitalisation={() => handleRapportHospitalisation(patient)}
+                      />
                     </td>
                   </tr>
                 ))
@@ -225,6 +262,64 @@ export default function Page() {
           <Toast.Body className="text-white">{toastMessage}</Toast.Body>
         </Toast>
       </ToastContainer>
+
+      {/* Modal Dossier Patient Complet */}
+      {selectedPatientForModals && (
+        <DossierPatient
+          show={showDossierPatientModal}
+          onHide={() => setShowDossierPatientModal(false)}
+          patientId={selectedPatientForModals._id?.toString() || ''}
+          patientNom={selectedPatientForModals.Nom}
+          patientPrenoms={selectedPatientForModals.Prenoms}
+        />
+      )}
+
+      {/* Modal Avis d'Hospitalisation */}
+      {selectedPatientForModals && (
+        <ArretTravailModal
+          show={showArretTravailModal}
+          onHide={() => setShowArretTravailModal(false)}
+          patientId={selectedPatientForModals._id?.toString() || ''}
+          patientNom={selectedPatientForModals.Nom}
+          patientPrenoms={selectedPatientForModals.Prenoms}
+        />
+      )}
+
+      {/* Modal Avis d'Hospitalisation */}
+      {selectedPatientForModals && (
+        <AvisHospitModal
+          show={showAvisHospitalisationModal}
+          onHide={() => setShowAvisHospitalisationModal(false)}
+          patientId={selectedPatientForModals._id?.toString() || ''}
+          patientNom={selectedPatientForModals.Nom}
+          patientPrenoms={selectedPatientForModals.Prenoms}
+          Code_dossier={selectedPatientForModals.Code_dossier}
+          Assurance={selectedPatientForModals.assurance}
+          SOCIETE_PATIENT={selectedPatientForModals.SOCIETE_PATIENT}
+        />
+      )}
+
+      {/* Modal Compte Rendu Opératoire */}
+      {selectedPatientForModals && (
+        <CompteRenduOperatoireModal
+          show={showCompteRenduOperatoireModal}
+          onHide={() => setShowCompteRenduOperatoireModal(false)}
+          patientId={selectedPatientForModals._id?.toString() || ''}
+          patientNom={selectedPatientForModals.Nom}
+          patientPrenoms={selectedPatientForModals.Prenoms}
+        />
+      )}
+
+      {/* Modal Rapport d'Hospitalisation */}
+      {selectedPatientForModals && (
+        <RapportHospitalisationModal
+          show={showRapportHospitalisationModal}
+          onHide={() => setShowRapportHospitalisationModal(false)}
+          patientId={selectedPatientForModals._id?.toString() || ''}
+          patientNom={selectedPatientForModals.Nom}
+          patientPrenoms={selectedPatientForModals.Prenoms}
+        />
+      )}
 
     </Container>
 

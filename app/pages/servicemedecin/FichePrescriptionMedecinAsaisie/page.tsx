@@ -4,7 +4,8 @@ import { Container, Card, Row, Col, Form, Button, Badge, Alert, Table, Modal, Sp
 import { useRouter } from 'next/navigation';
 import PharmacieModalPharmAccueilMedecin from '../PharmacieMedecin/PharmacieModalPharmAccueilMedecin';
 import HospitalisationPageMedecin from '../examenhospitalisationMedecin/page';
-import AvisHospitModal from '../FichePrescriptionMedecin/AvisHospitModal';
+import PrintFichePrescription from '../MesImpressions/printFichePrescription';
+import AvisHospitModal from '../tmedecin/composants/AvisHospit/AvisHospitModal';
 
 interface Patient {
   _id: string;
@@ -42,6 +43,7 @@ interface Consultation {
   ExamenParaclinique?: string;
   TraitementClinique?: string;
   ConclusionClinique?: string;
+  attenteMedecin?: number;
 }
 
 interface Prescription {
@@ -75,6 +77,7 @@ export default function FichePrescriptionMedecinAsaisie() {
   const [showExamenModal, setShowExamenModal] = useState(false);
   const [showAvisHospitModal, setShowAvisHospitModal] = useState(false);
   const [avisHospitCount, setAvisHospitCount] = useState(0);
+  const [showPrintModal, setShowPrintModal] = useState(false);
   
   // États pour les nouveaux champs
   const [loadingExamenParaclinique, setLoadingExamenParaclinique] = useState(false);
@@ -180,7 +183,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           
           // Mettre à jour le patient si disponible
           if (data.IdPatient) {
-            setPatient({
+            const patientData = {
               _id: data.IdPatient._id,
               Nom: data.IdPatient.Nom,
               Prenoms: data.IdPatient.Prenoms,
@@ -192,11 +195,24 @@ export default function FichePrescriptionMedecinAsaisie() {
               Situationgeo: data.IdPatient.Situationgeo || '',
               Assurance: data.IdPatient.Assurance || '',
               Matricule: data.IdPatient.Matricule || ''
-            });
+            };
+            setPatient(patientData);
+            
+            // Charger les antécédents du patient
+            chargerAntecedentsPatient(data.IdPatient._id);
           }
           
-          // Charger les avis d'hospitalisation pour cette consultation
-          chargerAvisHospitCount();
+          // Mettre à jour la consultation actuelle
+          setConsultation({
+            ...data,
+            codePrestation: data.CodePrestation || codePrestation
+          });
+          
+          // Charger les avis d'hospitalisation pour cette consultation (après mise à jour de l'état)
+          setTimeout(() => {
+            console.log('🏥 rechercherConsultationLiee - appel chargerAvisHospitCount après timeout');
+            chargerAvisHospitCount();
+          }, 100);
         }
         
         setSuccess('Fiche initialisée avec la consultation liée');
@@ -318,10 +334,75 @@ export default function FichePrescriptionMedecinAsaisie() {
   const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Charger les antécédents d'un patient
+  const chargerAntecedentsPatient = async (patientId: string) => {
+    try {
+      const response = await fetch(`/api/fichePrescriptionMedecin/antecedents?patientId=${patientId}`);
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Convertir les antécédents objet en tableau
+        const antecedentsArray: Antecedent[] = [];
+        if (data) {
+          if (data.antecedentMedico) {
+            antecedentsArray.push({
+              _id: 'medical',
+              type: 'medical',
+              description: data.antecedentMedico
+            });
+          }
+          if (data.anteChirurgico) {
+            antecedentsArray.push({
+              _id: 'chirurgical',
+              type: 'chirurgical',
+              description: data.anteChirurgico
+            });
+          }
+          if (data.anteFamille) {
+            antecedentsArray.push({
+              _id: 'familial',
+              type: 'familial',
+              description: data.anteFamille
+            });
+          }
+          if (data.autreAnte) {
+            antecedentsArray.push({
+              _id: 'autre',
+              type: 'autre',
+              description: data.autreAnte
+            });
+          }
+          if (data.AlergiePatient) {
+            antecedentsArray.push({
+              _id: 'allergies',
+              type: 'allergie',
+              description: data.AlergiePatient
+            });
+          }
+        }
+        setAntecedents(antecedentsArray);
+      } else {
+        console.error('Erreur lors du chargement des antécédents');
+        setAntecedents([]);
+      }
+    } catch (error) {
+      console.error('Erreur lors du chargement des antécédents:', error);
+      setAntecedents([]);
+    }
+  };
+
   // Charger le nombre d'avis d'hospitalisation
   const chargerAvisHospitCount = async () => {
     try {
-      const consultationId = new URLSearchParams(window.location.search).get('consultationId');
+      // Récupérer consultationId depuis l'URL ou depuis l'état consultation
+      let consultationId = new URLSearchParams(window.location.search).get('consultationId');
+      
+      // Si pas de consultationId dans l'URL, utiliser celui de l'état consultation
+      if (!consultationId && consultation?._id) {
+        consultationId = consultation._id;
+      }
+      
       if (consultationId) {
         const response = await fetch(`/api/avishospit?consultationId=${consultationId}`);
         if (response.ok) {
@@ -330,7 +411,7 @@ export default function FichePrescriptionMedecinAsaisie() {
         }
       }
     } catch (error) {
-      console.error('Erreur lors du chargement des avis d\'hospitalisation:', error);
+      console.error('🏥 Erreur lors du chargement des avis d\'hospitalisation:', error);
     }
   };
 
@@ -461,6 +542,13 @@ export default function FichePrescriptionMedecinAsaisie() {
       chargerAvisHospitCount();
     }
   }, [showAvisHospitModal]);
+
+  // Recharger les avis d'hospitalisation quand la consultation change
+  useEffect(() => {
+    if (consultation?._id) {
+      chargerAvisHospitCount();
+    }
+  }, [consultation?._id]);
 
   // Fonctions utilitaires pour les cartes dynamiques
   const hasConstantesData = () => {
@@ -683,9 +771,11 @@ export default function FichePrescriptionMedecinAsaisie() {
       const consultationId = new URLSearchParams(window.location.search).get('consultationId');
       const codePrestation = consultationForm.codePrestation;
       
-      // Pour FichePrescriptionMedecinAsaisie, on utilise le codePrestation
-      if (!codePrestation) {
-        setError('Code Prestation manquant');
+      // Utiliser l'ID MongoDB de la consultation si disponible, sinon le codePrestation
+      const idConsultation = consultation?._id || consultationId || codePrestation;
+      
+      if (!idConsultation) {
+        setError('ID de consultation manquant');
         setTimeout(() => setError(''), 3000);
         return;
       }
@@ -704,8 +794,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          consultationId: consultationId, // Garder pour compatibilité
-          codePrestation: codePrestation, // Utiliser codePrestation comme identifiant principal
+          consultationId: idConsultation, // Utiliser l'ID MongoDB ou codePrestation
           constantes: {
             temperature: constantesForm.temperature,
             poids: constantesForm.poids,
@@ -781,6 +870,60 @@ export default function FichePrescriptionMedecinAsaisie() {
     } catch (err: any) {
       setError(err.message);
       setTimeout(() => setError(''), 5000);
+    }
+  };
+
+  const enregistrerFicheComplete = async () => {
+    try {
+      setLoading(true);
+      const consultationId = new URLSearchParams(window.location.search).get('consultationId');
+      const codePrestation = consultationForm.codePrestation;
+      
+      if (!codePrestation && !consultationId) {
+        setError('ID de consultation ou Code Prestation manquant');
+        setTimeout(() => setError(''), 3000);
+        return;
+      }
+      
+      // 1. Sauvegarder les constantes vitales si présentes
+      const hasConstantes = Object.values(constantesForm).some(value => value.trim() !== '');
+      if (hasConstantes) {
+        await sauvegarderConstantes();
+      }
+      
+      // 2. Sauvegarder la consultation
+      await sauvegarderConsultation();
+      
+      // 3. Mettre à jour attenteMedecin = 2
+      const updateResponse = await fetch('/api/consultation/updateAttente', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          consultationId,
+          codePrestation,
+          attenteMedecin: 2
+        })
+      });
+      
+      if (updateResponse.ok) {
+        setSuccess('Fiche enregistrée avec succès ! Statut mis à jour.');
+        setTimeout(() => setSuccess(''), 5000);
+        
+        // Mettre à jour l'état local
+        if (consultation) {
+          setConsultation({...consultation, attenteMedecin: 2});
+        }
+      } else {
+        throw new Error('Erreur lors de la mise à jour du statut');
+      }
+      
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors de l\'enregistrement complet de la fiche');
+      setTimeout(() => setError(''), 5000);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -967,7 +1110,7 @@ export default function FichePrescriptionMedecinAsaisie() {
         <Card.Body className="p-3">
           <Row className="align-items-center g-3">
             {/* Colonne gauche: Code Prestation */}
-            <Col md="4">
+            <Col md="5">
               <div className="d-flex flex-column">
                 <Form.Label className="small text-muted fw-semibold mb-2">
                   <i className="bi bi-upc-scan me-1"></i>
@@ -1005,95 +1148,40 @@ export default function FichePrescriptionMedecinAsaisie() {
                     {errorConsultationLiee}
                   </small>
                 )}
-                {consultationLiee && (
-                  <div className="mt-2 p-2 bg-success bg-opacity-10 border border-success rounded">
-                    <small className="text-success fw-bold">
-                      <i className="bi bi-check-circle-fill me-1"></i>
-                      Consultation liée trouvée
-                    </small>
-                  </div>
-                )}
               </div>
             </Col>
             
-            {/* Colonne centre: Informations patient */}
-            <Col md="6">
-              {(patient || consultationLiee) && (
-                <div className="bg-light rounded-3 p-3 border border-info border-opacity-25">
-                  <div className="d-flex align-items-center">
-                    <div className="rounded-circle bg-info bg-opacity-10 p-2 me-3">
-                      <i className="bi bi-person-fill text-info"></i>
-                    </div>
-                    <div className="flex-grow-1">
-                      <h6 className="mb-1 fw-semibold text-dark">
-                        {(() => {
-                          const nom = patient?.Nom || consultationLiee?.IdPatient?.Nom || consultationLiee?.PatientP || 'Patient';
-                          const prenoms = patient?.Prenoms || consultationLiee?.IdPatient?.Prenoms || '';
-                          return `${nom} ${prenoms}`.trim();
-                        })()}
-                      </h6>
-                      <div className="small text-muted">
-                        <span className="me-3">
-                          <i className="bi bi-calendar3 me-1"></i>
-                          {(() => {
-                            try {
-                              const dateNaiss = patient?.Date_naisse || consultationLiee?.IdPatient?.Date_naisse;
-                              if (dateNaiss) {
-                                return `${calculerAge(dateNaiss)} ans`;
-                              }
-                              return 'Âge N/C';
-                            } catch (error) {
-                              console.error('Erreur calcul âge:', error);
-                              return 'Âge err.';
-                            }
-                          })()}
-                        </span>
-                        <span className="me-3">
-                          <i className="bi bi-gender-ambiguous me-1"></i>
-                          {(() => {
-                            const sexe = patient?.sexe || consultationLiee?.IdPatient?.sexe;
-                            if (sexe) {
-                              return sexe.toUpperCase() === 'M' ? 'Homme' : sexe.toUpperCase() === 'F' ? 'Femme' : sexe;
-                            }
-                            return 'N/C';
-                          })()}
-                        </span>
-                        <span>
-                          <i className="bi bi-telephone me-1"></i>
-                          {(() => {
-                            const tel = patient?.Contact || consultationLiee?.IdPatient?.Contact || consultationLiee?.IdPatient?.Telephone;
-                            return tel || 'N/C';
-                          })()}
-                        </span>
-                      </div>
-                      {patient?.Code_dossier && (
-                        <div className="small text-primary mt-1 fw-semibold">
-                          <i className="bi bi-folder2-open me-1"></i>
-                          Dossier: {patient.Code_dossier}
-                        </div>
-                      )}
-                      {consultation?.codePrestation && (
-                        <div className="small text-primary mt-1 fw-semibold">
-                          <i className="bi bi-clipboard2-pulse me-1"></i>
-                          {consultation.codePrestation}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </Col>
-            
-            {/* Colonne droite: Bouton retour */}
-            <Col md="2" className="text-end">
-              <Button 
-                variant="outline-primary" 
-                onClick={() => router.back()}
-                className="rounded-pill px-3"
-              >
-                <i className="bi bi-arrow-left me-2"></i>
-                Retour
-              </Button>
+            {/* Colonne droite: Boutons retour et enregistrement */}
+            <Col md="7" className="text-end">
+              <div className="d-flex gap-2 justify-content-end align-items-start">
+                <Button 
+                  variant="success" 
+                  onClick={enregistrerFicheComplete}
+                  disabled={loading}
+                  title="Enregistrer la fiche de prescription"
+                  className="rounded-pill px-3"
+                >
+                  <i className="bi bi-save me-2"></i>
+                  {loading ? 'Enregistrement...' : 'Enregistrer la fiche'}
+                </Button>
+                <Button 
+                      variant="danger" 
+                      className="rounded-pill px-3"
+                      onClick={() => setShowPrintModal(true)}                     
+                      disabled={!patient && !consultation}
+                      title="Imprimer la fiche de prescription"                    >
+                      <i className="bi bi-printer me-1"></i>
+                      Imprimer la fiche de prescription
+                    </Button>
+                <Button 
+                  variant="outline-primary" 
+                  onClick={() => router.back()}
+                  className="rounded-pill px-3"
+                >
+                  <i className="bi bi-arrow-left me-2"></i>
+                  Retour
+                </Button>
+              </div>
             </Col>
           </Row>
         </Card.Body>
@@ -1116,6 +1204,71 @@ export default function FichePrescriptionMedecinAsaisie() {
       {/* Afficher la fiche seulement si une consultation est trouvée */}
       {(patient || consultationLiee) ? (
         <>
+          {/* En-tête patient - Design professionnel */}
+          <Card className="mb-4 shadow-sm border-0">
+            <Card.Header className="bg-gradient-primary text-dark">
+              <div className="d-flex align-items-center">
+                FICHE DE CONSULTATION
+                <div className="rounded-circle bg-white text-primary p-3 me-3">
+                  <i className="bi bi-person-fill fs-4"></i>
+                </div>
+                <div>
+                  <div className="d-flex align-items-center flex-wrap">
+                    <h4 className="mb-0 me-3">
+                      {(() => {
+                        const nom = patient?.Nom || consultationLiee?.IdPatient?.Nom || consultationLiee?.PatientP || 'Patient';
+                        const prenoms = patient?.Prenoms || consultationLiee?.IdPatient?.Prenoms || '';
+                        return `${nom} ${prenoms}`.trim();
+                      })()}
+                    </h4>
+                    <div className="text-muted small">
+                      <span className="me-3">
+                        <i className="bi bi-person-fill me-1"></i>
+                        {(() => {
+                          const sexe = patient?.sexe || consultationLiee?.IdPatient?.sexe;
+                          if (sexe) {
+                            return sexe.toUpperCase() === 'M' ? 'Homme' : sexe.toUpperCase() === 'F' ? 'Femme' : sexe;
+                          }
+                          return 'N/C';
+                        })()}
+                      </span>
+                      <span className="me-3">
+                        <i className="bi bi-calendar3 me-1"></i>
+                        {(() => {
+                          try {
+                            const dateNaiss = patient?.Date_naisse || consultationLiee?.IdPatient?.Date_naisse;
+                            if (dateNaiss) {
+                              return `${calculerAge(dateNaiss)} ans`;
+                            }
+                            return 'Âge N/C';
+                          } catch (error) {
+                            console.error('Erreur calcul âge:', error);
+                            return 'Âge err.';
+                          }
+                        })()}
+                      </span>
+                                            <span className="me-3">
+                        <i className="bi bi-folder2-open me-1"></i>
+                        {(() => {
+                          const codeDossier = patient?.Code_dossier || consultationLiee?.IdPatient?.Code_dossier || consultationLiee?.Code_dossier;
+                          return codeDossier || 'N/C';
+                        })()}
+                      </span>
+                      <span>
+                        <i className="bi bi-telephone me-1"></i>
+                        {(() => {
+                          const tel = patient?.Contact || consultationLiee?.IdPatient?.Contact || consultationLiee?.IdPatient?.Telephone;
+                          return tel || 'N/C';
+                        })()}
+                      </span>
+                    </div>
+                  </div>
+                  
+                </div>
+              </div>
+            </Card.Header>
+          </Card>
+
           {/* Section principale - Organisation en colonnes */}
           <Row className="g-4 align-items-start">
             {/* Colonne gauche - Antécédents et Constantes */}
@@ -1478,6 +1631,9 @@ export default function FichePrescriptionMedecinAsaisie() {
                       <h5 className="mb-0">Prescriptions</h5>
                       <small className="opacity-75">Traitements et examens</small>
                     </div>
+                  </div>
+                  <div className="d-flex align-items-center">
+                    
                   </div>
                 </Card.Header>
                 <Card.Body className="p-3">
@@ -2035,8 +2191,28 @@ export default function FichePrescriptionMedecinAsaisie() {
             patientId={patient?._id}
             patientNom={patient?.Nom}
             patientPrenoms={patient?.Prenoms}
+            Code_dossier={patient?.Code_dossier}
           />
-        </>
+          
+          {/* Modal Impression */}
+          <Modal show={showPrintModal} onHide={() => setShowPrintModal(false)} size="xl">
+            <Modal.Header closeButton>
+              <Modal.Title>
+                <i className="bi bi-printer me-2"></i>
+                Impression de la Fiche de Prescription
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+              <PrintFichePrescription
+                consultationId={consultation?.codePrestation || consultationForm.codePrestation}
+                patientId={patient?._id}
+                patientNom={patient?.Nom}
+                patientPrenoms={patient?.Prenoms}
+              />
+            </Modal.Body>
+          </Modal>
+          
+                  </>
       ) : (
         /* Message d'attente si aucune consultation trouvée */
         <Card className="shadow-sm border-0">

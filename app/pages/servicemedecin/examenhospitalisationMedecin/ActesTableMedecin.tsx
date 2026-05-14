@@ -2,7 +2,8 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
+import { Table, Form, Button, InputGroup, Row, Col, Alert } from "react-bootstrap";
+import ActeSelectModal from "./ActeSelectModal";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
@@ -268,7 +269,7 @@ const emptyLigne = (): ILignePrestation => ({
 export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, assuranceDbId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
     const [actes, setActes] = useState<IActeClinique[]>([]);
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
-    const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
+    const [lignes, setLignes] = useState<ILignePrestation[]>([]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [totaux, setTotaux] = useState({
         montantTotal: 0,
@@ -279,6 +280,8 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
         montantExecutant: 0,
         montantARegler: 0
     });
+    const [showActeModal, setShowActeModal] = useState(false);
+    const [currentLigneId, setCurrentLigneId] = useState<string | null>(null);
 
     useEffect(() => {
         // Charger actes cliniques depuis /api/actesclinique (paginé)
@@ -895,6 +898,64 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
         );
     }
 
+    // Gérer la sélection multiple d'actes depuis le modal
+    const handleActesSelect = (selectedActes: IActeClinique[]) => {
+        if (selectedActes.length > 0) {
+            // Ajouter chaque acte sélectionné comme une nouvelle ligne
+            const nouvellesLignes = selectedActes.map(acte => {
+                const nouvelleLigne = emptyLigne();
+                
+                // Remplir la ligne avec les données de l'acte (même logique que onSelectActe)
+                nouvelleLigne.Acte = acte.Designation || "";
+                nouvelleLigne.Lettre_Cle = acte.LettreCle || "";
+                nouvelleLigne.DATE = new Date().toISOString().split("T")[0];
+                nouvelleLigne.IDACTE = acte._id;
+                nouvelleLigne.IDTYPE = acte.IDTYPE_ACTE || "";
+                nouvelleLigne.IDFAMILLE = acte.IDFAMILLE_ACTE_BIOLOGIE || "";
+                nouvelleLigne.Exclusion = "Accepter";
+                nouvelleLigne.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
+                nouvelleLigne.QteP = 1;
+                nouvelleLigne.Statutprescription = 2;
+                nouvelleLigne.Refuser = acte.Prix || 0;
+                nouvelleLigne.ordonnancementAffichage = acte.ORdonnacementAffichage || 0;
+
+                // Appliquer les tarifs selon l'assurance
+                if (assuranceId === 1) {
+                    tarifActeClinique(nouvelleLigne, acte, 1);
+                } else {
+                    tarifActeAssurance(nouvelleLigne, acte, assuranceId);
+                }
+
+                // Gérer MontantAuMed
+                if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
+                    nouvelleLigne.StatutMedecinActe = "OUI";
+                } else {
+                    nouvelleLigne.StatutMedecinActe = "NON";
+                    nouvelleLigne.Montant_MedExecutant = 0;
+                }
+
+                // Calcul du prix
+                prixActe(nouvelleLigne, acte);
+
+                // Si MontantAuMed=1, ajuster le montant
+                if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
+                    nouvelleLigne.Montant_MedExecutant = nouvelleLigne.PrixTotal;
+                }
+
+                return nouvelleLigne;
+            });
+
+            // Ajouter les nouvelles lignes à la liste existante
+            setLignes(prev => [...prev, ...nouvellesLignes]);
+        }
+        setCurrentLigneId(null);
+    };
+
+    // Ouvrir le modal pour ajouter des actes
+    const handleOpenActeModal = () => {
+        setShowActeModal(true);
+    };
+
     // Quand un champ clé change et nécessité recalcul
     function onFieldChangeAndRecalc(lineId: string, field: keyof ILignePrestation, value: any) {
         setErrorMsg(null);
@@ -930,8 +991,9 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
             <Row className="mb-2">
                 
                 <Col className="text-end">
-                    <Button variant="primary" size="sm" onClick={addLigne}>
-                        + Ajouter Ligne
+                    <Button variant="primary" size="sm" onClick={handleOpenActeModal}>
+                        <i className="bi bi-clipboard-check me-2"></i>
+                        Ajouter des actes
                     </Button>
                 </Col>
             </Row>
@@ -942,14 +1004,11 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                 <Table bordered hover size="sm" className="mb-0">
                     <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
                         <tr>
-                            {/* Colonnes visibles */}
+                            {/* Colonnes visibles pour le médecin */}
                             <th style={{ width: '120px' }}>Date</th>
                             <th style={{ minWidth: '220px' }}>Acte</th>
                             <th style={{ width: '80px' }}>Coef</th>
                             <th style={{ width: '70px' }}>Qté</th>
-                            <th style={{ width: '120px' }}>Prix unitaire</th>
-                            <th style={{ width: '120px' }}>Prix Total</th>
-                            <th style={{ width: '120px' }}>Exclusion</th>
                             <th style={{ width: '60px', textAlign: 'center' }}>🗑️</th>
                         </tr>
                     </thead>
@@ -976,15 +1035,20 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
 
                                 {/* Acte */}
                                 <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
-                                    {isEditable ? (
-                                        <ActeSelect
-                                            actes={actes}
-                                            selectedId={l.IDACTE || ""}
-                                            onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
-                                        />
+                                    {l.Acte ? (
+                                        <div>
+                                            <div className="fw-semibold text-truncate" title={l.Acte}>
+                                                {l.Acte}
+                                            </div>
+                                            {l.Lettre_Cle && (
+                                                <small className="text-muted">
+                                                    Code: {l.Lettre_Cle}
+                                                </small>
+                                            )}
+                                        </div>
                                     ) : (
-                                        <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">
-                                            {l.Acte}
+                                        <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }}>
+                                            Acte non sélectionné
                                         </div>
                                     )}
                                 </td>
@@ -1021,49 +1085,7 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                                     />
                                 </td>
 
-                                {/* Prixunitaire */}
-                                <td style={{ padding: '4px' }}>
-                                    <InputGroup size="sm">
-                                        <Form.Control
-                                            type="number"
-                                            step="1"
-                                            value={l.Prixunitaire}
-                                            onChange={(e) =>
-                                                onFieldChangeAndRecalc(l.IDLignePrestation, "Prixunitaire", parseInt(e.target.value) || 0)
-                                            }
-                                            style={{ fontSize: '13px', textAlign: 'right' }}
-                                            disabled={!isEditable}
-                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                        />
-                                    </InputGroup>
-                                </td>
-
-                                {/* PrixTotal */}
-                                <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '8px', fontSize: '13px' }}>
-                                    {Math.round(Number(l.PrixTotal || 0)).toLocaleString('fr-FR')}
-                                </td>
-
-                                {/* Exclusion */}
-                                <td style={{ padding: '4px' }}>
-                                    <Form.Select
-                                        size="sm"
-                                        value={l.Exclusion}
-                                        onChange={(e) =>
-                                            onFieldChangeAndRecalc(
-                                                l.IDLignePrestation,
-                                                "Exclusion",
-                                                e.target.value === "Accepter" ? "Accepter" : "Refuser"
-                                            )
-                                        }
-                                        style={{ fontSize: '13px' }}
-                                        disabled={!isEditable}
-                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                    >
-                                        <option value="Accepter">✓Accepter</option>
-                                        <option value="Refuser">✗Refuser</option>
-                                    </Form.Select>
-                                </td>
-
+                                
                                 {/* Action */}
                                 <td style={{ textAlign: 'center', padding: '4px' }}>
                                     <Button 
@@ -1082,6 +1104,18 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                         })}
                     </tbody>
                 </Table>
+                
+                {lignes.length === 0 && (
+                    <div className="text-center py-4">
+                        <i className="bi bi-clipboard-check text-muted" style={{ fontSize: '3rem' }}></i>
+                        <p className="text-muted mt-3">
+                            Aucun acte sélectionné
+                        </p>
+                        <small className="text-muted">
+                            Cliquez sur "Ajouter des actes" pour commencer
+                        </small>
+                    </div>
+                )}
             </div>
 
             {/*  <div className="mt-3">
@@ -1114,6 +1148,18 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                     </Col>
                 </Row>
             </div> */}
+
+        {/* Modal de sélection multiple d'actes */}
+        <ActeSelectModal
+            show={showActeModal}
+            onHide={() => {
+                setShowActeModal(false);
+                setCurrentLigneId(null);
+            }}
+            actes={actes}
+            onActesSelect={handleActesSelect}
+            selectedActeIds={[]}
+        />
         </div>
     );
 }

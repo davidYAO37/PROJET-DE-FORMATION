@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Modal, Form, Button, Table, Card, Tabs, Tab } from 'react-bootstrap';
+import { Modal, Form, Button, Table, Card, Tabs, Tab, Dropdown } from 'react-bootstrap';
 import { FaCalendarAlt, FaFilter, FaPrint, FaUser, FaCreditCard, FaLayerGroup, FaCalendarDay, FaCalendarCheck, FaEye, FaUserTie } from 'react-icons/fa';
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader, extractContentWithoutHeaderAndFooter } from '@/utils/printRecu';
+import { useEntreprise } from '@/hooks/useEntreprise';
 
 interface PointCaisseModalProps {
   show: boolean;
@@ -67,6 +69,7 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
   const [caissiere, setCaissiere] = useState('');
   const [modesPaiement, setModesPaiement] = useState<string[]>([]);
   const [caissieres, setCaissieres] = useState<any[]>([]);
+  const { entreprise } = useEntreprise();
 
   // Initialiser les dates avec le mois actuel
   useEffect(() => {
@@ -437,25 +440,41 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
     return contenu;
   };
 
-  // Fonctions d'impression
-  const imprimerSuiviActivites = () => {
-    console.log("iAperçu() - SUIVIE DES ACTIVITES DE LA CAISSE");
-    console.log("Date Début:", dateDebut);
-    console.log("Date Fin:", dateFin);
 
-    const contenu = genererContenuImprimable('suivi');
-    const nouvelleFenetre = window.open('', '_blank');
-    if (nouvelleFenetre) {
-      nouvelleFenetre.document.write(contenu);
-      nouvelleFenetre.document.close();
-      nouvelleFenetre.focus();
-      setTimeout(() => {
-        nouvelleFenetre.print();
-      }, 500);
+  const imprimerSuiviActivitesAvecEntete = () => {
+    const contenuDiv = document.createElement('div');
+    contenuDiv.innerHTML = genererContenuImprimable('suivi');
+    contenuDiv.id = 'print-content-suivi-activites';
+    document.body.appendChild(contenuDiv);
+    
+    try {
+      const headerHTML = generatePrintHeader(entreprise);
+      const footerHTML = generatePrintFooter(entreprise);
+      const restContent = extractContentWithoutHeaderAndFooter(contenuDiv.innerHTML);
+      
+      createPrintWindow('Suivi des Activités de la Caisse', headerHTML, restContent, footerHTML);
+    } finally {
+      document.body.removeChild(contenuDiv);
     }
   };
 
-  const imprimerFicheSuiviRecette = async () => {
+  const imprimerSuiviActivitesSansEntete = () => {
+    const contenuDiv = document.createElement('div');
+    contenuDiv.innerHTML = genererContenuImprimable('suivi');
+    contenuDiv.id = 'print-content-suivi-activites';
+    document.body.appendChild(contenuDiv);
+    
+    try {
+      const restContent = extractContentWithoutHeaderAndFooter(contenuDiv.innerHTML);
+      createPrintWindowWithoutHeader('Suivi des Activités de la Caisse (sans entête)', restContent);
+    } finally {
+      document.body.removeChild(contenuDiv);
+    }
+  };
+
+ 
+
+  const imprimerFicheSuiviRecetteAvecEntete = async () => {
     let gsMaCaissiere = "";
     if (!caissiere || caissiere === "") {
       gsMaCaissiere = "";
@@ -465,15 +484,42 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
 
     // Recharger avant impression pour garantir les données à jour.
     const donneesImpression = await chargerEncaissements();
-    const contenu = genererContenuImprimable('fiche', donneesImpression);
-    const nouvelleFenetre = window.open('', '_blank');
-    if (nouvelleFenetre) {
-      nouvelleFenetre.document.write(contenu);
-      nouvelleFenetre.document.close();
-      nouvelleFenetre.focus();
-      setTimeout(() => {
-        nouvelleFenetre.print();
-      }, 500);
+    const contenuDiv = document.createElement('div');
+    contenuDiv.innerHTML = genererContenuImprimable('fiche', donneesImpression);
+    contenuDiv.id = 'print-content-fiche-recette';
+    document.body.appendChild(contenuDiv);
+    
+    try {
+      const headerHTML = generatePrintHeader(entreprise);
+      const footerHTML = generatePrintFooter(entreprise);
+      const restContent = extractContentWithoutHeaderAndFooter(contenuDiv.innerHTML);
+      
+      createPrintWindow('Fiche de Suivi de Recette', headerHTML, restContent, footerHTML);
+    } finally {
+      document.body.removeChild(contenuDiv);
+    }
+  };
+
+  const imprimerFicheSuiviRecetteSansEntete = async () => {
+    let gsMaCaissiere = "";
+    if (!caissiere || caissiere === "") {
+      gsMaCaissiere = "";
+    } else {
+      gsMaCaissiere = caissiere;
+    }
+
+    // Recharger avant impression pour garantir les données à jour.
+    const donneesImpression = await chargerEncaissements();
+    const contenuDiv = document.createElement('div');
+    contenuDiv.innerHTML = genererContenuImprimable('fiche', donneesImpression);
+    contenuDiv.id = 'print-content-fiche-recette';
+    document.body.appendChild(contenuDiv);
+    
+    try {
+      const restContent = extractContentWithoutHeaderAndFooter(contenuDiv.innerHTML);
+      createPrintWindowWithoutHeader('Fiche de Suivi de Recette (sans entête)', restContent);
+    } finally {
+      document.body.removeChild(contenuDiv);
     }
   };
 
@@ -997,22 +1043,34 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
                   <Button variant="outline-secondary" onClick={onHide} className="px-4 py-2">
                     Fermer
                   </Button>
-                  <Button
-                    variant="success"
-                    className="px-4 py-2"
-                    onClick={imprimerSuiviActivites}
-                  >
-                    <FaPrint className="me-2" />
-                    SUIVIE DES ACTIVITES DE LA CAISSE
-                  </Button>
-                  <Button
-                    variant="primary"
-                    className="px-4 py-2"
-                    onClick={imprimerFicheSuiviRecette}
-                  >
-                    <FaPrint className="me-2" />
-                    AFFICHER LA FICHE DE SUIVI DE RECETTE
-                  </Button>
+                  <Dropdown>
+                    <Dropdown.Toggle variant="success" className="px-4 py-2">
+                      <FaPrint className="me-2" />
+                      SUIVIE DES ACTIVITES DE LA CAISSE
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu>
+                      <Dropdown.Item onClick={imprimerSuiviActivitesAvecEntete}>
+                        🖨️ Imprimer avec entête
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={imprimerSuiviActivitesSansEntete}>
+                        📄 Imprimer sans entête
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
+                  <Dropdown>
+                    <Dropdown.Toggle variant="primary" className="px-4 py-2">
+                      <FaPrint className="me-2" />
+                      AFFICHER LA FICHE DE SUIVI DE RECETTE
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu>
+                      <Dropdown.Item onClick={imprimerFicheSuiviRecetteAvecEntete}>
+                        🖨️ Imprimer avec entête
+                      </Dropdown.Item>
+                      <Dropdown.Item onClick={imprimerFicheSuiviRecetteSansEntete}>
+                        📄 Imprimer sans entête
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown>
                 </div>
               </Card.Body>
             </Card>
