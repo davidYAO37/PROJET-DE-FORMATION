@@ -17,9 +17,7 @@ const menu = [
   { label: 'Patient en attente', path: '/pages/servicemedecin/ListePatientAttentes', icon: <i className="bi bi-clock-fill me-2 text-warning"></i>, showNotification: true, notificationKey: 'patientsEnAttente' },
   { label: 'Mes Rendez-Vous', path: '#', isModal: true, modalType: 'rendezvous', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i>, showNotification: true, notificationKey: 'rendezVousDuJour' },
   { label: 'Saisir fiche prescription', path: '/pages/servicemedecin/FichePrescriptionMedecinAsaisie', icon: <i className="bi bi-file-earmark-text-fill me-2 text-primary"></i> },
-  { label: 'Planning Médecin', path: '/planningMedecin', icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
-  { label: 'Mon planning', path: '/disponibiliteMedecin', icon: <i className="bi bi-clipboard-check-fill me-2 text-success"></i> },
-  { label: 'Mes comptes rendus', path: '/rendezVous', icon: <i className="bi bi-file-earmark-text-fill me-2 text-secondary"></i> },
+  { label: 'Comptes rendus Radio', path: '/rendezVous', icon: <i className="bi bi-file-earmark-text-fill me-2 text-secondary"></i> },
   { label: 'Statistiques', path: '/pointSaisie', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
@@ -46,28 +44,28 @@ export default function SidebarMedecin() {
     const fetchStatistiques = async () => {
       try {
         const profilStr = localStorage.getItem('profil');
-        
+
         if (profilStr) {
           const profil = JSON.parse(profilStr);
-          
+
           // Récupérer tous les médecins pour trouver le médecin connecté
           const medecinsResponse = await fetch('/api/medecins');
           if (medecinsResponse.ok) {
             const allMedecins = await medecinsResponse.json();
-            const connectedMedecin = allMedecins.find((medecin: any) => 
+            const connectedMedecin = allMedecins.find((medecin: any) =>
               medecin._id.toString() === profil._id ||
               (medecin.nom === profil.nom && medecin.prenoms === profil.prenom)
             );
-            
+
             if (connectedMedecin) {
               // Récupérer les statistiques des consultations
               const consultationsResponse = await fetch(`/api/consultations/statistiques?medecinId=${connectedMedecin._id}`);
               const consultationsData = await consultationsResponse.json();
-              
+
               // Récupérer les statistiques des rendez-vous
               const rendezVousResponse = await fetch(`/api/rendez-vous/statistiques?medecinId=${connectedMedecin._id}`);
               const rendezVousData = await rendezVousResponse.json();
-              
+
               setStatistiques({
                 patientsEnAttente: consultationsData.patientsEnAttente || 0,
                 rendezVousDuJour: rendezVousData.rendezVousDuJour || 0
@@ -156,8 +154,8 @@ export default function SidebarMedecin() {
                     <span>{item.label}</span>
                   </div>
                   {item.showNotification && !loading && (
-                    <Badge 
-                      bg={item.notificationKey === 'patientsEnAttente' ? 'warning' : 'success'} 
+                    <Badge
+                      bg={item.notificationKey === 'patientsEnAttente' ? 'warning' : 'success'}
                       pill
                       className="ms-2"
                     >
@@ -176,8 +174,8 @@ export default function SidebarMedecin() {
                     <span>{item.label}</span>
                   </div>
                   {item.showNotification && !loading && (
-                    <Badge 
-                      bg={item.notificationKey === 'patientsEnAttente' ? 'warning' : 'success'} 
+                    <Badge
+                      bg={item.notificationKey === 'patientsEnAttente' ? 'warning' : 'success'}
                       pill
                       className="ms-2"
                     >

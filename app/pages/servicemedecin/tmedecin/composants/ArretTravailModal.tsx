@@ -4,6 +4,7 @@ import { Modal, Card, Row, Col, Table, Button, Form, Badge, Alert } from 'react-
 import { FaBriefcaseMedical, FaPlus, FaEdit, FaTrash, FaPrint, FaFileAlt, FaCalendarAlt } from 'react-icons/fa';
 import { useEntreprise } from '@/hooks/useEntreprise';
 import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from '@/utils/printRecu';
+import { buildArretTravailCertificatHtml } from '@/lib/arretTravail/certificatArretTemplates';
 import { ARRET_TRAVAIL_TYPES, ARRET_TRAVAIL_STATUTS, TypeArretTravail, StatutArretTravail } from '@/types/arretTravail';
 
 interface ArretTravail {
@@ -363,128 +364,11 @@ export default function ArretTravailModal({
   };
 
   const getArretPrintContent = (arret: ArretTravail) => {
-    const typeLibelle = getTypeArretLibelle(arret.typeArret);
-    const typeDescription = getTypeArretDescription(arret.typeArret);
-    const doctorName = arret.medecinTraitant || currentUser || 'Docteur inconnu';
-    const clinique = entreprise?.EnteteSociete || 'CLINIQUE';
-    const patientFullName = `${arret.patientNom || ''} ${arret.patientPrenoms || ''}`.trim() || 'Patient non renseigné';
-    const dateDebut = new Date(arret.dateDebut).toLocaleDateString('fr-FR');
-    const dateFin = new Date(arret.dateFin).toLocaleDateString('fr-FR');
-    const dateCreation = new Date(arret.dateCreation).toLocaleDateString('fr-FR');
-    const duree = Math.max(0, Math.ceil((new Date(arret.dateFin).getTime() - new Date(arret.dateDebut).getTime()) / (1000 * 60 * 60 * 24)));
-    const dateReprise = arret.dateReprise ? new Date(arret.dateReprise).toLocaleDateString('fr-FR') : null;
-    const ville = 'Abidjan';
-
-    const lineLabel = arret.typeArret === 'maternite'
-      ? 'Et que son état de santé nécessite un congé maternité de :'
-      : arret.typeArret === 'paternite'
-        ? 'Et que son état de santé nécessite un congé paternité de :'
-        : arret.typeArret === 'prolongation'
-          ? 'Et que son état de santé nécessite une prolongation d\'arrêt de travail de :'
-          : arret.typeArret === 'conge_enfant_malade'
-            ? 'Et que cette situation nécessite un congé pour enfant malade de :'
-            : arret.typeArret === 'conge_proche_aidant'
-              ? 'Et que cette situation nécessite un congé proche aidant de :'
-              : arret.typeArret === 'grossesse_pathologique'
-                ? 'Et que son état de santé nécessite un arrêt pour grossesse pathologique de :'
-                : arret.typeArret === 'arret_derogatoire'
-                  ? 'Et que son état nécessite un arrêt dérogatoire de :'
-                  : 'Et que son état de santé nécessite un arrêt de travail de :';
-
-    const extraText = arret.typeArret === 'accident_travail'
-      ? 'Ce document concerne un arrêt du travail suite à un accident du travail ou maladie professionnelle. Il doit être transmis à l\'employeur et à la caisse dans les délais réglementaires.'
-      : arret.typeArret === 'prolongation'
-        ? 'Ce document atteste d\'une prolongation d\'arrêt de travail.'
-        : arret.typeArret === 'grossesse_pathologique'
-          ? 'Ce document concerne une grossesse pathologique et un arrêt de travail adapté.'
-          : arret.typeArret === 'arret_derogatoire'
-            ? 'Ce document concerne un arrêt de travail dérogatoire lié à une situation particulière.'
-            : arret.typeArret === 'conge_enfant_malade'
-              ? 'Ce document concerne un congé pour enfant malade ou présence parentale.'
-              : arret.typeArret === 'conge_proche_aidant'
-                ? 'Ce document concerne un congé proche aidant.'
-                : arret.typeArret === 'maternite'
-                  ? 'Ce document atteste de la mise en congé maternité.'
-                  : arret.typeArret === 'paternite'
-                    ? 'Ce document atteste de la mise en congé paternité.'
-                    : '';
-
-    const motifSection = arret.motif ? `
-      <div style="margin-bottom: 18px; background: #f2f2f2; padding: 14px; border-radius: 6px;">
-        <div style="font-weight:bold; margin-bottom: 6px;">Motif médical :</div>
-        <div style="padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 4px; white-space: pre-wrap;">${arret.motif}</div>
-      </div>
-    ` : '';
-
-    const observationsSection = arret.observations ? `
-      <div style="margin-bottom: 18px; background: #f9f9f9; padding: 14px; border-radius: 6px;">
-        <div style="font-weight:bold; margin-bottom: 6px;">Observations :</div>
-        <div style="padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 4px; white-space: pre-wrap;">${arret.observations}</div>
-      </div>
-    ` : '';
-
-    const certificatSection = arret.certificatMedical ? `
-      <div style="margin-bottom: 18px; background: #e8f4ff; padding: 14px; border-radius: 6px;">
-        <div style="font-weight:bold; margin-bottom: 6px;">Certificat médical :</div>
-        <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-          ${arret.numeroCertificat ? `<div style="flex:1; min-width:180px;"><span style="font-weight:bold;">N° certificat :</span> ${arret.numeroCertificat}</div>` : ''}
-          ${arret.dateCertificat ? `<div style="flex:1; min-width:180px;"><span style="font-weight:bold;">Date certificat :</span> ${new Date(arret.dateCertificat).toLocaleDateString('fr-FR')}</div>` : ''}
-          ${arret.medecinCertificat ? `<div style="flex:1; min-width:180px;"><span style="font-weight:bold;">Médecin certificat :</span> ${arret.medecinCertificat}</div>` : ''}
-        </div>
-      </div>
-    ` : '';
-
-    return `
-      <div class="print-area" style="font-family: Arial, sans-serif; color: #000; padding: 20px;">
-        <div style="text-align:center; margin-bottom: 20px;">
-          <div style="font-size: 32px; font-weight: bold; letter-spacing: 1px;">${typeLibelle.toUpperCase()}</div>
-          <div style="margin-top: 8px; font-size: 14px; color: #444;">${typeDescription}</div>
-        </div>
-
-        <div style="margin-bottom: 12px; display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-          <div style="flex: 1; min-width: 250px;"><span style="font-weight:bold;">Je soussigné Docteur :</span> <span>${doctorName}</span></div>
-          <div style="flex: 1; min-width: 250px;"><span style="font-weight:bold;">Médecin à la Clinique :</span> <span>${clinique}</span></div>
-        </div>
-
-        <div style="margin-bottom: 24px; background: #f2f2f2; padding: 14px; border-radius: 6px;">
-          <div style="font-weight:bold; margin-bottom: 6px;">Atteste avoir examiné ce jour Mme/Mr :</div>
-          <div style="padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 4px;">${patientFullName}</div>
-        </div>
-
-        ${motifSection}
-
-        <div style="margin-bottom: 16px; background: #f2f2f2; padding: 14px; border-radius: 6px;">
-          <div style="font-weight:bold; margin-bottom: 6px;">${lineLabel}</div>
-          <div style="padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 4px;">${duree} jour(s)</div>
-        </div>
-
-        <div style="display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; margin-bottom: 10px;">
-          <div style="flex: 1; min-width: 220px; background: #f2f2f2; padding: 14px; border-radius: 6px;">
-            <div style="font-weight:bold; margin-bottom: 6px;">à compter du :</div>
-            <div style="padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 4px;">${dateDebut}</div>
-          </div>
-          <div style="flex: 1; min-width: 220px; background: #f2f2f2; padding: 14px; border-radius: 6px;">
-            <div style="font-weight:bold; margin-bottom: 6px;">Jusqu'au :</div>
-            <div style="padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 4px;">${dateFin}</div>
-          </div>
-        </div>
-
-        ${dateReprise ? `<div style="margin-bottom: 20px; background: #f2f2f2; padding: 14px; border-radius: 6px;"><div style="font-weight:bold; margin-bottom: 6px;">Date de reprise :</div><div style="padding: 10px; background: #fff; border: 1px solid #ccc; border-radius: 4px;">${dateReprise}</div></div>` : ''}
-
-        ${certificatSection}
-
-        ${observationsSection}
-
-        ${extraText ? `<div style="margin-bottom: 18px; font-size: 14px; color: #333;">${extraText}</div>` : ''}
-
-        <div style="margin-bottom: 20px; font-size: 15px; line-height: 1.6;">En foi de quoi, je délivre cette présente attestation pour servir et valoir ce que de droit.</div>
-
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 40px; flex-wrap: wrap; gap: 10px;">
-          <div style="font-size: 13px; color: #555;">Fait à ${ville}, le ${dateCreation}</div>
-          <div style="text-align: center; font-size: 14px; font-weight: bold;">Signature du médecin</div>
-        </div>
-      </div>
-    `;
+    return buildArretTravailCertificatHtml(arret, {
+      cliniqueNom: entreprise?.NomSociete || 'CLINIQUE',
+      medecinDefaut: arret.medecinTraitant || currentUser || 'Docteur inconnu',
+      villeSignature: 'Abidjan',
+    });
   };
 
   const handlePrintWithHeader = (arret: ArretTravail) => {

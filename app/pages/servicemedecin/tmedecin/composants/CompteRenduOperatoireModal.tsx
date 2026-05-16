@@ -19,6 +19,8 @@ import {
   FaPrint,
   FaFileAlt,
 } from "react-icons/fa";
+import { useEntreprise } from "@/hooks/useEntreprise";
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from "@/utils/printRecu";
 import { COMPTE_RENDU_OPERATOIRE_TYPES, COMPTE_RENDU_OPERATOIRE_STATUTS, TypeCompteRenduOperatoire, StatutCompteRenduOperatoire, COMPTE_RENDU_OPERATOIRE_LABELS } from "@/types/compteRenduOperatoire";
 
 interface CompteRenduOperatoire {
@@ -73,6 +75,7 @@ export default function CompteRenduOperatoireModal({
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingCR, setEditingCR] = useState<CompteRenduOperatoire | null>(null);
   const currentUser = localStorage.getItem("nom_utilisateur") || localStorage.getItem("userName") || "";
+  const { entreprise } = useEntreprise();
 
   const [formData, setFormData] = useState({
     dateOperation: "",
@@ -292,141 +295,63 @@ export default function CompteRenduOperatoireModal({
     }
   };
 
-  // Imprimer le compte rendu
-  const handlePrint = (cr: CompteRenduOperatoire) => {
-    const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      const typeLibelle = COMPTE_RENDU_OPERATOIRE_LABELS[cr.typeOperation] || "Opération";
-      const patientFullName = `${cr.patientNom || ""} ${cr.patientPrenoms || ""}`.trim() || "Patient non renseigné";
-      const dateOperation = new Date(cr.dateOperation).toLocaleDateString("fr-FR");
-      const dateCreation = new Date(cr.dateCreation).toLocaleDateString("fr-FR");
-      const duree = cr.dureeOperation ? `${Math.floor(cr.dureeOperation / 60)}h${cr.dureeOperation % 60}min` : "Non spécifiée";
+  // Générer le contenu HTML du compte rendu opératoire
+  const getCompteRenduPrintContent = (cr: CompteRenduOperatoire) => {
+    const typeLibelle = COMPTE_RENDU_OPERATOIRE_LABELS[cr.typeOperation] || "Opération";
+    const patientFullName = `${cr.patientNom || ""} ${cr.patientPrenoms || ""}`.trim() || "Patient non renseigné";
+    const dateOperation = new Date(cr.dateOperation).toLocaleDateString("fr-FR");
+    const dateCreation = new Date(cr.dateCreation).toLocaleDateString("fr-FR");
+    const duree = cr.dureeOperation ? `${Math.floor(cr.dureeOperation / 60)}h${cr.dureeOperation % 60}min` : "Non spécifiée";
 
-      const htmlContent = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Compte Rendu Opératoire</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #000; }
-            .header { text-align: center; border-bottom: 3px double #007bff; padding-bottom: 20px; margin-bottom: 30px; }
-            .section { margin-bottom: 25px; }
-            .section-title { font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 16px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-            .info-item { display: flex; }
-            .info-label { font-weight: bold; width: 150px; }
-            .footer { text-align: center; margin-top: 50px; font-style: italic; }
-            @media print { body { font-size: 11px; } }
-          </style>
-        </head>
-        <body>
-          <div class="header">
-            <h2>COMPTE RENDU OPÉRATOIRE</h2>
-            <p>Patient: ${patientFullName}</p>
-            <p>Date: ${dateOperation}</p>
-          </div>
+    return `
+      <div class="print-area" style="font-family: Arial, sans-serif; padding: 20px; line-height: 1.6; color: #000;">
+        <div style="text-align: center; border-bottom: 3px double #007bff; padding-bottom: 20px; margin-bottom: 30px;">
+          <h2>COMPTE RENDU OPÉRATOIRE</h2>
+          <p>Patient: ${patientFullName}</p>
+          <p>Date: ${dateOperation}</p>
+        </div>
 
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Chirurgien:</span>
-              <span>${cr.chirurgien || "N/A"}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Type d'opération:</span>
-              <span>${typeLibelle}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Heure début:</span>
-              <span>${cr.heureDebut || "N/A"}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Heure fin:</span>
-              <span>${cr.heureFin || "N/A"}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Durée:</span>
-              <span>${duree}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Statut:</span>
-              <span>${cr.statut}</span>
-            </div>
-          </div>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+          <div style="display: flex;"><span style="font-weight: bold; width: 150px;">Chirurgien:</span><span>${cr.chirurgien || "N/A"}</span></div>
+          <div style="display: flex;"><span style="font-weight: bold; width: 150px;">Type d'opération:</span><span>${typeLibelle}</span></div>
+          <div style="display: flex;"><span style="font-weight: bold; width: 150px;">Heure début:</span><span>${cr.heureDebut || "N/A"}</span></div>
+          <div style="display: flex;"><span style="font-weight: bold; width: 150px;">Heure fin:</span><span>${cr.heureFin || "N/A"}</span></div>
+          <div style="display: flex;"><span style="font-weight: bold; width: 150px;">Durée:</span><span>${duree}</span></div>
+          <div style="display: flex;"><span style="font-weight: bold; width: 150px;">Statut:</span><span>${cr.statut}</span></div>
+        </div>
 
-          ${cr.assistant ? `
-          <div class="info-item" style="margin-bottom: 10px;">
-            <span class="info-label">Assistant:</span>
-            <span>${cr.assistant}</span>
-          </div>
-          ` : ""}
+        ${cr.assistant ? `<div style="margin-bottom: 10px; display: flex;"><span style="font-weight: bold; width: 150px;">Assistant:</span><span>${cr.assistant}</span></div>` : ""}
+        ${cr.anesthesiste ? `<div style="margin-bottom: 10px; display: flex;"><span style="font-weight: bold; width: 150px;">Anesthésiste:</span><span>${cr.anesthesiste}</span></div>` : ""}
+        ${cr.infirmier ? `<div style="margin-bottom: 10px; display: flex;"><span style="font-weight: bold; width: 150px;">Infirmier:</span><span>${cr.infirmier}</span></div>` : ""}
 
-          ${cr.anesthesiste ? `
-          <div class="info-item" style="margin-bottom: 10px;">
-            <span class="info-label">Anesthésiste:</span>
-            <span>${cr.anesthesiste}</span>
-          </div>
-          ` : ""}
+        <div style="margin-bottom: 25px;"><div style="font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 16px;">DIAGNOSTIC PRÉ-OPÉRATOIRE</div><p>${cr.diagnosticPreOperatoire || "Non spécifié"}</p></div>
+        <div style="margin-bottom: 25px;"><div style="font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 16px;">DESCRIPTION DE L'OPÉRATION</div><p style="white-space: pre-line;">${cr.descriptionOperation || "Non spécifié"}</p></div>
+        <div style="margin-bottom: 25px;"><div style="font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 16px;">GESTES RÉALISÉS</div><p style="white-space: pre-line;">${cr.gestesRealises || "Non spécifié"}</p></div>
+        ${cr.complications ? `<div style="margin-bottom: 25px;"><div style="font-weight: bold; color: #dc3545; margin-bottom: 10px; font-size: 16px;">COMPLICATIONS</div><p style="white-space: pre-line;">${cr.complications}</p></div>` : ""}
+        <div style="margin-bottom: 25px;"><div style="font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 16px;">SUITES OPÉRATOIRES</div><p style="white-space: pre-line;">${cr.suitesOperatoires || "Non spécifié"}</p></div>
+        ${cr.traitementPostOperatoire ? `<div style="margin-bottom: 25px;"><div style="font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 16px;">TRAITEMENT POST-OPÉRATOIRE</div><p style="white-space: pre-line;">${cr.traitementPostOperatoire}</p></div>` : ""}
+        ${cr.observations ? `<div style="margin-bottom: 25px;"><div style="font-weight: bold; color: #007bff; margin-bottom: 10px; font-size: 16px;">OBSERVATIONS</div><p style="white-space: pre-line;">${cr.observations}</p></div>` : ""}
 
-          ${cr.infirmier ? `
-          <div class="info-item" style="margin-bottom: 10px;">
-            <span class="info-label">Infirmier:</span>
-            <span>${cr.infirmier}</span>
-          </div>
-          ` : ""}
+        <div style="text-align: center; margin-top: 50px; font-style: italic;">
+          <p>Fait le ${dateCreation}</p>
+          <p>Document généré par le système de gestion médicale</p>
+        </div>
+      </div>
+    `;
+  };
 
-          <div class="section">
-            <div class="section-title">DIAGNOSTIC PRÉ-OPÉRATOIRE</div>
-            <p>${cr.diagnosticPreOperatoire || "Non spécifié"}</p>
-          </div>
+  // Imprimer avec en-tête
+  const handlePrintWithHeader = (cr: CompteRenduOperatoire) => {
+    const headerHTML = generatePrintHeader(entreprise);
+    const footerHTML = generatePrintFooter(entreprise);
+    const contentHTML = getCompteRenduPrintContent(cr);
+    createPrintWindow('Compte Rendu Opératoire', headerHTML, contentHTML, footerHTML);
+  };
 
-          <div class="section">
-            <div class="section-title">DESCRIPTION DE L'OPÉRATION</div>
-            <p style="white-space: pre-line;">${cr.descriptionOperation || "Non spécifié"}</p>
-          </div>
-
-          <div class="section">
-            <div class="section-title">GESTES RÉALISÉS</div>
-            <p style="white-space: pre-line;">${cr.gestesRealises || "Non spécifié"}</p>
-          </div>
-
-          ${cr.complications ? `
-          <div class="section">
-            <div class="section-title" style="color: #dc3545;">COMPLICATIONS</div>
-            <p style="white-space: pre-line;">${cr.complications}</p>
-          </div>
-          ` : ""}
-
-          <div class="section">
-            <div class="section-title">SUITES OPÉRATOIRES</div>
-            <p style="white-space: pre-line;">${cr.suitesOperatoires || "Non spécifié"}</p>
-          </div>
-
-          ${cr.traitementPostOperatoire ? `
-          <div class="section">
-            <div class="section-title">TRAITEMENT POST-OPÉRATOIRE</div>
-            <p style="white-space: pre-line;">${cr.traitementPostOperatoire}</p>
-          </div>
-          ` : ""}
-
-          ${cr.observations ? `
-          <div class="section">
-            <div class="section-title">OBSERVATIONS</div>
-            <p style="white-space: pre-line;">${cr.observations}</p>
-          </div>
-          ` : ""}
-
-          <div class="footer">
-            <p>Fait le ${dateCreation}</p>
-            <p>Document généré par le système de gestion médicale</p>
-          </div>
-        </body>
-        </html>
-      `;
-
-      printWindow.document.write(htmlContent);
-      printWindow.document.close();
-      printWindow.print();
-    }
+  // Imprimer sans en-tête
+  const handlePrintWithoutHeader = (cr: CompteRenduOperatoire) => {
+    const contentHTML = getCompteRenduPrintContent(cr);
+    createPrintWindowWithoutHeader('Compte Rendu Opératoire', contentHTML);
   };
 
   const getTypeLibelle = (type: TypeCompteRenduOperatoire) => {
@@ -521,10 +446,18 @@ export default function CompteRenduOperatoireModal({
                         <Button
                           variant="outline-success"
                           size="sm"
-                          onClick={() => handlePrint(cr)}
-                          title="Imprimer"
+                          onClick={() => handlePrintWithHeader(cr)}
+                          title="Imprimer avec en-tête"
                         >
                           <FaPrint />
+                        </Button>
+                        <Button
+                          variant="outline-info"
+                          size="sm"
+                          onClick={() => handlePrintWithoutHeader(cr)}
+                          title="Imprimer sans en-tête"
+                        >
+                          <FaFileAlt />
                         </Button>
                         <Button
                           variant="outline-danger"

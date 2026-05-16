@@ -1,5 +1,5 @@
 {
     "codeiumEnterprise.portalUrl": "https://codeium.customer.com",
-    "CodeGPT.apiKey": "Anthropic",
+    "CodeGPT.apiKey": "Claude Code",
     "chatgpt.gpt3.provider": "Anthropic"
 }

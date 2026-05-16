@@ -11,6 +11,7 @@ interface EntreprisePrint {
   LogoE?: string;
   EnteteSociete?: string;
   PiedPageSociete?: string;
+  NomSociete?: string;
 }
 
 export interface ArretTravailImpressionBoutonsProps {

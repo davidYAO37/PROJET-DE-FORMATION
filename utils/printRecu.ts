@@ -16,17 +16,17 @@ export const generatePrintHeader = (entreprise: EntrepriseInfo | null): string =
   }
 
   let headerHTML = '<div class="header">';
-  
+
   if (entreprise?.LogoE) {
     headerHTML += `<div class="img"><img src="${entreprise.LogoE}" alt="Logo" style="max-height: 120px; max-width: 120px;"></div>`;
   }
-  
+
   if (entreprise?.EnteteSociete) {
     headerHTML += `<div class="header-text">${entreprise.EnteteSociete}</div>`;
   }
-  
+
   headerHTML += '</div>';
-  
+
   return headerHTML;
 };
 
@@ -201,7 +201,7 @@ export const getPrintCSS = (): string => {
 };
 
 export const createPrintWindowWithoutHeader = (
-  title: string, 
+  title: string,
   contentHTML: string
 ): Window | null => {
   const printWindow = window.open('', '', 'width=800,height=600');
@@ -339,16 +339,19 @@ export const createPrintWindowWithoutHeader = (
   // Attendre que le contenu soit chargé avant d'imprimer
   setTimeout(() => {
     printWindow.print();
-    printWindow.close();
+
+    printWindow.onafterprint = () => {
+      printWindow.close();
+    };
   }, 500);
 
   return printWindow;
 };
 
 export const createPrintWindow = (
-  title: string, 
-  headerHTML: string, 
-  contentHTML: string, 
+  title: string,
+  headerHTML: string,
+  contentHTML: string,
   footerHTML: string
 ): Window | null => {
   const printWindow = window.open('', '', 'width=800,height=600');
@@ -377,22 +380,24 @@ export const createPrintWindow = (
   // Attendre que le contenu soit chargé avant d'imprimer
   setTimeout(() => {
     printWindow.print();
-    printWindow.close();
-  }, 500);
 
+    printWindow.onafterprint = () => {
+      printWindow.close();
+    };
+  }, 500);
   return printWindow;
 };
 
 export const extractContentWithoutHeaderAndFooter = (contentHTML: string): string => {
   let restContent = contentHTML;
-  
+
   // Supprimer le header
   const headerStart = contentHTML.indexOf('<div className="d-flex align-items-center justify-content-center"');
   if (headerStart !== -1) {
     let searchIndex = headerStart;
     let divCount = 0;
     let headerEnd = -1;
-    
+
     for (let i = headerStart; i < contentHTML.length; i++) {
       const char = contentHTML[i];
       if (char === '<') {
@@ -408,12 +413,12 @@ export const extractContentWithoutHeaderAndFooter = (contentHTML: string): strin
         }
       }
     }
-    
+
     if (headerEnd !== -1) {
       restContent = contentHTML.substring(headerEnd);
     }
   }
-  
+
   // Supprimer le footer (contenant PiedPageSociete)
   const footerStart = restContent.indexOf('dangerouslySetInnerHTML={{ __html: entreprise.PiedPageSociete }}');
   if (footerStart !== -1) {
@@ -424,7 +429,7 @@ export const extractContentWithoutHeaderAndFooter = (contentHTML: string): strin
       let searchIndex = divStart;
       let divCount = 0;
       let footerEnd = -1;
-      
+
       for (let i = divStart; i < restContent.length; i++) {
         const char = restContent[i];
         if (char === '<') {
@@ -440,26 +445,26 @@ export const extractContentWithoutHeaderAndFooter = (contentHTML: string): strin
           }
         }
       }
-      
+
       if (footerEnd !== -1) {
         restContent = restContent.substring(0, divStart) + restContent.substring(footerEnd);
       }
     }
   }
-  
+
   return restContent;
 };
 
 export const extractContentWithoutHeader = (contentHTML: string): string => {
   const headerStart = contentHTML.indexOf('<div className="d-flex align-items-center justify-content-center"');
   let restContent = contentHTML;
-  
+
   if (headerStart !== -1) {
     // Trouver la fin du header en cherchant la balise fermante du div principal
     let searchIndex = headerStart;
     let divCount = 0;
     let headerEnd = -1;
-    
+
     for (let i = headerStart; i < contentHTML.length; i++) {
       const char = contentHTML[i];
       if (char === '<') {
@@ -476,7 +481,7 @@ export const extractContentWithoutHeader = (contentHTML: string): string => {
         }
       }
     }
-    
+
     if (headerEnd !== -1) {
       restContent = contentHTML.substring(headerEnd);
     }

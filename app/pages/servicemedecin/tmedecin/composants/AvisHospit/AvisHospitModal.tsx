@@ -1,7 +1,10 @@
 'use client';
 import { useState, useEffect } from 'react';
 import { Modal, Form, Button, Row, Col, Badge, Alert } from 'react-bootstrap';
-import { FaHospital, FaUserMd, FaCalendarAlt, FaClock, FaNotesMedical } from 'react-icons/fa';
+import { FaHospital, FaUserMd, FaCalendarAlt, FaClock, FaNotesMedical, FaPrint, FaFileAlt } from 'react-icons/fa';
+import { useEntreprise } from '@/hooks/useEntreprise';
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from '@/utils/printRecu';
+
 
 interface AvisHospitModalProps {
   show: boolean;
@@ -11,7 +14,7 @@ interface AvisHospitModalProps {
   patientNom?: string;
   patientPrenoms?: string;
   Code_dossier?: string;
-  Assurance?:string
+  Assurance?: string
   SOCIETE_PATIENT?: string;
 
 }
@@ -50,14 +53,14 @@ const etatsPatient = [
   { value: 'Electif', label: 'Électif', color: 'info' }
 ];
 
-export default function AvisHospitModal({ 
-  show, 
-  onHide, 
-  consultationId, 
-  patientId, 
-  patientNom, 
+export default function AvisHospitModal({
+  show,
+  onHide,
+  consultationId,
+  patientId,
+  patientNom,
   patientPrenoms,
-  Code_dossier , 
+  Code_dossier,
   Assurance,
   SOCIETE_PATIENT
 }: AvisHospitModalProps) {
@@ -68,7 +71,7 @@ export default function AvisHospitModal({
   const [showForm, setShowForm] = useState(false);
   const [editingAvis, setEditingAvis] = useState<AvisHospit | null>(null);
 
-  const Utilisateur = typeof window !== "undefined"? localStorage.getItem("nom_utilisateur"): "";
+  const Utilisateur = typeof window !== "undefined" ? localStorage.getItem("nom_utilisateur") : "";
 
   // Formulaire
   const [formData, setFormData] = useState<AvisHospit>({
@@ -82,7 +85,7 @@ export default function AvisHospitModal({
     MedecinTraitant: Utilisateur || '',
     Diagnostic: '',
     DatePrevue: '',
-    assurance:Assurance || '',
+    assurance: Assurance || '',
     SocieteP: SOCIETE_PATIENT || '',
     Isolement: false,
     HospitAnt: false,
@@ -98,10 +101,10 @@ export default function AvisHospitModal({
       const params = new URLSearchParams();
       if (consultationId) params.append('consultationId', consultationId);
       if (patientId) params.append('patientId', patientId);
-      
+
       const response = await fetch(`/api/avishospit?${params}`);
       const data = await response.json();
-      
+
       if (data.success) {
         setAvisList(data.data);
       } else {
@@ -115,17 +118,35 @@ export default function AvisHospitModal({
   };
 
   useEffect(() => {
-    if (show) {
-      loadAvis();
-      // Pré-remplir le nom du patient et le numéro de document
-      setFormData(prev => ({
-        ...prev,
-        Patient: patientNom && patientPrenoms ? `${patientNom} ${patientPrenoms}` : '',
-        NumDoc: Code_dossier || '', assurance: Assurance || '', SocieteP: SOCIETE_PATIENT || ''
-      }));
-    }
-  }, [show, consultationId, patientId, patientNom, patientPrenoms, Code_dossier]);
+    let mounted = true;
 
+    const init = async () => {
+      if (!show) return;
+
+      await loadAvis();
+
+      if (mounted) {
+        setFormData(prev => ({
+          ...prev,
+          Patient:
+            patientNom && patientPrenoms
+              ? `${patientNom} ${patientPrenoms}`
+              : '',
+          NumDoc: Code_dossier || '',
+          assurance: Assurance || '',
+          SocieteP: SOCIETE_PATIENT || ''
+        }));
+      }
+    };
+
+    init();
+
+    return () => {
+      mounted = false;
+    };
+  }, [
+    show, consultationId, patientId, patientNom, patientPrenoms, Code_dossier, Assurance, SOCIETE_PATIENT
+  ]);
   // Réinitialiser le formulaire
   const resetForm = () => {
     setFormData({
@@ -140,7 +161,7 @@ export default function AvisHospitModal({
       Diagnostic: '',
       DatePrevue: '',
       assurance: Assurance || '',
-      SocieteP:SOCIETE_PATIENT || '',
+      SocieteP: SOCIETE_PATIENT || '',
       Isolement: false,
       HospitAnt: false,
       sejourunjour: false
@@ -169,7 +190,7 @@ export default function AvisHospitModal({
     try {
       const url = editingAvis ? '/api/avishospit' : '/api/avishospit';
       const method = editingAvis ? 'PUT' : 'POST';
-      
+
       const payload = {
         ...formData,
         IDPARTIENT: patientId,
@@ -243,6 +264,65 @@ export default function AvisHospitModal({
     return etatsPatient.find(e => e.value === etat) || etatsPatient[0];
   };
 
+
+  // Impression
+  const { entreprise } = useEntreprise();
+
+
+  const getAvisHospitPrintContent = (avis: AvisHospit) => {
+    return `
+      <!DOCTYPE html>
+      <html lang="fr">
+      <head>
+        <meta charset="UTF-8" />
+        <title>Avis d'Hospitalisation</title>
+        <style>
+          body { font-family: Arial, sans-serif; padding: 24px; }
+          .section-title { font-weight: bold; margin-top: 18px; margin-bottom: 8px; font-size: 1.1rem; }
+          .info { margin-bottom: 6px; }
+          .footer { margin-top: 24px; font-size: 12px; color: #888; text-align: right; }
+        </style>
+      </head>
+      <body>
+        <div style="text-align:center; font-size:1.3rem; font-weight:bold; margin-bottom:18px;">AVIS D'HOSPITALISATION</div>
+        <div class="info"><strong>Patient :</strong> ${avis.Patient || ''}</div>
+        <div class="info"><strong>Diagnostic :</strong> ${avis.Diagnostic || ''}</div>
+        <div class="info"><strong>Service :</strong> ${getServiceInfo(avis.serviceHospit).label}</div>
+        <div class="info"><strong>État du patient :</strong> ${getEtatInfo(avis.etatPatient).label}</div>
+        <div class="info"><strong>Durée probable :</strong> ${avis.DureHospit || ''}</div>
+        <div class="info"><strong>Date d'intervention :</strong> ${avis.DateIntervention ? new Date(avis.DateIntervention).toLocaleDateString() : ''}</div>
+        <div class="info"><strong>Heure :</strong> ${avis.HeureHospit || ''}</div>
+        <div class="info"><strong>Date prévue :</strong> ${avis.DatePrevue ? new Date(avis.DatePrevue).toLocaleDateString() : ''}</div>
+        <div class="info"><strong>Médecin traitant :</strong> ${avis.MedecinTraitant || ''}</div>
+        <div class="info"><strong>Numéro de document :</strong> ${avis.NumDoc || ''}</div>
+        <div class="info"><strong>Assurance :</strong> ${avis.assurance || ''}</div>
+        <div class="info"><strong>Société patient :</strong> ${avis.SocieteP || ''}</div>
+        ${avis.Isolement ? '<div class="info"><strong>Isolement requis</strong></div>' : ''}
+        ${avis.HospitAnt ? '<div class="info"><strong>Déjà hospitalisé(e)</strong></div>' : ''}
+        ${avis.sejourunjour ? '<div class="info"><strong>Séjour d\'un jour</strong></div>' : ''}
+        <div class="footer">Fait le ${new Date().toLocaleDateString('fr-FR')}</div>
+      </body>
+      </html>
+    `;
+  };
+
+  const handlePrintWithHeader = (avis: AvisHospit) => {
+    const headerHTML = generatePrintHeader(entreprise);
+    const footerHTML = generatePrintFooter(entreprise);
+    const fullHTML = getAvisHospitPrintContent(avis);
+    const bodyMatch = fullHTML.match(/<body>([\s\S]*)<\/body>/);
+    const contentHTML = bodyMatch ? bodyMatch[1] : fullHTML;
+    createPrintWindow("Avis d'Hospitalisation", headerHTML, contentHTML, footerHTML);
+  };
+
+  const handlePrintWithoutHeader = (avis: AvisHospit) => {
+    const fullHTML = getAvisHospitPrintContent(avis);
+    const bodyMatch = fullHTML.match(/<body>([\s\S]*)<\/body>/);
+    const contentHTML = bodyMatch ? bodyMatch[1] : fullHTML;
+    createPrintWindowWithoutHeader("Avis d'Hospitalisation", contentHTML);
+  };
+
+
   return (
     <Modal show={show} onHide={onHide} size="xl" backdrop="static">
       <Modal.Header closeButton className="bg-primary text-white">
@@ -251,7 +331,7 @@ export default function AvisHospitModal({
           Avis d'Hospitalisation
         </Modal.Title>
       </Modal.Header>
-      
+
       <Modal.Body className="p-4">
         {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
         {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
@@ -283,38 +363,38 @@ export default function AvisHospitModal({
               </div>
             ) : (
               <Row className="g-3">
-                {avisList.map((avis) => {
+                {avisList.map((avis, idx) => {
                   const serviceInfo = getServiceInfo(avis.serviceHospit);
                   const etatInfo = getEtatInfo(avis.etatPatient);
-                  
+
                   return (
-                    <Col md={6} key={avis._id}>
+                    <Col md={6} key={avis._id || `avis-${idx}`}>
                       <div className="card border-0 shadow-sm h-100">
                         <div className="card-body">
                           <div className="d-flex justify-content-between align-items-start mb-3">
                             <div>
-                              <span 
-                                className="me-2 d-inline-block text-white px-2 py-1 rounded" 
-                                style={{ 
-                                  fontSize: '0.65rem', 
-                                  backgroundColor: serviceInfo.color === 'primary' ? '#0d6efd' : 
-                                                   serviceInfo.color === 'danger' ? '#dc3545' :
-                                                   serviceInfo.color === 'warning' ? '#ffc107' :
-                                                   serviceInfo.color === 'info' ? '#0dcaf0' :
-                                                   serviceInfo.color === 'success' ? '#198754' : '#6c757d'
+                              <span
+                                className="me-2 d-inline-block text-white px-2 py-1 rounded"
+                                style={{
+                                  fontSize: '0.65rem',
+                                  backgroundColor: serviceInfo.color === 'primary' ? '#0d6efd' :
+                                    serviceInfo.color === 'danger' ? '#dc3545' :
+                                      serviceInfo.color === 'warning' ? '#ffc107' :
+                                        serviceInfo.color === 'info' ? '#0dcaf0' :
+                                          serviceInfo.color === 'success' ? '#198754' : '#6c757d'
                                 }}
                               >
                                 {serviceInfo.label}
                               </span>
-                              <span 
-                                className="me-2 d-inline-block text-white px-2 py-1 rounded" 
-                                style={{ 
-                                  fontSize: '0.65rem', 
-                                  backgroundColor: etatInfo.color === 'primary' ? '#0d6efd' : 
-                                                   etatInfo.color === 'danger' ? '#dc3545' :
-                                                   etatInfo.color === 'warning' ? '#ffc107' :
-                                                   etatInfo.color === 'info' ? '#0dcaf0' :
-                                                   etatInfo.color === 'success' ? '#198754' : '#6c757d'
+                              <span
+                                className="me-2 d-inline-block text-white px-2 py-1 rounded"
+                                style={{
+                                  fontSize: '0.65rem',
+                                  backgroundColor: etatInfo.color === 'primary' ? '#0d6efd' :
+                                    etatInfo.color === 'danger' ? '#dc3545' :
+                                      etatInfo.color === 'warning' ? '#ffc107' :
+                                        etatInfo.color === 'info' ? '#0dcaf0' :
+                                          etatInfo.color === 'success' ? '#198754' : '#6c757d'
                                 }}
                               >
                                 {etatInfo.label}
@@ -324,14 +404,20 @@ export default function AvisHospitModal({
                               <Button variant="outline-primary" size="sm" onClick={() => handleEdit(avis)}>
                                 <i className="bi bi-pencil"></i>
                               </Button>
+                              <Button variant="outline-success" size="sm" onClick={() => handlePrintWithHeader(avis)} title="Imprimer avec en-tête">
+                                <FaPrint />
+                              </Button>
+                              <Button variant="outline-info" size="sm" onClick={() => handlePrintWithoutHeader(avis)} title="Imprimer sans en-tête">
+                                <FaFileAlt />
+                              </Button>
                               <Button variant="outline-danger" size="sm" onClick={() => handleDelete(avis._id!)}>
                                 <i className="bi bi-trash"></i>
                               </Button>
                             </div>
                           </div>
-                          
+
                           <h6 className="card-title">{avis.Patient}</h6>
-                          
+
                           <div className="small text-muted mb-2">
                             <div><strong>Diagnostic:</strong> {avis.Diagnostic}</div>
                             <div><strong>Durée probable de l'hospitalisation:</strong> {avis.DureHospit}</div>
@@ -340,28 +426,28 @@ export default function AvisHospitModal({
                             <div><strong>Médecin traitant:</strong> {avis.MedecinTraitant}</div>
                             {avis.NumDoc && <div><strong>N° Document:</strong> {avis.NumDoc}</div>}
                           </div>
-                          
+
                           {avis.Isolement && (
-                            <span 
-                              className="mt-2 me-3 d-inline-block text-white px-2 py-1 rounded" 
+                            <span
+                              className="mt-2 me-3 d-inline-block text-white px-2 py-1 rounded"
                               style={{ fontSize: '0.65rem', backgroundColor: '#ffc107' }}
                             >
                               <i className="bi bi-exclamation-triangle me-1"></i>
                               Isolement requis
                             </span>
                           )}
-                           {avis.HospitAnt && (
-                            <span 
-                              className="mt-2 me-3 d-inline-block text-white px-2 py-1 rounded" 
+                          {avis.HospitAnt && (
+                            <span
+                              className="mt-2 me-3 d-inline-block text-white px-2 py-1 rounded"
                               style={{ fontSize: '0.65rem', backgroundColor: '#6c757d' }}
                             >
                               <i className="bi bi-exclamation-triangle me-1"></i>
                               Déjà Hospitalisé(e)
                             </span>
                           )}
-                           {avis.sejourunjour && (
-                            <span 
-                              className="mt-2 me-3 d-inline-block text-white px-2 py-1 rounded" 
+                          {avis.sejourunjour && (
+                            <span
+                              className="mt-2 me-3 d-inline-block text-white px-2 py-1 rounded"
                               style={{ fontSize: '0.65rem', backgroundColor: '#dc3545' }}
                             >
                               <i className="bi bi-exclamation-triangle me-1"></i>
@@ -411,7 +497,7 @@ export default function AvisHospitModal({
                   </Form.Select>
                 </Form.Group>
               </Col>
-              
+
               <Col md={6}>
                 <Form.Group>
                   <Form.Label>État du patient *</Form.Label>

@@ -57,13 +57,13 @@ interface Prescription {
 
 export default function FichePrescriptionMedecinAsaisie() {
   const router = useRouter();
-  
+
   // États pour les données
   const [patient, setPatient] = useState<Patient | null>(null);
   const [consultation, setConsultation] = useState<Consultation | null>(null);
   const [antecedents, setAntecedents] = useState<Antecedent[]>([]);
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-  
+
   // États pour les formulaires
   const [showAntecedentModal, setShowAntecedentModal] = useState(false);
   const [showPrescriptionModal, setShowPrescriptionModal] = useState(false);
@@ -71,20 +71,20 @@ export default function FichePrescriptionMedecinAsaisie() {
   const [loadingAntecedent, setLoadingAntecedent] = useState(false);
   const [prescriptionType, setPrescriptionType] = useState<'medicament' | 'examen'>('medicament');
   const [antecedentType, setAntecedentType] = useState<'medical' | 'chirurgical' | 'familial' | 'autre' | 'allergie'>('medical');
-  
+
   // États pour les nouveaux modaux
   const [showPharmacieModal, setShowPharmacieModal] = useState(false);
   const [showExamenModal, setShowExamenModal] = useState(false);
   const [showAvisHospitModal, setShowAvisHospitModal] = useState(false);
   const [avisHospitCount, setAvisHospitCount] = useState(0);
   const [showPrintModal, setShowPrintModal] = useState(false);
-  
+
   // États pour les nouveaux champs
   const [loadingExamenParaclinique, setLoadingExamenParaclinique] = useState(false);
   const [loadingTraitementClinique, setLoadingTraitementClinique] = useState(false);
   const [examensParacliniques, setExamensParacliniques] = useState<string[]>([]);
   const [traitementsCliniques, setTraitementsCliniques] = useState<string[]>([]);
-  
+
   // Formulaires
   const [constantesForm, setConstantesForm] = useState({
     temperature: '',
@@ -93,7 +93,7 @@ export default function FichePrescriptionMedecinAsaisie() {
     glycemie: '',
     taille: ''
   });
-  
+
   const [consultationForm, setConsultationForm] = useState({
     MotifConsultation: '',
     examenClinique: '',
@@ -103,7 +103,7 @@ export default function FichePrescriptionMedecinAsaisie() {
     TraitementClinique: '',
     ConclusionClinique: ''
   });
-  
+
   const [cim10Codes, setCim10Codes] = useState<string[]>([]);
   const [selectedCim10Codes, setSelectedCim10Codes] = useState<string[]>([]);
   const [cim10Search, setCim10Search] = useState('');
@@ -111,24 +111,24 @@ export default function FichePrescriptionMedecinAsaisie() {
   const [loadingAffections, setLoadingAffections] = useState(false);
   const [showNewAffectionForm, setShowNewAffectionForm] = useState(false);
   const [newAffection, setNewAffection] = useState({ lettreCle: '', designation: '' });
-  
+
   const [antecedentForm, setAntecedentForm] = useState({
     description: '',
     date: ''
   });
-  
+
   const [prescriptionForm, setPrescriptionForm] = useState({
     designation: '',
     posologie: '',
     duree: '',
     instructions: ''
   });
-  
+
   // États pour le Code Prestation
   const [consultationLiee, setConsultationLiee] = useState<any>(null);
   const [loadingConsultationLiee, setLoadingConsultationLiee] = useState(false);
   const [errorConsultationLiee, setErrorConsultationLiee] = useState('');
-  
+
   // Fonction pour rechercher la consultation liée au Code Prestation
   const rechercherConsultationLiee = async (codePrestation: string) => {
     if (!codePrestation.trim()) {
@@ -136,17 +136,17 @@ export default function FichePrescriptionMedecinAsaisie() {
       setErrorConsultationLiee('');
       return;
     }
-    
+
     try {
       setLoadingConsultationLiee(true);
       setErrorConsultationLiee('');
-      
+
       const response = await fetch(`/api/consultation/code?CodePrestation=${encodeURIComponent(codePrestation)}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         setConsultationLiee(data);
-        
+
         // Initialiser la fiche avec les informations de la consultation trouvée
         if (data) {
           // Mettre à jour le formulaire de consultation
@@ -159,7 +159,7 @@ export default function FichePrescriptionMedecinAsaisie() {
             TraitementClinique: data.TraitementClinique || '',
             ConclusionClinique: data.ConclusionClinique || ''
           });
-          
+
           // Mettre à jour les constantes
           setConstantesForm({
             temperature: data.Temperature || '',
@@ -168,19 +168,19 @@ export default function FichePrescriptionMedecinAsaisie() {
             glycemie: data.Glycemie || '',
             taille: data.TailleCons || ''
           });
-          
+
           // Charger les codes CIM-10 si présents
           if (data.CodeAffection) {
             const codes = data.CodeAffection.split(',').map((code: string) => code.trim()).filter((code: string) => code);
             setSelectedCim10Codes(codes);
           }
-          
+
           // Mettre à jour la consultation actuelle
           setConsultation({
             ...data,
             codePrestation: data.CodePrestation || codePrestation
           });
-          
+
           // Mettre à jour le patient si disponible
           if (data.IdPatient) {
             const patientData = {
@@ -197,24 +197,24 @@ export default function FichePrescriptionMedecinAsaisie() {
               Matricule: data.IdPatient.Matricule || ''
             };
             setPatient(patientData);
-            
+
             // Charger les antécédents du patient
             chargerAntecedentsPatient(data.IdPatient._id);
           }
-          
+
           // Mettre à jour la consultation actuelle
           setConsultation({
             ...data,
             codePrestation: data.CodePrestation || codePrestation
           });
-          
+
           // Charger les avis d'hospitalisation pour cette consultation (après mise à jour de l'état)
           setTimeout(() => {
             console.log('🏥 rechercherConsultationLiee - appel chargerAvisHospitCount après timeout');
             chargerAvisHospitCount();
           }, 100);
         }
-        
+
         setSuccess('Fiche initialisée avec la consultation liée');
         setTimeout(() => setSuccess(''), 3000);
       } else {
@@ -228,7 +228,7 @@ export default function FichePrescriptionMedecinAsaisie() {
       setLoadingConsultationLiee(false);
     }
   };
-  
+
   // Fonction pour la recherche manuelle via le bouton
   const handleRechercheManuelle = () => {
     if (consultationForm.codePrestation.trim()) {
@@ -238,22 +238,22 @@ export default function FichePrescriptionMedecinAsaisie() {
       setTimeout(() => setErrorConsultationLiee(''), 3000);
     }
   };
-  
+
   // Fonction pour récupérer les examens paracliniques (lettre clé = "B", "Z", "KC", "D")
   const chargerExamensParacliniques = async (codePrestation: string) => {
     if (!codePrestation) {
       setExamensParacliniques([]);
       return;
     }
-    
+
     try {
       setLoadingExamenParaclinique(true);
       const response = await fetch(`/api/ligneprestation?CodePrestation=${encodeURIComponent(codePrestation)}`);
-      
+
       if (response.ok) {
         const result = await response.json();
         const lignes = Array.isArray(result?.data) ? result.data : [];
-        
+
         // Extraire les examens paracliniques (lettre clé = "B", "Z", "KC", "D")
         const examens = lignes
           .filter((ligne: any) => {
@@ -261,10 +261,10 @@ export default function FichePrescriptionMedecinAsaisie() {
             return ['B', 'Z', 'KC', 'D'].includes(lettreCle) && ligne.prestation;
           })
           .map((ligne: any) => ligne.prestation);
-        
+
         console.log('🔬 Examens paracliniques trouvés:', examens);
         setExamensParacliniques(examens);
-        
+
         // Mettre à jour le formulaire avec les examens trouvés
         setConsultationForm(prev => ({
           ...prev,
@@ -281,22 +281,22 @@ export default function FichePrescriptionMedecinAsaisie() {
       setLoadingExamenParaclinique(false);
     }
   };
-  
+
   // Fonction pour récupérer les traitements cliniques (médicaments de patientprescription)
   const chargerTraitementsCliniques = async (codePrestation: string) => {
     if (!codePrestation) {
       setTraitementsCliniques([]);
       return;
     }
-    
+
     try {
       setLoadingTraitementClinique(true);
       const response = await fetch(`/api/patientprescription?CodePrestation=${encodeURIComponent(codePrestation)}`);
-      
+
       if (response.ok) {
         const data = await response.json();
         const prescriptions = Array.isArray(data) ? data : [];
-        
+
         // Extraire les médicaments
         const medicaments = prescriptions
           .filter((prescription: any) => prescription.nomMedicament) // Filtrer les médicaments
@@ -305,13 +305,13 @@ export default function FichePrescriptionMedecinAsaisie() {
             if (prescription.posologie) details.push(`Posologie: ${prescription.posologie}`);
             if (prescription.QteP) details.push(`Quantité: ${prescription.QteP}`);
             if (prescription.prixUnitaire) details.push(`Prix: ${prescription.prixUnitaire}`);
-            
+
             return `${prescription.nomMedicament}${details.length > 0 ? ' - ' + details.join(', ') : ''}`;
           });
-        
+
         console.log('📊 Médicaments trouvés:', medicaments);
         setTraitementsCliniques(medicaments);
-        
+
         // Mettre à jour le formulaire avec les traitements trouvés
         setConsultationForm(prev => ({
           ...prev,
@@ -328,7 +328,7 @@ export default function FichePrescriptionMedecinAsaisie() {
       setLoadingTraitementClinique(false);
     }
   };
-  
+
   // États pour les messages
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -338,10 +338,10 @@ export default function FichePrescriptionMedecinAsaisie() {
   const chargerAntecedentsPatient = async (patientId: string) => {
     try {
       const response = await fetch(`/api/fichePrescriptionMedecin/antecedents?patientId=${patientId}`);
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         // Convertir les antécédents objet en tableau
         const antecedentsArray: Antecedent[] = [];
         if (data) {
@@ -397,12 +397,12 @@ export default function FichePrescriptionMedecinAsaisie() {
     try {
       // Récupérer consultationId depuis l'URL ou depuis l'état consultation
       let consultationId = new URLSearchParams(window.location.search).get('consultationId');
-      
+
       // Si pas de consultationId dans l'URL, utiliser celui de l'état consultation
       if (!consultationId && consultation?._id) {
         consultationId = consultation._id;
       }
-      
+
       if (consultationId) {
         const response = await fetch(`/api/avishospit?consultationId=${consultationId}`);
         if (response.ok) {
@@ -419,26 +419,26 @@ export default function FichePrescriptionMedecinAsaisie() {
   useEffect(() => {
     // Ne charger que s'il y a un consultationId dans l'URL
     const consultationId = new URLSearchParams(window.location.search).get('consultationId');
-    
+
     if (!consultationId) {
       // Pas de consultationId, on attend que le médecin saisisse un codePrestation
       setLoading(false);
       return;
     }
-    
+
     const chargerFicheConsultation = async () => {
       try {
         setLoading(true);
-        
+
         const response = await fetch(`/api/fichePrescriptionMedecin?consultationId=${consultationId}`);
-        
+
         if (response.ok) {
           const data = await response.json();
-          
+
           // Mettre à jour les états
           setPatient(data.patient || null);
           setConsultation(data.consultation || null);
-          
+
           // Convertir les antécédents objet en tableau
           const antecedentsArray: Antecedent[] = [];
           if (data.antecedents) {
@@ -479,9 +479,9 @@ export default function FichePrescriptionMedecinAsaisie() {
             }
           }
           setAntecedents(antecedentsArray);
-          
+
           setPrescriptions(data.prescriptions || []);
-          
+
           // Pré-remplir les formulaires avec les données existantes
           if (data.consultation) {
             setConstantesForm({
@@ -491,7 +491,7 @@ export default function FichePrescriptionMedecinAsaisie() {
               glycemie: data.consultation.glycemie || '',
               taille: data.consultation.taille || ''
             });
-            
+
             setConsultationForm({
               MotifConsultation: data.consultation.MotifConsultation || '',
               examenClinique: data.consultation.examenClinique || '',
@@ -501,19 +501,19 @@ export default function FichePrescriptionMedecinAsaisie() {
               TraitementClinique: data.consultation.TraitementClinique || '',
               ConclusionClinique: data.consultation.ConclusionClinique || ''
             });
-            
+
             // Mettre à jour la consultation avec le codePrestation
             setConsultation({
               ...data.consultation,
               codePrestation: data.consultation.codePrestation || data.consultation.CodePrestation || ''
             });
-            
+
             // Charger les codes CIM-10 existants
             if (data.consultation.codeAffection) {
               const codes = data.consultation.codeAffection.split(',').map((code: string) => code.trim()).filter((code: string) => code);
               setSelectedCim10Codes(codes);
             }
-            
+
             // Charger les examens paracliniques et traitements cliniques
             const codePrestationToLoad = data.consultation.codePrestation || data.consultation.CodePrestation;
             if (codePrestationToLoad) {
@@ -531,7 +531,7 @@ export default function FichePrescriptionMedecinAsaisie() {
         setLoading(false);
       }
     };
-    
+
     chargerFicheConsultation();
     chargerAvisHospitCount();
   }, []);
@@ -561,7 +561,7 @@ export default function FichePrescriptionMedecinAsaisie() {
 
   const renderConstanteField = (label: string, field: string, value: string, placeholder: string, icon: string) => {
     const indice = getIndiceConstante(value, field as 'temperature' | 'tension' | 'glycemie' | 'poids');
-    
+
     return (
       <Col md={6} className="mb-3">
         <Form.Group>
@@ -573,7 +573,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           <Form.Control
             type="text"
             value={value}
-            onChange={(e) => setConstantesForm({...constantesForm, [field]: e.target.value})}
+            onChange={(e) => setConstantesForm({ ...constantesForm, [field]: e.target.value })}
             placeholder={placeholder}
             className={indice?.niveau === 'danger' ? 'border-danger' : indice?.niveau === 'warning' ? 'border-warning' : ''}
           />
@@ -666,11 +666,11 @@ export default function FichePrescriptionMedecinAsaisie() {
     const aujourdHui = new Date();
     const age = aujourdHui.getFullYear() - naissance.getFullYear();
     const mois = aujourdHui.getMonth() - naissance.getMonth();
-    
+
     if (mois < 0 || (mois === 0 && aujourdHui.getDate() < naissance.getDate())) {
       return age - 1;
     }
-    
+
     return age;
   };
 
@@ -706,16 +706,16 @@ export default function FichePrescriptionMedecinAsaisie() {
   // Fonction pour calculer l'indice des constantes
   const getIndiceConstante = (valeur: string, type: 'temperature' | 'tension' | 'glycemie' | 'poids') => {
     if (!valeur) return null;
-    
+
     const numValeur = parseFloat(valeur.replace(',', '.'));
     if (isNaN(numValeur)) return null;
-    
+
     switch (type) {
       case 'temperature':
         if (numValeur > 39 || numValeur < 35) return { niveau: 'danger', message: 'Température critique', icone: 'bi-exclamation-triangle-fill' };
         if (numValeur > 38 || numValeur < 36) return { niveau: 'warning', message: 'Température anormale', icone: 'bi-exclamation-circle-fill' };
         return { niveau: 'success', message: 'Température normale', icone: 'bi-check-circle-fill' };
-        
+
       case 'tension':
         const tensionValues = valeur.split('/').map(v => parseFloat(v.trim()));
         if (tensionValues.length >= 2) {
@@ -729,19 +729,19 @@ export default function FichePrescriptionMedecinAsaisie() {
           return { niveau: 'success', message: 'Tension normale', icone: 'bi-check-circle-fill' };
         }
         return null;
-        
+
       case 'glycemie':
         if (numValeur > 2.5 || numValeur < 0.6) return { niveau: 'danger', message: 'Glycémie critique', icone: 'bi-exclamation-triangle-fill' };
         if (numValeur > 1.5 || numValeur < 0.8) return { niveau: 'warning', message: 'Glycémie anormale', icone: 'bi-exclamation-circle-fill' };
         return { niveau: 'success', message: 'Glycémie normale', icone: 'bi-check-circle-fill' };
-        
+
       case 'poids':
         // Indice de masse corporelle approximatif (en supposant une taille moyenne de 1.70m)
         const imc = numValeur / (1.70 * 1.70);
         if (imc > 30) return { niveau: 'warning', message: 'Surpoids/Obésité', icone: 'bi-exclamation-circle-fill' };
         if (imc < 18.5) return { niveau: 'warning', message: 'Insuffisance pondérale', icone: 'bi-exclamation-circle-fill' };
         return { niveau: 'success', message: 'Poids normal', icone: 'bi-check-circle-fill' };
-        
+
       default:
         return null;
     }
@@ -749,15 +749,15 @@ export default function FichePrescriptionMedecinAsaisie() {
 
   const getBadgeIndice = (indice: any) => {
     if (!indice) return null;
-    
+
     const variantMap = {
       danger: 'danger' as const,
-      warning: 'warning' as const, 
+      warning: 'warning' as const,
       success: 'success' as const
     };
-    
+
     const variant = variantMap[indice.niveau as keyof typeof variantMap] || 'secondary';
-    
+
     return (
       <Badge bg={variant} className="ms-2" title={indice.message}>
         <i className={`bi ${indice.icone} me-1`}></i>
@@ -770,16 +770,16 @@ export default function FichePrescriptionMedecinAsaisie() {
     try {
       const consultationId = new URLSearchParams(window.location.search).get('consultationId');
       const codePrestation = consultationForm.codePrestation;
-      
+
       // Utiliser l'ID MongoDB de la consultation si disponible, sinon le codePrestation
       const idConsultation = consultation?._id || consultationId || codePrestation;
-      
+
       if (!idConsultation) {
         setError('ID de consultation manquant');
         setTimeout(() => setError(''), 3000);
         return;
       }
-      
+
       // Validation qu'au moins une constante est remplie
       const hasAnyConstante = Object.values(constantesForm).some(value => value.trim() !== '');
       if (!hasAnyConstante) {
@@ -787,7 +787,7 @@ export default function FichePrescriptionMedecinAsaisie() {
         setTimeout(() => setError(''), 3000);
         return;
       }
-      
+
       const response = await fetch('/api/fichePrescriptionMedecin/constantes', {
         method: 'PUT',
         headers: {
@@ -804,7 +804,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           }
         })
       });
-      
+
       if (response.ok) {
         setSuccess('Constantes sauvegardées avec succès');
         setTimeout(() => setSuccess(''), 3000);
@@ -822,26 +822,26 @@ export default function FichePrescriptionMedecinAsaisie() {
     try {
       const consultationId = new URLSearchParams(window.location.search).get('consultationId');
       const codePrestation = consultationForm.codePrestation;
-      
+
       // Pour FichePrescriptionMedecinAsaisie, on utilise le codePrestation
       if (!codePrestation) {
         setError('Code Prestation manquant');
         setTimeout(() => setError(''), 3000);
         return;
       }
-      
+
       if (!consultationForm.MotifConsultation.trim()) {
         setError('Le motif de consultation est requis');
         setTimeout(() => setError(''), 3000);
         return;
       }
-      
+
       if (!consultationForm.ConclusionClinique.trim()) {
         setError('La conclusion clinique est requise');
         setTimeout(() => setError(''), 3000);
         return;
       }
-      
+
       const response = await fetch('/api/fichePrescriptionMedecin', {
         method: 'POST',
         headers: {
@@ -859,7 +859,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           diagnostic: 'Consultation en cours' // Diagnostic par défaut
         })
       });
-      
+
       if (response.ok) {
         setSuccess('Consultation sauvegardée avec succès');
         setTimeout(() => setSuccess(''), 3000);
@@ -878,22 +878,22 @@ export default function FichePrescriptionMedecinAsaisie() {
       setLoading(true);
       const consultationId = new URLSearchParams(window.location.search).get('consultationId');
       const codePrestation = consultationForm.codePrestation;
-      
+
       if (!codePrestation && !consultationId) {
         setError('ID de consultation ou Code Prestation manquant');
         setTimeout(() => setError(''), 3000);
         return;
       }
-      
+
       // 1. Sauvegarder les constantes vitales si présentes
       const hasConstantes = Object.values(constantesForm).some(value => value.trim() !== '');
       if (hasConstantes) {
         await sauvegarderConstantes();
       }
-      
+
       // 2. Sauvegarder la consultation
       await sauvegarderConsultation();
-      
+
       // 3. Mettre à jour attenteMedecin = 2
       const updateResponse = await fetch('/api/consultation/updateAttente', {
         method: 'PUT',
@@ -906,19 +906,19 @@ export default function FichePrescriptionMedecinAsaisie() {
           attenteMedecin: 2
         })
       });
-      
+
       if (updateResponse.ok) {
         setSuccess('Fiche enregistrée avec succès ! Statut mis à jour.');
         setTimeout(() => setSuccess(''), 5000);
-        
+
         // Mettre à jour l'état local
         if (consultation) {
-          setConsultation({...consultation, attenteMedecin: 2});
+          setConsultation({ ...consultation, attenteMedecin: 2 });
         }
       } else {
         throw new Error('Erreur lors de la mise à jour du statut');
       }
-      
+
     } catch (err: any) {
       setError(err.message || 'Erreur lors de l\'enregistrement complet de la fiche');
       setTimeout(() => setError(''), 5000);
@@ -931,17 +931,17 @@ export default function FichePrescriptionMedecinAsaisie() {
     try {
       setLoadingAntecedent(true);
       const patientId = patient?._id;
-      
+
       if (!patientId) {
         setError('ID patient non trouvé');
         return;
       }
-      
+
       if (!antecedentForm.description.trim()) {
         setError('La description de l\'antécédent est requise');
         return;
       }
-      
+
       const response = await fetch('/api/fichePrescriptionMedecin/antecedents', {
         method: 'POST',
         headers: {
@@ -953,10 +953,10 @@ export default function FichePrescriptionMedecinAsaisie() {
           antecedents: antecedentForm
         })
       });
-      
+
       if (response.ok) {
         const result = await response.json();
-        
+
         // Créer un nouvel antécédent pour le tableau
         const newAntecedent = {
           _id: `${antecedentType}_${Date.now()}`,
@@ -964,13 +964,13 @@ export default function FichePrescriptionMedecinAsaisie() {
           description: antecedentForm.description,
           date: antecedentForm.date || undefined
         };
-        
+
         // Ajouter ou mettre à jour l'antécédent dans le tableau
         setAntecedents(prevAntecedents => {
           const filtered = prevAntecedents.filter(a => a.type !== antecedentType);
           return [...filtered, newAntecedent];
         });
-        
+
         setAntecedentForm({ description: '', date: '' });
         setShowAntecedentModal(false);
         setSuccess('Antécédent ajouté avec succès');
@@ -991,12 +991,12 @@ export default function FichePrescriptionMedecinAsaisie() {
     try {
       const consultationId = new URLSearchParams(window.location.search).get('consultationId');
       const patientId = patient?._id;
-      
+
       if (!consultationId && !patientId) {
         setError('ID de consultation ou de patient requis');
         return;
       }
-      
+
       // Construire l'URL avec les paramètres requis
       const url = new URL(`/api/fichePrescriptionMedecin/antecedents/${antecedentId}`, window.location.origin);
       if (patientId) {
@@ -1005,15 +1005,15 @@ export default function FichePrescriptionMedecinAsaisie() {
       if (consultationId) {
         url.searchParams.set('consultationId', consultationId);
       }
-      
+
       const response = await fetch(url.toString(), {
         method: 'DELETE'
       });
-      
+
       if (response.ok) {
         setAntecedents(antecedents.filter(a => a._id !== antecedentId));
         setSuccess('Antécédent supprimé avec succès');
-        setTimeout(() => setSuccess(''),3000);
+        setTimeout(() => setSuccess(''), 3000);
       } else {
         const errorData = await response.json();
         throw new Error(errorData.error || 'Erreur lors de la suppression');
@@ -1027,20 +1027,20 @@ export default function FichePrescriptionMedecinAsaisie() {
   const ajouterPrescription = async () => {
     try {
       const consultationId = new URLSearchParams(window.location.search).get('consultationId');
-      
+
       // Validation des champs
       if (!prescriptionForm.designation.trim()) {
         setError('La désignation est requise');
         setTimeout(() => setError(''), 3000);
         return;
       }
-      
+
       if (prescriptionType === 'medicament' && (!prescriptionForm.posologie.trim() || !prescriptionForm.duree.trim())) {
         setError('La posologie et la durée sont requises pour les médicaments');
         setTimeout(() => setError(''), 3000);
         return;
       }
-      
+
       const response = await fetch('/api/fichePrescriptionMedecin/prescriptions', {
         method: 'POST',
         headers: {
@@ -1055,7 +1055,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           instructions: prescriptionForm.instructions
         })
       });
-      
+
       if (response.ok) {
         const nouvellePrescription = await response.json();
         setPrescriptions([...prescriptions, nouvellePrescription]);
@@ -1078,7 +1078,7 @@ export default function FichePrescriptionMedecinAsaisie() {
       const response = await fetch(`/api/fichePrescriptionMedecin/prescriptions/${prescriptionId}`, {
         method: 'DELETE'
       });
-      
+
       if (response.ok) {
         setPrescriptions(prescriptions.filter(p => p._id !== prescriptionId));
         setSuccess('Prescription supprimée avec succès');
@@ -1122,14 +1122,14 @@ export default function FichePrescriptionMedecinAsaisie() {
                     value={consultationForm.codePrestation}
                     onChange={(e) => {
                       const newValue = e.target.value;
-                      setConsultationForm({...consultationForm, codePrestation: newValue});
+                      setConsultationForm({ ...consultationForm, codePrestation: newValue });
                     }}
                     placeholder="Ex: CONS001"
                     className={consultationForm.codePrestation.trim() ? 'border-warning' : ''}
                     style={{ flex: 1 }}
                   />
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     onClick={handleRechercheManuelle}
                     disabled={loadingConsultationLiee}
                     title="Rechercher la consultation liée"
@@ -1150,12 +1150,12 @@ export default function FichePrescriptionMedecinAsaisie() {
                 )}
               </div>
             </Col>
-            
+
             {/* Colonne droite: Boutons retour et enregistrement */}
             <Col md="7" className="text-end">
               <div className="d-flex gap-2 justify-content-end align-items-start">
-                <Button 
-                  variant="success" 
+                <Button
+                  variant="success"
                   onClick={enregistrerFicheComplete}
                   disabled={loading}
                   title="Enregistrer la fiche de prescription"
@@ -1164,17 +1164,17 @@ export default function FichePrescriptionMedecinAsaisie() {
                   <i className="bi bi-save me-2"></i>
                   {loading ? 'Enregistrement...' : 'Enregistrer la fiche'}
                 </Button>
-                <Button 
-                      variant="danger" 
-                      className="rounded-pill px-3"
-                      onClick={() => setShowPrintModal(true)}                     
-                      disabled={!patient && !consultation}
-                      title="Imprimer la fiche de prescription"                    >
-                      <i className="bi bi-printer me-1"></i>
-                      Imprimer la fiche de prescription
-                    </Button>
-                <Button 
-                  variant="outline-primary" 
+                <Button
+                  variant="danger"
+                  className="rounded-pill px-3"
+                  onClick={() => setShowPrintModal(true)}
+                  disabled={!patient && !consultation}
+                  title="Imprimer la fiche de prescription"                    >
+                  <i className="bi bi-printer me-1"></i>
+                  Imprimer la fiche de prescription
+                </Button>
+                <Button
+                  variant="outline-primary"
                   onClick={() => router.back()}
                   className="rounded-pill px-3"
                 >
@@ -1247,7 +1247,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                           }
                         })()}
                       </span>
-                                            <span className="me-3">
+                      <span className="me-3">
                         <i className="bi bi-folder2-open me-1"></i>
                         {(() => {
                           const codeDossier = patient?.Code_dossier || consultationLiee?.IdPatient?.Code_dossier || consultationLiee?.Code_dossier;
@@ -1263,7 +1263,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                       </span>
                     </div>
                   </div>
-                  
+
                 </div>
               </div>
             </Card.Header>
@@ -1287,10 +1287,10 @@ export default function FichePrescriptionMedecinAsaisie() {
                       </small>
                     </div>
                   </div>
-                  <Button 
-                    variant={antecedents.length > 0 ? "light" : "success"} 
-                    size="sm" 
-                    onClick={() => setShowAntecedentModal(true)} 
+                  <Button
+                    variant={antecedents.length > 0 ? "light" : "success"}
+                    size="sm"
+                    onClick={() => setShowAntecedentModal(true)}
                     className="rounded-pill"
                   >
                     <i className="bi bi-plus-circle me-1"></i>
@@ -1312,9 +1312,9 @@ export default function FichePrescriptionMedecinAsaisie() {
                             <i className="bi bi-info-circle me-1"></i>
                             {antecedents.length} type{antecedents.length > 1 ? 's' : ''} d'antécédents
                           </small>
-                          <Button 
-                            variant="outline-success" 
-                            size="sm" 
+                          <Button
+                            variant="outline-success"
+                            size="sm"
                             onClick={() => setShowAntecedentModal(true)}
                           >
                             <i className="bi bi-plus me-1"></i>
@@ -1357,8 +1357,8 @@ export default function FichePrescriptionMedecinAsaisie() {
                                   )}
                                 </td>
                                 <td className="align-middle text-end">
-                                  <Button 
-                                    variant="outline-danger" 
+                                  <Button
+                                    variant="outline-danger"
                                     size="sm"
                                     onClick={() => supprimerAntecedent(antecedent._id)}
                                     className="rounded-circle"
@@ -1377,7 +1377,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                 </Card.Body>
               </Card>
 
-                {/* Consultation - Carte dynamique */}
+              {/* Consultation - Carte dynamique */}
               <Card className={`mb-4 shadow-sm border-0 ${hasConsultationData() ? 'border-warning' : 'border-light'}`}>
                 <Card.Header className={`${hasConsultationData() ? 'bg-warning' : 'bg-light'} ${hasConsultationData() ? 'text-dark' : 'text-dark'} d-flex justify-content-between align-items-center py-3`}>
                   <div className="d-flex align-items-center">
@@ -1391,10 +1391,10 @@ export default function FichePrescriptionMedecinAsaisie() {
                       </small>
                     </div>
                   </div>
-                  <Button 
-                    variant={hasConsultationData() ? "dark" : "warning"} 
-                    size="sm" 
-                    onClick={sauvegarderConsultation} 
+                  <Button
+                    variant={hasConsultationData() ? "dark" : "warning"}
+                    size="sm"
+                    onClick={sauvegarderConsultation}
                     className="rounded-pill"
                   >
                     <i className="bi bi-check-circle me-1"></i>
@@ -1425,7 +1425,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                           as="textarea"
                           rows={3}
                           value={consultationForm.MotifConsultation}
-                          onChange={(e) => setConsultationForm({...consultationForm, MotifConsultation: e.target.value})}
+                          onChange={(e) => setConsultationForm({ ...consultationForm, MotifConsultation: e.target.value })}
                           placeholder="Décrire le motif de la consultation..."
                           className={consultationForm.MotifConsultation.trim() ? 'border-warning' : ''}
                         />
@@ -1445,7 +1445,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                           as="textarea"
                           rows={4}
                           value={consultationForm.examenClinique}
-                          onChange={(e) => setConsultationForm({...consultationForm, examenClinique: e.target.value})}
+                          onChange={(e) => setConsultationForm({ ...consultationForm, examenClinique: e.target.value })}
                           placeholder="Résultats de l'examen clinique..."
                           className={consultationForm.examenClinique.trim() ? 'border-warning' : ''}
                         />
@@ -1456,7 +1456,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                           </small>
                         )}
                       </Form.Group>
-                     
+
                       <Form.Group className="mb-3">
                         <Form.Label className="small">
                           <i className="bi bi-tag me-1"></i>
@@ -1470,8 +1470,8 @@ export default function FichePrescriptionMedecinAsaisie() {
                             placeholder="Sélectionner les codes CIM-10..."
                             className="flex-grow-1"
                           />
-                          <Button 
-                            variant="outline-primary" 
+                          <Button
+                            variant="outline-primary"
                             onClick={() => setShowCIM10Modal(true)}
                           >
                             <i className="bi bi-search me-1"></i>
@@ -1483,9 +1483,9 @@ export default function FichePrescriptionMedecinAsaisie() {
                             {selectedCim10Codes.map((code, index) => (
                               <Badge key={index} bg="info" className="me-1 mb-1">
                                 {code}
-                                <Button 
-                                  variant="link" 
-                                  size="sm" 
+                                <Button
+                                  variant="link"
+                                  size="sm"
                                   className="text-white p-0 ms-1"
                                   onClick={() => setSelectedCim10Codes(prev => prev.filter((_, i) => i !== index))}
                                 >
@@ -1496,7 +1496,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                           </div>
                         )}
                       </Form.Group>
-                      
+
                       {/* Conclusion Clinique */}
                       <Form.Group className="mb-3">
                         <Form.Label className={`${consultationForm.ConclusionClinique.trim() ? 'text-dark' : 'text-muted'} small`}>
@@ -1508,7 +1508,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                           as="textarea"
                           rows={3}
                           value={consultationForm.ConclusionClinique}
-                          onChange={(e) => setConsultationForm({...consultationForm, ConclusionClinique: e.target.value})}
+                          onChange={(e) => setConsultationForm({ ...consultationForm, ConclusionClinique: e.target.value })}
                           placeholder="Conclusion et diagnostic final..."
                           className={consultationForm.ConclusionClinique.trim() ? 'border-success' : ''}
                         />
@@ -1531,8 +1531,8 @@ export default function FichePrescriptionMedecinAsaisie() {
                       <i className="bi bi-clipboard2-pulse text-muted fs-1 mb-4"></i>
                       <h5 className="text-muted mb-3">Consultation non commencée</h5>
                       <p className="text-muted mb-4">Commencez par remplir les informations de la consultation</p>
-                      <Button 
-                        variant="warning" 
+                      <Button
+                        variant="warning"
                         size="lg"
                         onClick={() => {
                           setConsultationForm({
@@ -1555,12 +1555,12 @@ export default function FichePrescriptionMedecinAsaisie() {
                 </Card.Body>
               </Card>
 
-         
+
             </Col>
 
             {/* Colonne droite - Consultation et Prescriptions */}
             <Col lg={6}>
-                 {/* Constantes Vitales - Carte dynamique */}
+              {/* Constantes Vitales - Carte dynamique */}
               <Card className={`shadow-sm border-0 ${hasConstantesData() ? 'border-info' : 'border-light'}`}>
                 <Card.Header className={`${hasConstantesData() ? 'bg-info' : 'bg-light'} ${hasConstantesData() ? 'text-white' : 'text-dark'} d-flex justify-content-between align-items-center py-3`}>
                   <div className="d-flex align-items-center">
@@ -1574,10 +1574,10 @@ export default function FichePrescriptionMedecinAsaisie() {
                       </small>
                     </div>
                   </div>
-                  <Button 
-                    variant={hasConstantesData() ? "light" : "info"} 
-                    size="sm" 
-                    onClick={sauvegarderConstantes} 
+                  <Button
+                    variant={hasConstantesData() ? "light" : "info"}
+                    size="sm"
+                    onClick={sauvegarderConstantes}
                     className="rounded-pill"
                   >
                     <i className="bi bi-check-circle me-1"></i>
@@ -1598,8 +1598,8 @@ export default function FichePrescriptionMedecinAsaisie() {
                       <i className="bi bi-activity text-muted fs-1 mb-4"></i>
                       <h5 className="text-muted mb-3">Aucune constante vitale</h5>
                       <p className="text-muted mb-4">Commencez par enregistrer les signes vitaux du patient</p>
-                      <Button 
-                        variant="info" 
+                      <Button
+                        variant="info"
                         size="lg"
                         onClick={() => {
                           setConstantesForm({
@@ -1633,7 +1633,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                     </div>
                   </div>
                   <div className="d-flex align-items-center">
-                    
+
                   </div>
                 </Card.Header>
                 <Card.Body className="p-3">
@@ -1663,9 +1663,9 @@ export default function FichePrescriptionMedecinAsaisie() {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        variant="success" 
-                        size="sm" 
+                      <Button
+                        variant="success"
+                        size="sm"
                         className="rounded-pill px-3"
                         onClick={() => setShowPharmacieModal(true)}
                       >
@@ -1678,7 +1678,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                         <div className="text-muted small">
                           {consultationForm.TraitementClinique.split('\n').map((ligne, index) => (
                             <div key={index} className="mb-1">
-                              <i className="bi bi-chevron-right text-success me-2" style={{fontSize: '0.6rem'}}></i>
+                              <i className="bi bi-chevron-right text-success me-2" style={{ fontSize: '0.6rem' }}></i>
                               {ligne}
                             </div>
                           ))}
@@ -1691,7 +1691,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Section Examens Paracliniques */}
                   <div className="mb-4">
                     <div className="d-flex align-items-center justify-content-between mb-3">
@@ -1718,9 +1718,9 @@ export default function FichePrescriptionMedecinAsaisie() {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        variant="info" 
-                        size="sm" 
+                      <Button
+                        variant="info"
+                        size="sm"
                         className="rounded-pill px-3"
                         onClick={() => setShowExamenModal(true)}
                       >
@@ -1733,7 +1733,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                         <div className="text-muted small">
                           {consultationForm.ExamenParaclinique.split('\n').map((ligne, index) => (
                             <div key={index} className="mb-1">
-                              <i className="bi bi-chevron-right text-info me-2" style={{fontSize: '0.6rem'}}></i>
+                              <i className="bi bi-chevron-right text-info me-2" style={{ fontSize: '0.6rem' }}></i>
                               {ligne}
                             </div>
                           ))}
@@ -1746,7 +1746,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                       )}
                     </div>
                   </div>
-                  
+
                   {/* Section Avis d'Hospitalisation */}
                   <div className="mb-4">
                     <div className="d-flex align-items-center justify-content-between mb-3">
@@ -1770,9 +1770,9 @@ export default function FichePrescriptionMedecinAsaisie() {
                           </div>
                         </div>
                       </div>
-                      <Button 
-                        variant="danger" 
-                        size="sm" 
+                      <Button
+                        variant="danger"
+                        size="sm"
                         className="rounded-pill px-3"
                         onClick={() => setShowAvisHospitModal(true)}
                       >
@@ -1789,9 +1789,9 @@ export default function FichePrescriptionMedecinAsaisie() {
                               {avisHospitCount} avis d'hospitalisation enregistré{avisHospitCount > 1 ? 's' : ''}
                             </span>
                           </div>
-                          <Button 
-                            variant="outline-danger" 
-                            size="sm" 
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
                             onClick={() => setShowAvisHospitModal(true)}
                           >
                             <i className="bi bi-eye me-1"></i>
@@ -1806,7 +1806,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                       )}
                     </div>
                   </div>
-                  
+
                   {prescriptions.length > 0 && (
                     <div className="mt-4">
                       <div className="d-flex justify-content-between align-items-center mb-3">
@@ -1838,8 +1838,8 @@ export default function FichePrescriptionMedecinAsaisie() {
                                   </small>
                                 </td>
                                 <td className="align-middle text-end">
-                                  <Button 
-                                    variant="outline-danger" 
+                                  <Button
+                                    variant="outline-danger"
                                     size="sm"
                                     onClick={() => supprimerPrescription(prescription._id)}
                                     className="rounded-circle"
@@ -1884,7 +1884,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                   as="textarea"
                   rows={3}
                   value={antecedentForm.description}
-                  onChange={(e) => setAntecedentForm({...antecedentForm, description: e.target.value})}
+                  onChange={(e) => setAntecedentForm({ ...antecedentForm, description: e.target.value })}
                   placeholder="Décrire l'antécédent..."
                 />
               </Form.Group>
@@ -1893,7 +1893,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                 <Form.Control
                   type="date"
                   value={antecedentForm.date}
-                  onChange={(e) => setAntecedentForm({...antecedentForm, date: e.target.value})}
+                  onChange={(e) => setAntecedentForm({ ...antecedentForm, date: e.target.value })}
                 />
               </Form.Group>
             </Modal.Body>
@@ -1901,8 +1901,8 @@ export default function FichePrescriptionMedecinAsaisie() {
               <Button variant="secondary" onClick={() => setShowAntecedentModal(false)} disabled={loadingAntecedent}>
                 Annuler
               </Button>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={ajouterAntecedent}
                 disabled={!antecedentForm.description.trim() || loadingAntecedent}
               >
@@ -1941,7 +1941,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                 <Form.Control
                   type="text"
                   value={prescriptionForm.designation}
-                  onChange={(e) => setPrescriptionForm({...prescriptionForm, designation: e.target.value})}
+                  onChange={(e) => setPrescriptionForm({ ...prescriptionForm, designation: e.target.value })}
                   placeholder={prescriptionType === 'medicament' ? 'ex: Paracétamol 500mg' : 'ex: Radiographie thoracique'}
                 />
               </Form.Group>
@@ -1952,7 +1952,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                     <Form.Control
                       type="text"
                       value={prescriptionForm.posologie}
-                      onChange={(e) => setPrescriptionForm({...prescriptionForm, posologie: e.target.value})}
+                      onChange={(e) => setPrescriptionForm({ ...prescriptionForm, posologie: e.target.value })}
                       placeholder="ex: 1 comprimé 3 fois par jour"
                     />
                   </Form.Group>
@@ -1961,7 +1961,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                     <Form.Control
                       type="text"
                       value={prescriptionForm.duree}
-                      onChange={(e) => setPrescriptionForm({...prescriptionForm, duree: e.target.value})}
+                      onChange={(e) => setPrescriptionForm({ ...prescriptionForm, duree: e.target.value })}
                       placeholder="ex: 7 jours"
                     />
                   </Form.Group>
@@ -1973,7 +1973,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                   as="textarea"
                   rows={3}
                   value={prescriptionForm.instructions}
-                  onChange={(e) => setPrescriptionForm({...prescriptionForm, instructions: e.target.value})}
+                  onChange={(e) => setPrescriptionForm({ ...prescriptionForm, instructions: e.target.value })}
                   placeholder="Instructions spécifiques..."
                 />
               </Form.Group>
@@ -2010,12 +2010,12 @@ export default function FichePrescriptionMedecinAsaisie() {
                   />
                 </Form.Group>
               </div>
-              
+
               <div className="mb-3">
                 <div className="d-flex justify-content-between align-items-center mb-2">
                   <h6 className="mb-0">Liste des affections disponibles:</h6>
-                  <Button 
-                    variant="outline-success" 
+                  <Button
+                    variant="outline-success"
                     size="sm"
                     onClick={() => setShowNewAffectionForm(!showNewAffectionForm)}
                   >
@@ -2040,7 +2040,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                             <Form.Control
                               type="text"
                               value={newAffection.lettreCle}
-                              onChange={(e) => setNewAffection({...newAffection, lettreCle: e.target.value})}
+                              onChange={(e) => setNewAffection({ ...newAffection, lettreCle: e.target.value })}
                               placeholder="Ex: A00.1"
                               size="sm"
                             />
@@ -2052,7 +2052,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                             <Form.Control
                               type="text"
                               value={newAffection.designation}
-                              onChange={(e) => setNewAffection({...newAffection, designation: e.target.value})}
+                              onChange={(e) => setNewAffection({ ...newAffection, designation: e.target.value })}
                               placeholder="Ex: Choléra due à Vibrio cholerae O1"
                               size="sm"
                             />
@@ -2061,9 +2061,9 @@ export default function FichePrescriptionMedecinAsaisie() {
                         <Col md={2}>
                           <Form.Group className="mb-2">
                             <Form.Label className="small invisible">Action</Form.Label>
-                            <Button 
-                              variant="success" 
-                              size="sm" 
+                            <Button
+                              variant="success"
+                              size="sm"
                               className="w-100"
                               onClick={creerAffection}
                               disabled={!newAffection.lettreCle.trim() || !newAffection.designation.trim()}
@@ -2084,8 +2084,8 @@ export default function FichePrescriptionMedecinAsaisie() {
                 ) : affections.length > 0 ? (
                   <Row className="g-2">
                     {affections
-                      .filter(affection => 
-                        cim10Search === '' || 
+                      .filter(affection =>
+                        cim10Search === '' ||
                         affection.designation.toLowerCase().includes(cim10Search.toLowerCase()) ||
                         affection.lettreCle.toLowerCase().includes(cim10Search.toLowerCase())
                       )
@@ -2114,7 +2114,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                   </Alert>
                 )}
               </div>
-              
+
               {selectedCim10Codes.length > 0 && (
                 <div className="alert alert-info sticky-bottom">
                   <strong>Codes sélectionnés ({selectedCim10Codes.length}):</strong>
@@ -2132,8 +2132,8 @@ export default function FichePrescriptionMedecinAsaisie() {
               <Button variant="secondary" onClick={() => setShowCIM10Modal(false)}>
                 Annuler
               </Button>
-              <Button 
-                variant="primary" 
+              <Button
+                variant="primary"
                 onClick={() => {
                   setShowCIM10Modal(false);
                   setSuccess(`${selectedCim10Codes.length} code(s) CIM-10 sélectionné(s)`);
@@ -2144,7 +2144,7 @@ export default function FichePrescriptionMedecinAsaisie() {
               </Button>
             </Modal.Footer>
           </Modal>
-          
+
           {/* Modal Pharmacie */}
           <PharmacieModalPharmAccueilMedecin
             show={showPharmacieModal}
@@ -2157,7 +2157,7 @@ export default function FichePrescriptionMedecinAsaisie() {
             }}
             codePrestation={consultation?.codePrestation}
           />
-          
+
           {/* Modal Examen Hospitalisation */}
           <Modal show={showExamenModal} onHide={() => {
             setShowExamenModal(false);
@@ -2182,7 +2182,7 @@ export default function FichePrescriptionMedecinAsaisie() {
               })()}
             </Modal.Body>
           </Modal>
-          
+
           {/* Modal Avis d'Hospitalisation */}
           <AvisHospitModal
             show={showAvisHospitModal}
@@ -2193,7 +2193,7 @@ export default function FichePrescriptionMedecinAsaisie() {
             patientPrenoms={patient?.Prenoms}
             Code_dossier={patient?.Code_dossier}
           />
-          
+
           {/* Modal Impression */}
           <Modal show={showPrintModal} onHide={() => setShowPrintModal(false)} size="xl">
             <Modal.Header closeButton>
@@ -2211,8 +2211,8 @@ export default function FichePrescriptionMedecinAsaisie() {
               />
             </Modal.Body>
           </Modal>
-          
-                  </>
+
+        </>
       ) : (
         /* Message d'attente si aucune consultation trouvée */
         <Card className="shadow-sm border-0">

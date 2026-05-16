@@ -1,7 +1,9 @@
 'use client';
 import { useState, useEffect, FormEvent } from 'react';
 import { Modal, Card, Row, Col, Table, Button, Form, Alert, Badge } from 'react-bootstrap';
-import { FaHospitalUser, FaPrint, FaSave, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaHospitalUser, FaPrint, FaSave, FaPlus, FaEdit, FaTrash, FaFileAlt } from 'react-icons/fa';
+import { useEntreprise } from '@/hooks/useEntreprise';
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from '@/utils/printRecu';
 import { RapportHospitalisationForm, ServiceHospitalisation } from '@/types/rapportHospitalisation';
 
 interface RapportHospitalisation extends RapportHospitalisationForm {
@@ -54,6 +56,8 @@ export default function RapportHospitalisationModal({
   const currentUser = typeof window !== 'undefined'
     ? localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || ''
     : '';
+
+  const { entreprise } = useEntreprise();
 
   const [formData, setFormData] = useState<RapportHospitalisationForm>({
     patientId,
@@ -297,13 +301,21 @@ export default function RapportHospitalisationModal({
     `;
   };
 
-  const handlePrintReport = (rapport: RapportHospitalisation) => {
-    const printWindow = window.open('', '_blank');
-    if (printWindow) {
-      printWindow.document.write(getReportPrintContent(rapport));
-      printWindow.document.close();
-      printWindow.print();
-    }
+  const handlePrintWithHeader = (rapport: RapportHospitalisation) => {
+    const headerHTML = generatePrintHeader(entreprise);
+    const footerHTML = generatePrintFooter(entreprise);
+    // Extraire juste le contenu du body sans le wrapper HTML
+    const fullHTML = getReportPrintContent(rapport);
+    const bodyMatch = fullHTML.match(/<body>([\s\S]*)<\/body>/);
+    const contentHTML = bodyMatch ? bodyMatch[1] : fullHTML;
+    createPrintWindow('Rapport d\'Hospitalisation', headerHTML, contentHTML, footerHTML);
+  };
+
+  const handlePrintWithoutHeader = (rapport: RapportHospitalisation) => {
+    const fullHTML = getReportPrintContent(rapport);
+    const bodyMatch = fullHTML.match(/<body>([\s\S]*)<\/body>/);
+    const contentHTML = bodyMatch ? bodyMatch[1] : fullHTML;
+    createPrintWindowWithoutHeader('Rapport d\'Hospitalisation', contentHTML);
   };
 
   return (
@@ -360,8 +372,11 @@ export default function RapportHospitalisationModal({
                         <Button variant="outline-primary" size="sm" onClick={() => handleEdit(rapport)}>
                           <FaEdit />
                         </Button>
-                        <Button variant="outline-success" size="sm" onClick={() => handlePrintReport(rapport)}>
+                        <Button variant="outline-success" size="sm" onClick={() => handlePrintWithHeader(rapport)}>
                           <FaPrint />
+                        </Button>
+                        <Button variant="outline-info" size="sm" onClick={() => handlePrintWithoutHeader(rapport)}>
+                          <FaFileAlt />
                         </Button>
                         <Button variant="outline-danger" size="sm" onClick={() => handleDelete(rapport._id)}>
                           <FaTrash />
@@ -625,9 +640,13 @@ export default function RapportHospitalisationModal({
             </Card>
 
             <div className="d-flex justify-content-between">
-              <Button variant="outline-success" onClick={() => handlePrintReport(editingRapport ? editingRapport : formData as RapportHospitalisation)}>
+              <Button variant="outline-success" onClick={() => handlePrintWithHeader(editingRapport ? editingRapport : formData as RapportHospitalisation)}>
                 <FaPrint className="me-2" />
-                Aperçu Impression
+                Aperçu Impression (avec entête)
+              </Button>
+              <Button variant="outline-info" onClick={() => handlePrintWithoutHeader(editingRapport ? editingRapport : formData as RapportHospitalisation)}>
+                <FaFileAlt className="me-2" />
+                Aperçu Impression (sans entête)
               </Button>
               <div>
                 <Button variant="secondary" className="me-2" onClick={() => setShowFormModal(false)}>
