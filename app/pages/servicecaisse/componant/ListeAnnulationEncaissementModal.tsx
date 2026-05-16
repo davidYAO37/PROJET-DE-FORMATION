@@ -9,9 +9,9 @@ interface ListeAnnulationEncaissementModalProps {
     onHide: () => void;
 }
 
-interface EncaissementWithId extends IEncaissementCaisse {
+interface EncaissementWithId extends Omit<IEncaissementCaisse, '_id'> {
     _id: string;
-    ACTE?: string; // Ajout pour compatibilité avec les données existantes
+    ACTE?: string;
 }
 
 export default function ListeAnnulationEncaissementModal({ show, onHide }: ListeAnnulationEncaissementModalProps) {
@@ -47,7 +47,7 @@ export default function ListeAnnulationEncaissementModal({ show, onHide }: Liste
             }
 
             // Filtrer les encaissements avec demande d'annulation (annulationOrdonnepar <> "")
-            const encaissementsAvecDemande = (data.data || []).filter((encaissement: any) => 
+            const encaissementsAvecDemande = (data.data || []).filter((encaissement: any) =>
                 encaissement.annulationOrdonnepar && encaissement.annulationOrdonnepar.trim() !== ''
             );
 
@@ -92,7 +92,7 @@ export default function ListeAnnulationEncaissementModal({ show, onHide }: Liste
             }
 
             alert('Annulation refusée avec succès');
-            
+
             // Recharger la liste
             await handleRecherche();
         } catch (err) {
@@ -137,7 +137,7 @@ export default function ListeAnnulationEncaissementModal({ show, onHide }: Liste
             }
 
             alert('Encaissement annulé avec succès');
-            
+
             // Recharger la liste
             await handleRecherche();
             setMotif('');
@@ -184,8 +184,8 @@ export default function ListeAnnulationEncaissementModal({ show, onHide }: Liste
                             />
                         </div>
                         <div className="col-md-3">
-                            <Button 
-                                variant="primary" 
+                            <Button
+                                variant="primary"
                                 onClick={handleRecherche}
                                 disabled={loading}
                                 className="w-100"
@@ -251,16 +251,16 @@ export default function ListeAnnulationEncaissementModal({ show, onHide }: Liste
                                     {encaissements.map((encaissement) => (
                                         <tr key={encaissement._id} className="align-middle">
                                             <td>
-                                                {encaissement.DateEncaissement 
-                                                    ? new Date(encaissement.DateEncaissement).toLocaleString() 
+                                                {encaissement.DateEncaissement
+                                                    ? new Date(encaissement.DateEncaissement).toLocaleString()
                                                     : 'N/A'
                                                 }
                                             </td>
                                             <td className="fw-semibold">{encaissement.Patient || 'N/A'}</td>
                                             <td>{encaissement.Designation || encaissement.ACTE || 'N/A'}</td>
                                             <td className="text-end fw-bold">
-                                                {encaissement.Montantencaisse != null 
-                                                    ? `${encaissement.Montantencaisse.toLocaleString()} FCFA` 
+                                                {encaissement.Montantencaisse != null
+                                                    ? `${encaissement.Montantencaisse.toLocaleString()} FCFA`
                                                     : '-'
                                                 }
                                             </td>
@@ -271,8 +271,8 @@ export default function ListeAnnulationEncaissementModal({ show, onHide }: Liste
                                                 </span>
                                             </td>
                                             <td>
-                                                {encaissement.AnnulationOrdonneLe 
-                                                    ? new Date(encaissement.AnnulationOrdonneLe).toLocaleDateString() 
+                                                {encaissement.AnnulationOrdonneLe
+                                                    ? new Date(encaissement.AnnulationOrdonneLe).toLocaleDateString()
                                                     : 'N/A'
                                                 }
                                             </td>

@@ -1,7 +1,7 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
 
-export interface IAssurance extends Document {
+export interface IAssurance extends Omit<Document, '_id'> {
   _id: mongoose.Types.ObjectId | string;
   designationassurance: string;
   codeassurance: string;

@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export interface IActeClinique extends Document {
+export interface IActeClinique extends Omit<Document, '_id'> {
     _id: string;
     designationacte: string;
     lettreCle: string;

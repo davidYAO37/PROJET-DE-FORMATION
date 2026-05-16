@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export interface IPatient extends Document {
+export interface IPatient extends Omit<Document, '_id'> {
   _id: mongoose.Types.ObjectId | string;
   Nom: string;
   Prenoms: string;

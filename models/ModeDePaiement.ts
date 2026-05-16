@@ -1,6 +1,6 @@
 import mongoose, { Model, Schema, Types } from "mongoose";
 
-export interface IModeDePaiement extends Document {
+export interface IModeDePaiement extends Omit<Document, '_id'> {
     _id?: Types.ObjectId | string;
     Modepaiement?: string;
     entrepriseId?: string;

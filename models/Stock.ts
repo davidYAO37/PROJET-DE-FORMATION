@@ -1,6 +1,6 @@
 import mongoose, { Model, Schema, Types, } from "mongoose";
 
-export interface IStock extends Document {
+export interface IStock extends Omit<Document, '_id'> {
     _id?: string;
     Reference?: string;
     QteEnStock?: number;
@@ -8,7 +8,7 @@ export interface IStock extends Document {
     AuteurModif?: string;
     DateModif?: Date;
     Medicament?: string;
-    IDMEDICAMENT?:Types.ObjectId;
+    IDMEDICAMENT?: Types.ObjectId;
     createdAt?: Date;
     updatedAt?: Date;
     entrepriseId?: string;
@@ -22,7 +22,7 @@ const StockSchema = new Schema<IStock>({
     AuteurModif: { type: String, maxlength: 60 },
     DateModif: { type: Date },
     Medicament: { type: String, maxlength: 250 },
-    IDMEDICAMENT:{type:Schema.Types.ObjectId,ref:'Pharmacie'},
+    IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
     entrepriseId: { type: String },
 }, { timestamps: true });
 export const Stock: Model<IStock> = mongoose.models.Stock || mongoose.model<IStock>("Stock", StockSchema);  

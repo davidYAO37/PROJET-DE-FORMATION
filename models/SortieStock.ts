@@ -1,7 +1,7 @@
 import mongoose, { Model, Schema, Types } from "mongoose";
 
-export interface ISortieStock extends Document {
-   _id?: string;
+export interface ISortieStock extends Omit<Document, '_id'> {
+    _id?: string;
     DateSortie?: Date;
     Reference?: string;
     Quantite?: number;

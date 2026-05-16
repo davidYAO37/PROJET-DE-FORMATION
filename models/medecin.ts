@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
-export interface IMedecin extends Document {
+export interface IMedecin extends Omit<Document, '_id'> {
   _id: mongoose.Types.ObjectId | string;
   nom: string;
   prenoms: string;
@@ -18,7 +18,7 @@ const MedecinSchema = new Schema<IMedecin>(
     nom: { type: String, required: true },
     prenoms: { type: String, required: true },
     specialite: { type: String },
-    EmailMed: {type: String},
+    EmailMed: { type: String },
     TauxHonoraire: { type: Number },
     TauxPrescription: { type: Number },
     TauxExecution: { type: Number },

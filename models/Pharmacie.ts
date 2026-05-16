@@ -1,7 +1,7 @@
 import mongoose, { Model, Schema } from "mongoose";
 
 
-export interface IPharmacie extends Document {
+export interface IPharmacie extends Omit<Document, '_id'> {
     _id?: string;
     Reference?: string;
     Designation: string;

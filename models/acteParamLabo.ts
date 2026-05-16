@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Types, Model } from 'mongoose';
 
-export interface IActeParamLabo extends Document {
+export interface IActeParamLabo extends Omit<Document, '_id'> {
     _id: string;
     IDPARAM_LABO?: Types.ObjectId;
     IDACTEP?: Types.ObjectId;
@@ -29,7 +29,7 @@ export interface IActeParamLabo extends Document {
     SigneEnfant?: string;
     SigneFemme?: string;
     SigneHomme?: string;
-    ORdonnacementAffichage?:number;
+    ORdonnacementAffichage?: number;
 }
 
 const ActeParamLaboSchema = new Schema<IActeParamLabo>({
@@ -60,7 +60,7 @@ const ActeParamLaboSchema = new Schema<IActeParamLabo>({
     SigneEnfant: { type: String, maxlength: 5, default: "-" },
     SigneFemme: { type: String, maxlength: 5, default: "-" },
     SigneHomme: { type: String, maxlength: 5, default: "-" },
-    ORdonnacementAffichage: {type:Number},
+    ORdonnacementAffichage: { type: Number },
 }, { timestamps: true });
 
 export const ActeParamLabo: Model<IActeParamLabo> = mongoose.models.ActeParamLabo || mongoose.model<IActeParamLabo>('ActeParamLabo', ActeParamLaboSchema);

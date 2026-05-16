@@ -1,11 +1,11 @@
 import mongoose, { Schema, model, Document, Types, Model } from 'mongoose';
 
-export interface IFacturation extends Document {
+export interface IFacturation extends Omit<Document, '_id'> {
     _id: Types.ObjectId | string;
     CodePrestation?: string;
     NomMed?: string;
     PatientP?: string;
-    Code_dossier?:string
+    Code_dossier?: string
     DatePres?: Date;
     SaisiPar?: string;
     Rclinique?: string;
@@ -196,7 +196,7 @@ const FacturationSchema = new Schema<IFacturation>(
         IDSOCIETEASSURANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance', required: false },
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
         IdPatient: { type: Schema.Types.ObjectId, ref: 'Patient', required: false },
-        Code_dossier: {type:String},
+        Code_dossier: { type: String },
         IDASSURANCE: { type: Schema.Types.ObjectId, ref: 'Assurance', required: false },
         IDMEDECIN: { type: Schema.Types.ObjectId, ref: 'Medecin', required: false },
         entrepriseId: { type: String },

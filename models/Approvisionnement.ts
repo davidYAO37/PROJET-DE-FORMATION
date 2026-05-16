@@ -1,6 +1,6 @@
 import mongoose, { Model, Schema } from "mongoose";
 
-export interface IApprovisionnement extends Document {
+export interface IApprovisionnement extends Omit<Document, '_id'> {
     _id?: string;
     DateAppro?: string | Date;
     PrixHT?: number;

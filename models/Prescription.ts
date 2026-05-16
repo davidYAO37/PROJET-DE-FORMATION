@@ -1,6 +1,6 @@
 import mongoose, { Model, Schema, Types } from "mongoose";
 
-export interface IPrescription extends Document {
+export interface IPrescription extends Omit<Document, '_id'> {
     _id?: string;
     Designation?: string;
     CodePrestation?: string;

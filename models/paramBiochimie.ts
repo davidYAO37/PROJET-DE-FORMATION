@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export interface IParamBiochimie extends Document {
+export interface IParamBiochimie extends Omit<Document, '_id'> {
     _id: string;
     CodeB?: string;
     LibelleB?: string;

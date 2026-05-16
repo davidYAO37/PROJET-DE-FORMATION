@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export interface ILignePrestation extends Document {
+export interface ILignePrestation extends Omit<Document, '_id'> {
     _id: Types.ObjectId | string;
     CodePrestation: string;
     codeConsultation?: string;

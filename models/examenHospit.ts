@@ -1,7 +1,7 @@
 
 import mongoose, { Schema, model, Document, Types, Model } from 'mongoose';
 
-export interface IExamenHospitalisation extends Document {
+export interface IExamenHospitalisation extends Omit<Document, '_id'> {
     _id: string
     CodePrestation?: string;
     NomMed?: string;

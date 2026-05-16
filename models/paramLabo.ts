@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export interface IParamLabo extends Document {
+export interface IParamLabo extends Omit<Document, '_id'> {
     _id: string;
     NUM_PARAM?: number;
     ParamAbrege?: string;

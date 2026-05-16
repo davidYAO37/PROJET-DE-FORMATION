@@ -1,8 +1,8 @@
 import mongoose, { Model, Schema } from "mongoose";
 import { Types } from "mongoose";
 
-export interface IEntreeStock extends Document {
-     _id:string;
+export interface IEntreeStock extends Omit<Document, '_id'> {
+    _id: string;
     DateAppro?: Date;
     Quantite?: number;
     PrixAchat?: number;
