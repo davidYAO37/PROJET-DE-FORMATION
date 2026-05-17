@@ -8,8 +8,8 @@ import { Patient } from '@/types/patient';
 import { CgAbstract, CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
 import ModifierPatientCaisse from './ModifierPatientCaisse';
-import PatientServicesModal from '../componant/PatientServicesModal';
-import FicheConsultationUpdateCaisse from '../componant/factureAttenteConsult/FicheConsultationUpdateCaisse';
+import PatientServicesModal from '../components/PatientServicesModal';
+import FicheConsultationUpdateCaisse from '../components/factureAttenteConsult/FicheConsultationUpdateCaisse';
 
 
 const ITEMS_PER_PAGE = 10;

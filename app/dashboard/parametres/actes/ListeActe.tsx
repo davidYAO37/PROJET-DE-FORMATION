@@ -4,8 +4,9 @@ import * as XLSX from "xlsx";
 import axios from "axios";
 import { Button, Table, Pagination, Dropdown, Form, Spinner } from "react-bootstrap";
 
-import { FaEdit, FaSync, FaTrash, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
+import { FaEdit, FaSync, FaTrash, FaSort, FaSortUp, FaSortDown, FaFileMedical } from "react-icons/fa";
 import { ActeClinique } from "@/types/acteclinique";
+import ResultatActe from "./ResultatActe";
 
 type Props = {
     actes: ActeClinique[];
@@ -72,6 +73,8 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
     const [importLoading, setImportLoading] = useState(false);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
     const [importError, setImportError] = useState("");
+    const [showResultatModal, setShowResultatModal] = useState(false);
+    const [selectedActe, setSelectedActe] = useState<ActeClinique | null>(null);
 
     const handleImportClick = () => fileInputRef.current?.click();
 
@@ -119,6 +122,26 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
         } finally {
             setActionLoading(null);
         }
+    };
+
+    const handleSaveResultat = async (acteId: string, resultat: string) => {
+        try {
+            await axios.put(`/api/actes/${acteId}`, { resultatacte: resultat });
+            alert("Résultat enregistré avec succès !");
+            window.location.reload();
+        } catch (error) {
+            alert("Erreur lors de l'enregistrement du résultat");
+        }
+    };
+
+    const handleOpenResultatModal = (acte: ActeClinique) => {
+        setSelectedActe(acte);
+        setShowResultatModal(true);
+    };
+
+    const handleCloseResultatModal = () => {
+        setShowResultatModal(false);
+        setSelectedActe(null);
     };
 
     const renderPageNumbers = () => {
@@ -224,6 +247,15 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                                     <td className="bg-primary bg-opacity-10 d-flex justify-content-center">
                                         <Button 
                                             size="sm" 
+                                            variant="outline-info" 
+                                            className="me-2" 
+                                            title="Saisir le résultat"
+                                            onClick={() => handleOpenResultatModal(a)}
+                                        >
+                                            <FaFileMedical />
+                                        </Button>
+                                        <Button 
+                                            size="sm" 
                                             variant="outline-primary" 
                                             className="me-2" 
                                             title="Modifier l'acte"
@@ -281,6 +313,12 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                     </Pagination>
                 </div>
             )}
+            <ResultatActe 
+                show={showResultatModal}
+                acte={selectedActe}
+                onClose={handleCloseResultatModal}
+                onSave={handleSaveResultat}
+            />
         </>
     );
 };

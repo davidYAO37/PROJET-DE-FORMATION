@@ -3,8 +3,8 @@
 import { useState } from 'react';
 import type { FC } from 'react';
 import { Button, Container, Row, Col, Card } from 'react-bootstrap';
-import SalleConstante from './pages/serviceaccueil/componant/SalleConstante';
-import TransfertPatientModal from './pages/serviceaccueil/componant/TransfertPatientModal';
+import SalleConstante from './pages/serviceaccueil/components/SalleConstante';
+import TransfertPatientModal from './pages/serviceaccueil/components/TransfertPatientModal';
 
 const SalleConstantePreview: FC = () => {
   const [showSalleConstante, setShowSalleConstante] = useState(false);

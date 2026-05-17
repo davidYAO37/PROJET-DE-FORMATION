@@ -1,6 +1,6 @@
 'use client';
 import { FaClock, FaFileInvoice, FaFlask, FaUserCheck } from 'react-icons/fa';
-import ListePatientsMedecin from './composants/ListePatientsMedecin';
+import ListePatientsMedecin from './components/ListePatientsMedecin';
 import { Badge, Button, Card, Col, Row } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -97,7 +97,7 @@ const medecinConnecte = localStorage.getItem('nom_utilisateur');
             <div className="d-flex justify-content-between align-items-center mb-4">
               <h2 className="mb-0 text-primary fw-bold">
                 <FaClock className="me-2" />
-                {medecinConnecte} "Bienvenue sur votre tableau de bord" 
+                {medecinConnecte} - Bienvenue sur votre tableau de bord
               </h2>
               <Button variant="outline-danger" onClick={handleLogout}>
                 Se déconnecter

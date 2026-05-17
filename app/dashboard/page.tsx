@@ -66,9 +66,9 @@ export default function DashboardPage() {
       <div className="d-flex flex-column flex-md-row min-vh-100">
         {/* Contenu principal */}
         <div className="flex-grow-1 bg-light">
-          <Container className="py-4">
-             <div className="d-flex justify-content-between align-items-center mb-2">
-          <h2 className="mb-0 text-primary fw-bold">
+         <Container className="py-4">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <h2 className="mb-0 text-primary fw-bold">
                 <FaUserMd className="me-2" />
                 Tableau de bord Administrateur
               </h2>

@@ -9,11 +9,11 @@ import { BiSolidBookAdd } from 'react-icons/bi';
 import { CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
 import dayjs from 'dayjs';
-import ExamenHospitalisationModal from '../componant/ExamenHospitModal';
+import ExamenHospitalisationModal from '../components/ExamenHospitModal';
 import ModifierPatient from './ModifierPatient';
-import FicheConsultation from '../componant/ConsultationAdd/FicheConsultation';
+import FicheConsultation from '../components/ConsultationAdd/FicheConsultation';
 import PharmacieModalPharmAccueil from '../../PharmacieAccueil/PharmacieModalPharmAccueil';
-import PatientServiceModalAccueil from '../componant/PatientServiceModalAccueil';
+import PatientServiceModalAccueil from '../components/PatientServiceModalAccueil';
 
 const ITEMS_PER_PAGE = 10;
 

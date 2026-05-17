@@ -9,6 +9,7 @@ export interface ActeClinique {
     MontantAuMed?: number;
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     consultationviste?: boolean;
+    resultatacte?: string;
 }
 /* export interface ActeClinique {
     _id: string;

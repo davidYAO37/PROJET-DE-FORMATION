@@ -6,7 +6,7 @@ import PharmacieModalPharmAccueilMedecin from "../PharmacieMedecin/PharmacieModa
 import HospitalisationWrapperMedecin from "../examenhospitalisationMedecin/HospitalisationWrapperMedecin";
 import PrintFichePrescription from "../MesImpressions/printFichePrescription";
 import EtatMetierFichePrescription from "../MesImpressions/etatMetierFichePrescription";
-import AvisHospitModal from "../tmedecin/composants/AvisHospit/AvisHospitModal";
+import AvisHospitModal from "../tmedecin/components/AvisHospit/AvisHospitModal";
 
 interface Patient {
   _id: string;

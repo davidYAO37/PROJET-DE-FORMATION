@@ -1,12 +1,10 @@
 'use client';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Nav, Badge } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
-import DisponibilitePrescriptuerModal from '@/app/pages/servicemedecin/tmedecin/components/DisponibilitePrescripteurModal';
-import ServiceRadioModal from '@/components/ServiceRadioModal';
+import DisponibilitePrescriptuerModalRadio from '@/app/pages/serviceradio/tradio/composants/DisponibilitePrescripteurModalRadio';
 
 interface Statistiques {
   patientsEnAttente: number;
@@ -14,22 +12,17 @@ interface Statistiques {
 }
 
 const menu = [
-  { label: 'Tableau de bord', path: '/pages/servicemedecin/tmedecin', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
-  { label: 'Patient en attente', path: '/pages/servicemedecin/ListePatientAttentes', icon: <i className="bi bi-clock-fill me-2 text-warning"></i>, showNotification: true, notificationKey: 'patientsEnAttente' },
+  { label: 'Tableau de bord', path: '/pages/serviceradio/tradio', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
   { label: 'Mes Rendez-Vous', path: '#', isModal: true, modalType: 'rendezvous', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i>, showNotification: true, notificationKey: 'rendezVousDuJour' },
-  { label: 'Saisir fiche prescription', path: '/pages/servicemedecin/FichePrescriptionMedecinAsaisie', icon: <i className="bi bi-file-earmark-text-fill me-2 text-primary"></i> },
-  { label: 'Comptes rendus Radio', path: '#', isModal: true, modalType: 'serviceradio', icon: <i className="bi bi-file-earmark-text-fill me-2 text-secondary"></i> },
-  { label: 'Statistiques', path: '/pointSaisie', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
-export default function SidebarMedecin() {
+export default function SidebarRadio() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [showDisponibiliteModalRadio, setShowDisponibiliteModalRadio] = useState(false);
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [user, setUser] = useState('');
-  const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
-  const [showServiceRadioModal, setShowServiceRadioModal] = useState(false);
   const [statistiques, setStatistiques] = useState<Statistiques>({
     patientsEnAttente: 0,
     rendezVousDuJour: 0
@@ -45,38 +38,28 @@ export default function SidebarMedecin() {
   useEffect(() => {
     const fetchStatistiques = async () => {
       try {
-        const profilStr = localStorage.getItem('profil');
-
-        if (profilStr) {
-          const profil = JSON.parse(profilStr);
-
-          // Récupérer tous les médecins pour trouver le médecin connecté
-          const medecinsResponse = await fetch('/api/medecins');
-          if (medecinsResponse.ok) {
-            const allMedecins = await medecinsResponse.json();
-            const connectedMedecin = allMedecins.find((medecin: any) =>
-              medecin._id.toString() === profil._id ||
-              (medecin.nom === profil.nom && medecin.prenoms === profil.prenom)
-            );
-
-            if (connectedMedecin) {
-              // Récupérer les statistiques des consultations
-              const consultationsResponse = await fetch(`/api/consultations/statistiques?medecinId=${connectedMedecin._id}`);
-              const consultationsData = await consultationsResponse.json();
-
-              // Récupérer les statistiques des rendez-vous
-              const rendezVousResponse = await fetch(`/api/rendez-vous/statistiques?medecinId=${connectedMedecin._id}`);
-              const rendezVousData = await rendezVousResponse.json();
-
-              setStatistiques({
-                patientsEnAttente: consultationsData.patientsEnAttente || 0,
-                rendezVousDuJour: rendezVousData.rendezVousDuJour || 0
-              });
-            }
-          }
+        // Essayer de récupérer les données depuis l'API Avalider
+        const response = await fetch('/api/compteRenduRadio/Avalider');
+        if (response.ok) {
+          const data = await response.json();
+          setStatistiques({
+            patientsEnAttente: data.lignePrestations?.length || 0,
+            rendezVousDuJour: 0
+          });
+        } else {
+          // Si l'API n'est pas accessible, utiliser des valeurs par défaut
+          setStatistiques({
+            patientsEnAttente: 0,
+            rendezVousDuJour: 0
+          });
         }
       } catch (error) {
-        console.error('Erreur lors de la récupération des statistiques:', error);
+        // En cas d'erreur réseau ou autre, utiliser des valeurs par défaut
+        console.warn('API non accessible, utilisation des valeurs par défaut:', error);
+        setStatistiques({
+          patientsEnAttente: 0,
+          rendezVousDuJour: 0
+        });
       } finally {
         setLoading(false);
       }
@@ -101,20 +84,18 @@ export default function SidebarMedecin() {
   // ouvre le modal de disponibilité du médecin
   const handleDisponibiliteClick = (e: React.MouseEvent) => {
     e.preventDefault();
-    setShowDisponibiliteModal(true);
+    setShowDisponibiliteModalRadio(true);
     setOpen(false);
   };
-
-  // Gestionnaire pour les clics sur les modaux
+   // Gestionnaire pour les clics sur les modaux
   const handleModalClick = (e: React.MouseEvent, modalType: string) => {
     e.preventDefault();
     if (modalType === 'rendezvous') {
-      setShowDisponibiliteModal(true);
-    } else if (modalType === 'serviceradio') {
-      setShowServiceRadioModal(true);
-    }
+      setShowDisponibiliteModalRadio(true);
+    } 
     setOpen(false);
   };
+
 
   return (
     <>
@@ -151,18 +132,20 @@ export default function SidebarMedecin() {
                 <a
                   href="#"
                   className="sidebar-link-medical d-flex align-items-center justify-content-between"
-                  onClick={(e) => item.modalType === 'rendezvous' ? handleModalClick(e, 'rendezvous') : item.modalType === 'serviceradio' ? handleModalClick(e, 'serviceradio') : handleMotDePasseClick(e)}
+                  onClick={(e) => {
+                    if (item.modalType === 'rendezvous') {
+                      handleModalClick(e, 'rendezvous');
+                    } else {
+                      handleMotDePasseClick(e);
+                    }
+                  }}
                 >
                   <div className="d-flex align-items-center">
                     {item.icon}
                     <span>{item.label}</span>
                   </div>
-                  {item.showNotification && !loading && (
-                    <Badge
-                      bg={item.notificationKey === 'patientsEnAttente' ? 'warning' : 'success'}
-                      pill
-                      className="ms-2"
-                    >
+                  {item.showNotification && (
+                    <Badge bg="danger" pill className="notification-badge-medical">
                       {statistiques[item.notificationKey as keyof Statistiques]}
                     </Badge>
                   )}
@@ -177,38 +160,24 @@ export default function SidebarMedecin() {
                     {item.icon}
                     <span>{item.label}</span>
                   </div>
-                  {item.showNotification && !loading && (
-                    <Badge
-                      bg={item.notificationKey === 'patientsEnAttente' ? 'warning' : 'success'}
-                      pill
-                      className="ms-2"
-                    >
-                      {statistiques[item.notificationKey as keyof Statistiques]}
-                    </Badge>
-                  )}
                 </Link>
               )}
             </Nav.Item>
           ))}
         </Nav>
       </aside>
+      
 
       {/* Modal de modification du mot de passe */}
       <ModifierMotDePasseModal
         show={showModifierMotDePasseModal}
         onHide={() => setShowModifierMotDePasseModal(false)}
       />
-
-      {/* Modal de disponibilité médecin prescripteur */}
-      <DisponibilitePrescriptuerModal
-        show={showDisponibiliteModal}
-        onHide={() => setShowDisponibiliteModal(false)}
-      />
-
-      {/* Modal du service radio */}
-      <ServiceRadioModal
-        show={showServiceRadioModal}
-        onHide={() => setShowServiceRadioModal(false)}
+      
+      {/* Modal de disponibilité du médecin */}
+      <DisponibilitePrescriptuerModalRadio
+        show={showDisponibiliteModalRadio}
+        onHide={() => setShowDisponibiliteModalRadio(false)}
       />
     </>
   );

@@ -8,8 +8,8 @@ import ListePlanningModal from "./ListePlanningModal";
 import DisponibiliteMedecinModal from "./DisponibiliteMedecinModal";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import ModifierMotDePasseModal from "@/components/ModifierMotDePasseModal";
-// import ListeAnnulationFactureModal from "@/pages/servicecaisse/componant/ListeAnnulationFactureModal";
-// import ListeAnnulationEncaissementModal from "@/pages/servicecaisse/componant/ListeAnnulationEncaissementModal";
+// import ListeAnnulationFactureModal from "@/pages/servicecaisse/components/ListeAnnulationFactureModal";
+// import ListeAnnulationEncaissementModal from "@/pages/servicecaisse/components/ListeAnnulationEncaissementModal";
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
@@ -336,7 +336,7 @@ export default function Sidebar() {
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 {/* Parametre clinique */}
-                <Accordion.Item eventKey="5">
+                <Accordion.Item eventKey="9">
                   <Accordion.Header>
                     <i
                       className="bi bi-clipboard-data me-2 text-primary"
@@ -351,17 +351,26 @@ export default function Sidebar() {
                           href="/dashboard/parametres/actes"
                           className="sidebar-link-medical d-flex align-items-center"
                         >
-                          <i className="bi bi-clipboard2-medical me-2 text-primary"></i>{" "}
+                          <i className="bi bi-stethoscope me-2 text-success"></i>{" "}
                           Gestion Actes Cliniques
                         </Link>
                       </li>
-                       <li>
+                      <li>
                         <Link
                           href="/dashboard/parametres/affection"
                           className="sidebar-link-medical d-flex align-items-center"
                         >
-                          <i className="bi bi-clipboard2-medical me-2 text-primary"></i>{" "}
+                          <i className="bi bi-heart-pulse me-2 text-danger"></i>{" "}
                           Gestion Affection
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/dashboard/parametres/parametreCRendu"
+                          className="sidebar-link-medical d-flex align-items-center"
+                        >
+                          <i className="bi bi-file-medical me-2 text-primary"></i>{" "}
+                          Paramètre Compte rendu
                         </Link>
                       </li>
                       <li>
@@ -445,7 +454,7 @@ export default function Sidebar() {
                 </Accordion.Item>
 
                 {/* parametre medicament */}
-                <Accordion.Item eventKey="6">
+                <Accordion.Item eventKey="10">
                   <Accordion.Header>
                     <i
                       className="bi bi-capsule me-2 text-primary"
@@ -460,8 +469,8 @@ export default function Sidebar() {
                           href="/dashboard/parametres/medicaments"
                           className="sidebar-link-medical d-flex align-items-center"
                         >
-                          <i className="bi bi-prescription2 me-2 text-primary"></i>{" "}
-                          Liste medicaments
+                          <i className="bi bi-capsule me-2 text-info"></i>{" "}
+                          Liste médicaments
                         </Link>
                       </li>
                       <li>
@@ -478,7 +487,7 @@ export default function Sidebar() {
                 </Accordion.Item>
 
                 {/* Paramètre laboratoire */}
-                <Accordion.Item eventKey="6">
+                <Accordion.Item eventKey="11">
                   <Accordion.Header>
                     <i
                       className="bi bi-virus me-2 text-primary"
@@ -493,7 +502,7 @@ export default function Sidebar() {
                           href="/dashboard/parametres/familleacte"
                           className="sidebar-link-medical d-flex align-items-center"
                         >
-                          <i className="bi bi-tags-fill me-2 text-warning"></i>{" "}
+                          <i className="bi bi-collection me-2 text-warning"></i>{" "}
                           Familles Biologiques et actes
                         </Link>
                       </li>
@@ -506,6 +515,8 @@ export default function Sidebar() {
                           Paramètre Biologie
                         </Link>
                       </li>
+
+                      
                       <li>
                         <Link
                           href="/dashboard/parametres/acteBiologie"
@@ -532,7 +543,7 @@ export default function Sidebar() {
                           <i className="bi bi-clipboard-pulse me-2 text-danger"></i>{" "}
                           Acte Biochimie
                         </Link>
-                      </li>
+                      </li>                    
                     </ul>
                   </Accordion.Body>
                 </Accordion.Item>
@@ -546,6 +557,7 @@ export default function Sidebar() {
                       Gestion entreprise
                     </Link>
                   </li>
+                  
                 )}
               </ul>
             </Accordion.Body>

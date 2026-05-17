@@ -4,12 +4,12 @@ import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { useEffect, useState } from 'react';
-import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/componant/FactureExamHospit/ExamenHospitModalCaisse';
-import PharmacieCaisseModal from '@/app/pages/servicecaisse/componant/PharmacieCaisse/PharmacieCaisseModal';
-import FacturesNonSoldesModal from '@/app/pages/servicecaisse/componant/FacturesNonSoldesModal';
-import PointCaisseModal from '@/app/pages/servicecaisse/componant/PointCaisseModal';
-import ListeEncaissementModal from '@/app/pages/servicecaisse/componant/ListeEncaissementModal';
-import MenuImpressionFactureModal from '@/app/pages/servicecaisse/componant/MenuImpressionFactureModal';
+import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/components/FactureExamHospit/ExamenHospitModalCaisse';
+import PharmacieCaisseModal from '@/app/pages/servicecaisse/components/PharmacieCaisse/PharmacieCaisseModal';
+import FacturesNonSoldesModal from '@/app/pages/servicecaisse/components/FacturesNonSoldesModal';
+import PointCaisseModal from '@/app/pages/servicecaisse/components/PointCaisseModal';
+import ListeEncaissementModal from '@/app/pages/servicecaisse/components/ListeEncaissementModal';
+import MenuImpressionFactureModal from '@/app/pages/servicecaisse/components/MenuImpressionFactureModal';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 
 

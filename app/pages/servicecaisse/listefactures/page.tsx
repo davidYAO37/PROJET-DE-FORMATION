@@ -4,9 +4,9 @@ import React, { useEffect, useMemo, useState } from "react";
 import { Card, Row, Col, Table, Spinner, Button, Form, Nav, Tab, Badge, Modal } from "react-bootstrap";
 
 // Import des composants de modales
-import FicheConsultationUpdateCaisse from "../componant/factureAttenteConsult/FicheConsultationUpdateCaisse";
-import ExamenHospitalisationModalCaisse from "../componant/FactureExamHospit/ExamenHospitModalCaisse";
-import PharmacieCaisseModal from "../componant/PharmacieCaisse/PharmacieCaisseModal";
+import FicheConsultationUpdateCaisse from "../components/factureAttenteConsult/FicheConsultationUpdateCaisse";
+import ExamenHospitalisationModalCaisse from "../components/FactureExamHospit/ExamenHospitModalCaisse";
+import PharmacieCaisseModal from "../components/PharmacieCaisse/PharmacieCaisseModal";
 import { FaRegWindowClose } from "react-icons/fa";
 
 /**

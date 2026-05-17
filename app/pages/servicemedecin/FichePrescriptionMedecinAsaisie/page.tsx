@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import PharmacieModalPharmAccueilMedecin from '../PharmacieMedecin/PharmacieModalPharmAccueilMedecin';
 import HospitalisationPageMedecin from '../examenhospitalisationMedecin/page';
 import PrintFichePrescription from '../MesImpressions/printFichePrescription';
-import AvisHospitModal from '../tmedecin/composants/AvisHospit/AvisHospitModal';
+import AvisHospitModal from '../tmedecin/components/AvisHospit/AvisHospitModal';
 
 interface Patient {
   _id: string;

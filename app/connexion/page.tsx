@@ -57,7 +57,7 @@ export default function ConnexionPage() {
           else if (profil?.type === 'medecin') router.push('/pages/servicemedecin/tmedecin');
           else if (profil?.type === 'infirmier') router.push('/pages/serviceinfirmier/tinfirmier');
           else if (profil?.type === 'pharmacien') router.push('/pages/servicepharmacie/tpharmacie');
-          else if (profil?.type === 'radiologue') router.push('/pages/serviceradiologie/tradiologue');
+          else if (profil?.type === 'radiologue') router.push('/pages/serviceradio/tradio');
           else if (profil?.type === 'technicienlabo') router.push('/pages/servicelaboratoire/tlabo');
           else if (profil?.type === 'caisse') router.push('/pages/servicecaisse/tcaisse');
           else if (profil?.type === 'comptable') router.push('/pages/servicecomptable/tcomptable');
