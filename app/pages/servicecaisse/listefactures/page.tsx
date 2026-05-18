@@ -3,7 +3,7 @@ import { error } from "console";
 import React, { useEffect, useMemo, useState } from "react";
 import { Card, Row, Col, Table, Spinner, Button, Form, Nav, Tab, Badge, Modal } from "react-bootstrap";
 
-// Import des composants de modales
+// Import des components de modales
 import FicheConsultationUpdateCaisse from "../components/factureAttenteConsult/FicheConsultationUpdateCaisse";
 import ExamenHospitalisationModalCaisse from "../components/FactureExamHospit/ExamenHospitModalCaisse";
 import PharmacieCaisseModal from "../components/PharmacieCaisse/PharmacieCaisseModal";

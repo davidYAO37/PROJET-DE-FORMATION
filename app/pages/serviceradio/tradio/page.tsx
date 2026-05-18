@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Tabs, Tab, Container, Row, Col, Card, Button } from "react-bootstrap";
-import { FaUsers, FaClock, FaEdit, FaCheckCircle } from "react-icons/fa";
-import ListePatientRadio from "./composants/ListePatientRadio";
-import ListeAvalider from "./composants/ListeAvalider";
-import ListesValides from "./composants/ListesValides";
+import { FaUsers, FaClock, FaEdit, FaCheckCircle, FaSyncAlt } from "react-icons/fa";
+import ListePatientRadio from "./components/ListePatientRadio";
+import ListeAvalider from "./components/ListeAvalider";
+import ListesValides from "./components/ListesValides";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IPatient } from "@/models/patient";
 import { useRouter } from 'next/navigation';
@@ -35,6 +35,26 @@ export default function TRadioPage() {
     router.push('/connexion');
   };
 
+  const handleRefresh = () => {
+    // Rafraîchir la page actuelle
+    window.location.reload();
+  };
+
+  // Rafraîchir les données lors du changement d'onglet
+  useEffect(() => {
+    // Forcer le rechargement des composants lors du changement d'onglet
+    const forceRefresh = () => {
+      // Événement personnalisé pour notifier les composants enfants
+      window.dispatchEvent(new CustomEvent('refreshTabData', { 
+        detail: { activeTab } 
+      }));
+    };
+    
+    if (activeTab) {
+      forceRefresh();
+    }
+  }, [activeTab]);
+
   return (
     <Container fluid className="p-4">
       <div className="mb-4">
@@ -43,9 +63,15 @@ export default function TRadioPage() {
             <FaClock className="me-2" />
             {medecinConnecte} - Bienvenue sur votre tableau de bord
           </h2>
-          <Button variant="outline-danger" onClick={handleLogout}>
-            Se déconnecter
-          </Button>
+          <div className="d-flex gap-2">
+            <Button variant="outline-primary" onClick={handleRefresh} title="Rafraîchir la page">
+              <FaSyncAlt className="me-1" />
+              Rafraîchir
+            </Button>
+            <Button variant="outline-danger" onClick={handleLogout}>
+              Se déconnecter
+            </Button>
+          </div>
         </div>
         <Tabs
           activeKey={activeTab}

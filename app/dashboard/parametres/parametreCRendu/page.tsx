@@ -12,16 +12,6 @@ export default function ParametresPage() {
 
   return (
     <Container fluid className="p-4">
-      <div className="mb-4">
-        <h2 className="mb-3">
-          <FaClock className="me-2" />
-          Paramètres des Comptes Rendus
-        </h2>
-        <p className="text-muted">
-          Gérez les paramètres des comptes rendus radio (lettres clés, dates, etc.)
-        </p>
-      </div>
-      
       <ParametreCRenduManager onParametreSelect={handleParametreSelect} />
     </Container>
   );

@@ -267,6 +267,8 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
 
     // Mettre à jour automatiquement le statut du rendez-vous
     try {
+      const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') : null;
+      
       const response = await fetch('/api/rendez-vous/update', {
         method: 'PUT',
         headers: {
@@ -274,7 +276,8 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
         },
         body: JSON.stringify({
           rdvId: rdvId,
-          StatutRdv: checked ? '2' : '1'
+          StatutRdv: checked ? '2' : '1',
+          entrepriseId
         }),
       });
 
@@ -289,7 +292,8 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
         console.log(`✅ Statut du rendez-vous mis à jour: ${checked ? '2' : '1'}`);
       } else {
         const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Erreur lors de la mise à jour du statut:', errorData.error);
+        console.error('❌ Erreur lors de la mise à jour du statut:', errorData);
+        alert(`❌ Erreur lors de la mise à jour du statut: ${errorData.error || 'Erreur inconnue'}`);
         // Revenir à l'état précédent en cas d'erreur
         setRdvStatutSwitch(prev => ({
           ...prev,
@@ -298,6 +302,7 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
       }
     } catch (error) {
       console.error('❌ Erreur lors de la mise à jour du statut:', error);
+      alert('❌ Erreur lors de la mise à jour du statut: Erreur de connexion');
       // Revenir à l'état précédent en cas d'erreur
       setRdvStatutSwitch(prev => ({
         ...prev,
@@ -361,6 +366,7 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
 
       if (!rdvResponse.ok) {
         const errorData = await rdvResponse.json().catch(() => ({}));
+        console.error('❌ Erreur API:', errorData);
         throw new Error(errorData.error || 'Erreur lors de la mise à jour du rendez-vous');
       }
 

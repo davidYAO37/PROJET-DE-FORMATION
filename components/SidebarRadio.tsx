@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { Nav, Badge } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
-import DisponibilitePrescriptuerModalRadio from '@/app/pages/serviceradio/tradio/composants/DisponibilitePrescripteurModalRadio';
+import DisponibilitePrescriptuerModalRadio from '@/app/pages/serviceradio/tradio/components/DisponibilitePrescripteurModalRadio';
 
 interface Statistiques {
   patientsEnAttente: number;
@@ -38,24 +38,78 @@ export default function SidebarRadio() {
   useEffect(() => {
     const fetchStatistiques = async () => {
       try {
-        // Essayer de récupérer les données depuis l'API Avalider
-        const response = await fetch('/api/compteRenduRadio/Avalider');
-        if (response.ok) {
-          const data = await response.json();
-          setStatistiques({
-            patientsEnAttente: data.lignePrestations?.length || 0,
-            rendezVousDuJour: 0
-          });
-        } else {
-          // Si l'API n'est pas accessible, utiliser des valeurs par défaut
-          setStatistiques({
-            patientsEnAttente: 0,
-            rendezVousDuJour: 0
-          });
+        const today = new Date().toISOString().split('T')[0]; // Format YYYY-MM-DD
+        
+        // Récupérer les patients en attente (comptes rendus à valider)
+        const avaliderResponse = await fetch('/api/compteRenduRadio/Avalider');
+        let patientsEnAttente = 0;
+        if (avaliderResponse.ok) {
+          const data = await avaliderResponse.json();
+          patientsEnAttente = data.lignePrestations?.length || 0;
         }
+
+        // Récupérer les rendez-vous du médecin connecté pour aujourd'hui
+        let rendezVousDuJour = 0;
+        if (user) {
+          const rendezVousResponse = await fetch(`/api/rendezvous?startDate=${today}&endDate=${today}`);
+          if (rendezVousResponse.ok) {
+            const rendezVous = await rendezVousResponse.json();
+            console.log(`📅 Rendez-vous du ${today}:`, rendezVous.length, 'trouvés');
+            console.log(`👤 Médecin connecté: "${user}"`);
+            
+            // Filtrer les rendez-vous du médecin connecté
+            const rendezVousDuMedecin = rendezVous.filter((rdv: any) => {
+              const medecinNom = rdv.medecinNom?.toLowerCase() || '';
+              const userName = user.toLowerCase();
+              
+              // Extraire les parties du nom de l'utilisateur connecté
+              const userParts = userName.split(' ').filter((part: string) => part.length > 0);
+              const medecinParts = medecinNom.split(' ').filter((part: string) => part.length > 0);
+              
+              // Vérifier si au moins une partie du nom correspond
+              let isMatch = false;
+              
+              // Vérifier si le nom complet correspond
+              if (medecinNom.includes(userName) || userName.includes(medecinNom)) {
+                isMatch = true;
+              } else {
+                // Vérifier si les parties du nom correspondent
+                for (const userPart of userParts) {
+                  for (const medecinPart of medecinParts) {
+                    if (userPart === medecinPart || 
+                        userPart.includes(medecinPart) || 
+                        medecinPart.includes(userPart)) {
+                      isMatch = true;
+                      break;
+                    }
+                  }
+                  if (isMatch) break;
+                }
+              }
+              
+              if (isMatch) {
+                console.log(`✅ Rendez-vous trouvé: ${rdv.patientNom} avec "${rdv.medecinNom}" (utilisateur: "${user}")`);
+              }
+              
+              return isMatch;
+            });
+            
+            rendezVousDuJour = rendezVousDuMedecin.length;
+            console.log(`🔢 Total rendez-vous du médecin aujourd'hui: ${rendezVousDuJour}`);
+          } else {
+            console.warn('❌ Erreur lors de la récupération des rendez-vous');
+          }
+        } else {
+          console.log('⚠️ Aucun utilisateur connecté pour filtrer les rendez-vous');
+        }
+
+        setStatistiques({
+          patientsEnAttente,
+          rendezVousDuJour
+        });
+
       } catch (error) {
-        // En cas d'erreur réseau ou autre, utiliser des valeurs par défaut
-        console.warn('API non accessible, utilisation des valeurs par défaut:', error);
+        console.warn('❌ Erreur lors de la récupération des statistiques:', error);
         setStatistiques({
           patientsEnAttente: 0,
           rendezVousDuJour: 0
@@ -69,7 +123,7 @@ export default function SidebarRadio() {
     // Rafraîchir les statistiques toutes les 30 secondes
     const interval = setInterval(fetchStatistiques, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [user]);
 
   // Ferme la sidebar quand on clique sur un lien (mobile)
   const handleLinkClick = () => setOpen(false);
@@ -144,7 +198,7 @@ export default function SidebarRadio() {
                     {item.icon}
                     <span>{item.label}</span>
                   </div>
-                  {item.showNotification && (
+                  {item.showNotification && statistiques[item.notificationKey as keyof Statistiques] > 0 && (
                     <Badge bg="danger" pill className="notification-badge-medical">
                       {statistiques[item.notificationKey as keyof Statistiques]}
                     </Badge>

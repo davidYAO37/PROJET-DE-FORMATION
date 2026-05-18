@@ -6,9 +6,7 @@ import { db } from '@/db/mongoConnect';
 
 export async function GET(request: NextRequest) {
   try {
-    console.log('Début de l\'API CompteRenduValides');
     await db();
-    console.log('Connexion à la base de données établie');
     
     const { searchParams } = new URL(request.url);
     const dateDebut = searchParams.get('dateDebut');
@@ -27,7 +25,7 @@ export async function GET(request: NextRequest) {
     //            SI LIGNE_PRESTATION.Date_ligne_prestaion>=SAI_Debut ET LIGNE_PRESTATION.Date_ligne_prestaion<=SAI_Fin ALORS
     //                // on vérifie la période de saisie		
     //                SI LIGNE_PRESTATION.IDPARTIENT=TABLE_PARTIENT.COL_IDPARTIENT ALORS
-    //                    TableAjouteLigne(TABLE_LIGNE_PRESTATION,LIGNE_PRESTATION.Date_ligne_prestaion,LIGNE_PRESTATION.Nompatient,LIGNE_PRESTATION.IDHOSPITALISATION,LIGNE_PRESTATION.IDLIGNE_PRESTATION,LIGNE_PRESTATION.Prestation,LIGNE_PRESTATION.MedecinExécutant,LIGNE_PRESTATION.Résultatsaisiepar,LIGNE_PRESTATION.DatesaisieResultat,LIGNE_PRESTATION.compterenduValidéLe,LIGNE_PRESTATION.CompterenduValidépar,LIGNE_PRESTATION.ActeMedecin)
+    //                    TableAjouteLigne(TABLE_LIGNE_PRESTATION,LIGNE_PRESTATION.Date_ligne_prestaion,LIGNE_PRESTATION.Nompatient,LIGNE_PRESTATION.IDHOSPITALISATION,LIGNE_PRESTATION.IDLIGNE_PRESTATION,LIGNE_PRESTATION.Prestation,LIGNE_PRESTATION.MedecinExécutant,LIGNE_PRESTATION.resultatsaisiepar,LIGNE_PRESTATION.DatesaisieResultat,LIGNE_PRESTATION.compterenduValidéLe,LIGNE_PRESTATION.CompterenduValidépar,LIGNE_PRESTATION.ActeMedecin)
     //                FIN
     //            FIN
     //        FIN	
@@ -36,19 +34,17 @@ export async function GET(request: NextRequest) {
     // TableTrie(TABLE_LIGNE_PRESTATION_VALIDE,"+COL_Date")
     
     // Étape 1 : Récupérer les paramètres de compte rendu (équivalent POUR TOUT Parametre_CRendu)
-    console.log('Récupération des paramètres CR');
     const parametresCR = await ParametreCRendu.find({});
-    console.log('Paramètres CR trouvés:', parametresCR.length);
     const lettresClesDisponibles = parametresCR.map(p => p.LettreCle);
 
     // Étape 2 : Construire la requête de base pour les lignes de prestations validées
     // La requête MongoDB ci-dessous correspond exactement à la logique WinDev :
     // SI LIGNE_PRESTATION.StatuPrescriptionMedecin=3 ET LIGNE_PRESTATION.CompterenduValidépar<>""
     let query: any = {
-      // SI LIGNE_PRESTATION.StatuPrescriptionMedecin=3
+      // SI LIGNE_PRESTATION.StatuPrescriptionMedecin=3 (statut 3 = validé selon WinDev)
       statutPrescriptionMedecin: 3,
       // ET LIGNE_PRESTATION.CompterenduValidépar<> "" (non vide = validé)
-      compteRenduValidePar: { $ne: "" }
+      compteRenduValidePar: { $ne: "", $exists: true }
     };
 
     // Ajouter le filtre par lettres clés des paramètres CR
@@ -73,11 +69,10 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer les lignes de prestations (équivalent POUR TOUT LIGNE_PRESTATION)
-    console.log('Requête lignes prestations:', JSON.stringify(query, null, 2));
     const lignePrestations = await LignePrestation.find(query)
       .populate('IdPatient', 'Nom Prenoms Contact Code_dossier Date_naisse')
       .sort({ dateLignePrestation: 1 }); // TableTrie(TABLE_LIGNE_PRESTATION,"+COL_Date")
-    console.log('Lignes prestations trouvées:', lignePrestations.length);
+    
 
     // Extraire les patients uniques
     const patientsMap = new Map<string, any>();
@@ -100,7 +95,7 @@ export async function GET(request: NextRequest) {
       }
 
       // Formater la ligne de prestation (TableAjouteLigne exact)
-      // Correspond exactement à : TableAjouteLigne(TABLE_LIGNE_PRESTATION,LIGNE_PRESTATION.Date_ligne_prestaion,LIGNE_PRESTATION.Nompatient,LIGNE_PRESTATION.IDHOSPITALISATION,LIGNE_PRESTATION.IDLIGNE_PRESTATION,LIGNE_PRESTATION.Prestation,LIGNE_PRESTATION.MedecinExécutant,LIGNE_PRESTATION.Résultatsaisiepar,LIGNE_PRESTATION.DatesaisieResultat,LIGNE_PRESTATION.compterenduValidéLe,LIGNE_PRESTATION.CompterenduValidépar,LIGNE_PRESTATION.ActeMedecin)
+      // Correspond exactement à : TableAjouteLigne(TABLE_LIGNE_PRESTATION,LIGNE_PRESTATION.Date_ligne_prestaion,LIGNE_PRESTATION.Nompatient,LIGNE_PRESTATION.IDHOSPITALISATION,LIGNE_PRESTATION.IDLIGNE_PRESTATION,LIGNE_PRESTATION.Prestation,LIGNE_PRESTATION.MedecinExécutant,LIGNE_PRESTATION.resultatsaisiepar,LIGNE_PRESTATION.DatesaisieResultat,LIGNE_PRESTATION.compterenduValidéLe,LIGNE_PRESTATION.CompterenduValidépar,LIGNE_PRESTATION.ActeMedecin)
       lignePrestationsFormatees.push({
         // LIGNE_PRESTATION.Date_ligne_prestaion
         Date_ligne_prestaion: ligne.dateLignePrestation,
@@ -114,8 +109,8 @@ export async function GET(request: NextRequest) {
         Prestation: ligne.prestation,
         // LIGNE_PRESTATION.MedecinExécutant
         MedecinExécutant: ligne.medecinExecutant,
-        // LIGNE_PRESTATION.Résultatsaisiepar
-        Résultatsaisiepar: ligne.resultatSaisiePar,
+        // LIGNE_PRESTATION.resultatsaisiepar
+        resultatsaisiepar: ligne.resultatSaisiePar,
         // LIGNE_PRESTATION.DatesaisieResultat
         DatesaisieResultat: ligne.dateSaisieResultat,
         // LIGNE_PRESTATION.compterenduValidéLe

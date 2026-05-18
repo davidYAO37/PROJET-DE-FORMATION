@@ -19,7 +19,7 @@ const menu = [
   { label: 'Mes Rendez-Vous', path: '#', isModal: true, modalType: 'rendezvous', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i>, showNotification: true, notificationKey: 'rendezVousDuJour' },
   { label: 'Saisir fiche prescription', path: '/pages/servicemedecin/FichePrescriptionMedecinAsaisie', icon: <i className="bi bi-file-earmark-text-fill me-2 text-primary"></i> },
   { label: 'Comptes rendus Radio', path: '#', isModal: true, modalType: 'serviceradio', icon: <i className="bi bi-file-earmark-text-fill me-2 text-secondary"></i> },
-  { label: 'Statistiques', path: '/pointSaisie', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
+  { label: 'Statistiques', path: '/pages/servicemedecin/Statistiques', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 

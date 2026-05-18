@@ -1,9 +1,10 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Table, Button, Spinner, Alert, Form, Row, Col } from "react-bootstrap";
-import { FaEye, FaCalendarAlt, FaUser, FaPhone, FaSearch } from "react-icons/fa";
+import { FaEye, FaCalendarAlt, FaUser, FaPhone, FaSearch, FaPrint } from "react-icons/fa";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IPatient } from "@/models/patient";
+import PrintCompteRenduUnified from "./MesImpressions/CompteRendu/PrintCompteRenduUnified";
 
 interface Props {
   onPatientSelect: (patient: IPatient) => void;
@@ -19,6 +20,11 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [dateDebut, setDateDebut] = useState("");
   const [dateFin, setDateFin] = useState("");
+  
+  // États pour l'impression
+  const [printingId, setPrintingId] = useState<string | null>(null);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
+  const [printData, setPrintData] = useState<any>(null);
 
   // Charger les patients (sans lignes de prestations au départ)
   const loadPatients = async () => {
@@ -103,6 +109,65 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
     }
     
     return age;
+  };
+
+  // Gérer l'impression du compte rendu validé
+  const handlePrintCompteRendu = async (ligne: any) => {
+    // Vérifier si le compte rendu est validé
+    const isValidated = ligne.CompterenduValidépar || ligne.compteRenduValidePar;
+    if (!isValidated) {
+      alert("Ce compte rendu n'est pas encore validé. Impossible d'imprimer.");
+      return;
+    }
+
+    setPrintingId(ligne.IDLIGNE_PRESTATION);
+    setError("");
+
+    try {
+      const response = await fetch(`/api/compteRenduRadio/imprimer/${ligne.IDLIGNE_PRESTATION}`);
+      
+      if (!response.ok) {
+        const result = await response.json();
+        if (result.code === 'NO_RESULTAT_A_IMPRIMER') {
+          alert("Aucun résultat à imprimer");
+        } else {
+          throw new Error(result.error || "Erreur lors de la préparation de l'impression");
+        }
+        return;
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.donnees) {
+        // Préparer les données pour l'impression
+        const printData = {
+          Nompatient: result.donnees.Nompatient,
+          Sexe: result.donnees.Sexe,
+          Age_partient: result.donnees.Age_partient,
+          Situationgeo: result.donnees.Situationgeo,
+          Code_Prestation: result.donnees.Code_Prestation,
+          Prestation: result.donnees.Prestation,
+          DatesaisieResultat: result.donnees.DatesaisieResultat,
+          MedecinPrescripteur: result.donnees.MedecinPrescripteur,
+          Docteursaisieresultat: result.donnees.Docteursaisieresultat,
+          resultatacte: result.donnees.resultatacte,
+          ObservationExame: result.donnees.ObservationExame
+        };
+
+        const validationInfo = {
+          validePar: ligne.CompterenduValidépar || ligne.compteRenduValidePar,
+          valideLe: ligne.compterenduValidéLe || ligne.compteRenduValideLe
+        };
+
+        // Ouvrir le modal d'impression
+        setPrintData({ donnees: printData, validationInfo });
+        setPrintModalOpen(true);
+      }
+    } catch (err: any) {
+      setError(err.message || "Une erreur est survenue lors de la préparation de l'impression");
+    } finally {
+      setPrintingId(null);
+    }
   };
 
   return (
@@ -251,9 +316,7 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
                     <tr key={ligne.IDLIGNE_PRESTATION?.toString() || index}>
                       <td>{formatDate(ligne.Date_ligne_prestaion || ligne.dateLignePrestation)}</td>
                       <td>
-                        <strong>{ligne.Prestation || ligne.prestation}</strong>
-                        <br />
-                        <small className="text-muted">Lettre clé: {ligne.lettreCle}</small>
+                        <strong>{ligne.Prestation || ligne.prestation}</strong>                        
                       </td>
                       <td>{ligne.MedecinExécutant || ligne.medecinExecutant || "N/A"}</td>
                       <td>{ligne.Résultatsaisiepar || ligne.resultatSaisiePar || "N/A"}</td>
@@ -265,8 +328,18 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
                         {ligne.compterenduValidéLe || ligne.compteRenduValideLe ? formatDate(ligne.compterenduValidéLe || ligne.compteRenduValideLe) : "N/A"}
                       </td>
                       <td>
-                        <Button size="sm" variant="outline-info">
-                          <FaEye />
+                        <Button 
+                          size="sm" 
+                          variant="outline-info"
+                          onClick={() => handlePrintCompteRendu(ligne)}
+                          disabled={printingId === ligne.IDLIGNE_PRESTATION}
+                          title={
+                            (ligne.CompterenduValidépar || ligne.compteRenduValidePar) 
+                              ? "Imprimer le compte rendu" 
+                              : "Compte rendu non validé"
+                          }
+                        >
+                          {printingId === ligne.IDLIGNE_PRESTATION ? <Spinner size="sm" /> : <FaPrint />}
                         </Button>
                       </td>
                     </tr>
@@ -275,6 +348,16 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
             </tbody>
           </Table>
         </div>
+      )}
+
+      {/* Modal d'impression du compte rendu */}
+      {printModalOpen && printData && (
+        <PrintCompteRenduUnified
+          donnees={printData.donnees}
+          validationInfo={printData.validationInfo}
+          titre="COMPTE RENDU RADIOLOGIQUE"
+          autoPrint={false}
+        />
       )}
     </div>
   );
