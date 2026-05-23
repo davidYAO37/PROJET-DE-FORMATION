@@ -324,8 +324,31 @@ export default function Sidebar() {
               </ul>
             </Accordion.Body>
           </Accordion.Item>
-          {/* Paramètre utilisateur */}
+          {/*Sevive Radiologie */}
           <Accordion.Item eventKey="8">
+            <Accordion.Header>
+              <i
+                className="bi bi-broadcast me-2 text-info"
+                style={{ fontSize: "20px" }}
+              ></i>
+              Service Radiologie
+            </Accordion.Header>
+            <Accordion.Body className="ps-2">
+              <ul className="nav flex-column gap-2">
+                <li>
+                  <Link
+                    href="/pages/serviceradio/tradio"
+                    className="sidebar-link-medical d-flex align-items-center"
+                  >
+                    <i className="bi bi-broadcast me-2 text-info"></i> Gestion
+                    Radiologie
+                  </Link>
+                </li>
+              </ul>
+            </Accordion.Body>
+          </Accordion.Item>
+          {/* Paramètre utilisateur */}
+          <Accordion.Item eventKey="9">
             <Accordion.Header>
               <i
                 className="bi bi-gear-fill me-2 text-dark"
@@ -336,7 +359,7 @@ export default function Sidebar() {
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 {/* Parametre clinique */}
-                <Accordion.Item eventKey="9">
+                <Accordion.Item eventKey="10">
                   <Accordion.Header>
                     <i
                       className="bi bi-clipboard-data me-2 text-primary"
@@ -454,7 +477,7 @@ export default function Sidebar() {
                 </Accordion.Item>
 
                 {/* parametre medicament */}
-                <Accordion.Item eventKey="10">
+                <Accordion.Item eventKey="11">
                   <Accordion.Header>
                     <i
                       className="bi bi-capsule me-2 text-primary"
@@ -487,7 +510,7 @@ export default function Sidebar() {
                 </Accordion.Item>
 
                 {/* Paramètre laboratoire */}
-                <Accordion.Item eventKey="11">
+                <Accordion.Item eventKey="12">
                   <Accordion.Header>
                     <i
                       className="bi bi-virus me-2 text-primary"

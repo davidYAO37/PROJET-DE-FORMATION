@@ -1,7 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import SidebarMedecin from '@/components/SidebarMedecin';
 import Verifconnecion from '@/components/verifconnecion';
-import Page from './tmedecin/page';
 
 export const metadata = {
   title: 'Service Médecin',

@@ -210,7 +210,7 @@ export default function PlanningField({ medecinId, onPlanningSelect, showActions
 
     // Confirmation de suppression de période
     const medecin = medecins.find(m => m._id.toString() === selectedMedecin);
-    const confirmMessage = `⚠️ Êtes-vous sûr de vouloir supprimer TOUS les plannings ?\n\nCette action supprimera :\n- TOUS les plannings du Dr ${medecin?.nom} ${medecin?.prenoms}\n- Du ${new Date(dateDebut).toLocaleDateString('fr-FR')} au ${new Date(dateFin).toLocaleDateString('fr-FR')}\n- TOUS les rendez-vous associés à ces plannings\n\nCette action est IRREVERSIBLE !`;
+    const confirmMessage = `⚠️ Êtes-vous sûr de vouloir supprimer TOUS les plannings ?\n\nCette action supprimera :\n- TOUS les plannings du ${medecin?.nom} ${medecin?.prenoms}\n- Du ${new Date(dateDebut).toLocaleDateString('fr-FR')} au ${new Date(dateFin).toLocaleDateString('fr-FR')}\n- TOUS les rendez-vous associés à ces plannings\n\nCette action est IRREVERSIBLE !`;
     
     if (!window.confirm(confirmMessage)) {
       return;

@@ -571,7 +571,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
     // Contenu principal du tableau
     const contentHTML = `
       <div class="sub-header">FICHE RENDEZ-VOUS DU MEDECIN</div>
-      <div class="sub-header">Dr ${selectedMedecinData?.nom || ''} ${selectedMedecinData?.prenoms || ''} - ${formatDate(selectedDate)}</div>
+      <div class="sub-header">${selectedMedecinData?.nom || ''} ${selectedMedecinData?.prenoms || ''} - ${formatDate(selectedDate)}</div>
       
       <table>
         <thead>
@@ -629,7 +629,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
     // Contenu principal du tableau
     const contentHTML = `
       <div class="sub-header">LISTE DES PERSONNES A CONTACTER</div>
-      <div class="sub-header">Dr ${selectedMedecinData?.nom || ''} ${selectedMedecinData?.prenoms || ''} - ${formatDate(selectedDate)}</div>
+      <div class="sub-header">${selectedMedecinData?.nom || ''} ${selectedMedecinData?.prenoms || ''} - ${formatDate(selectedDate)}</div>
       
       <table>
         <thead>
@@ -725,7 +725,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
                 ${medecinsAvecPlanning.map((item: any) => `
                   <tr>
                     <td>${formatDate(selectedDate)}</td>
-                    <td>Dr ${item.medecin?.nom || ''} ${item.medecin?.prenoms || ''}</td>
+                    <td>${item.medecin?.nom || ''} ${item.medecin?.prenoms || ''}</td>
                     <td>${item.medecin?.specialite || '-'}</td>
                     <td>${item.planning?.heureDebut || '-'}</td>
                     <td>${item.planning?.HeureFin || '-'}</td>
