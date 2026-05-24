@@ -24,9 +24,14 @@ export async function GET(request: Request) {
             const stocks = await Stock.find(query).lean();
             return NextResponse.json(stocks);
         }
+
+        const inStock = searchParams.get("inStock") === "true";
+        if (inStock) {
+            query.QteEnStock = { $gt: 0 };
+        }
         
-        // Si pas de paramètres, retourner tous les stocks
-        const stocks = await Stock.find().lean();
+        // Si pas de paramètres, retourner tous les stocks ou filtrer par quantité
+        const stocks = await Stock.find(query).lean();
         return NextResponse.json(stocks);
     } catch (error: any) {
         console.error("Erreur GET /api/stock:", error);

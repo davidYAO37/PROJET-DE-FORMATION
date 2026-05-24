@@ -75,7 +75,6 @@ export async function GET(request: NextRequest) {
     const lignePrestationFilter = typeExamen ? { prestation: { $regex: typeExamen, $options: 'i' } } : {};
     const facturationServiceFilter = service ? { Designationtypeacte: { $regex: service, $options: 'i' } } : {};
     const hospitalisationServiceFilter = service ? { Designationtypeacte: { $regex: service, $options: 'i' } } : {};
-
     const [
       consultationsJour,
       patientsEnAttente,

@@ -19,7 +19,8 @@ export async function GET(req: NextRequest) {
     const actes = await ActeClinique.find(query)
         .sort({ designationacte: 1 })
         .skip((page - 1) * limit)
-        .limit(limit);
+        .limit(limit)
+        .lean();
 
     return NextResponse.json({
         data: actes,

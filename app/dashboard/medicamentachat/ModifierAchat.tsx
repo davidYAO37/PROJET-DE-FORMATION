@@ -30,7 +30,7 @@ function SearchableMedicamentSelect({
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({
     top: 0,
     left: 0,
@@ -44,7 +44,7 @@ function SearchableMedicamentSelect({
     : "";
 
   // Filtrer les médicaments selon la recherche - Si pas de recherche, afficher tous les médicaments
-  const filteredMedicaments = searchTerm
+  const allFilteredMedicaments = searchTerm
     ? medicaments.filter(
         (m) =>
           m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,12 +52,14 @@ function SearchableMedicamentSelect({
       )
     : medicaments; // Afficher tous les médicaments si pas de recherche
 
+  const filteredMedicaments = allFilteredMedicaments.slice(0, 50);
+
   // Calculer la position du dropdown
   useEffect(() => {
     if (showDropdown && inputRef.current) {
       const rect = inputRef.current.getBoundingClientRect();
       setDropdownPosition({
-        top: rect.top - 10, // Position au-dessus de l'input
+        top: rect.bottom + 5, // Position en dessous de l'input
         left: rect.left,
         width: rect.width,
       });
@@ -88,10 +90,10 @@ function SearchableMedicamentSelect({
   };
 
   return (
-    <div ref={inputRef} className="searchable-acte-container">
+    <div style={{ position: 'relative' }}>
       <Form.Control
-        as="textarea"
-        rows={2}
+        ref={inputRef}
+        type="text"
         size="sm"
         placeholder="Rechercher un médicament..."
         value={showDropdown ? searchTerm : displayValue}
@@ -101,62 +103,73 @@ function SearchableMedicamentSelect({
         }}
         onFocus={() => setShowDropdown(true)}
         style={{
-          resize: "none",
-          overflow: "hidden",
           fontSize: "13px",
-          lineHeight: "1.3",
         }}
       />
       {showDropdown && (
         <div
           ref={dropdownRef}
-          className="searchable-acte-dropdown"
           style={{
+            position: 'fixed',
             top: `${dropdownPosition.top}px`,
             left: `${dropdownPosition.left}px`,
             width: `${dropdownPosition.width}px`,
-            transform: "translateY(-100%)",
+            maxHeight: '200px',
+            overflow: 'auto',
+            backgroundColor: 'white',
+            border: '1px solid #dee2e6',
+            borderRadius: '0.375rem',
+            boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+            zIndex: 1000
           }}
         >
           {searchTerm && (
-            <div className="searchable-acte-counter">
-              {filteredMedicaments.length} résultat
-              {filteredMedicaments.length > 1 ? "s" : ""} trouvé
-              {filteredMedicaments.length > 1 ? "s" : ""}
+            <div style={{ padding: '4px 8px', fontSize: '11px', color: '#6c757d', borderBottom: '1px solid #f8f9fa', backgroundColor: '#f8f9fa' }}>
+              {allFilteredMedicaments.length} résultat
+              {allFilteredMedicaments.length > 1 ? "s" : ""} trouvé
+              {allFilteredMedicaments.length > 1 ? "s" : ""}
             </div>
           )}
           {filteredMedicaments.length === 0 ? (
-            <div className="searchable-acte-empty">
-              <div className="searchable-acte-empty-icon">🔍</div>
-              <div>Aucun médicament trouvé</div>
-              <div className="searchable-acte-empty-hint">
-                Essayez un autre terme de recherche
-              </div>
+            <div style={{ padding: '8px', color: '#6c757d', fontSize: '13px', textAlign: 'center' }}>
+              Aucun médicament trouvé
             </div>
           ) : (
-            <div className="searchable-acte-list">
+            <div style={{ display: 'flex', flexDirection: 'column' }}>
               {filteredMedicaments.map((medicament) => (
                 <div
                   key={medicament._id || `medicament-${medicament.Reference}`}
                   onClick={() => handleSelect(medicament._id || "")}
-                  className={`searchable-acte-item ${medicament._id === selectedId ? "selected" : ""}`}
+                  style={{
+                    padding: '8px',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                    borderBottom: '1px solid #f8f9fa',
+                    backgroundColor: medicament._id === selectedId ? '#e3f2fd' : 'white'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = medicament._id === selectedId ? '#e3f2fd' : 'white';
+                  }}
                 >
-                  <div className="searchable-acte-title">
+                  <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
                     {medicament.Designation}
                   </div>
-                  <div className="searchable-acte-badges">
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', fontSize: '11px' }}>
                     {medicament.Reference && (
-                      <span className="searchable-acte-badge-key">
-                        🔑 {medicament.Reference}
+                      <span style={{ color: '#6c757d' }}>
+                        � {medicament.Reference}
                       </span>
                     )}
                     {medicament.PrixAchat && (
-                      <span className="searchable-acte-badge-price">
+                      <span style={{ color: '#0d6efd' }}>
                         💰 Achat: {medicament.PrixAchat} FCFA
                       </span>
                     )}
                     {medicament.PrixVente && (
-                      <span className="searchable-acte-badge-mutuel">
+                      <span style={{ color: '#198754' }}>
                         🏥 Vente: {medicament.PrixVente} FCFA
                       </span>
                     )}

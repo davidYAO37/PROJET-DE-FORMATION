@@ -48,14 +48,14 @@ function MedicamentSelect({ medicaments, selectedId, onSelect, disabled = false 
   const inputRef = useRef<HTMLInputElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-  // Filtrer les médicaments selon la recherche
-  const filteredMedicaments = searchTerm
+  // Filtrer les médicaments selon la recherche (limiter à 50 résultats pour la performance INP)
+  const filteredMedicaments = (searchTerm
     ? medicaments.filter(m =>
         m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : medicaments;
+    : medicaments).slice(0, 50);
 
   // Calculer la position du dropdown
   useEffect(() => {
@@ -255,7 +255,7 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
   useEffect(() => {
     const chargerMedicamentsEnStock = async () => {
       try {
-        const response = await fetch('/api/stock');
+        const response = await fetch('/api/stock?inStock=true');
         const stocks = await response.json();
 
         // Filtrer les médicaments qui ont une quantité en stock > 0

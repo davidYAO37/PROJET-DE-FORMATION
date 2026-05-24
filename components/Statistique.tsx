@@ -138,27 +138,6 @@ export default function Statistique() {
     );
   };
 
-  const ClickableBarChart = ({ data, title, valueType = "number" }: { data: { label: string; value: number; details: Record<string, any>[] }[]; title: string; valueType?: "number" | "money" }) => {
-    const maxValue = Math.max(...data.map(d => d.value), 1);
-
-    return (
-      <div className="custom-chart">
-        <h6 className="text-center mb-3">{title}</h6>
-        <div className="chart-container">
-          {data.map((item, index) => (
-            <button key={index} type="button" className="chart-item chart-button" onClick={() => afficherDetails(item.label, item.details)}>
-              <div className="chart-label">{item.label}</div>
-              <div className="chart-bar-container">
-                <div className="chart-bar bar-chart-bar" style={{ height: `${(item.value / maxValue) * 100}%` }} />
-                <div className="chart-value">{valueType === "money" ? formatMontant(item.value) : item.value}</div>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
   const ClickablePieChart = ({ data, title }: { data: { label: string; value: number; details: Record<string, any>[] }[]; title: string }) => {
     const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
     const colors = ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff'];

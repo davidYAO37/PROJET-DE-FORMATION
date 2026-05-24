@@ -5,7 +5,7 @@ import { db } from "@/db/mongoConnect";
 // GET toutes les types d’acte
 export async function GET() {
     await db();
-    const actes = await TypeActe.find().sort({ Designation: 1 });
+    const actes = await TypeActe.find().sort({ Designation: 1 }).lean();
     return NextResponse.json(actes);
 }
 

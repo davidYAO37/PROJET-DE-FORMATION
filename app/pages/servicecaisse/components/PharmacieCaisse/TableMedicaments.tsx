@@ -72,14 +72,14 @@ function MedicamentSelect({ medicaments, selectedId, onSelect }: MedicamentSelec
   const inputRef = useRef<HTMLInputElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-  // Filtrer les médicaments selon la recherche
-  const filteredMedicaments = searchTerm
+  // Filtrer les médicaments selon la recherche (limiter à 50 résultats pour la performance INP)
+  const filteredMedicaments = (searchTerm
     ? medicaments.filter(m =>
         m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    : medicaments;
+    : medicaments).slice(0, 50);
 
   // Calculer la position du dropdown
   useEffect(() => {
@@ -261,7 +261,7 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
   useEffect(() => {
     const chargerMedicamentsEnStock = async () => {
       try {
-        const response = await fetch('/api/stock');
+        const response = await fetch('/api/stock?inStock=true');
         const stocks = await response.json();
 
         // Filtrer les médicaments qui ont une quantité en stock > 0
@@ -303,7 +303,7 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
       // SI COL_Refusé="" ALORS
       if (!ligne.refuse) {
         // COL_PartAssurance = (COL_PrixTotal * SAI_Taux_Assur) / 100
-        ligne.partAssurance = (prixTotal * tauxAssurance) / 100;
+        ligne.partAssurance = Math.round((prixTotal * tauxAssurance) / 100);
         // COL_PartAssure = COL_PrixTotal - COL_PartAssurance
         ligne.partAssure = prixTotal - ligne.partAssurance;
       } else {
@@ -410,8 +410,8 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
       total: total,
       reference: medicament.Reference || medicament.CodeBarre || "", // Utiliser la référence du médicament (ex: RIV-3)
       // Calculer les parts assurance/patient selon le taux
-      partAssurance: (total * tauxAssurance) / 100,
-      partAssure: total - ((total * tauxAssurance) / 100)
+      partAssurance: Math.round((total * tauxAssurance) / 100),
+      partAssure: total - Math.round((total * tauxAssurance) / 100)
     });
 
     // Recalculer les totaux généraux
@@ -427,8 +427,8 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
         quantite,
         total: newTotal,
         // Recalculer les parts assurance/patient
-        partAssurance: !ligne.refuse ? (newTotal * tauxAssurance) / 100 : 0,
-        partAssure: !ligne.refuse ? newTotal - ((newTotal * tauxAssurance) / 100) : newTotal
+        partAssurance: !ligne.refuse ? Math.round((newTotal * tauxAssurance) / 100) : 0,
+        partAssure: !ligne.refuse ? newTotal - Math.round((newTotal * tauxAssurance) / 100) : newTotal
       });
       // Recalculer les totaux généraux
       setTimeout(() => calculerTotaux(), 0);
@@ -477,7 +477,7 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
           // Recalculer les parts assurance/patient immédiatement
           const prixTotal = updatedLigne.quantite * updatedLigne.prixUnitaire;
           if (!updatedLigne.refuse) {
-            updatedLigne.partAssurance = (prixTotal * tauxAssurance) / 100;
+            updatedLigne.partAssurance = Math.round((prixTotal * tauxAssurance) / 100);
             updatedLigne.partAssure = prixTotal - updatedLigne.partAssurance;
           } else {
             updatedLigne.partAssurance = 0;

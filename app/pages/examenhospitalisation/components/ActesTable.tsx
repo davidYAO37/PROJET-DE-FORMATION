@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
@@ -76,57 +76,57 @@ interface ActeSelectProps {
     onSelect: (acte: IActeClinique) => void;
 }
 
-function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
+const ActeSelect = memo(function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
     const [searchTerm, setSearchTerm] = useState("");
     const [showDropdown, setShowDropdown] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-    // Filtrer les actes selon la recherche
-    const filteredActes = searchTerm
-        ? actes.filter(a =>
-            a.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.LettreCle?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        : actes;
+    const filteredActes = useMemo(() => {
+        if (!searchTerm) return actes;
+        const lower = searchTerm.toLowerCase();
+        return actes.filter(a =>
+            a.Designation?.toLowerCase().includes(lower) ||
+            a.LettreCle?.toLowerCase().includes(lower)
+        );
+    }, [searchTerm, actes]);
 
-    // Calculer la position du dropdown
     useEffect(() => {
         if (showDropdown && inputRef.current) {
             const rect = inputRef.current.getBoundingClientRect();
             setDropdownPosition({
-                top: rect.bottom + 5, // Position en dessous de l'input
+                top: rect.bottom + 5,
                 left: rect.left,
                 width: rect.width
             });
         }
     }, [showDropdown]);
 
-    // Fermer le dropdown si on clique à l'extérieur
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-                inputRef.current && !inputRef.current.contains(event.target as Node)) {
-                setShowDropdown(false);
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
+    const handleClickOutside = useCallback((event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+            inputRef.current && !inputRef.current.contains(event.target as Node)) {
+            setShowDropdown(false);
+        }
     }, []);
 
-    const handleSelect = (acte: IActeClinique) => {
+    useEffect(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [handleClickOutside]);
+
+    const handleSelect = useCallback((acte: IActeClinique) => {
         onSelect(acte);
         setSearchTerm("");
         setShowDropdown(false);
-    };
+    }, [onSelect]);
 
-    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
         setSearchTerm(e.target.value);
         setShowDropdown(true);
-    };
+    }, []);
 
-    const selectedActe = actes.find(a => a._id === selectedId);
+    const selectedActe = useMemo(() => actes.find(a => a._id === selectedId), [actes, selectedId]);
 
     return (
         <div style={{ position: 'relative' }}>
@@ -200,7 +200,7 @@ function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
             )}
         </div>
     );
-}
+});
 
 interface Props {
     assuranceId?: AssuranceId; // Sélection (1=Sans,2=Mutualiste,3=Préférentiel)
@@ -352,9 +352,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
     }, [externalResetKey]);
 
     // ---------- Helpers pour rechercher objets -------------
-    function findActeById(id: string) {
-        return actes.find((a) => a._id === id);
-    }
+    const findActeById = useCallback((id: string) => actes.find((a) => a._id === id), [actes]);
     function findTarifByActeDesignationAndAssurance(designation: string, _assurance: AssuranceId) {
         // Les tarifs sont déjà filtrés par assurance via l'endpoint /api/tarifs/{assuranceDbId}
         return tarifsAssurance.find((t) => t.Designation === designation);
@@ -781,7 +779,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
             try {
                 // Vérifier si la ligne existe en base de données
                 const checkRes = await fetch(`/api/ligneprestation?id=${encodeURIComponent(id)}`);
-                
+
                 if (checkRes.ok) {
                     const data = await checkRes.json();
                     const ligneDB = data.data;
@@ -828,19 +826,18 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
         // Le useEffect se chargera du recalcul automatiquement
     }
 
-    function onChangeField(lineId: string, field: keyof ILignePrestation, value: any) {
+    const onChangeField = useCallback((lineId: string, field: keyof ILignePrestation, value: any) => {
         setErrorMsg(null);
         setLignes((prev) =>
             prev.map((l) => {
                 if (l.IDLignePrestation !== lineId) return l;
-                const copy = { ...l, [field]: value };
-                return copy;
+                return { ...l, [field]: value };
             })
         );
-    }
+    }, []);
 
     // Quand on sélectionne un acte
-    async function onSelectActe(lineId: string, acteId: string) {
+    const onSelectActe = useCallback(async (lineId: string, acteId: string) => {
         setErrorMsg(null);
         const acte = findActeById(acteId);
         if (!acte) return;
@@ -850,13 +847,12 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                 if (l.IDLignePrestation !== lineId) return l;
                 const copy = { ...l };
 
-                // Remplissages d'après ton WLangage
-                copy.Acte = acte.Designation || ""; // ✅ Remplir le nom de l'acte
+                copy.Acte = acte.Designation || "";
                 copy.Lettre_Cle = acte.LettreCle || "";
                 copy.DATE = new Date().toISOString().split("T")[0];
                 copy.IDACTE = acte._id;
-                copy.IDTYPE = acte.IDTYPE_ACTE || ""; // ✅ Remplir le type d'acte
-                copy.IDFAMILLE = acte.IDFAMILLE_ACTE_BIOLOGIE || ""; // ✅ Remplir la famille d'acte
+                copy.IDTYPE = acte.IDTYPE_ACTE || "";
+                copy.IDFAMILLE = acte.IDFAMILLE_ACTE_BIOLOGIE || "";
                 copy.Exclusion = "Accepter";
                 copy.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
                 if (!copy.QteP || copy.QteP === 0) copy.QteP = 1;
@@ -864,28 +860,21 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                 copy.Refuser = acte.Prix || 0;
                 copy.ordonnancementAffichage = acte.ORdonnacementAffichage || 0;
 
-                // Selon COMBO_Assurance (prop assuranceId)
                 if (assuranceId === 1) {
-                    // sans assurance -> tarif acte clinique
                     tarifActeClinique(copy, acte, 1);
                 } else {
-                    // il y a une assurance -> tarif acte assurance
                     tarifActeAssurance(copy, acte, assuranceId);
                 }
 
-                // Si le montant total de l'acte est pour le médecin exécutant
                 if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
                     copy.StatutMedecinActe = "OUI";
-                    // sera recalculé après prixActe carPrixTotal est recalculé ensuite
                 } else {
                     copy.StatutMedecinActe = "NON";
                     copy.Montant_MedExecutant = 0;
                 }
 
-                // Calcul du prix
                 prixActe(copy, acte);
 
-                // si MontantAuMed=1, on chante la valeur
                 if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
                     copy.Montant_MedExecutant = copy.PrixTotal;
                 }
@@ -893,42 +882,36 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                 return copy;
             })
         );
-    }
+    }, [assuranceId, findActeById]);
 
     // Quand un champ clé change et nécessité recalcul
-    function onFieldChangeAndRecalc(lineId: string, field: keyof ILignePrestation, value: any) {
+    const onFieldChangeAndRecalc = useCallback((lineId: string, field: keyof ILignePrestation, value: any) => {
         setErrorMsg(null);
         setLignes((prev) =>
             prev.map((l) => {
                 if (l.IDLignePrestation !== lineId) return l;
                 const copy = { ...l, [field]: value };
-
-                // Recalculs importants si changement sur quantité, exclusion, accepter/refuser, prix unitaire
                 const acte = findActeById(copy.IDACTE);
-                // si acte existe, appliquer prixActe (en fonction de assuranceId et tarifs)
                 if (acte) {
-                    // si assurance active, on peut rechopper le tarif correspondant
                     if (assuranceId === 1) {
                         tarifActeClinique(copy, acte, 1);
                     } else {
-                        // chercher tarif correspondant - si absent, tarifActeAssurance gère l'erreur
                         tarifActeAssurance(copy, acte, assuranceId);
                     }
                     prixActe(copy, acte);
                 } else {
-                    // pas d'acte sélectionné -> recalcul simple
                     copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
                 }
                 return copy;
             })
         );
-    }
+    }, [assuranceId, findActeById]);
 
     // ---------- UI ----------
     return (
         <div>
             <Row className="mb-2">
-                
+
                 <Col className="text-end">
                     <Button variant="primary" size="sm" onClick={addLigne}>
                         + Ajouter Ligne
@@ -958,126 +941,126 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                             // Vérifier si la ligne est modifiable (statutPrescriptionMedecin < 3)
                             const isEditable = (l.Statutprescription ?? 2) < 3;
                             const rowStyle = !isEditable ? { backgroundColor: '#f8f9fa', opacity: 0.7 } : {};
-                            
+
                             return (
-                            <tr key={l.IDLignePrestation} style={rowStyle}>
-                                {/* Date */}
-                                <td style={{ padding: '4px' }}>
-                                    <Form.Control
-                                        size="sm"
-                                        type="date"
-                                        value={l.DATE}
-                                        onChange={(e) => onChangeField(l.IDLignePrestation, "DATE", e.target.value)}
-                                        style={{ fontSize: '13px' }}
-                                        disabled={!isEditable}
-                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                    />
-                                </td>
-
-                                {/* Acte */}
-                                <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
-                                    {isEditable ? (
-                                        <ActeSelect
-                                            actes={actes}
-                                            selectedId={l.IDACTE || ""}
-                                            onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
-                                        />
-                                    ) : (
-                                        <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">
-                                            {l.Acte}
-                                        </div>
-                                    )}
-                                </td>
-
-                                {/* Coefficient */}
-                                <td style={{ padding: '4px' }}>
-                                    <Form.Control
-                                        size="sm"
-                                        type="number"
-                                        step="1"
-                                        value={l.Coefficient}
-                                        onChange={(e) =>
-                                            onFieldChangeAndRecalc(l.IDLignePrestation, "Coefficient", parseInt(e.target.value) || 0)
-                                        }
-                                        style={{ fontSize: '13px', textAlign: 'center' }}
-                                        disabled={!isEditable}
-                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                    />
-                                </td>
-
-                                {/* QtéP */}
-                                <td style={{ padding: '4px' }}>
-                                    <Form.Control
-                                        size="sm"
-                                        type="number"
-                                        step="1"
-                                        value={l.QteP}
-                                        onChange={(e) =>
-                                            onFieldChangeAndRecalc(l.IDLignePrestation, "QteP", parseInt(e.target.value) || 0)
-                                        }
-                                        style={{ fontSize: '13px', textAlign: 'center' }}
-                                        disabled={!isEditable}
-                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                    />
-                                </td>
-
-                                {/* Prixunitaire */}
-                                <td style={{ padding: '4px' }}>
-                                    <InputGroup size="sm">
+                                <tr key={l.IDLignePrestation} style={rowStyle}>
+                                    {/* Date */}
+                                    <td style={{ padding: '4px' }}>
                                         <Form.Control
-                                            type="number"
-                                            step="1"
-                                            value={l.Prixunitaire}
-                                            onChange={(e) =>
-                                                onFieldChangeAndRecalc(l.IDLignePrestation, "Prixunitaire", parseInt(e.target.value) || 0)
-                                            }
-                                            style={{ fontSize: '13px', textAlign: 'right' }}
+                                            size="sm"
+                                            type="date"
+                                            value={l.DATE}
+                                            onChange={(e) => onChangeField(l.IDLignePrestation, "DATE", e.target.value)}
+                                            style={{ fontSize: '13px' }}
                                             disabled={!isEditable}
                                             title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
                                         />
-                                    </InputGroup>
-                                </td>
+                                    </td>
 
-                                {/* PrixTotal */}
-                                <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '8px', fontSize: '13px' }}>
-                                    {Math.round(Number(l.PrixTotal || 0)).toLocaleString('fr-FR')}
-                                </td>
+                                    {/* Acte */}
+                                    <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                        {isEditable ? (
+                                            <ActeSelect
+                                                actes={actes}
+                                                selectedId={l.IDACTE || ""}
+                                                onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
+                                            />
+                                        ) : (
+                                            <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">
+                                                {l.Acte}
+                                            </div>
+                                        )}
+                                    </td>
 
-                                {/* Exclusion */}
-                                <td style={{ padding: '4px' }}>
-                                    <Form.Select
-                                        size="sm"
-                                        value={l.Exclusion}
-                                        onChange={(e) =>
-                                            onFieldChangeAndRecalc(
-                                                l.IDLignePrestation,
-                                                "Exclusion",
-                                                e.target.value === "Accepter" ? "Accepter" : "Refuser"
-                                            )
-                                        }
-                                        style={{ fontSize: '13px' }}
-                                        disabled={!isEditable}
-                                        title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
-                                    >
-                                        <option value="Accepter">✓Accepter</option>
-                                        <option value="Refuser">✗Refuser</option>
-                                    </Form.Select>
-                                </td>
+                                    {/* Coefficient */}
+                                    <td style={{ padding: '4px' }}>
+                                        <Form.Control
+                                            size="sm"
+                                            type="number"
+                                            step="1"
+                                            value={l.Coefficient}
+                                            onChange={(e) =>
+                                                onFieldChangeAndRecalc(l.IDLignePrestation, "Coefficient", parseInt(e.target.value) || 0)
+                                            }
+                                            style={{ fontSize: '13px', textAlign: 'center' }}
+                                            disabled={!isEditable}
+                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                        />
+                                    </td>
 
-                                {/* Action */}
-                                <td style={{ textAlign: 'center', padding: '4px' }}>
-                                    <Button 
-                                        variant="outline-danger" 
-                                        size="sm" 
-                                        onClick={() => removeLigne(l.IDLignePrestation)}
-                                        style={{ padding: '4px 8px', border: 'none' }}
-                                        title={!isEditable ? "Acte déjà facturé - suppression impossible" : "Supprimer cette ligne"}
-                                        disabled={!isEditable}
-                                    >
-                                        🗑️
-                                    </Button>
-                                </td>
-                            </tr>
+                                    {/* QtéP */}
+                                    <td style={{ padding: '4px' }}>
+                                        <Form.Control
+                                            size="sm"
+                                            type="number"
+                                            step="1"
+                                            value={l.QteP}
+                                            onChange={(e) =>
+                                                onFieldChangeAndRecalc(l.IDLignePrestation, "QteP", parseInt(e.target.value) || 0)
+                                            }
+                                            style={{ fontSize: '13px', textAlign: 'center' }}
+                                            disabled={!isEditable}
+                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                        />
+                                    </td>
+
+                                    {/* Prixunitaire */}
+                                    <td style={{ padding: '4px' }}>
+                                        <InputGroup size="sm">
+                                            <Form.Control
+                                                type="number"
+                                                step="1"
+                                                value={l.Prixunitaire}
+                                                onChange={(e) =>
+                                                    onFieldChangeAndRecalc(l.IDLignePrestation, "Prixunitaire", parseInt(e.target.value) || 0)
+                                                }
+                                                style={{ fontSize: '13px', textAlign: 'right' }}
+                                                disabled={!isEditable}
+                                                title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                            />
+                                        </InputGroup>
+                                    </td>
+
+                                    {/* PrixTotal */}
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '8px', fontSize: '13px' }}>
+                                        {Math.round(Number(l.PrixTotal || 0)).toLocaleString('fr-FR')}
+                                    </td>
+
+                                    {/* Exclusion */}
+                                    <td style={{ padding: '4px' }}>
+                                        <Form.Select
+                                            size="sm"
+                                            value={l.Exclusion}
+                                            onChange={(e) =>
+                                                onFieldChangeAndRecalc(
+                                                    l.IDLignePrestation,
+                                                    "Exclusion",
+                                                    e.target.value === "Accepter" ? "Accepter" : "Refuser"
+                                                )
+                                            }
+                                            style={{ fontSize: '13px' }}
+                                            disabled={!isEditable}
+                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                        >
+                                            <option value="Accepter">✓Accepter</option>
+                                            <option value="Refuser">✗Refuser</option>
+                                        </Form.Select>
+                                    </td>
+
+                                    {/* Action */}
+                                    <td style={{ textAlign: 'center', padding: '4px' }}>
+                                        <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={() => removeLigne(l.IDLignePrestation)}
+                                            style={{ padding: '4px 8px', border: 'none' }}
+                                            title={!isEditable ? "Acte déjà facturé - suppression impossible" : "Supprimer cette ligne"}
+                                            disabled={!isEditable}
+                                        >
+                                            🗑️
+                                        </Button>
+                                    </td>
+                                </tr>
                             );
                         })}
                     </tbody>

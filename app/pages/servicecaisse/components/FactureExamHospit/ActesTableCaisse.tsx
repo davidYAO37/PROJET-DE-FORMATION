@@ -87,13 +87,13 @@ function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
     const inputRef = useRef<HTMLInputElement>(null);
     const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
 
-    // Filtrer les actes selon la recherche
-    const filteredActes = searchTerm
+    // Filtrer les actes selon la recherche (limiter à 50 résultats pour la performance INP)
+    const filteredActes = (searchTerm
         ? actes.filter(a =>
             a.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             a.LettreCle?.toLowerCase().includes(searchTerm.toLowerCase())
         )
-        : actes;
+        : actes).slice(0, 50);
 
     // Calculer la position du dropdown
     useEffect(() => {
@@ -693,7 +693,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
 
                 if (ligne.TARIF_ASSURANCE === 0) {
                     // TARIF_ASSURANCE non paramétré
-                    ligne.PartAssurance = (saiTaux * ligne.Prixunitaire * ligne.Coefficient * ligne.QteP) / 100;
+                    ligne.PartAssurance = Math.round((saiTaux * ligne.Prixunitaire * ligne.Coefficient * ligne.QteP) / 100);
                     ligne.PartAssure = ligne.PrixTotal - ligne.PartAssurance;
                     ligne.Reliquat = 0;
                     ligne.Coef_ASSUR = 0;
@@ -701,7 +701,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     ligne.TotalRelicatCoefAssur = 0;
                 } else {
                     ligne.PartAssurance =
-                        (saiTaux * ligne.TARIF_ASSURANCE * ligne.COEFFICIENT_ASSURANCE * ligne.QteP) / 100;
+                        Math.round((saiTaux * ligne.TARIF_ASSURANCE * ligne.COEFFICIENT_ASSURANCE * ligne.QteP) / 100);
                     ligne.PartAssure =
                         ligne.TARIF_ASSURANCE * ligne.COEFFICIENT_ASSURANCE * ligne.QteP - ligne.PartAssurance;
                     ligne.Reliquat = ligne.SURPLUS * ligne.COEFFICIENT_ASSURANCE * ligne.QteP;
