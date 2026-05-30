@@ -262,7 +262,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           })
           .map((ligne: any) => ligne.prestation);
 
-        console.log('🔬 Examens paracliniques trouvés:', examens);
+        // console.log('🔬 Examens paracliniques trouvés:', examens);
         setExamensParacliniques(examens);
 
         // Mettre à jour le formulaire avec les examens trouvés
@@ -302,14 +302,13 @@ export default function FichePrescriptionMedecinAsaisie() {
           .filter((prescription: any) => prescription.nomMedicament) // Filtrer les médicaments
           .map((prescription: any) => {
             const details = [];
-            if (prescription.posologie) details.push(`Posologie: ${prescription.posologie}`);
             if (prescription.QteP) details.push(`Quantité: ${prescription.QteP}`);
+            if (prescription.posologie) details.push(`Posologie: ${prescription.posologie}`);
+
             if (prescription.prixUnitaire) details.push(`Prix: ${prescription.prixUnitaire}`);
 
             return `${prescription.nomMedicament}${details.length > 0 ? ' - ' + details.join(', ') : ''}`;
           });
-
-        console.log('📊 Médicaments trouvés:', medicaments);
         setTraitementsCliniques(medicaments);
 
         // Mettre à jour le formulaire avec les traitements trouvés
@@ -1670,7 +1669,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                         onClick={() => setShowPharmacieModal(true)}
                       >
                         <i className="bi bi-plus-circle me-1"></i>
-                        Ajouter
+                        Ajouter médicament
                       </Button>
                     </div>
                     <div className="bg-light rounded-3 p-3 border border-success border-opacity-25">
@@ -1725,7 +1724,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                         onClick={() => setShowExamenModal(true)}
                       >
                         <i className="bi bi-plus-circle me-1"></i>
-                        Ajouter
+                        Ajouter actes, examens...
                       </Button>
                     </div>
                     <div className="bg-light rounded-3 p-3 border border-info border-opacity-25">
@@ -1777,7 +1776,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                         onClick={() => setShowAvisHospitModal(true)}
                       >
                         <i className="bi bi-plus-circle me-1"></i>
-                        Ajouter
+                        Ajouter un avis d'hospitalisation
                       </Button>
                     </div>
                     <div className="bg-light rounded-3 p-3 border border-danger border-opacity-25">

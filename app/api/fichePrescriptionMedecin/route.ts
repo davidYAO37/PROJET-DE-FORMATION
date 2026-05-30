@@ -190,7 +190,7 @@ export async function POST(request: NextRequest) {
     // Mettre à jour la consultation si des données sont fournies
     if (Object.keys(updateData).length > 0) {
       await Consultation.findByIdAndUpdate(
-        consultationId,
+        consultation._id,
         updateData,
         { new: true, runValidators: true }
       );

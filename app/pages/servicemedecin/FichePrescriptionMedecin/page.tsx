@@ -1662,31 +1662,7 @@ export default function FichePrescriptionMedecin() {
                         Traitements et examens
                       </small>
                     </div>
-                  </div>
-                  <div className="d-flex align-items-center">
-                    <Button
-                      variant="light"
-                      size="sm"
-                      onClick={() => setShowPrintModal(true)}
-                      className="rounded-pill px-3 me-2"
-                      disabled={!patient && !consultation}
-                      title="Imprimer la fiche de prescription"
-                    >
-                      <i className="bi bi-printer me-1"></i>
-                      Imprimer
-                    </Button>
-                    <Button
-                      variant="warning"
-                      size="sm"
-                      onClick={() => setShowEtatMetierModal(true)}
-                      className="rounded-pill px-3"
-                      disabled={!patient && !consultation}
-                      title="Imprimer l'état métier complet"
-                    >
-                      <i className="bi bi-file-earmark-medical me-1"></i>
-                      État Métier
-                    </Button>
-                  </div>
+                  </div>                  
                 </Card.Header>
                 <Card.Body className="p-3">
                   {/* Section Traitements Médicamenteux */}
@@ -1730,7 +1706,7 @@ export default function FichePrescriptionMedecin() {
                         onClick={() => setShowPharmacieModal(true)}
                       >
                         <i className="bi bi-plus-circle me-1"></i>
-                        Ajouter
+                        Ajouter Médicament
                       </Button>
                     </div>
                     <div className="bg-light rounded-3 p-3 border border-success border-opacity-25">
@@ -1798,7 +1774,7 @@ export default function FichePrescriptionMedecin() {
                         onClick={() => setShowExamenModal(true)}
                       >
                         <i className="bi bi-plus-circle me-1"></i>
-                        Ajouter
+                        Ajouter acte, examens ...
                       </Button>
                     </div>
                     <div className="bg-light rounded-3 p-3 border border-info border-opacity-25">
@@ -1857,7 +1833,7 @@ export default function FichePrescriptionMedecin() {
                         onClick={() => setShowAvisHospitModal(true)}
                       >
                         <i className="bi bi-plus-circle me-1"></i>
-                        Ajouter
+                        Ajouter un avis d'hospitalisation
                       </Button>
                     </div>
                     <div className="bg-light rounded-3 p-3 border border-danger border-opacity-25">
