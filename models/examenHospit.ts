@@ -90,6 +90,8 @@ export interface IExamenHospitalisation extends Omit<Document, '_id'> {
     SOCIETE_PATIENT?: string;
     statutPrescriptionMedecin?: number;
     entrepriseId?: string;
+    resultatSaisiePar?: string;
+    dateSaisieResultat?: Date;
 }
 
 const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
@@ -181,6 +183,8 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
         statutPrescriptionMedecin: { type: Number },
         entrepriseId: { type: String },
+        resultatSaisiePar: { type: String, maxlength: 60 },
+        dateSaisieResultat: { type: Date },
     },
     { timestamps: true }
 );

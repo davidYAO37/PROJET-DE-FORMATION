@@ -1,7 +1,6 @@
 "use client";
 
 import { defaultFormData, ExamenHospitalisationForm } from "@/types/examenHospitalisation";
-import { type } from "os";
 import { useEffect, useState } from "react";
 import { Card, Form } from "react-bootstrap";
 
@@ -63,7 +62,7 @@ export default function PatientInfo({ formData, setFormData, onCodePrestationCha
                     patientId: data.patient._id || prev.patientId,
                     Assure: data.Assure || data.assure || prev.Assure,
                     medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
-                    renseignementclinique: data.designationC || prev.renseignementclinique,
+                    Rclinique: data.Rclinique || prev.Rclinique,
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
                     assurance: {
                         assuranceId: data.idAssurance || prev.assurance.assuranceId,

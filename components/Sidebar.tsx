@@ -268,7 +268,7 @@ export default function Sidebar() {
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link
-                    href="/biologiste/examens"
+                    href="/pages/servicebiologiste/tbiologiste"
                     className="sidebar-link-medical d-flex align-items-center"
                   >
                     <i className="bi bi-clipboard2-pulse me-2 text-info"></i>{" "}
@@ -291,7 +291,7 @@ export default function Sidebar() {
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link
-                    href="/labo/prelevements"
+                    href="/pages/servicelaboratoire/tlaboratoire"
                     className="sidebar-link-medical d-flex align-items-center"
                   >
                     <i className="bi bi-droplet me-2 text-primary"></i> Gestion
@@ -376,6 +376,15 @@ export default function Sidebar() {
                         >
                           <i className="bi bi-stethoscope me-2 text-success"></i>{" "}
                           Gestion Actes Cliniques
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/dashboard/parametres/SocietePartenaire"
+                          className="sidebar-link-medical d-flex align-items-center"
+                        >
+                          <i className="bi bi-people-fill me-2 text-primary"></i>{" "}
+                          Gestion Sociétés Partenaires
                         </Link>
                       </li>
                       <li>
@@ -539,7 +548,7 @@ export default function Sidebar() {
                         </Link>
                       </li>
 
-                      
+
                       <li>
                         <Link
                           href="/dashboard/parametres/acteBiologie"
@@ -566,7 +575,7 @@ export default function Sidebar() {
                           <i className="bi bi-clipboard-pulse me-2 text-danger"></i>{" "}
                           Acte Biochimie
                         </Link>
-                      </li>                    
+                      </li>
                     </ul>
                   </Accordion.Body>
                 </Accordion.Item>
@@ -580,7 +589,7 @@ export default function Sidebar() {
                       Gestion entreprise
                     </Link>
                   </li>
-                  
+
                 )}
               </ul>
             </Accordion.Body>

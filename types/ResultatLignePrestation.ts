@@ -1,9 +1,9 @@
 export interface ResultatLignePrestation {
     ParamAbrege?: string;
     Param_designation?: string;
-    PlageMin?: number;
-    PlageMax?: number;
     ValeurNormale?: string;
+    ValeurMinNormale?: number;
+    ValeurMaxNormale?: number;
     ChampResultat?: string;
     IDPARAM_LABO?: string;
     IDLIGNE_PRESTATION?: string;

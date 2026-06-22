@@ -36,7 +36,7 @@ export default function HospitalisationPageMedecin() {
     useEffect(() => {
         const nom = localStorage.getItem("nom_utilisateur");
         if (nom) setRecuPar(nom);
-        
+
         // Récupérer le codePrestation depuis le localStorage (défini par FichePrescriptionMedecin)
         const codePrestationFromConsultation = localStorage.getItem('codePrestationConsultation');
         if (codePrestationFromConsultation) {
@@ -259,7 +259,7 @@ export default function HospitalisationPageMedecin() {
                             setResetKey((k) => k + 1);
                         }}
                     />
-                                    </Col>
+                </Col>
 
                 <Col md={9}>
                     <Form>
@@ -316,7 +316,7 @@ export default function HospitalisationPageMedecin() {
                                                         medecinId: data.NummedecinExécutant || prev.medecinId,
                                                         medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
                                                         // Renseignement clinique
-                                                        renseignementclinique: data.Rclinique || prev.renseignementclinique,
+                                                        Rclinique: data.Rclinique || prev.Rclinique,
                                                         // Société patient
                                                         societePatient: data.SOCIETE_PATIENT || prev.societePatient,
                                                         // Dates
@@ -406,7 +406,7 @@ export default function HospitalisationPageMedecin() {
                                                         Partassure: 0,
                                                         surplus: 0,
                                                         resteAPayer: 0,
-                                                        renseignementclinique: "",
+                                                        Rclinique: "",
                                                         // Garder AssuranceInfo (déjà chargé depuis la consultation)
                                                         // Garder dateEntree et dateSortie (déjà initialisés à aujourd'hui)
                                                     }));
@@ -441,7 +441,7 @@ export default function HospitalisationPageMedecin() {
                                                     Partassure: 0,
                                                     surplus: 0,
                                                     resteAPayer: 0,
-                                                    renseignementclinique: "",
+                                                    Rclinique: "",
                                                 }));
                                             }
                                         } catch (error) {
@@ -561,7 +561,7 @@ export default function HospitalisationPageMedecin() {
                             const header = {
                                 _id: modeModification ? examenHospitId : undefined,
                                 CodePrestation: CodePrestation || formData.patientId, // fallback si besoin
-                                Rclinique: formData.renseignementclinique,
+                                Rclinique: formData.Rclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
                                 Assurance: formData.assurance?.designationassurance || "",
                                 Souscripteur: formData.assurance.adherent || "",

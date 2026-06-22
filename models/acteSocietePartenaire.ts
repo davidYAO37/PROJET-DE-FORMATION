@@ -8,6 +8,7 @@ export interface IActeSocietePartenaire extends Document {
     CoefficientActe?: number;
     PrixTotal?: number;
     IDFAMILLE_ACTE_BIOLOGIE?: Types.ObjectId;
+    OrdonnacementAffichage?: number;
 }
 
 const ActeSocietePartenaireSchema = new Schema<IActeSocietePartenaire>({
@@ -18,6 +19,7 @@ const ActeSocietePartenaireSchema = new Schema<IActeSocietePartenaire>({
     CoefficientActe: { type: Number },
     PrixTotal: { type: Number },
     IDFAMILLE_ACTE_BIOLOGIE: { type: Schema.Types.ObjectId, ref: 'FamilleActe' },
+    OrdonnacementAffichage: { type: Number },
 }, { timestamps: true });
 
 export const ActeSocietePartenaire: Model<IActeSocietePartenaire> = mongoose.models.ActeSocietePartenaire || mongoose.model<IActeSocietePartenaire>('ActeSocietePartenaire', ActeSocietePartenaireSchema);

@@ -61,7 +61,7 @@ export type ExamenHospitalisationForm = {
     partAssurance: number;
     Partassure: number;
     surplus: number;
-    renseignementclinique: string;
+    Rclinique: string;
     societePatient: string;
     CodePrestation: string
     Designationtypeacte: string
@@ -109,7 +109,7 @@ export const defaultFormData: ExamenHospitalisationForm = {
     typeacte: "",
     Assure: "NON ASSURE",
     medecinPrescripteur: "",
-    renseignementclinique: "",
+    Rclinique: "",
     societePatient: "",
     assurance: {
         assuranceId: "",

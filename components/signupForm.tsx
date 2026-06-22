@@ -48,24 +48,24 @@ const SignupForm = () => {
       console.log("🔄 fetchUsers appelé");
       console.log("🏢 entrepriseId actuel:", entrepriseId);
       console.log("💾 localStorage IdEntreprise:", localStorage.getItem('IdEntreprise'));
-      
+
       const response = await axios.get("/api/check-users");
       const allUsers = response.data.users || [];
-      
+
       console.log("📥 Utilisateurs reçus de l'API:", allUsers.length);
-      
+
       // SignupForm: Filtrer les utilisateurs par entrepriseId depuis localStorage
       // Seuls les utilisateurs avec le même entrepriseId sont affichés
-      const filteredUsers = entrepriseId 
+      const filteredUsers = entrepriseId
         ? allUsers.filter((user: any) => {
-            const match = user.entrepriseId === entrepriseId;
-            console.log(`👤 ${user.nom} (${user.entrepriseId}) === ${entrepriseId} ? ${match}`);
-            return match;
-          })
+          const match = user.entrepriseId === entrepriseId;
+          console.log(`👤 ${user.nom} (${user.entrepriseId}) === ${entrepriseId} ? ${match}`);
+          return match;
+        })
         : allUsers; // Si pas d'entrepriseId, afficher tous les utilisateurs
-      
+
       console.log("✅ Utilisateurs filtrés:", filteredUsers.length);
-      
+
       setUsers(filteredUsers);
       setCurrentPage(1); // Reset to first page when fetching new data
     } catch (error) {
@@ -77,7 +77,7 @@ const SignupForm = () => {
   };
 
   // Filtrer les utilisateurs selon le terme de recherche
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -108,7 +108,7 @@ const SignupForm = () => {
       setDeleteMessage("❌ Impossible de supprimer : ID utilisateur invalide");
       return;
     }
-    
+
     setDeletingUser(user);
     setDeleteMessage("");
     setShowDeleteModal(true);
@@ -137,7 +137,7 @@ const SignupForm = () => {
         setDeleteMessage("✅ Utilisateur supprimé avec succès !");
         // Mettre à jour la liste des utilisateurs
         setUsers(users.filter(user => user._id !== deletingUser._id));
-        
+
         // Fermer la modal après un délai
         setTimeout(() => {
           setShowDeleteModal(false);
@@ -175,19 +175,19 @@ const SignupForm = () => {
     setUnlockMessage("Déblocage en cours...");
 
     try {
-      const response = await axios.post("/api/unlock-user", { 
-        email: unlockingUser.email 
+      const response = await axios.post("/api/unlock-user", {
+        email: unlockingUser.email
       });
 
       if (response.status === 200) {
         setUnlockMessage("✅ Compte débloqué avec succès !");
         // Mettre à jour la liste des utilisateurs
-        setUsers(users.map(user => 
-          user._id === unlockingUser._id 
+        setUsers(users.map(user =>
+          user._id === unlockingUser._id
             ? { ...user, isLocked: false, failedAttempts: 0, remainingAttempts: 4 }
             : user
         ));
-        
+
         // Fermer la modal après un délai
         setTimeout(() => {
           setShowUnlockModal(false);
@@ -220,9 +220,9 @@ const SignupForm = () => {
       }
 
       // Création utilisateur via API locale
-      const response = await axios.post("/api/new-users", { 
-        ...form, 
-        password: password 
+      const response = await axios.post("/api/new-users", {
+        ...form,
+        password: password
       });
 
       if (response.status === 201) {
@@ -268,8 +268,8 @@ const SignupForm = () => {
                 </small>
               )} */}
             </div>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={() => setShowNewUserModal(true)}
               className="d-flex align-items-center"
             >
@@ -281,8 +281,8 @@ const SignupForm = () => {
       </div>
 
       {/* Modal Nouveau compte */}
-      <Modal 
-        show={showNewUserModal} 
+      <Modal
+        show={showNewUserModal}
         onHide={() => setShowNewUserModal(false)}
         centered
         size="lg"
@@ -295,63 +295,63 @@ const SignupForm = () => {
         </Modal.Header>
         <Modal.Body>
           {message && <div className="alert alert-info">{message}</div>}
-          
+
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label">Nom</label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  name="nom" 
-                  placeholder="Nom" 
-                  value={form.nom} 
-                  onChange={handleChange} 
-                  required 
+                <input
+                  type="text"
+                  className="form-control"
+                  name="nom"
+                  placeholder="Nom"
+                  value={form.nom}
+                  onChange={handleChange}
+                  required
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Prénom</label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  name="prenom" 
-                  placeholder="Prénom" 
-                  value={form.prenom} 
-                  onChange={handleChange} 
-                  required 
+                <input
+                  type="text"
+                  className="form-control"
+                  name="prenom"
+                  placeholder="Prénom"
+                  value={form.prenom}
+                  onChange={handleChange}
+                  required
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Email</label>
-                <input 
-                  type="email" 
-                  className="form-control" 
-                  name="email" 
-                  placeholder="Email" 
-                  value={form.email} 
-                  onChange={handleChange} 
-                  required 
+                <input
+                  type="email"
+                  className="form-control"
+                  name="email"
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Mot de passe</label>
-                <input 
-                  type="password" 
-                  className="form-control" 
-                  placeholder="Mot de passe" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
+                <input
+                  type="password"
+                  className="form-control"
+                  placeholder="Mot de passe"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
               </div>
               <div className="col-12">
                 <label className="form-label">Rôle</label>
-                <select 
-                  className="form-select" 
-                  name="type" 
-                  value={form.type} 
-                  onChange={handleChange} 
+                <select
+                  className="form-select"
+                  name="type"
+                  value={form.type}
+                  onChange={handleChange}
                   required
                 >
                   <option value="">Sélectionnez un rôle</option>
@@ -379,9 +379,9 @@ const SignupForm = () => {
             </div>
 
             <div className="d-flex justify-content-end gap-2 mt-4">
-              <Button 
-                type="button" 
-                variant="secondary" 
+              <Button
+                type="button"
+                variant="secondary"
                 onClick={() => setShowNewUserModal(false)}
               >
                 Annuler
@@ -401,8 +401,8 @@ const SignupForm = () => {
           <div className="rounded bg-light p-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="mb-0">Utilisateurs existants</h5>
-              <button 
-                className="btn btn-sm btn-outline-primary" 
+              <button
+                className="btn btn-sm btn-outline-primary"
                 onClick={fetchUsers}
                 disabled={loadingUsers}
               >
@@ -434,8 +434,8 @@ const SignupForm = () => {
                   onChange={handleSearchChange}
                 />
                 {searchTerm && (
-                  <button 
-                    className="btn btn-outline-secondary" 
+                  <button
+                    className="btn btn-outline-secondary"
                     type="button"
                     onClick={() => {
                       setSearchTerm("");
@@ -507,12 +507,12 @@ const SignupForm = () => {
                         <td>
                           <div className="btn-group" role="group">
                             {user.isLocked && (
-                              <button 
+                              <button
                                 className="btn btn-sm btn-outline-success me-1"
                                 onClick={() => handleUnlockUser(user)}
                                 title="Débloquer l'utilisateur"
                                 disabled={!user._id || user._id === "undefined"}
-                                style={{ 
+                                style={{
                                   opacity: (!user._id || user._id === "undefined") ? 0.5 : 1,
                                   cursor: (!user._id || user._id === "undefined") ? 'not-allowed' : 'pointer'
                                 }}
@@ -520,12 +520,12 @@ const SignupForm = () => {
                                 <i className="bi bi-unlock"></i>
                               </button>
                             )}
-                            <button 
+                            <button
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => handleDeleteUser(user)}
                               title="Supprimer l'utilisateur"
                               disabled={!user._id || user._id === "undefined"}
-                              style={{ 
+                              style={{
                                 opacity: (!user._id || user._id === "undefined") ? 0.5 : 1,
                                 cursor: (!user._id || user._id === "undefined") ? 'not-allowed' : 'pointer'
                               }}
@@ -552,24 +552,24 @@ const SignupForm = () => {
                 <nav>
                   <ul className="pagination pagination-sm mb-0">
                     <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                      <button 
-                        className="page-link" 
+                      <button
+                        className="page-link"
                         onClick={() => paginate(currentPage - 1)}
                         disabled={currentPage === 1}
                       >
                         <i className="bi bi-chevron-left"></i>
                       </button>
                     </li>
-                    
+
                     {[...Array(totalPages)].map((_, index) => {
                       const pageNumber = index + 1;
                       return (
-                        <li 
-                          key={pageNumber} 
+                        <li
+                          key={pageNumber}
                           className={`page-item ${currentPage === pageNumber ? 'active' : ''}`}
                         >
-                          <button 
-                            className="page-link" 
+                          <button
+                            className="page-link"
                             onClick={() => paginate(pageNumber)}
                           >
                             {pageNumber}
@@ -577,10 +577,10 @@ const SignupForm = () => {
                         </li>
                       );
                     })}
-                    
+
                     <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                      <button 
-                        className="page-link" 
+                      <button
+                        className="page-link"
                         onClick={() => paginate(currentPage + 1)}
                         disabled={currentPage === totalPages}
                       >
@@ -625,157 +625,157 @@ const SignupForm = () => {
             </div>
           </div>
 
-            {/* Modal de suppression */}
-            <Modal 
-              show={showDeleteModal} 
-              onHide={handleCancelDelete}
-              centered
-            >
-              <Modal.Header closeButton>
-                <Modal.Title>
-                  <i className="bi bi-exclamation-triangle text-danger me-2"></i>
-                  Confirmer la suppression
-                </Modal.Title>
-              </Modal.Header>
-              <Modal.Body>
-                {deleteMessage && (
-                  <div className={`alert ${deleteMessage.includes('✅') ? 'alert-success' : 'alert-info'} mb-3`}>
-                    {deleteMessage}
+          {/* Modal de suppression */}
+          <Modal
+            show={showDeleteModal}
+            onHide={handleCancelDelete}
+            centered
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>
+                <i className="bi bi-exclamation-triangle text-danger me-2"></i>
+                Confirmer la suppression
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {deleteMessage && (
+                <div className={`alert ${deleteMessage.includes('✅') ? 'alert-success' : 'alert-info'} mb-3`}>
+                  {deleteMessage}
+                </div>
+              )}
+
+              {!deleteMessage.includes('✅') && (
+                <>
+                  <div className="alert alert-warning d-flex align-items-center">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>
+                      <strong>Attention!</strong> Cette action est irréversible.
+                    </div>
                   </div>
-                )}
 
-                {!deleteMessage.includes('✅') && (
-                  <>
-                    <div className="alert alert-warning d-flex align-items-center">
-                      <i className="bi bi-exclamation-triangle-fill me-2"></i>
-                      <div>
-                        <strong>Attention!</strong> Cette action est irréversible.
-                      </div>
-                    </div>
+                  <p className="mb-3">
+                    Êtes-vous sûr de vouloir supprimer l'utilisateur :
+                  </p>
 
-                    <p className="mb-3">
-                      Êtes-vous sûr de vouloir supprimer l'utilisateur :
-                    </p>
+                  <div className="bg-light p-3 rounded mb-3">
+                    <strong>{deletingUser?.nom} {deletingUser?.prenom}</strong><br />
+                    <small className="text-muted">{deletingUser?.email}</small><br />
+                    <span className="badge bg-primary">{deletingUser?.type}</span>
+                  </div>
 
-                    <div className="bg-light p-3 rounded mb-3">
-                      <strong>{deletingUser?.nom} {deletingUser?.prenom}</strong><br/>
-                      <small className="text-muted">{deletingUser?.email}</small><br/>
-                      <span className="badge bg-primary">{deletingUser?.type}</span>
-                    </div>
-
-                    <p className="text-muted small mb-0">
-                      Toutes les données associées à cet utilisateur seront définitivement perdues.
-                    </p>
-                  </>
-                )}
-              </Modal.Body>
-              <Modal.Footer>
-                {!deleteMessage.includes('✅') ? (
-                  <>
-                    <Button 
-                      variant="secondary"
-                      onClick={handleCancelDelete}
-                    >
-                      Annuler
-                    </Button>
-                    <Button 
-                      variant="danger"
-                      onClick={handleConfirmDelete}
-                    >
-                      <i className="bi bi-trash me-1"></i>
-                      Supprimer
-                    </Button>
-                  </>
-                ) : (
-                  <Button 
-                    variant="success"
+                  <p className="text-muted small mb-0">
+                    Toutes les données associées à cet utilisateur seront définitivement perdues.
+                  </p>
+                </>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              {!deleteMessage.includes('✅') ? (
+                <>
+                  <Button
+                    variant="secondary"
                     onClick={handleCancelDelete}
                   >
-                    <i className="bi bi-check me-1"></i>
-                    OK
+                    Annuler
                   </Button>
-                )}
-              </Modal.Footer>
-            </Modal>
+                  <Button
+                    variant="danger"
+                    onClick={handleConfirmDelete}
+                  >
+                    <i className="bi bi-trash me-1"></i>
+                    Supprimer
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="success"
+                  onClick={handleCancelDelete}
+                >
+                  <i className="bi bi-check me-1"></i>
+                  OK
+                </Button>
+              )}
+            </Modal.Footer>
+          </Modal>
 
-            {/* Modal de déblocage */}
-            <Modal 
-              show={showUnlockModal} 
-              onHide={handleCancelUnlock}
-              centered
-            >
-              <Modal.Header closeButton>
-                <Modal.Title>
-                  <i className="bi bi-unlock text-success me-2"></i>
-                  Débloquer le compte utilisateur
-                </Modal.Title>
-              </Modal.Header>
-              <Modal.Body>
-                {unlockMessage && (
-                  <div className={`alert ${unlockMessage.includes('✅') ? 'alert-success' : 'alert-info'} mb-3`}>
-                    {unlockMessage}
+          {/* Modal de déblocage */}
+          <Modal
+            show={showUnlockModal}
+            onHide={handleCancelUnlock}
+            centered
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>
+                <i className="bi bi-unlock text-success me-2"></i>
+                Débloquer le compte utilisateur
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {unlockMessage && (
+                <div className={`alert ${unlockMessage.includes('✅') ? 'alert-success' : 'alert-info'} mb-3`}>
+                  {unlockMessage}
+                </div>
+              )}
+
+              {!unlockMessage.includes('✅') && (
+                <>
+                  <div className="alert alert-info d-flex align-items-center">
+                    <i className="bi bi-info-circle-fill me-2"></i>
+                    <div>
+                      <strong>Déblocage du compte</strong> : Cette action réinitialisera les tentatives de connexion.
+                    </div>
                   </div>
-                )}
 
-                {!unlockMessage.includes('✅') && (
-                  <>
-                    <div className="alert alert-info d-flex align-items-center">
-                      <i className="bi bi-info-circle-fill me-2"></i>
-                      <div>
-                        <strong>Déblocage du compte</strong> : Cette action réinitialisera les tentatives de connexion.
-                      </div>
-                    </div>
+                  <p className="mb-3">
+                    Êtes-vous sûr de vouloir débloquer le compte de :
+                  </p>
 
-                    <p className="mb-3">
-                      Êtes-vous sûr de vouloir débloquer le compte de :
-                    </p>
+                  <div className="bg-light p-3 rounded mb-3">
+                    <strong>{unlockingUser?.nom} {unlockingUser?.prenom}</strong><br />
+                    <small className="text-muted">{unlockingUser?.email}</small><br />
+                    <span className="badge bg-primary">{unlockingUser?.type}</span><br />
+                    {unlockingUser?.entrepriseId && (
+                      <small className="text-muted">Entreprise: {unlockingUser.entrepriseId}</small>
+                    )}
+                  </div>
 
-                    <div className="bg-light p-3 rounded mb-3">
-                      <strong>{unlockingUser?.nom} {unlockingUser?.prenom}</strong><br/>
-                      <small className="text-muted">{unlockingUser?.email}</small><br/>
-                      <span className="badge bg-primary">{unlockingUser?.type}</span><br/>
-                      {unlockingUser?.entrepriseId && (
-                        <small className="text-muted">Entreprise: {unlockingUser.entrepriseId}</small>
-                      )}
-                    </div>
-
-                    <p className="text-muted small mb-0">
-                      L'utilisateur pourra à nouveau se connecter avec 4 tentatives disponibles.
-                    </p>
-                  </>
-                )}
-              </Modal.Body>
-              <Modal.Footer>
-                {!unlockMessage.includes('✅') ? (
-                  <>
-                    <Button 
-                      variant="secondary"
-                      onClick={handleCancelUnlock}
-                    >
-                      Annuler
-                    </Button>
-                    <Button 
-                      variant="success"
-                      onClick={handleConfirmUnlock}
-                    >
-                      <i className="bi bi-unlock me-1"></i>
-                      Débloquer
-                    </Button>
-                  </>
-                ) : (
-                  <Button 
-                    variant="success"
+                  <p className="text-muted small mb-0">
+                    L'utilisateur pourra à nouveau se connecter avec 4 tentatives disponibles.
+                  </p>
+                </>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              {!unlockMessage.includes('✅') ? (
+                <>
+                  <Button
+                    variant="secondary"
                     onClick={handleCancelUnlock}
                   >
-                    <i className="bi bi-check me-1"></i>
-                    OK
+                    Annuler
                   </Button>
-                )}
-              </Modal.Footer>
-            </Modal>
-          </div>
+                  <Button
+                    variant="success"
+                    onClick={handleConfirmUnlock}
+                  >
+                    <i className="bi bi-unlock me-1"></i>
+                    Débloquer
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="success"
+                  onClick={handleCancelUnlock}
+                >
+                  <i className="bi bi-check me-1"></i>
+                  OK
+                </Button>
+              )}
+            </Modal.Footer>
+          </Modal>
         </div>
       </div>
+    </div>
   );
 };
 

@@ -20,7 +20,7 @@ export default function ConnexionPage() {
     setMessage('');
     setIsLocked(false);
     setRemainingAttempts(null);
-    
+
     try {
       // Connexion avec API locale
       const res = await axios.post('/api/login', {
@@ -58,7 +58,8 @@ export default function ConnexionPage() {
           else if (profil?.type === 'infirmier') router.push('/pages/serviceinfirmier/tinfirmier');
           else if (profil?.type === 'pharmacien') router.push('/pages/servicepharmacie/tpharmacie');
           else if (profil?.type === 'radiologue') router.push('/pages/serviceradio/tradio');
-          else if (profil?.type === 'technicienlabo') router.push('/pages/servicelaboratoire/tlabo');
+          else if (profil?.type === 'biologiste') router.push('/pages/servicebiologiste/tbiologiste');
+          else if (profil?.type === 'technicienlabo') router.push('/pages/servicelaboratoire/tlaboratoire');
           else if (profil?.type === 'caisse') router.push('/pages/servicecaisse/tcaisse');
           else if (profil?.type === 'comptable') router.push('/pages/servicecomptable/tcomptable');
           else if (profil?.type === 'accueil') router.push('/pages/serviceaccueil/tpatient');
@@ -70,7 +71,7 @@ export default function ConnexionPage() {
       }
     } catch (error: any) {
       console.error(error);
-      
+
       if (error.response?.status === 423) {
         // Compte bloqué
         setIsLocked(true);
@@ -106,7 +107,7 @@ export default function ConnexionPage() {
           <Card className="p-4 shadow-lg border-0 bg-white bg-opacity-75">
             <Card.Body>
               <h2 className="text-center text-success mb-4">Connexion à votre espace santé</h2>
-              
+
               {/* Messages d'information */}
               {message && (
                 <div className={`alert alert-${messageType} d-flex align-items-center mb-4`}>
@@ -178,10 +179,10 @@ export default function ConnexionPage() {
                   )}
                 </Button>
                 {/* BOUTON RETOUR DASHBOARD */}
-                <Button variant="secondary" className="w-100 mt-3" onClick={() => router.push ('/')}>
+                <Button variant="secondary" className="w-100 mt-3" onClick={() => router.push('/')}>
                   Retour
                 </Button>
-                  
+
               </Form>
             </Card.Body>
           </Card>

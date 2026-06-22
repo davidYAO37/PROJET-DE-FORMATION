@@ -62,8 +62,8 @@ export default function CliniqueInfoCaisse({ formData, setFormData, hasActesMede
                         <Form.Control
                             as="textarea"
                             rows={2}
-                            value={formData.renseignementclinique}
-                            onChange={(e) => setFormData({ ...formData, renseignementclinique: e.target.value })}
+                            value={formData.Rclinique}
+                            onChange={(e) => setFormData({ ...formData, Rclinique: e.target.value })}
                         />
                     </Form.Group>
 

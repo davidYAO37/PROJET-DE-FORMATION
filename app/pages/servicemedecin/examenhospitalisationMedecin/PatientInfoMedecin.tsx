@@ -74,7 +74,7 @@ export default function PatientInfoMedecin({ formData, setFormData, onCodePresta
                     patientId: data.patient._id || prev.patientId,
                     Assure: data.Assure || data.assure || prev.Assure,
                     medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
-                    renseignementclinique: data.designationC || prev.renseignementclinique,
+                    Rclinique: data.Rclinique || prev.Rclinique,
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
                     assurance: {
                         assuranceId: data.idAssurance || prev.assurance.assuranceId,

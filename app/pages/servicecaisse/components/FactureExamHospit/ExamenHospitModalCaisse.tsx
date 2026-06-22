@@ -13,7 +13,7 @@ interface ExamenHospitalisationModalProps {
     dateEntree?: string | null;
     dateSortie?: string | null;
     nombreDeJours?: number;
-    renseignementclinique?: string;
+    Rclinique?: string;
 }
 
 export default function ExamenHospitalisationModalCaisse({
@@ -27,7 +27,7 @@ export default function ExamenHospitalisationModalCaisse({
     dateEntree = null,
     dateSortie = null,
     nombreDeJours = 1,
-    renseignementclinique = ""
+    Rclinique = ""
 }: ExamenHospitalisationModalProps) {
 
     const [key, setKey] = useState(0);
@@ -82,7 +82,7 @@ export default function ExamenHospitalisationModalCaisse({
                         dateEntree: dateEntree || undefined,
                         dateSortie: dateSortie || undefined,
                         nombreDeJours,
-                        renseignementclinique
+                        Rclinique,
                     }}
                     searchParams={{}}
                     onSuccess={handleOnSuccess}

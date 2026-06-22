@@ -1,39 +1,291 @@
 // app/page.tsx
 'use client';
 
-import { Card, Row, Col } from 'react-bootstrap';
+import React, { useState } from 'react';
+import { Card, Row, Col, Button, Container, Form, InputGroup, ButtonGroup, Nav, Table } from 'react-bootstrap';
 
 export default function Dashboard() {
-  return (
-    <div>
-      <h2 className="mb-4 text-primary">Bienvenue sur le Tableau de Bord</h2>
+  const [activeKey, setActiveKey] = useState<string>('reception');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [receptions, setReceptions] = useState<any[]>([]);
+  const [loadingReceptions, setLoadingReceptions] = useState(false);
+  const [receptionError, setReceptionError] = useState<string | null>(null);
+  const [receptionningId, setReceptionningId] = useState<string | null>(null);
 
-      <Row className="g-4">
-        <Col md={4}>
-          <Card className="shadow">
+  const [resultats, setResultats] = useState<any[]>([]);
+  const [loadingResultats, setLoadingResultats] = useState(false);
+  const [resultatsError, setResultatsError] = useState<string | null>(null);
+
+  const getUtilisateur = () => {
+    // Récupérer depuis localStorage ou session
+    if (typeof window !== 'undefined') {
+
+      const user = localStorage.getItem("nom_utilisateur");
+      return user;
+    }
+    return 'Utilisateur';
+  };
+
+  const loadReceptions = async () => {
+    setReceptionError(null);
+    setLoadingReceptions(true);
+
+    const start = startDate || new Date().toISOString().slice(0, 10);
+    const end = endDate || new Date().toISOString().slice(0, 10);
+
+    try {
+      const response = await fetch(
+        `/api/ReceptionExamenLabo/ListeAreceptioner?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Erreur de chargement des réceptions.');
+      }
+
+      setReceptions(data);
+      setActiveKey('reception');
+    } catch (error) {
+      console.error('Erreur chargement réceptions :', error);
+      setReceptionError((error as Error).message);
+      setReceptions([]);
+    } finally {
+      setLoadingReceptions(false);
+    }
+  };
+
+  const loadResultats = async () => {
+    setResultatsError(null);
+    setLoadingResultats(true);
+
+    const start = startDate || new Date().toISOString().slice(0, 10);
+    const end = endDate || new Date().toISOString().slice(0, 10);
+
+    try {
+      const response = await fetch(
+        `/api/ReceptionExamenLabo/ListeAsaisir?startDate=${encodeURIComponent(start)}&endDate=${encodeURIComponent(end)}`
+      );
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Erreur de chargement des résultats à saisir.');
+      }
+
+      setResultats(data);
+    } catch (error) {
+      console.error('Erreur chargement resultats :', error);
+      setResultatsError((error as Error).message);
+      setResultats([]);
+    } finally {
+      setLoadingResultats(false);
+    }
+  };
+
+  const handleReceptionner = async (idHospitalisation: string) => {
+    const confirmed = window.confirm('Voulez-vous réceptionner ce patient ?');
+    if (!confirmed) return;
+
+    setReceptionningId(idHospitalisation);
+    try {
+      const response = await fetch('/api/ReceptionExamenLabo/receptionner', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idHospitalisation,
+          receptionnerPar: getUtilisateur(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Erreur lors de la réception.');
+      }
+
+      // Recharger la liste complète pour refléter l'état mis à jour
+      await loadReceptions();
+
+      alert('✅ Réception enregistrée avec succès.');
+    } catch (error) {
+      console.error('Erreur réception :', error);
+      alert(`❌ ${(error as Error).message}`);
+    } finally {
+      setReceptionningId(null);
+    }
+  };
+
+  return (
+    <Container className="py-4">
+      <h2 className="mb-4 text-primary">Bienvenue sur le Tableau de Bord</h2>
+      <Row className="g-4 mt-2">
+        <Col>
+          <Card className="shadow-sm">
             <Card.Body>
-              <Card.Title>Patients</Card.Title>
-              <Card.Text>Gérez l'accueil, le transfert et la file d'attente des patients.</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={4}>
-          <Card className="shadow">
-            <Card.Body>
-              <Card.Title>Médecins</Card.Title>
-              <Card.Text>Planifiez et suivez les disponibilités des médecins.</Card.Text>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col md={4}>
-          <Card className="shadow">
-            <Card.Body>
-              <Card.Title>Rendez-vous</Card.Title>
-              <Card.Text>Contrôlez les créneaux et l'organisation des rendez-vous.</Card.Text>
+              <Card.Title className="h5 mb-3">Filtrer par Période</Card.Title>
+              <Form>
+                <Row className="align-items-end gy-2">
+                  <Col xs={12} md={3}>
+                    <Form.Label className="small text-muted">Début</Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                    />
+                  </Col>
+                  <Col xs={12} md={3}>
+                    <Form.Label className="small text-muted">Fin</Form.Label>
+                    <Form.Control
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                    />
+                  </Col>
+                  <Col xs={12} md={6} className="d-flex gap-2">
+                    <ButtonGroup className="ms-auto">
+                      <Button variant="outline-primary" onClick={loadReceptions}>
+                        Nouvelle Réception
+                      </Button>
+                      <Button
+                        variant="outline-secondary"
+                        onClick={() => {
+                          setActiveKey('resultats');
+                          loadResultats();
+                        }}
+                      >
+                        Resultat a saisir et code barre
+                      </Button>
+                    </ButtonGroup>
+                  </Col>
+                </Row>
+
+              </Form>
             </Card.Body>
           </Card>
         </Col>
       </Row>
-    </div>
+      <div className="mt-3">
+        <Nav variant="tabs" activeKey={activeKey} onSelect={(k) => {
+          if (!k) return;
+          setActiveKey(k);
+          if (k === 'resultats') {
+            loadResultats();
+          }
+        }}>
+          <Nav.Item>
+            <Nav.Link eventKey="reception" className="d-none">Les Réceptions</Nav.Link>
+          </Nav.Item>
+          <Nav.Item>
+            <Nav.Link eventKey="resultats" className="d-none">Les Résultats à Saisir et Code Barre</Nav.Link>
+          </Nav.Item>
+        </Nav>
+        {/* Liest des reception */}
+        {activeKey === 'reception' && (
+          <div className="mt-3">
+            <Table responsive striped bordered hover className="align-middle">
+              <thead>
+                <tr>
+                  <th>Saisie le</th>
+                  <th>N°Prestation</th>
+                  <th>Designation</th>
+                  <th>Patient</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingReceptions ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4">
+                      Chargement des réceptions...
+                    </td>
+                  </tr>
+                ) : receptionError ? (
+                  <tr>
+                    <td colSpan={5} className="text-center text-danger py-4">
+                      {receptionError}
+                    </td>
+                  </tr>
+                ) : receptions.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4">
+                      Aucun examen trouvé pour la période sélectionnée.
+                    </td>
+                  </tr>
+                ) : (
+                  receptions.map((item) => (
+                    <tr key={item._id ?? item.IDHOSPITALISATION ?? JSON.stringify(item)}>
+
+                      <td>{item.DatePres ? new Date(item.DatePres).toISOString().slice(0, 10) : ''}</td>
+                      <td>{item.CodePrestation ?? ''}</td>
+                      <td>{item.Designationtypeacte ?? item.IDTYPE_ACTE ?? ''}</td>
+                      <td>{item.PatientP ?? ''}</td>
+
+                      <td>
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          disabled={receptionningId === item._id || item.StatutLaboratoire === 2}
+                          onClick={() => handleReceptionner(item._id)}
+                        >
+                          {receptionningId === item._id ? 'Traitement...' : 'Réceptionner ici'}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </Table>
+          </div>
+        )}
+
+        {activeKey === 'resultats' && (
+          <div className="mt-3 text-muted">
+            <Table responsive striped bordered hover className="align-middle">
+              <thead>
+                <tr>
+                  <th>Receptionné le</th>
+                  <th>N°Prestation</th>
+                  <th>Designation</th>
+                  <th>Patient</th>
+                  <th>Code Barre</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loadingResultats ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4">
+                      Chargement des résultats à saisir...
+                    </td>
+                  </tr>
+                ) : resultatsError ? (
+                  <tr>
+                    <td colSpan={5} className="text-center text-danger py-4">
+                      {resultatsError}
+                    </td>
+                  </tr>
+                ) : resultats.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center py-4">
+                      Aucun résultat à saisir trouvé pour la période sélectionnée.
+                    </td>
+                  </tr>
+                ) : (
+                  resultats.map((item) => (
+                    <tr key={item._id ?? item.IDHOSPITALISATION ?? JSON.stringify(item)}>
+                      <td>{item.DATERECEPTIONNER ? new Date(item.DATERECEPTIONNER).toISOString().slice(0, 10) : ''}</td>
+                      <td>{item.CodePrestation ?? ''}</td>
+                      <td>{item.Designationtypeacte ?? item.IDTYPE_ACTE ?? ''}</td>
+                      <td>{item.PatientP ?? ''}</td>
+                      <td>{item.Numcarte ?? item.Code_Barre ?? ''}</td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </Table>
+          </div>
+        )}
+
+      </div>
+    </Container>
   );
 }

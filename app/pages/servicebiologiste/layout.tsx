@@ -1,23 +1,24 @@
 // app/layout.tsx
-import Sidebaraccueil from '@/components/Sidebaracceuil';
+import Sidebarbiologiste from '@/components/Sidebarbiologiste';
+import Verifconnecion from '@/components/verifconnecion';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const metadata = {
-  title: 'Tableau de Bord Médical',
+  title: 'Service Biologiste',
   description: 'Interface de gestion médicale',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr">
-      <body className="d-flex">
-           <div className="d-flex" style={{ minHeight: '100vh' }}>
-            <Sidebaraccueil />
-           <main className="flex-grow-1 p-3">
-            {children}
-          </main>
-        </div>
-      </body>
-    </html>
+    <Verifconnecion>
+      <div className="d-flex flex-column flex-md-row min-vh-100" style={{ minHeight: '100vh' }}>
+        <Sidebarbiologiste />
+        <main className="flex-grow-1 p-3">
+          {children}
+        </main>
+      </div>
+
+    </Verifconnecion>
+
   );
 }

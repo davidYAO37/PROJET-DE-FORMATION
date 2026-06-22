@@ -51,7 +51,7 @@ type RowItemBase = {
     dateEntree?: string | Date;
     dateSortie?: string | Date;
     nombreDeJours?: number;
-    renseignementclinique?: string;
+    Rclinique?: string;
 };
 
 /* -------------------- Composant -------------------- */
@@ -87,7 +87,7 @@ const PageListeApayer = () => {
             ...row,
             dateEntree: row.dateEntree,
             dateSortie: row.dateSortie,
-            renseignementclinique: row.renseignementclinique || row.Rclinique
+            Rclinique: row.Rclinique || row.Rclinique
         });
         setSelectedItem(r);
         setSelectedRow(row);
@@ -286,7 +286,7 @@ const PageListeApayer = () => {
                     dateEntree: d.Entrele ?? null,
                     dateSortie: d.SortieLe ?? null,
                     nombreDeJours: d.nombreDeJours ?? 1,
-                    renseignementclinique: d.Rclinique ?? "",
+                    Rclinique: d.Rclinique ?? "",
                     raw: d,
                 }))
                 : [];
@@ -309,7 +309,7 @@ const PageListeApayer = () => {
                     dateEntree: undefined,
                     dateSortie: undefined,
                     nombreDeJours: 1,
-                    renseignementclinique: d.Rclinique ?? "",
+                    Rclinique: d.Rclinique ?? "",
                     raw: d,
                 }))
                 : [];
@@ -408,7 +408,7 @@ const PageListeApayer = () => {
                         dateEntree: undefined,
                         dateSortie: undefined,
                         nombreDeJours: 1,
-                        renseignementclinique: d.Rclinique ?? "",
+                        Rclinique: d.Rclinique ?? "",
                         raw: d,
                     }))
                     : [];
@@ -636,7 +636,7 @@ const PageListeApayer = () => {
                     dateEntree={selectedRow?.dateEntree || selectedRow?.Entrele || null}
                     dateSortie={selectedRow?.dateSortie || selectedRow?.SortieLe || null}
                     nombreDeJours={selectedRow?.nombreDeJours || 1}
-                    renseignementclinique={selectedRow?.renseignementclinique || selectedRow?.Rclinique || ""}
+                    Rclinique={selectedRow?.Rclinique || selectedRow?.Rclinique || ""}
                 />
             )}
 

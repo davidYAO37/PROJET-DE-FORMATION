@@ -1,29 +1,15 @@
-import mongoose, { Schema, Document, Types, Model } from 'mongoose';
+import mongoose, { Schema, Model, Types } from 'mongoose';
 
-export interface ISocietePartenaire extends Document {
-    Designation?: string;
-    IDPROFORMACLIENT?: number;
-    IDPROFORMA?: number;
-    IDCLIENT_PROFORMA?: number;
-    ACTEF?: string;
-    CoefficientActe?: number;
-    Qte?: number;
-    prixunitaire?: number;
-    PrixTotal?: number;
-    IDACTE?: Types.ObjectId;
+export interface ISocietePartenaire {
+    _id?: Types.ObjectId;
+    Designation: string;
 }
 
-const SocietePartenaireSchema = new Schema<ISocietePartenaire>({
-    Designation: { type: String, maxlength: 500 },
-    IDPROFORMACLIENT: { type: Number },
-    IDPROFORMA: { type: Number },
-    IDCLIENT_PROFORMA: { type: Number },
-    ACTEF: { type: String, maxlength: 100 },
-    CoefficientActe: { type: Number },
-    Qte: { type: Number },
-    prixunitaire: { type: Number },
-    PrixTotal: { type: Number },
-    IDACTE: { type: Schema.Types.ObjectId, ref: 'Acte' },
-}, { timestamps: true });
+const SocietePartenaireSchema = new Schema<ISocietePartenaire>(
+    {
+        Designation: { type: String, required: true },
+    },
+    { timestamps: true }
+);
 
-export const SocietePartenaire: Model<ISocietePartenaire> = mongoose.model<ISocietePartenaire>('SocietePartenaire', SocietePartenaireSchema);
+export const SocietePartenaire: Model<ISocietePartenaire> = mongoose.models.SocietePartenaire || mongoose.model<ISocietePartenaire>("SocietePartenaire", SocietePartenaireSchema);

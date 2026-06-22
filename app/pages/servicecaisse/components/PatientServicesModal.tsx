@@ -804,7 +804,7 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                 examenHospitId={selectedPrestation?._id}
                 dateEntree={selectedPrestation?.Entrele ? new Date(selectedPrestation.Entrele).toISOString() : null}
                 dateSortie={selectedPrestation?.SortieLe ? new Date(selectedPrestation.SortieLe).toISOString() : null}
-                renseignementclinique={selectedPrestation?.Rclinique}
+                Rclinique={selectedPrestation?.Rclinique}
                 key={`prestation-${prestationModalKey}`}
             />
 

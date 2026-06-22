@@ -23,7 +23,7 @@ interface PageProps {
         dateEntree?: string;
         dateSortie?: string;
         nombreDeJours?: number;
-        renseignementclinique?: string;
+        Rclinique?: string;
 
         [key: string]: string | string[] | number | undefined;
     };
@@ -53,7 +53,7 @@ export default function HospitalisationPageCaisse({
         dateEntree = "",
         dateSortie = "",
         nombreDeJours = 0,
-        renseignementclinique = ""
+        Rclinique = ""
     } = params || {};
 
     const [formData, setFormData] = useState<ExamenHospitalisationForm>({
@@ -125,7 +125,7 @@ export default function HospitalisationPageCaisse({
             dateEntree,
             dateSortie,
             nombreDeJours,
-            renseignementclinique
+            Rclinique
         });
 
         setFormData(prev => ({
@@ -133,7 +133,7 @@ export default function HospitalisationPageCaisse({
             dateEntree: dateEntree ? new Date(dateEntree).toISOString().split('T')[0] : today,
             dateSortie: dateSortie ? new Date(dateSortie).toISOString().split('T')[0] : today,
             nombreDeJours: Number(nombreDeJours) > 0 ? Number(nombreDeJours) : 1,
-            renseignementclinique: renseignementclinique || prev.renseignementclinique || ''
+            Rclinique: Rclinique || prev.Rclinique || ''
         }));
 
         if (CodePrestation) {
@@ -142,7 +142,7 @@ export default function HospitalisationPageCaisse({
             setPresetLines(undefined);
             setModeModification(false);
         }
-    }, [CodePrestation, examenHospitId, dateEntree, dateSortie, nombreDeJours, renseignementclinique]);
+    }, [CodePrestation, examenHospitId, dateEntree, dateSortie, nombreDeJours, Rclinique]);
 
     useEffect(() => {
         const reduction = formData.reduction || 0;
@@ -383,7 +383,7 @@ export default function HospitalisationPageCaisse({
             surplus: 0,
             resteAPayer: 0,
             TotalapayerPatient: 0,
-            renseignementclinique: "",
+            Rclinique: "",
         }));
     };
 
@@ -441,7 +441,7 @@ export default function HospitalisationPageCaisse({
             medecinId: data.NummedecinExécutant || data.medecinId || prev.medecinId,
             medecinPrescripteur: data.Medecin || data.medecinPrescripteur || prev.medecinPrescripteur,
             // en mode modif on reflète strictement la base; si vide, on laisse vide
-            renseignementclinique: data.Rclinique ?? "",
+            Rclinique: data.Rclinique ?? "",
             societePatient: data.SOCIETE_PATIENT ?? prev.societePatient,
             dateEntree: entre,
             dateSortie: sortie,
@@ -522,7 +522,7 @@ export default function HospitalisationPageCaisse({
             dateEntree: today,
             dateSortie: today,
             nombreDeJours: 1,
-            renseignementclinique: "",
+            Rclinique: "",
         }));
 
         try {
@@ -770,7 +770,7 @@ export default function HospitalisationPageCaisse({
                             const header = {
                                 _id: examenHospitId || undefined,
                                 CodePrestation: codePrestation || formData.patientId, // fallback si besoin
-                                Rclinique: formData.renseignementclinique,
+                                Rclinique: formData.Rclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
                                 Assurance: formData.assurance?.designationassurance || "",
                                 Souscripteur: formData.assurance.adherent || "",

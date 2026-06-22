@@ -66,7 +66,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
 
                 // Nom complet du patient
                 setPatientNom(data.patient || "");
-                
+
                 // Mettre à jour le code dossier
                 setCodeDossier(data.Code_dossier || "");
 
@@ -77,7 +77,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                     PatientP: data.patient || "",
                     Assure: data.Assure || data.assure || prev.Assure,
                     medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
-                    renseignementclinique: data.designationC || prev.renseignementclinique,
+                    Rclinique: data.Rclinique || prev.Rclinique,
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
                     Code_dossier: data.Code_dossier || prev.Code_dossier,
                     assurance: {

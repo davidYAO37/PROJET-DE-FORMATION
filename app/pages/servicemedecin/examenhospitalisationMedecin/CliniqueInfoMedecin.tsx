@@ -91,8 +91,8 @@ export default function CliniqueInfoMedecin({ formData, setFormData, hasActesMed
                     <Form.Control
                         as="textarea"
                         rows={3}
-                        value={formData.renseignementclinique}
-                        onChange={(e) => setFormData({ ...formData, renseignementclinique: e.target.value })}
+                        value={formData.Rclinique}
+                        onChange={(e) => setFormData({ ...formData, Rclinique: e.target.value })}
                     />
                 </Form.Group>
             </Card.Body>

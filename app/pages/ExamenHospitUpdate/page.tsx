@@ -152,7 +152,7 @@ export default function HospitalisationPage() {
             surplus: 0,
             resteAPayer: 0,
             // clinique
-            renseignementclinique: "",
+            Rclinique: "",
         }));
 
         // Reset complet de la table après préparation du mode création
@@ -212,7 +212,7 @@ export default function HospitalisationPage() {
             medecinId: data.NummedecinExécutant || prev.medecinId,
             medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
             // Clinique
-            renseignementclinique: data.Rclinique || "",
+            Rclinique: data.Rclinique || "",
             societePatient: data.SOCIETE_PATIENT || prev.societePatient,
             // Dates
             dateEntree: entre,
@@ -334,7 +334,7 @@ export default function HospitalisationPage() {
                                             dateEntree: today,
                                             dateSortie: today,
                                             nombreDeJours: 1,
-                                            renseignementclinique: "",
+                                            Rclinique: "",
                                         }));
 
                                         try {
@@ -404,7 +404,7 @@ export default function HospitalisationPage() {
                                                         medecinId: data.NummedecinExécutant || prev.medecinId,
                                                         medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
                                                         // Renseignement clinique
-                                                        renseignementclinique: data.Rclinique || prev.renseignementclinique,
+                                                        Rclinique: data.Rclinique || prev.Rclinique,
                                                         // Société patient
                                                         societePatient: data.SOCIETE_PATIENT || prev.societePatient,
                                                         // Dates
@@ -494,7 +494,7 @@ export default function HospitalisationPage() {
                                                         Partassure: 0,
                                                         surplus: 0,
                                                         resteAPayer: 0,
-                                                        renseignementclinique: "",
+                                                        Rclinique: "",
                                                         // Garder AssuranceInfo (déjà chargé depuis la consultation)
                                                         // Garder dateEntree et dateSortie (déjà initialisés à aujourd'hui)
                                                     }));
@@ -529,7 +529,7 @@ export default function HospitalisationPage() {
                                                     Partassure: 0,
                                                     surplus: 0,
                                                     resteAPayer: 0,
-                                                    renseignementclinique: "",
+                                                    Rclinique: "",
                                                 }));
                                             }
                                         } catch (error) {
@@ -652,7 +652,7 @@ export default function HospitalisationPage() {
                             const header = {
                                 _id: modeModification ? examenHospitId : undefined,
                                 CodePrestation: CodePrestation || formData.patientId, // fallback si besoin
-                                Rclinique: formData.renseignementclinique,
+                                Rclinique: formData.Rclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
                                 Assurance: formData.assurance?.designationassurance || "",
                                 Souscripteur: formData.assurance.adherent || "",

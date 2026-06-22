@@ -3,9 +3,10 @@ import mongoose, { Schema, Document, Types, Model } from 'mongoose';
 export interface IResultatLignePrestation extends Document {
     ParamAbrege?: string;
     Param_designation?: string;
-    PlageMin?: number;
-    PlageMax?: number;
+   
     ValeurNormale?: string;
+    ValeurMinNormale?: number;
+    ValeurMaxNormale?: number;
     ChampResultat?: string;
     IDPARAM_LABO?: Types.ObjectId;
     IDLIGNE_PRESTATION?: Types.ObjectId;
@@ -22,14 +23,16 @@ export interface IResultatLignePrestation extends Document {
     unite?: string;
     ORdonnacementAffichage?: number;
     entrepriseId?: string;
+    resultatSaisiePar?: string;
+    dateSaisieResultat?: Date;
 }
 
 const ResultatLignePrestationSchema = new Schema<IResultatLignePrestation>({
     ParamAbrege: { type: String, maxlength: 50 },
     Param_designation: { type: String, maxlength: 500 },
-    PlageMin: { type: Number },
-    PlageMax: { type: Number },
     ValeurNormale: { type: String, maxlength: 500 },
+    ValeurMinNormale: { type: Number },
+    ValeurMaxNormale: { type: Number },
     ChampResultat: { type: String, maxlength: 1000 },
     IDPARAM_LABO: { type: Schema.Types.ObjectId, ref: 'ParamLabo' },
     IDLIGNE_PRESTATION: { type: Schema.Types.ObjectId, ref: 'LignePrestation' },
@@ -46,6 +49,8 @@ const ResultatLignePrestationSchema = new Schema<IResultatLignePrestation>({
     unite: { type: String, maxlength: 50 },
     ORdonnacementAffichage: { type: Number },
     entrepriseId: { type: String },
+    resultatSaisiePar: { type: String, maxlength: 60 },
+    dateSaisieResultat: { type: Date },
 }, { timestamps: true });
 
 export const ResultatLignePrestation: Model<IResultatLignePrestation> = mongoose.models.ResultatLignePrestation || mongoose.model<IResultatLignePrestation>('ResultatLignePrestation', ResultatLignePrestationSchema);
