@@ -6,10 +6,11 @@ import { Button, Modal, Nav } from 'react-bootstrap';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import ActeBiochimie from '@/app/dashboard/parametres/acteBiochimie/page';
 import ActeBiologie from '@/app/dashboard/parametres/acteBiologie/page';
+import ListeResultatValides from '@/app/pages/ResultatValides/page';
 const menu = [
     { label: 'Tableau de bord', path: '/pages/servicelaboratoire/tlaboratoire', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
     { label: 'Accueil Patient', path: '/pages/servicelaboratoire/patientLabo', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
-    { label: 'Liste Resultat Retour', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
+    { label: 'Liste Resultat Retour', path: '/pages/servicelaboratoire/components/ListeResultatRetour', icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
     { label: 'Resultats Validés', path: '#', isModal: true, icon: <i className="bi bi-people-fill me-2 text-warning"></i> },
     { label: 'Gestion des automates', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
     { label: 'Paramètres Examens', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
@@ -24,6 +25,7 @@ export default function SidebarLabo() {
     const [user, setUser] = useState('');
     const [showParametreExamenModal, setShowParametreExamenModal] = useState(false);
     const [showParametreBiochimieModal, setShowParametreBiochimieModal] = useState(false);
+    const [showResultatsValidésModal, setShowResultatsValidésModal] = useState(false);
 
 
     // Charger l'utilisateur connecté au montage
@@ -58,6 +60,11 @@ export default function SidebarLabo() {
         setOpen(false);
     };
 
+    const handleResultatsValidésClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setShowResultatsValidésModal(true);
+        setOpen(false);
+    };
 
     return (
         <>
@@ -103,7 +110,15 @@ export default function SidebarLabo() {
                                 <a
                                     href="#"
                                     className="sidebar-link-medical d-flex align-items-center"
-                                    onClick={item.label === 'Paramètres Biochimie' ? handleParametreBiochimieClick : item.label === 'Mot de passe' ? handleMotDePasseClick : undefined}
+                                    onClick={
+                                        item.label === 'Paramètres Biochimie'
+                                            ? handleParametreBiochimieClick
+                                            : item.label === 'Mot de passe'
+                                                ? handleMotDePasseClick
+                                                : item.label === 'Resultats Validés'
+                                                    ? handleResultatsValidésClick
+                                                    : undefined
+                                    }
                                 >
                                     {item.icon}
                                     <span>{item.label}</span>
@@ -170,7 +185,27 @@ export default function SidebarLabo() {
                 show={showModifierMotDePasseModal}
                 onHide={() => setShowModifierMotDePasseModal(false)}
             />
-
+            {/* Modal des résultats validés */}
+            <Modal
+                show={showResultatsValidésModal}
+                onHide={() => setShowResultatsValidésModal(false)}
+                centered
+                size="xl"
+                dialogClassName="modal-xxl"
+                scrollable
+                contentClassName="border-0 shadow-lg rounded-4"
+                className="modal-modern"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Résultats Validés</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="bg-light p-4 rounded-3">
+                    <ListeResultatValides />
+                </Modal.Body>
+                <Modal.Footer className="border-0">
+                    <Button variant="secondary" onClick={() => setShowResultatsValidésModal(false)}>Fermer</Button>
+                </Modal.Footer>
+            </Modal>
 
         </>
     );
