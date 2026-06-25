@@ -21,6 +21,8 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
         prixMutuel: 0,
         prixPreferentiel: 0,
         MontantAuMed: 0,
+        MontantAnesthesiste: 0,
+        MontantAideOperatoire: 0,
         IDFAMILLE_ACTE_BIOLOGIE: "",
         consultationviste: false,
     });
@@ -55,6 +57,8 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 prixMutuel: acte.prixMutuel || 0,
                 prixPreferentiel: acte.prixPreferentiel || 0,
                 MontantAuMed: acte.MontantAuMed || 0,
+                MontantAnesthesiste: acte.MontantAnesthesiste || 0,
+                MontantAideOperatoire: acte.MontantAideOperatoire || 0,
                 IDFAMILLE_ACTE_BIOLOGIE: acte.IDFAMILLE_ACTE_BIOLOGIE || "",
                 consultationviste: acte.consultationviste || false,
             });
@@ -72,6 +76,8 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 prixMutuel: 0,
                 prixPreferentiel: 0,
                 MontantAuMed: 0,
+                MontantAnesthesiste: 0,
+                MontantAideOperatoire: 0,
                 IDFAMILLE_ACTE_BIOLOGIE: "",
                 consultationviste: false,
             });
@@ -83,7 +89,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
         const { name, value } = e.target;
         setForm({
             ...form,
-            [name]: name === "coefficient" || name.startsWith("prix") ? Number(value) : value,
+            [name]: name === "coefficient" || name.startsWith("prix") || name.startsWith("Montant") ? Number(value) : value,
         });
     };
 
@@ -213,6 +219,34 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                             <option value="1">Oui</option>
                         </Form.Select>
                     </Form.Group>
+                    <Row className="mb-2">
+                        <Col md={6}>
+                            <Form.Group>
+                                <Form.Label>Montant anesthésique</Form.Label>
+                                <Form.Select 
+                                    name="MontantAnesthesiste" 
+                                    value={form.MontantAnesthesiste.toString()} 
+                                    onChange={(e) => setForm({ ...form, MontantAnesthesiste: Number(e.target.value) })}
+                                >
+                                    <option value="0">Non</option>
+                                    <option value="1">Oui</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group>
+                                <Form.Label>Montant aide Opératoire</Form.Label>
+                                <Form.Select 
+                                    name="MontantAideOperatoire" 
+                                    value={form.MontantAideOperatoire.toString()} 
+                                    onChange={(e) => setForm({ ...form, MontantAideOperatoire: Number(e.target.value) })}
+                                >
+                                    <option value="0">Non</option>
+                                    <option value="1">Oui</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                    </Row>
                     <Form.Group className="mb-2">
                         <Form.Check 
                             type="checkbox" 

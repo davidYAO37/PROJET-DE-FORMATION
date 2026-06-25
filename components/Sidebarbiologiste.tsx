@@ -1,67 +1,74 @@
 'use client';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Button, Modal, Nav } from 'react-bootstrap';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import ActeBiochimie from '@/app/dashboard/parametres/acteBiochimie/page';
 import ActeBiologie from '@/app/dashboard/parametres/acteBiologie/page';
+import ListeResultatValides from '@/app/pages/ResultatValides/page';
+import AutomatExamen from './AutomatExamen';
+
 const menu = [
-    { label: 'Tableau de bord', path: '/pages/servicebiologiste/tbiologiste', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
     { label: 'Accueil Patient', path: '/pages/servicebiologiste/patientLabo', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
-    { label: 'Liste Resultat Retour', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
+    { label: 'Examens à valider', path: '/pages/servicebiologiste/tbiologiste', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
+    { label: 'Liste Examens Validés', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
     { label: 'Resultats Validés', path: '#', isModal: true, icon: <i className="bi bi-people-fill me-2 text-warning"></i> },
-    { label: 'Gestion des automates', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
+    { label: 'Gestion des automates', path: '#', isModal: true, icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
     { label: 'Paramètres Examens', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
     { label: 'Paramètres Biochimie', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
+    { label: 'Statistiques Labo', path: '/pages/servicebiologiste/statistiques', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
+    { label: 'Relevé de Compte', path: '/pages/servicebiologiste/releveCompte', icon: <i className="bi bi-receipt me-2 text-success"></i> },
     { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
-export default function SidebarLabo() {
+export default function SidebarBiologiste() {
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
     const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
-    const [showListePlanningModal, setShowListePlanningModal] = useState(false);
-    const [showPlanningModal, setShowPlanningModal] = useState(false);
-    const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
-    const [showPointSaisieModal, setShowPointSaisieModal] = useState(false);
-    const [user, setUser] = useState('');
     const [showParametreExamenModal, setShowParametreExamenModal] = useState(false);
     const [showParametreBiochimieModal, setShowParametreBiochimieModal] = useState(false);
+    const [showResultatsValidésModal, setShowResultatsValidésModal] = useState(false);
+    const [showExamensValidésModal, setShowExamensValidésModal] = useState(false);
+    const [showAutomateModal, setShowAutomateModal] = useState(false);
 
-
-    // Charger l'utilisateur connecté au montage
-    useEffect(() => {
-        const storedUser = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || '';
-        setUser(storedUser);
-    }, []);
-
-    // Ferme la sidebar quand on clique sur un lien (mobile)
     const handleLinkClick = () => setOpen(false);
 
-
-
-    // Ouvre le modal de parametre labo
     const handleParametreLaboClick = (e: React.MouseEvent) => {
         e.preventDefault();
         setShowParametreExamenModal(true);
         setOpen(false);
     };
 
-    // Ouvre le modal de parametre biochimie
+    const handleAutomateClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setShowAutomateModal(true);
+        setOpen(false);
+    };
+
     const handleParametreBiochimieClick = (e: React.MouseEvent) => {
         e.preventDefault();
         setShowParametreBiochimieModal(true);
         setOpen(false);
     };
 
-    // Ouvre le modal de modification du mot de passe
     const handleMotDePasseClick = (e: React.MouseEvent) => {
         e.preventDefault();
         setShowModifierMotDePasseModal(true);
         setOpen(false);
     };
 
+    const handleResultatsValidésClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setShowResultatsValidésModal(true);
+        setOpen(false);
+    };
+
+    const handleExamensValidésClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setShowExamensValidésModal(true);
+        setOpen(false);
+    };
 
     return (
         <>
@@ -80,7 +87,6 @@ export default function SidebarLabo() {
             {open && <div className="sidebar-overlay-medical" onClick={() => setOpen(false)}></div>}
 
             <aside className={`sidebar-medical${open ? ' open' : ''}`}>
-                {/* Logo médical moderne */}
                 <div className="sidebar-logo-medical mb-4">
                     <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
                         <rect x="20" y="8" width="8" height="32" rx="4" fill="#fff" />
@@ -107,7 +113,19 @@ export default function SidebarLabo() {
                                 <a
                                     href="#"
                                     className="sidebar-link-medical d-flex align-items-center"
-                                    onClick={item.label === 'Paramètres Biochimie' ? handleParametreBiochimieClick : item.label === 'Mot de passe' ? handleMotDePasseClick : undefined}
+                                    onClick={
+                                        item.label === 'Gestion des automates'
+                                            ? handleAutomateClick
+                                            : item.label === 'Paramètres Biochimie'
+                                                ? handleParametreBiochimieClick
+                                                : item.label === 'Mot de passe'
+                                                    ? handleMotDePasseClick
+                                                    : item.label === 'Resultats Validés'
+                                                        ? handleResultatsValidésClick
+                                                        : item.label === 'Liste Examens Validés'
+                                                            ? handleExamensValidésClick
+                                                            : undefined
+                                    }
                                 >
                                     {item.icon}
                                     <span>{item.label}</span>
@@ -126,17 +144,9 @@ export default function SidebarLabo() {
                     ))}
                 </Nav>
             </aside>
-            {/* Modal pour les paramètres examens et biochimie */}
-            <Modal
-                show={showParametreExamenModal}
-                onHide={() => setShowParametreExamenModal(false)}
-                centered
-                size="xl"
-                dialogClassName="modal-xxl"
-                scrollable
-                contentClassName="border-0 shadow-lg rounded-4"
-                className="modal-modern"
-            >
+
+            {/* Modal Paramètres Examens */}
+            <Modal show={showParametreExamenModal} onHide={() => setShowParametreExamenModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
                 <Modal.Header closeButton>
                     <Modal.Title>Paramètres Examens</Modal.Title>
                 </Modal.Header>
@@ -147,16 +157,9 @@ export default function SidebarLabo() {
                     <Button variant="secondary" onClick={() => setShowParametreExamenModal(false)}>Fermer</Button>
                 </Modal.Footer>
             </Modal>
-            <Modal
-                show={showParametreBiochimieModal}
-                onHide={() => setShowParametreBiochimieModal(false)}
-                centered
-                size="xl"
-                dialogClassName="modal-xxl"
-                scrollable
-                contentClassName="border-0 shadow-lg rounded-4"
-                className="modal-modern"
-            >
+
+            {/* Modal Paramètres Biochimie */}
+            <Modal show={showParametreBiochimieModal} onHide={() => setShowParametreBiochimieModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
                 <Modal.Header closeButton>
                     <Modal.Title>Paramètres Biochimie</Modal.Title>
                 </Modal.Header>
@@ -168,14 +171,50 @@ export default function SidebarLabo() {
                 </Modal.Footer>
             </Modal>
 
+            {/* Modal Résultats Validés */}
+            <Modal show={showResultatsValidésModal} onHide={() => setShowResultatsValidésModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
+                <Modal.Header closeButton>
+                    <Modal.Title>Résultats Validés</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="bg-light p-4 rounded-3">
+                    <ListeResultatValides />
+                </Modal.Body>
+                <Modal.Footer className="border-0">
+                    <Button variant="secondary" onClick={() => setShowResultatsValidésModal(false)}>Fermer</Button>
+                </Modal.Footer>
+            </Modal>
 
-            {/* Modal de modification du mot de passe */}
+            {/* Modal Liste Examens Validés */}
+            <Modal show={showExamensValidésModal} onHide={() => setShowExamensValidésModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
+                <Modal.Header closeButton>
+                    <Modal.Title>Liste Examens Validés</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="bg-light p-4 rounded-3">
+                    <ListeResultatValides />
+                </Modal.Body>
+                <Modal.Footer className="border-0">
+                    <Button variant="secondary" onClick={() => setShowExamensValidésModal(false)}>Fermer</Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal Automate */}
+            <Modal show={showAutomateModal} onHide={() => setShowAutomateModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
+                <Modal.Header closeButton>
+                    <Modal.Title>Gestion des automates</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="bg-light p-4 rounded-3">
+                    <AutomatExamen />
+                </Modal.Body>
+                <Modal.Footer className="border-0">
+                    <Button variant="secondary" onClick={() => setShowAutomateModal(false)}>Fermer</Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal Modifier Mot de passe */}
             <ModifierMotDePasseModal
                 show={showModifierMotDePasseModal}
                 onHide={() => setShowModifierMotDePasseModal(false)}
             />
-
-
         </>
     );
 }

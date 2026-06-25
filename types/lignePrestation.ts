@@ -64,5 +64,14 @@ export interface LignePrestation {
     IDSOCIETEASSURANCE?: number;
     SOCIETE_PATIENT?: string;
     ORdonnacementAffichage?: number;
+    IDmedecinAideOperatoire?: string;
+    StatutMedecinAideOperatoire?: number;
+    MedecinAideOperatoire?: string;
+    MedecinAnesthesiste?: string;
+    StatutMedecinAnesthesiste?: number;
+    IDAnesthesiste?: string;
+    MedecinAffiche?: string;
+    AnesthesistePaye?: number;
+    AideOperatoirePaye?: number;
 
 }

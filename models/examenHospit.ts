@@ -92,6 +92,7 @@ export interface IExamenHospitalisation extends Omit<Document, '_id'> {
     entrepriseId?: string;
     resultatSaisiePar?: string;
     dateSaisieResultat?: Date;
+    sexe?: string;
 }
 
 const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
@@ -185,6 +186,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         entrepriseId: { type: String },
         resultatSaisiePar: { type: String, maxlength: 60 },
         dateSaisieResultat: { type: Date },
+        sexe: { type: String, maxlength: 10 },
     },
     { timestamps: true }
 );

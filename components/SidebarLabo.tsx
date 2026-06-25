@@ -7,12 +7,13 @@ import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import ActeBiochimie from '@/app/dashboard/parametres/acteBiochimie/page';
 import ActeBiologie from '@/app/dashboard/parametres/acteBiologie/page';
 import ListeResultatValides from '@/app/pages/ResultatValides/page';
+import AutomatExamen from './AutomatExamen';
 const menu = [
     { label: 'Tableau de bord', path: '/pages/servicelaboratoire/tlaboratoire', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
     { label: 'Accueil Patient', path: '/pages/servicelaboratoire/patientLabo', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
     { label: 'Liste Resultat Retour', path: '/pages/servicelaboratoire/components/ListeResultatRetour', icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
     { label: 'Resultats Validés', path: '#', isModal: true, icon: <i className="bi bi-people-fill me-2 text-warning"></i> },
-    { label: 'Gestion des automates', path: '/constantes', icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
+    { label: 'Gestion des automates', path: '#',isModal: true, icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
     { label: 'Paramètres Examens', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
     { label: 'Paramètres Biochimie', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
     { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
@@ -26,6 +27,7 @@ export default function SidebarLabo() {
     const [showParametreExamenModal, setShowParametreExamenModal] = useState(false);
     const [showParametreBiochimieModal, setShowParametreBiochimieModal] = useState(false);
     const [showResultatsValidésModal, setShowResultatsValidésModal] = useState(false);
+    const [showAutomateModal,setShowAutomateModal]=useState(false);
 
 
     // Charger l'utilisateur connecté au montage
@@ -45,7 +47,12 @@ export default function SidebarLabo() {
         setShowParametreExamenModal(true);
         setOpen(false);
     };
-
+    // Ouvre le modal automate
+    const handleAutomateClick = (e: React.MouseEvent) => {
+        e.preventDefault();
+        setShowAutomateModal(true);
+        setOpen(false);
+    };
     // Ouvre le modal de parametre biochimie
     const handleParametreBiochimieClick = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -111,7 +118,9 @@ export default function SidebarLabo() {
                                     href="#"
                                     className="sidebar-link-medical d-flex align-items-center"
                                     onClick={
-                                        item.label === 'Paramètres Biochimie'
+                                        item.label === 'Gestion des automates'
+                                            ? handleAutomateClick
+                                            : item.label === 'Paramètres Biochimie'
                                             ? handleParametreBiochimieClick
                                             : item.label === 'Mot de passe'
                                                 ? handleMotDePasseClick
@@ -204,6 +213,28 @@ export default function SidebarLabo() {
                 </Modal.Body>
                 <Modal.Footer className="border-0">
                     <Button variant="secondary" onClick={() => setShowResultatsValidésModal(false)}>Fermer</Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal automate */}
+            <Modal
+                show={showAutomateModal}
+                onHide={() => setShowAutomateModal(false)}
+                centered
+                size="xl"
+                dialogClassName="modal-xxl"
+                scrollable
+                contentClassName="border-0 shadow-lg rounded-4"
+                className="modal-modern"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Automate</Modal.Title>
+                </Modal.Header>
+                <Modal.Body className="bg-light p-4 rounded-3">
+                    <AutomatExamen />
+                </Modal.Body>
+                <Modal.Footer className="border-0">
+                    <Button variant="secondary" onClick={() => setShowAutomateModal(false)}>Fermer</Button>
                 </Modal.Footer>
             </Modal>
 

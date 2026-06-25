@@ -6,7 +6,7 @@ import { BiochimieTraitement } from "@/models/BiochimieTraitement";
 import { ActeParamBiochimie } from "@/models/acteParamBiochimie";
 import { ActeParamLabo } from "@/models/acteParamLabo";
 import { LignePrestation } from "@/models/lignePrestation";
-import { HonoraireTraitement } from "@/models/HormoneTraitement";
+import { HormoneTraitement } from "@/models/HormoneTraitement";
 
 export async function POST(req: NextRequest) {
     try {
@@ -70,12 +70,13 @@ export async function POST(req: NextRequest) {
 
         // 3. RESULTAT_HORMONES
         if (parametres.length === 0) {
-            const hormoneTraitements = await HonoraireTraitement.find({
+            const hormoneTraitements = await HormoneTraitement.find({
                 $or: [
                     { CodePrestation: prestation },
                     { CodePrestation: idHospitalisation }
                 ]
             }).lean();
+            
 
             for (const hormone of hormoneTraitements) {
                 let paramDesignation = hormone.article;

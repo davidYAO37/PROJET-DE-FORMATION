@@ -41,4 +41,4 @@ const HormoneTraitementSchema = new Schema<IHormoneTraitement>({
     DejaUtilise: Boolean,
     entrepriseId: String,
 }, { timestamps: true });
-export const HonoraireTraitement: Model<IHormoneTraitement> = mongoose.models.HormoneTraitement || mongoose.model<IHormoneTraitement>("HormoneTraitement", HormoneTraitementSchema);
+export const HormoneTraitement: Model<IHormoneTraitement> = mongoose.models.HormoneTraitement || mongoose.model<IHormoneTraitement>("HormoneTraitement", HormoneTraitementSchema);

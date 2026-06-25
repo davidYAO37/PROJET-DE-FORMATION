@@ -94,7 +94,8 @@ export async function POST(req: NextRequest) {
                 IdPatient: consultationData.IdPatient,
                 PatientP: consultationData.PatientP,
                 Medecin: consultationData.Medecin,
-                IDMEDECIN: consultationData.IDMEDECIN
+                IDMEDECIN: consultationData.IDMEDECIN,
+                Sexe: consultationData.Sexe
             });
         }
 
@@ -110,6 +111,9 @@ export async function POST(req: NextRequest) {
             IdPatient: consultationData.IdPatient ?
                 new mongoose.Types.ObjectId(consultationData.IdPatient) : null,
             PatientP: consultationData.PatientP || header.PatientP || "",
+            
+            // Ajouter le champ sexe depuis la consultation
+            sexe: consultationData.Sexe || header.sexe || "",
 
             //StatutPrescription
             statutPrescriptionMedecin: header.Statutprescription || 2,
@@ -209,6 +213,9 @@ export async function POST(req: NextRequest) {
                         Assurance: header.Assurance || "",
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
+                        
+                        // Ajouter le champ sexe depuis la consultation
+                        sexe: consultationData.Sexe || "",
                     };
 
                     // Ajouter idTypeActe uniquement s'il est valide

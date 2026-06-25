@@ -10,6 +10,8 @@ export interface ActeClinique {
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     consultationviste?: boolean;
     resultatacte?: string;
+    MontantAnesthesiste?: number;
+    MontantAideOperatoire?: number;
 }
 /* export interface ActeClinique {
     _id: string;

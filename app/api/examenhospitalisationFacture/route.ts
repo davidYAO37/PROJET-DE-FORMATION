@@ -132,7 +132,8 @@ export async function POST(req: NextRequest) {
                 PatientP: consultationData.PatientP,
                 Medecin: consultationData.Medecin,
                 IDMEDECIN: consultationData.IDMEDECIN,
-                Code_dossier: consultationData.Code_dossier
+                Code_dossier: consultationData.Code_dossier,
+                Sexe: consultationData.Sexe
             });
         }
 
@@ -149,6 +150,9 @@ export async function POST(req: NextRequest) {
                 new mongoose.Types.ObjectId(consultationData.IdPatient) : null,
             PatientP: consultationData.PatientP || header.PatientP || "",
             Code_dossier: consultationData.Code_dossier || header.Code_dossier || "",
+            
+            // Ajouter le champ sexe depuis la consultation
+            sexe: consultationData.Sexe || header.sexe || "",
 
             //StatutPrescription
             statutPrescriptionMedecin: header.Statutprescription || 3,
@@ -320,6 +324,9 @@ export async function POST(req: NextRequest) {
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
                         Code_dossier: consultationData.Code_dossier || header.Code_dossier || "",
+                        
+                        // Ajouter le champ sexe depuis la consultation
+                        sexe: consultationData.Sexe || "",
                     };
 
                     // Ajouter idTypeActe et idFamille si fournis

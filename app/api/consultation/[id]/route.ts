@@ -128,6 +128,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.PatientP = patient?.Nom + " " + patient?.Prenoms || "";
         consultation.Medecin = medecin ? `${medecin.nom} ${medecin.prenoms}` : "";
 
+        // Ajouter le champ sexe depuis le patient
+        consultation.Sexe = patient?.sexe || "";
+
         await consultation.save();
 
         // ✅ Réponse structurée pour React

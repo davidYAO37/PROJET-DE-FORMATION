@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model } from 'mongoose';
 
-export interface ILenAutomate extends Document {
+export interface ILienAutomate extends Document {
     nLienNFS?: string;
     LienHormone?: string;
     LienVS?: string;
@@ -8,7 +8,7 @@ export interface ILenAutomate extends Document {
     entrepriseId?: string;
 }
 
-const LenAutomateSchema = new Schema<ILenAutomate>({
+const LienAutomateSchema = new Schema<ILienAutomate>({
     nLienNFS: { type: String, maxlength: 500 },
     LienHormone: { type: String, maxlength: 500 },
     LienVS: { type: String, maxlength: 500 },
@@ -16,4 +16,4 @@ const LenAutomateSchema = new Schema<ILenAutomate>({
     entrepriseId: { type: String },
 }, { timestamps: true });
 
-export const LenAutomate: Model<ILenAutomate> = mongoose.models.LenAutomate || mongoose.model<ILenAutomate>("LenAutomate", LenAutomateSchema);
+export const LienAutomate: Model<ILienAutomate> = mongoose.models.LienAutomate || mongoose.model<ILienAutomate>("LienAutomate", LienAutomateSchema);

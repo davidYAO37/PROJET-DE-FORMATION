@@ -1,13 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { Accordion, Button } from "react-bootstrap";
+import { Accordion, Button, Modal } from "react-bootstrap";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import ListePlanningModal from "./ListePlanningModal";
 import DisponibiliteMedecinModal from "./DisponibiliteMedecinModal";
 import { useAuthUser } from "@/hooks/useAuthUser";
 import ModifierMotDePasseModal from "@/components/ModifierMotDePasseModal";
+import GestionLienAutomate from "@/components/GestionLienAutomate";
+import GestionParametreNfs from "@/components/GestionParametreNfs";
 // import ListeAnnulationFactureModal from "@/pages/servicecaisse/components/ListeAnnulationFactureModal";
 // import ListeAnnulationEncaissementModal from "@/pages/servicecaisse/components/ListeAnnulationEncaissementModal";
 
@@ -23,6 +25,8 @@ export default function Sidebar() {
     useState(false);
   const [showListePlanningModal, setShowListePlanningModal] = useState(false);
   const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
+  const [showLienAutomateModal, setShowLienAutomateModal] = useState(false);
+  const [showParametreNfsModal, setShowParametreNfsModal] = useState(false);
   const { user, loading } = useAuthUser();
   const pathname = usePathname();
 
@@ -275,6 +279,30 @@ export default function Sidebar() {
                     Gestion Biologiste
                   </Link>
                 </li>
+                {!loading && user && user.type === "adminsuper" && (
+                  <>
+                    <li>
+                      <button
+                        className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                        onClick={() => setShowLienAutomateModal(true)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <i className="bi bi-link-45deg me-2 text-danger"></i>{" "}
+                        Liens Automates
+                      </button>
+                    </li>
+                    <li>
+                      <button
+                        className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                        onClick={() => setShowParametreNfsModal(true)}
+                        style={{ cursor: "pointer" }}
+                      >
+                        <i className="bi bi-droplet-fill me-2 text-primary"></i>{" "}
+                        Paramètres NFS
+                      </button>
+                    </li>
+                  </>
+                )}
               </ul>
             </Accordion.Body>
           </Accordion.Item>
@@ -597,17 +625,33 @@ export default function Sidebar() {
         </Accordion>
       </aside>
 
-      {/* Modal pour la liste des annulations de factures */}
-      {/* <ListeAnnulationFactureModal
-        show={showListeAnnulationModal}
-        onHide={() => setShowListeAnnulationModal(false)}
-      /> */}
+    
 
-      {/* Modal pour la liste des annulations d'encaissements */}
-      {/* <ListeAnnulationEncaissementModal
-        show={showListeEncaissementAnnulationModal}
-        onHide={() => setShowListeEncaissementAnnulationModal(false)}
-      /> */}
+      {/* Modal Liens Automates */}
+      <Modal show={showLienAutomateModal} onHide={() => setShowLienAutomateModal(false)} centered size="lg" scrollable>
+        <Modal.Header closeButton>
+          <Modal.Title><i className="bi bi-link-45deg me-2"></i>Liens Automates</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bg-light p-4">
+          <GestionLienAutomate />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowLienAutomateModal(false)}>Fermer</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal Paramètres NFS */}
+      <Modal show={showParametreNfsModal} onHide={() => setShowParametreNfsModal(false)} centered size="xl" scrollable>
+        <Modal.Header closeButton>
+          <Modal.Title><i className="bi bi-droplet-fill me-2"></i>Paramètres NFS</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bg-light p-4">
+          <GestionParametreNfs />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowParametreNfsModal(false)}>Fermer</Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Modal pour modifier le mot de passe */}
       <ModifierMotDePasseModal

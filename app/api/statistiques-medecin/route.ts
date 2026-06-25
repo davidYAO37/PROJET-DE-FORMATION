@@ -9,6 +9,7 @@ import { Medecin } from '@/models/medecin';
 import { Facturation } from '@/models/Facturation';
 import { ExamenHospitalisation } from '@/models/examenHospit';
 import { Patient } from '@/models/patient';
+import { TypeActe } from '@/models/TypeActe';
 
 const startOfDay = (date: Date) => {
   const value = new Date(date);
@@ -100,12 +101,19 @@ export async function GET(request: NextRequest) {
       lignesParActeActuel,
       lignesParActePrecedent,
       hospitalisationsParActeActuel,
+      _repartitionPlaceholder,
       actesExamensParMontant,
       consultationsParMontant,
       patientsParMedecin,
       montantParAssurance,
       consultationsMontantParAssurance,
       examensConsultationsParSexe,
+      caFacturationTotal,
+      caConsultationsTotal,
+      nouveauxPatients,
+      nouveauxPatientsPrecedent,
+      topMedecinsCA,
+      examensBioParSexeRaw,
     ] = await Promise.all([
       Consultation.countDocuments({ ...medecinFilter, ...consultationServiceFilter, Date_consulation: { $gte: periodStart, $lte: periodEnd } }),
       Consultation.countDocuments({ ...medecinFilter, ...consultationServiceFilter, Date_consulation: { $gte: periodStart, $lte: periodEnd }, attenteMedecin: 0 }),
@@ -160,6 +168,11 @@ export async function GET(request: NextRequest) {
         { $match: { dateLignePrestation: { $gte: previousStart, $lte: previousEnd }, ...ligneMedecinFilter, ...lignePrestationFilter } },
         { $group: { _id: '$prestation', total: { $sum: '$qte' } } },
       ]),
+      // Répartition par famille métier (logique WinDev) :
+      // on charge les FamilleActe puis on fait le comptage par Designationtypeacte dans ExamenHospitalisation
+      // + Pharmacie = Prescription sur la période
+      // => résultat construit après Promise.all (voir ci-dessous, on passe null ici comme placeholder)
+      Promise.resolve(null),
       ExamenHospitalisation.aggregate([
         { $match: { DatePres: { $gte: periodStart, $lte: periodEnd }, ...ligneMedecinFilter, ...hospitalisationServiceFilter } },
         { $group: { _id: '$Designationtypeacte', total: { $sum: 1 } } },
@@ -181,7 +194,7 @@ export async function GET(request: NextRequest) {
       ]),
       Facturation.aggregate([
         { $match: { DateFacturation: { $gte: periodStart, $lte: periodEnd }, ...facturationMedecinFilter, ...facturationServiceFilter } },
-        { $group: { _id: '$Assurance', montantExamens: { $sum: { $cond: [{ $ifNull: ['$idHospitalisation', false] }, { $ifNull: ['$Montanttotal', 0] }, 0] } }, montantConsultations: { $sum: { $cond: [{ $not: ['$idHospitalisation'] }, { $ifNull: ['$Montanttotal', 0] }, 0] } }, montantTotal: { $sum: { $ifNull: ['$Montanttotal', 0] } }, details: { $push: { date: '$DateFacturation', assurance: '$Assurance', designation: '$Designationtypeacte', montant: '$Montanttotal', patient: '$PatientP', type: '$typefacture' } } } },
+        { $group: { _id: '$Assurance', montantExamens: { $sum: { $cond: [{ $ifNull: ['$idHospitalisation', false] }, { $ifNull: ['$Montanttotal', 0] }, 0] } }, montantConsultations: { $sum: { $cond: [{ $not: ['$idHospitalisation'] }, { $ifNull: ['$Montanttotal', 0] }, 0] } }, montantTotal: { $sum: { $ifNull: ['$Montanttotal', 0] } }, tauxMoyen: { $avg: { $ifNull: ['$Taux', 0] } }, details: { $push: { date: '$DateFacturation', assurance: '$Assurance', designation: '$Designationtypeacte', montant: '$Montanttotal', patient: '$PatientP', type: '$typefacture' } } } },
         { $sort: { montantTotal: -1 } },
       ]),
       Consultation.aggregate([
@@ -196,6 +209,27 @@ export async function GET(request: NextRequest) {
         { $lookup: { from: Patient.collection.name, localField: '_id', foreignField: 'Code_dossier', as: 'patientInfo' } },
         { $unwind: { path: '$patientInfo', preserveNullAndEmptyArrays: true } },
         { $group: { _id: '$patientInfo.sexe', consultations: { $sum: 1 }, examens: { $sum: 0 }, details: { $push: { type: 'Consultation', date: '$date', patient: '$patient', sexe: '$patientInfo.sexe', designation: '$designation', codeDossier: '$_id' } } } },
+      ]),
+      Facturation.aggregate([
+        { $match: { DateFacturation: { $gte: periodStart, $lte: periodEnd }, ...facturationMedecinFilter, ...facturationServiceFilter } },
+        { $group: { _id: null, total: { $sum: { $ifNull: ['$Montanttotal', 0] } } } },
+      ]),
+      Consultation.aggregate([
+        { $match: { Date_consulation: { $gte: periodStart, $lte: periodEnd }, statutPrescriptionMedecin: 3, ...medecinFilter, ...consultationServiceFilter } },
+        { $group: { _id: null, total: { $sum: { $ifNull: ['$montantapayer', 0] } } } },
+      ]),
+      Patient.countDocuments({ dateCreation: { $gte: periodStart, $lte: periodEnd } }),
+      Patient.countDocuments({ dateCreation: { $gte: previousStart, $lte: previousEnd } }),
+      Facturation.aggregate([
+        { $match: { DateFacturation: { $gte: periodStart, $lte: periodEnd }, ...facturationServiceFilter } },
+        { $group: { _id: '$IDMEDECIN', ca: { $sum: { $ifNull: ['$Montanttotal', 0] } }, nombre: { $sum: 1 } } },
+        { $sort: { ca: -1 } },
+        { $limit: 8 },
+      ]),
+      LignePrestation.aggregate([
+        { $match: { dateLignePrestation: { $gte: periodStart, $lte: periodEnd }, ...ligneMedecinFilter } },
+        { $group: { _id: { prestation: '$prestation', sexe: '$sexe' }, count: { $sum: 1 } } },
+        { $sort: { '_id.prestation': 1, '_id.sexe': 1 } },
       ]),
     ]);
 
@@ -233,7 +267,7 @@ export async function GET(request: NextRequest) {
     consultationsParActeActuel.forEach((item) => actesMap.set(String(item._id || 'Consultation'), item.total));
     prescriptionsParActeActuel.forEach((item) => actesMap.set(String(item._id || 'Prescription'), (actesMap.get(String(item._id || 'Prescription')) || 0) + item.total));
     lignesParActeActuel.forEach((item) => actesMap.set(String(item._id || 'Acte médical'), (actesMap.get(String(item._id || 'Acte médical')) || 0) + item.total));
-    hospitalisationsParActeActuel.forEach((item) => actesMap.set(String(item._id || 'Hospitalisation'), (actesMap.get(String(item._id || 'Hospitalisation')) || 0) + item.total));
+    (hospitalisationsParActeActuel || []).forEach((item: any) => actesMap.set(String(item._id || 'Hospitalisation'), (actesMap.get(String(item._id || 'Hospitalisation')) || 0) + item.total));
 
     const progressionParActe = Array.from(actesMap.entries()).sort((a, b) => b[1] - a[1]).slice(0, 8).map(([acte, actuel]) => {
       const precedent = previousByActe.get(acte) || 0;
@@ -257,6 +291,105 @@ export async function GET(request: NextRequest) {
           jour: day.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
           consultations,
           rendezVous,
+        };
+      })
+    );
+
+    // ══ Répartition par famille d'acte (logique WinDev) ══
+    // 1. Consultation
+    const consultationCount = consultationsCurrent;
+    // 2. Pharmacie = count Prescription sur la période
+    const pharmacieCount = await Prescription.countDocuments({ DatePres: { $gte: periodStart, $lte: periodEnd } });
+    // 3. Logique WinDev : pour chaque TypeActe.Designation,
+    //    compter les ExamenHospitalisation où Designationtypeacte = TypeActe.Designation sur la période
+    //    Agrégation en une seule passe + filtre par les Designations connues dans TypeActe
+    const [tousLesTypeActe, examensParDesignation] = await Promise.all([
+      TypeActe.find({}).select('Designation').lean(),
+      ExamenHospitalisation.aggregate([
+        { $match: { DatePres: { $gte: periodStart, $lte: periodEnd } } },
+        { $group: { _id: '$Designationtypeacte', count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    // Index des résultats DB par désignation normalisée (lowercase)
+    const examensCountMap = new Map<string, { labelDB: string; count: number }>();
+    for (const row of examensParDesignation) {
+      if (row._id) examensCountMap.set(String(row._id).toLowerCase().trim(), { labelDB: String(row._id), count: row.count });
+    }
+
+    // Pour chaque TypeActe, chercher la correspondance insensible à la casse
+    const typeActeCounts = tousLesTypeActe
+      .map((ta: any) => {
+        const designation = String(ta.Designation || '').trim();
+        if (!designation) return null;
+        const match = examensCountMap.get(designation.toLowerCase());
+        return match ? { type: match.labelDB, count: match.count } : null;
+      })
+      .filter((x): x is { type: string; count: number } => x !== null && x.count > 0);
+
+    const repartitionFamilleActe = [
+      { type: 'Consultation', count: consultationCount },
+      { type: 'Pharmacie', count: pharmacieCount },
+      ...typeActeCounts,
+    ].filter(x => x.count > 0);
+
+    // ══ Détail répartition par médecin (pour état imprimable) ══
+    const [consultationsParMedecinDetail, prescriptionsParMedecinDetail, examensParMedecinDetail] = await Promise.all([
+      Consultation.aggregate([
+        { $match: { Date_consulation: { $gte: periodStart, $lte: periodEnd } } },
+        { $group: { _id: { medecin: '$NomMed' }, count: { $sum: 1 } } },
+        { $sort: { '_id.medecin': 1 } },
+      ]),
+      Prescription.aggregate([
+        { $match: { DatePres: { $gte: periodStart, $lte: periodEnd } } },
+        { $group: { _id: { medecin: '$NomMed' }, count: { $sum: 1 } } },
+        { $sort: { '_id.medecin': 1 } },
+      ]),
+      ExamenHospitalisation.aggregate([
+        { $match: { DatePres: { $gte: periodStart, $lte: periodEnd } } },
+        { $group: { _id: { medecin: '$NomMed', type: '$Designationtypeacte' }, count: { $sum: 1 } } },
+        { $sort: { '_id.medecin': 1, '_id.type': 1 } },
+      ]),
+    ]);
+
+    // Construire la liste unifiée triée par médecin
+    const detailParMedecin: { medecin: string; famille: string; count: number }[] = [
+      ...consultationsParMedecinDetail.map((r: any) => ({
+        medecin: r._id.medecin || 'Inconnu', famille: 'Consultation', count: r.count,
+      })),
+      ...prescriptionsParMedecinDetail.map((r: any) => ({
+        medecin: r._id.medecin || 'Inconnu', famille: 'Pharmacie', count: r.count,
+      })),
+      ...examensParMedecinDetail.map((r: any) => ({
+        medecin: r._id.medecin || 'Inconnu', famille: r._id.type || 'Acte clinique', count: r.count,
+      })),
+    ].sort((a, b) => a.medecin.localeCompare(b.medecin) || a.famille.localeCompare(b.famille));
+
+    // CA total
+    const caFacturation = (caFacturationTotal[0]?.total || 0) as number;
+    const caConsultations = (caConsultationsTotal[0]?.total || 0) as number;
+    const caTotal = caFacturation + caConsultations;
+
+    // Top médecins par CA : enrichir avec nom
+    const medecinById = new Map(medecins.map((m: any) => [String(m._id), `${m.nom || ''} ${m.prenoms || ''}`.trim()]));
+    const topMedecinsCaFormate = topMedecinsCA.map((item: any) => ({
+      medecin: medecinById.get(String(item._id)) || 'Inconnu',
+      ca: item.ca,
+      nombre: item.nombre,
+    }));
+
+    // Évolution CA journalière
+    const evolutionCA = await Promise.all(
+      Array.from({ length: Math.min(periodDays, 30) }).map(async (_, index) => {
+        const day = startOfDay(addDays(periodStart, index));
+        const dayEnd = endOfDay(day);
+        const [fact, consult] = await Promise.all([
+          Facturation.aggregate([{ $match: { DateFacturation: { $gte: day, $lte: dayEnd }, ...facturationMedecinFilter } }, { $group: { _id: null, total: { $sum: { $ifNull: ['$Montanttotal', 0] } } } }]),
+          Consultation.aggregate([{ $match: { Date_consulation: { $gte: day, $lte: dayEnd }, statutPrescriptionMedecin: 3, ...medecinFilter } }, { $group: { _id: null, total: { $sum: { $ifNull: ['$montantapayer', 0] } } } }]),
+        ]);
+        return {
+          jour: day.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+          ca: (fact[0]?.total || 0) + (consult[0]?.total || 0),
         };
       })
     );
@@ -290,10 +423,11 @@ export async function GET(request: NextRequest) {
     const montantAssuranceMap = new Map<string, any>();
     [...montantParAssurance, ...consultationsMontantParAssurance].forEach((item: any) => {
       const assurance = String(item._id || 'Non renseigné');
-      const current = montantAssuranceMap.get(assurance) || { assurance, montantExamens: 0, montantConsultations: 0, montantTotal: 0, details: [] };
+      const current = montantAssuranceMap.get(assurance) || { assurance, montantExamens: 0, montantConsultations: 0, montantTotal: 0, taux: 0, details: [] };
       current.montantExamens += item.montantExamens || 0;
       current.montantConsultations += item.montantConsultations || 0;
       current.montantTotal += item.montantTotal || 0;
+      if (item.tauxMoyen) current.taux = Math.round(item.tauxMoyen);
       current.details.push(...(item.details || []));
       montantAssuranceMap.set(assurance, current);
     });
@@ -308,7 +442,12 @@ export async function GET(request: NextRequest) {
         examensDemandes,
         tauxCompletion,
         tempsMoyenConsultation: 0,
+        caTotal,
+        nouveauxPatients,
+        variationNouveauxPatients: getVariation(nouveauxPatients, nouveauxPatientsPrecedent),
       },
+      evolutionCA,
+      topMedecinsCA: topMedecinsCaFormate,
       tendances: {
         consultations: getVariation(consultationsCurrent, consultationsPrevious),
         rendezVous: getVariation(rendezVousCurrent, rendezVousPrevious),
@@ -316,7 +455,8 @@ export async function GET(request: NextRequest) {
         examens: getVariation(examensCurrent, examensPrevious),
       },
       activiteHebdomadaire,
-      repartitionActes: progressionParActe.map((item) => ({ type: item.acte, count: item.actuel })),
+      repartitionActes: repartitionFamilleActe,
+      repartitionActesDetail: detailParMedecin,
       performanceParService: [
         { service: 'Consultations', total: consultationsCurrent, taux: tauxCompletion, statut: getStatus(tauxCompletion) },
         { service: 'Rendez-vous honorés', total: rendezVousCurrent, taux: rendezVousTaux, statut: getStatus(rendezVousTaux) },
@@ -336,11 +476,28 @@ export async function GET(request: NextRequest) {
         { libelle: "Dossiers complétés aujourd'hui", valeur: `${tauxCompletion}%`, niveau: tauxCompletion >= 85 ? 'success' : 'warning' },
         { libelle: 'Prescriptions émises', valeur: String(prescriptionsEmises), niveau: prescriptionsEmises > 0 ? 'info' : 'warning' },
         { libelle: 'Examens demandés', valeur: String(examensDemandes), niveau: examensDemandes > 0 ? 'info' : 'warning' },
+        { libelle: 'Chiffre d\'affaires période', valeur: `${caTotal.toLocaleString('fr-FR')} FCFA`, niveau: caTotal > 0 ? 'success' : 'info' },
+        { libelle: 'Nouveaux patients', valeur: String(nouveauxPatients), niveau: nouveauxPatients > 0 ? 'info' : 'warning' },
       ],
       actesExamensParMontant: Array.from(montantActesMap.values()).sort((a, b) => b.montant - a.montant),
       patientsConsultesParMedecin: patientsConsultesTousMedecins,
       recapMontantParAssurance: Array.from(montantAssuranceMap.values()).sort((a, b) => b.montantTotal - a.montantTotal),
       examensConsultationsParSexe: Array.from(sexeMap.values()),
+      examensBioParSexe: (() => {
+        const map = new Map<string, { prestation: string; F: number; M: number }>();
+        examensBioParSexeRaw.forEach((r: any) => {
+          const prestation = String(r._id.prestation || 'Non renseigné');
+          const sexeKey = String(r._id.sexe || 'Non renseigné');
+          const cur = map.get(prestation) || { prestation, F: 0, M: 0 };
+          if (sexeKey === 'F' || sexeKey.toLowerCase().startsWith('f')) cur.F += r.count;
+          else if (sexeKey === 'M' || sexeKey.toLowerCase().startsWith('m')) cur.M += r.count;
+          map.set(prestation, cur);
+        });
+        return Array.from(map.values())
+          .map(r => ({ ...r, total: r.F + r.M }))
+          .filter(r => r.total > 0)
+          .sort((a, b) => a.prestation.localeCompare(b.prestation));
+      })(),
     });
   } catch (error) {
     console.error('Erreur statistiques médecin:', error);

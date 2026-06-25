@@ -1,7 +1,13 @@
 "use client";
 import { useState, useEffect } from "react";
 import { Card, Row, Col, Badge, Spinner, Alert, Form, Button, ProgressBar, Table, Modal } from "react-bootstrap";
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from "@/utils/printRecu";
+import { useEntreprise } from "@/hooks/useEntreprise";
 import { FaChartLine, FaChartBar, FaChartPie, FaUsers, FaCalendarAlt, FaStethoscope, FaHospital, FaDownload, FaArrowUp, FaArrowDown, FaFileInvoice } from "react-icons/fa";
+import {
+  BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
 
 interface StatistiqueData {
   kpis: {
@@ -13,6 +19,9 @@ interface StatistiqueData {
     examensDemandes: number;
     tauxCompletion: number;
     tempsMoyenConsultation: number;
+    caTotal: number;
+    nouveauxPatients: number;
+    variationNouveauxPatients: number;
   };
   tendances: {
     consultations: number;
@@ -21,7 +30,10 @@ interface StatistiqueData {
     examens: number;
   };
   activiteHebdomadaire: { jour: string; consultations: number; rendezVous: number }[];
+  evolutionCA: { jour: string; ca: number }[];
+  topMedecinsCA: { medecin: string; ca: number; nombre: number }[];
   repartitionActes: { type: string; count: number }[];
+  repartitionActesDetail: { medecin: string; famille: string; count: number }[];
   performanceParService: { service: string; total: number; taux: number; statut: "Excellent" | "Correct" | "À surveiller" }[];
   progressionParMedecin: { medecin: string; specialite: string; actuel: number; precedent: number; objectif: number }[];
   progressionParActe: { acte: string; actuel: number; precedent: number; objectif: number }[];
@@ -29,11 +41,151 @@ interface StatistiqueData {
   alertesMetier: { libelle: string; valeur: string; niveau: "success" | "warning" | "danger" | "info" }[];
   actesExamensParMontant: { designation: string; montant: number; nombre: number; details: Record<string, any>[] }[];
   patientsConsultesParMedecin: { medecin: string; nombre: number; totalConsultations: number; details: Record<string, any>[] }[];
-  recapMontantParAssurance: { assurance: string; montantExamens: number; montantConsultations: number; montantTotal: number; details: Record<string, any>[] }[];
+  recapMontantParAssurance: { assurance: string; montantExamens: number; montantConsultations: number; montantTotal: number; taux: number; details: Record<string, any>[] }[];
   examensConsultationsParSexe: { sexe: string; consultations: number; examens: number; total: number; details: Record<string, any>[] }[];
+  examensBioParSexe: { prestation: string; F: number; M: number; total: number }[];
+}
+
+const FAMILLE_COLORS_BASE: { key: string; color: string }[] = [
+  { key: 'consultation',         color: '#0d6efd' },
+  { key: 'pharmacie',            color: '#198754' },
+  { key: 'examen biologique',    color: '#f97316' },
+  { key: 'examen hematologique', color: '#fd7e14' },
+  { key: 'acte clinique',        color: '#6f42c1' },
+  { key: 'radiologie',           color: '#0dcaf0' },
+  { key: 'chirurgie',            color: '#dc3545' },
+  { key: 'hospitalisation',      color: '#ffc107' },
+  { key: 'biochimie',            color: '#20c997' },
+];
+
+const getFamilleColorByName = (type: string, fallbackIndex: number, chartColors: string[]): string => {
+  const normalized = type.toLowerCase().trim();
+  const found = FAMILLE_COLORS_BASE.find(b => normalized.includes(b.key) || b.key.includes(normalized));
+  return found?.color ?? chartColors[fallbackIndex % chartColors.length];
+};
+
+const RADIAN = Math.PI / 180;
+const renderFamilleLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent, name }: any) => {
+  if ((percent || 0) < 0.04) return null;
+  const radius = outerRadius + 28;
+  const x = cx + radius * Math.cos(-midAngle * RADIAN);
+  const y = cy + radius * Math.sin(-midAngle * RADIAN);
+  const lineX1 = cx + (outerRadius + 4) * Math.cos(-midAngle * RADIAN);
+  const lineY1 = cy + (outerRadius + 4) * Math.sin(-midAngle * RADIAN);
+  const lineX2 = cx + (outerRadius + 18) * Math.cos(-midAngle * RADIAN);
+  const lineY2 = cy + (outerRadius + 18) * Math.sin(-midAngle * RADIAN);
+  const anchor = x > cx ? 'start' : 'end';
+  const shortName = name.length > 14 ? name.slice(0, 13) + '…' : name;
+  return (
+    <g>
+      <line x1={lineX1} y1={lineY1} x2={lineX2} y2={lineY2} stroke="#888" strokeWidth={1} />
+      <text x={x} y={y - 5} textAnchor={anchor} fill="#333" fontSize={10} fontWeight={600}>{shortName}</text>
+      <text x={x} y={y + 7} textAnchor={anchor} fill="#666" fontSize={10}>{`${((percent || 0) * 100).toFixed(1)}%`}</text>
+    </g>
+  );
+};
+
+function FamilleActeCard({ repartitionActes, chartColors, onPrintDetail }: { repartitionActes: { type: string; count: number }[]; chartColors: string[]; onPrintDetail: () => void }) {
+  const [showDetail, setShowDetail] = useState(false);
+  const getFamilleColor = (type: string, i: number) => getFamilleColorByName(type, i, chartColors);
+  const totalActes = repartitionActes.reduce((s, d) => s + d.count, 0) || 1;
+
+  return (
+    <Card className="professional-stat-card border-0 shadow-sm h-100">
+      <Card.Header className="professional-stat-header border-0 d-flex justify-content-between align-items-center">
+        <h5 className="mb-0">
+          <FaChartPie className="me-2" />
+          Répartition par famille d'acte
+        </h5>
+        <div className="d-flex gap-2">
+          <Button
+            size="sm"
+            variant={showDetail ? 'secondary' : 'outline-secondary'}
+            onClick={() => setShowDetail(v => !v)}
+            title="Afficher / Masquer le détail"
+          >
+            {showDetail ? 'Graphique' : 'Détail'}
+          </Button>
+          <Button
+            size="sm"
+            variant="outline-primary"
+            onClick={onPrintDetail}
+            title="État imprimable trié par médecin"
+          >
+            <FaDownload className="me-1" />État
+          </Button>
+        </div>
+      </Card.Header>
+      <Card.Body>
+        {!showDetail ? (
+          <>
+            <ResponsiveContainer width="100%" height={270}>
+              <PieChart margin={{ top: 20, right: 40, bottom: 20, left: 40 }}>
+                <Pie
+                  data={repartitionActes}
+                  dataKey="count"
+                  nameKey="type"
+                  cx="50%" cy="50%"
+                  innerRadius={48}
+                  outerRadius={78}
+                  paddingAngle={3}
+                  label={renderFamilleLabel}
+                  labelLine={false}
+                >
+                  {repartitionActes.map((item, i) => (
+                    <Cell key={i} fill={getFamilleColor(item.type, i)} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v: any, name: any) => [`${Number(v).toLocaleString('fr-FR')} (${((Number(v) / totalActes) * 100).toFixed(1)}%)`, name]} />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="text-center mt-1">
+              <small className="text-muted">Total : <strong>{totalActes.toLocaleString('fr-FR')}</strong> actes</small>
+            </div>
+          </>
+        ) : (
+          <div>
+            <Table size="sm" hover className="mb-0 align-middle">
+              <thead className="table-light">
+                <tr>
+                  <th>Famille</th>
+                  <th className="text-end">Nombre</th>
+                  <th className="text-end">Part</th>
+                </tr>
+              </thead>
+              <tbody>
+                {repartitionActes.map((item, i) => (
+                  <tr key={i}>
+                    <td>
+                      <span className="rounded-2 me-2" style={{ width: 11, height: 11, background: getFamilleColor(item.type, i), display: 'inline-block', verticalAlign: 'middle' }} />
+                      <span className="fw-semibold small">{item.type}</span>
+                    </td>
+                    <td className="text-end fw-bold small">{item.count.toLocaleString('fr-FR')}</td>
+                    <td className="text-end">
+                      <Badge bg="light" text="dark" style={{ border: `1px solid ${getFamilleColor(item.type, i)}`, color: getFamilleColor(item.type, i) }}>
+                        {((item.count / totalActes) * 100).toFixed(1)}%
+                      </Badge>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot className="table-secondary fw-bold">
+                <tr>
+                  <td>Total</td>
+                  <td className="text-end">{totalActes.toLocaleString('fr-FR')}</td>
+                  <td className="text-end">100%</td>
+                </tr>
+              </tfoot>
+            </Table>
+          </div>
+        )}
+      </Card.Body>
+    </Card>
+  );
 }
 
 export default function Statistique() {
+  const { entreprise } = useEntreprise();
   const [data, setData] = useState<StatistiqueData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -43,6 +195,10 @@ export default function Statistique() {
   const [detailTitle, setDetailTitle] = useState("");
   const [detailRows, setDetailRows] = useState<Record<string, any>[]>([]);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showRepartitionModal, setShowRepartitionModal] = useState(false);
+  const [showAssuranceModal, setShowAssuranceModal] = useState(false);
+  const [showSexeModal, setShowSexeModal] = useState(false);
+  const [showBioSexeModal, setShowBioSexeModal] = useState(false);
 
   useEffect(() => {
     // Détecter le rôle de l'utilisateur
@@ -110,112 +266,7 @@ export default function Statistique() {
   const totalPatientsConsultes = data?.patientsConsultesParMedecin.reduce((sum, item) => sum + item.nombre, 0) || 0;
   const totalAssurances = data?.recapMontantParAssurance.reduce((sum, item) => sum + item.montantTotal, 0) || 0;
 
-  // Composants de graphiques personnalisés
-  const CustomLineChart = ({ data, title }: { data: { date: string; total: number }[]; title: string }) => {
-    const maxValue = Math.max(...data.map(d => d.total), 1);
-    
-    return (
-      <div className="custom-chart">
-        <h6 className="text-center mb-3">{title}</h6>
-        <div className="chart-container">
-          {data.map((item, index) => (
-            <div key={index} className="chart-item">
-              <div className="chart-label">{item.date}</div>
-              <div className="chart-bar-container">
-                <div 
-                  className="chart-bar line-chart-bar"
-                  style={{ 
-                    height: `${(item.total / maxValue) * 100}%`,
-                    background: `linear-gradient(135deg, #667eea 0%, #764ba2 100%)`
-                  }}
-                />
-                <div className="chart-value">{item.total}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const ClickablePieChart = ({ data, title }: { data: { label: string; value: number; details: Record<string, any>[] }[]; title: string }) => {
-    const total = data.reduce((sum, item) => sum + item.value, 0) || 1;
-    const colors = ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', '#9966ff'];
-
-    return (
-      <div className="custom-chart">
-        <h6 className="text-center mb-3">{title}</h6>
-        <div className="pie-chart-container">
-          {data.map((item, index) => (
-            <button key={index} type="button" className="pie-segment chart-button" onClick={() => afficherDetails(item.label, item.details)}>
-              <div className="pie-legend">
-                <div className="pie-color" style={{ backgroundColor: colors[index % colors.length] }} />
-                <span>{item.label}</span>
-                <Badge bg="secondary" className="ms-2">{((item.value / total) * 100).toFixed(1)}%</Badge>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const CustomBarChart = ({ data, title }: { data: { week: string; count: number }[]; title: string }) => {
-    const maxValue = Math.max(...data.map(d => d.count), 1);
-    
-    return (
-      <div className="custom-chart">
-        <h6 className="text-center mb-3">{title}</h6>
-        <div className="chart-container">
-          {data.map((item, index) => (
-            <div key={index} className="chart-item">
-              <div className="chart-label">{item.week}</div>
-              <div className="chart-bar-container">
-                <div 
-                  className="chart-bar bar-chart-bar"
-                  style={{ 
-                    height: `${(item.count / maxValue) * 100}%`,
-                    background: `linear-gradient(135deg, #36a2eb 0%, #4facfe 100%)`
-                  }}
-                />
-                <div className="chart-value">{item.count}</div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  };
-
-  const CustomPieChart = ({ data, title }: { data: { type: string; count: number }[]; title: string }) => {
-    const total = data.reduce((sum, item) => sum + item.count, 0) || 1;
-    const colors = ['#ff6384', '#36a2eb', '#ffce56', '#4bc0c0'];
-    
-    return (
-      <div className="custom-chart">
-        <h6 className="text-center mb-3">{title}</h6>
-        <div className="pie-chart-container">
-          <div className="pie-chart">
-            {data.map((item, index) => {
-              const percentage = (item.count / total) * 100;
-              return (
-                <div key={index} className="pie-segment">
-                  <div className="pie-legend">
-                    <div 
-                      className="pie-color" 
-                      style={{ backgroundColor: colors[index % colors.length] }}
-                    />
-                    <span>{item.type}</span>
-                    <Badge bg="secondary" className="ms-2">{percentage.toFixed(1)}%</Badge>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-    );
-  };
+  const CHART_COLORS = ['#0d6efd', '#198754', '#ffc107', '#dc3545', '#0dcaf0', '#6f42c1', '#fd7e14', '#20c997'];
 
   const calculerProgression = (actuel: number, precedent: number) => {
     if (precedent === 0) return actuel > 0 ? 100 : 0;
@@ -285,74 +336,94 @@ export default function Statistique() {
         </div>
       </div>
 
+      {/* ── KPI Row 1 ── */}
+      <Row className="g-4 mb-3">
+        {[
+          { icon: <FaStethoscope />, color: '#0d6efd', value: data.kpis.consultationsJour, label: 'Consultations', trend: `${data.tendances.consultations > 0 ? '+' : ''}${data.tendances.consultations}%`, up: data.tendances.consultations >= 0 },
+          { icon: <FaUsers />, color: '#f97316', value: data.kpis.patientsEnAttente, label: 'En attente', trend: 'File active', up: true },
+          { icon: <FaCalendarAlt />, color: '#198754', value: data.kpis.rendezVousJour, label: 'Rendez-vous', trend: `${data.tendances.rendezVous > 0 ? '+' : ''}${data.tendances.rendezVous}%`, up: data.tendances.rendezVous >= 0 },
+          { icon: <FaFileInvoice />, color: '#0dcaf0', value: data.kpis.prescriptionsEmises, label: 'Prescriptions', trend: `${data.tendances.prescriptions > 0 ? '+' : ''}${data.tendances.prescriptions}%`, up: data.tendances.prescriptions >= 0 },
+          { icon: <FaHospital />, color: '#6f42c1', value: data.kpis.examensDemandes, label: 'Examens demandés', trend: `${data.tendances.examens > 0 ? '+' : ''}${data.tendances.examens}%`, up: data.tendances.examens >= 0 },
+          { icon: <FaUsers />, color: '#20c997', value: data.kpis.nouveauxPatients, label: 'Nouveaux patients', trend: `${data.kpis.variationNouveauxPatients > 0 ? '+' : ''}${data.kpis.variationNouveauxPatients}%`, up: data.kpis.variationNouveauxPatients >= 0 },
+        ].map((k, i) => (
+          <Col key={i} xl={2} md={4} sm={6}>
+            <Card className="stat-card border-0 shadow-sm h-100">
+              <Card.Body className="d-flex align-items-center gap-3 py-3">
+                <div className="rounded-3 d-flex align-items-center justify-content-center" style={{ width: 48, height: 48, background: `${k.color}20`, flexShrink: 0 }}>
+                  <span style={{ color: k.color, fontSize: '1.3rem' }}>{k.icon}</span>
+                </div>
+                <div>
+                  <div className="fw-bold fs-4 lh-1 mb-1">{k.value.toLocaleString('fr-FR')}</div>
+                  <div className="text-muted small">{k.label}</div>
+                  <div className={`trend-badge ${k.up ? 'trend-up' : 'trend-down'} mt-1`}>
+                    {k.up ? <FaArrowUp style={{ fontSize: '9px' }} /> : <FaArrowDown style={{ fontSize: '9px' }} />}
+                    {k.trend}
+                  </div>
+                </div>
+              </Card.Body>
+            </Card>
+          </Col>
+        ))}
+      </Row>
+
+      {/* ── KPI CA ── */}
       <Row className="g-4 mb-4">
-        <Col xl={3} md={6}>
-          <Card className="stat-card stat-card-primary border-0 shadow-sm h-100">
-            <Card.Body className="text-center">
-              <FaStethoscope className="text-primary mb-3" style={{ fontSize: "2rem" }} />
-              <h3 className="mb-1">{data.kpis.consultationsJour}</h3>
-              <p className="text-muted mb-0">Consultations de la Période</p>
-              <div className="trend-badge trend-up mt-2">
-                <FaArrowUp style={{ fontSize: "10px" }} />
-                +{data.tendances.consultations}%
+        <Col md={6}>
+          <Card className="border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #198754' }}>
+            <Card.Body className="d-flex align-items-center gap-4 py-3">
+              <div className="rounded-3 d-flex align-items-center justify-content-center" style={{ width: 56, height: 56, background: '#19875420', flexShrink: 0 }}>
+                <FaFileInvoice style={{ color: '#198754', fontSize: '1.6rem' }} />
+              </div>
+              <div>
+                <div className="text-muted small">Chiffre d'affaires période</div>
+                <div className="fw-bold" style={{ fontSize: '1.5rem', color: '#198754' }}>{formatMontant(data.kpis.caTotal)}</div>
+                <div className="text-muted small">Facturations + Consultations payées</div>
               </div>
             </Card.Body>
           </Card>
         </Col>
-        <Col xl={3} md={6}>
-          <Card className="stat-card stat-card-warning border-0 shadow-sm h-100">
-            <Card.Body className="text-center">
-              <FaUsers className="text-warning mb-3" style={{ fontSize: "2rem" }} />
-              <h3 className="mb-1">{data.kpis.patientsEnAttente}</h3>
-              <p className="text-muted mb-0">Patients en attente</p>
-              <div className="trend-badge trend-up mt-2">
-                <FaArrowUp style={{ fontSize: "10px" }} />
-                File active
+        <Col md={6}>
+          <Card className="border-0 shadow-sm h-100">
+            <Card.Body className="py-2">
+              <div className="d-flex justify-content-between mb-2">
+                <span className="fw-semibold small"><i className="bi bi-check2-all me-1 text-success"></i>Taux de complétion dossiers</span>
+                <Badge bg={data.kpis.tauxCompletion >= 80 ? 'success' : data.kpis.tauxCompletion >= 50 ? 'warning' : 'danger'}>{data.kpis.tauxCompletion}%</Badge>
               </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col xl={3} md={6}>
-          <Card className="stat-card stat-card-success border-0 shadow-sm h-100">
-            <Card.Body className="text-center">
-              <FaCalendarAlt className="text-success mb-3" style={{ fontSize: "2rem" }} />
-              <h3 className="mb-1">{data.kpis.rendezVousJour}</h3>
-              <p className="text-muted mb-0">Rendez-vous de la Période</p>
-              <div className="trend-badge trend-up mt-2">
-                <FaArrowUp style={{ fontSize: "10px" }} />
-                +{data.tendances.rendezVous}%
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col xl={3} md={6}>
-          <Card className="stat-card stat-card-info border-0 shadow-sm h-100">
-            <Card.Body className="text-center">
-              <FaFileInvoice className="text-info mb-3" style={{ fontSize: "2rem" }} />
-              <h3 className="mb-1">{data.kpis.prescriptionsEmises}</h3>
-              <p className="text-muted mb-0">Prescriptions émises</p>
-              <div className="trend-badge trend-up mt-2">
-                <FaArrowUp style={{ fontSize: "10px" }} />
-                +{data.tendances.prescriptions}%
-              </div>
+              <ProgressBar now={data.kpis.tauxCompletion} variant={data.kpis.tauxCompletion >= 80 ? 'success' : data.kpis.tauxCompletion >= 50 ? 'warning' : 'danger'} style={{ height: 10, borderRadius: 8 }} />
+              <Row className="mt-2 text-center">
+                <Col><small className="text-muted">Reçus : <strong className="text-success">{data.kpis.patientsRecus}</strong></small></Col>
+                <Col><small className="text-muted">En attente : <strong className="text-warning">{data.kpis.patientsEnAttente}</strong></small></Col>
+                <Col><small className="text-muted">Total : <strong>{data.kpis.consultationsJour}</strong></small></Col>
+              </Row>
             </Card.Body>
           </Card>
         </Col>
       </Row>
 
+      {/* Activité hebdomadaire */}
       <Row className="g-4 mb-4">
-        <Col xl={4} lg={6}>
+        <Col xl={8} lg={12}>
           <Card className="professional-stat-card border-0 shadow-sm h-100">
             <Card.Header className="professional-stat-header border-0">
-              <h5 className="mb-0">
-                <FaChartPie className="me-2" />
-                Répartition des actes
-              </h5>
+              <h5 className="mb-0"><FaChartLine className="me-2" />Activité hebdomadaire</h5>
             </Card.Header>
             <Card.Body>
-              <CustomPieChart data={data.repartitionActes} title="Actes médicaux" />
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={data.activiteHebdomadaire} margin={{ left: 0, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="jour" tick={{ fontSize: 12 }} />
+                  <YAxis tick={{ fontSize: 12 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  <Bar dataKey="consultations" name="Consultations" fill="#0d6efd" radius={[4,4,0,0]} />
+                  <Bar dataKey="rendezVous" name="Rendez-vous" fill="#0dcaf0" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
             </Card.Body>
           </Card>
+        </Col>
+        <Col xl={4} lg={6}>
+          <FamilleActeCard repartitionActes={data.repartitionActes} chartColors={CHART_COLORS} onPrintDetail={() => setShowRepartitionModal(true)} />
         </Col>
         <Col xl={4} lg={12}>
           <Card className="professional-stat-card border-0 shadow-sm h-100">
@@ -412,6 +483,51 @@ export default function Statistique() {
                   {data.tendances.examens}%
                 </span>
               </Alert>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* ══ Évolution CA + Top médecins CA ══ */}
+      <Row className="g-4 mt-1 mb-1">
+        <Col xl={7} lg={12}>
+          <Card className="professional-stat-card border-0 shadow-sm h-100">
+            <Card.Header className="professional-stat-header border-0 variant-green-soft">
+              <h5 className="mb-0"><FaChartLine className="me-2" />Évolution du chiffre d'affaires</h5>
+            </Card.Header>
+            <Card.Body>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={data.evolutionCA} margin={{ left: 10, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="jour" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: any) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v: any) => formatMontant(v)} labelStyle={{ fontWeight: 'bold' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="ca" name="CA (FCFA)" stroke="#198754" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xl={5} lg={12}>
+          <Card className="professional-stat-card border-0 shadow-sm h-100">
+            <Card.Header className="professional-stat-header border-0 variant-blue-soft">
+              <h5 className="mb-0"><FaChartBar className="me-2" />Top médecins — CA généré</h5>
+            </Card.Header>
+            <Card.Body>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={data.topMedecinsCA} layout="vertical" margin={{ left: 10, right: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v: any) => `${(v / 1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="medecin" tick={{ fontSize: 10 }} width={120} />
+                  <Tooltip formatter={(v: any) => formatMontant(v)} />
+                  <Bar dataKey="ca" name="CA (FCFA)" fill="#2563eb" radius={[0, 4, 4, 0]}>
+                    {data.topMedecinsCA.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
             </Card.Body>
           </Card>
         </Col>
@@ -485,19 +601,39 @@ export default function Statistique() {
                   Montants examens et consultations par assurance
                 </h5>
               </div>
-              <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Montants par assurance", data.recapMontantParAssurance.flatMap(item => item.details))}>
-                Détails
-              </Button>
+              <div className="d-flex gap-2">
+                <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Montants par assurance", data.recapMontantParAssurance.flatMap(item => item.details))}>
+                  Détails
+                </Button>
+                <Button size="sm" variant="outline-primary" className="details-pill" onClick={() => setShowAssuranceModal(true)}>
+                  <FaDownload className="me-1" />État
+                </Button>
+              </div>
             </Card.Header>
             <Card.Body>
               <div className="metric-summary mb-3">
                 <span>Total assurances</span>
                 <strong>{formatMontant(totalAssurances)}</strong>
               </div>
-              <ClickablePieChart
-                data={data.recapMontantParAssurance.map(item => ({ label: item.assurance, value: item.montantTotal, details: item.details }))}
-                title="Répartition par assurance"
-              />
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={data.recapMontantParAssurance}
+                    dataKey="montantTotal"
+                    nameKey="assurance"
+                    cx="50%" cy="50%"
+                    outerRadius={80}
+                    onClick={(entry: any) => afficherDetails(entry.assurance, entry.details)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {data.recapMontantParAssurance.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: any) => formatMontant(v)} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
               <Table responsive size="sm" className="mt-3 mb-0">
                 <thead>
                   <tr>
@@ -531,19 +667,40 @@ export default function Statistique() {
                 </h5>
                
               </div>
-              <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Consultations par sexe", data.examensConsultationsParSexe.flatMap(item => item.details))}>
-                Détails
-              </Button>
+              <div className="d-flex gap-2">
+                <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Consultations par sexe", data.examensConsultationsParSexe.flatMap(item => item.details))}>
+                  Détails
+                </Button>
+                <Button size="sm" variant="outline-primary" className="details-pill" onClick={() => setShowSexeModal(true)}>
+                  <FaDownload className="me-1" />État
+                </Button>
+              </div>
             </Card.Header>
             <Card.Body>
               <div className="metric-summary mb-3">
                 <span>Total actes suivis</span>
                 <strong>{data.examensConsultationsParSexe.reduce((sum, item) => sum + item.total, 0)}</strong>
               </div>
-              <ClickablePieChart
-                data={data.examensConsultationsParSexe.map(item => ({ label: item.sexe, value: item.total, details: item.details }))}
-                title="Répartition par sexe"
-              />
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={data.examensConsultationsParSexe}
+                    dataKey="total"
+                    nameKey="sexe"
+                    cx="50%" cy="50%"
+                    outerRadius={80}
+                    label={({ name, percent }: any) => `${name === 'M' ? 'Hommes' : name === 'F' ? 'Femmes' : name||'?'} ${((percent||0)*100).toFixed(0)}%`}
+                    onClick={(entry: any) => afficherDetails(entry.sexe, entry.details)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {data.examensConsultationsParSexe.map((_, i) => (
+                      <Cell key={i} fill={i === 0 ? '#0d6efd' : '#dc3545'} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: any) => Number(v).toLocaleString('fr-FR')} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
               <Table responsive size="sm" className="mt-3 mb-0">
                 <thead>
                   <tr>
@@ -564,6 +721,65 @@ export default function Statistique() {
           </Card>
         </Col>
       </Row>          
+
+      {/* ── Examens biologiques par sexe ── */}
+      <Row className="g-4 mt-1">
+        <Col xl={12} lg={12}>
+          <Card className="advanced-stat-card border-0 shadow-sm h-100">
+            <Card.Header className="advanced-stat-header border-0 variant-teal">
+              <div>
+                <h5 className="mb-1">
+                  <FaChartBar className="me-2" />
+                  Examens biologiques par sexe
+                </h5>
+              </div>
+              <Button size="sm" variant="outline-primary" className="details-pill" onClick={() => setShowBioSexeModal(true)}>
+                <FaDownload className="me-1" />État
+              </Button>
+            </Card.Header>
+            <Card.Body>
+              {(data.examensBioParSexe || []).length === 0 ? (
+                <Alert variant="info" className="mb-0">Aucun examen biologique sur la période.</Alert>
+              ) : (
+                <>
+                  <div className="metric-summary mb-3">
+                    <span>Total examens</span>
+                    <strong>{(data.examensBioParSexe || []).reduce((s, r) => s + r.total, 0).toLocaleString('fr-FR')}</strong>
+                  </div>
+                  <Table responsive hover size="sm" className="mb-0 align-middle">
+                    <thead className="table-light">
+                      <tr>
+                        <th>Prestation</th>
+                        <th className="text-center" style={{ color: '#dc3545' }}>Féminin (F)</th>
+                        <th className="text-center" style={{ color: '#0d6efd' }}>Masculin (M)</th>
+                        <th className="text-center">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(data.examensBioParSexe || []).map((item, i) => (
+                        <tr key={i}>
+                          <td className="fw-semibold small">{item.prestation}</td>
+                          <td className="text-center">{item.F > 0 ? item.F : <span className="text-muted">—</span>}</td>
+                          <td className="text-center">{item.M > 0 ? item.M : <span className="text-muted">—</span>}</td>
+                          <td className="text-center fw-bold">{item.total}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot className="table-secondary fw-bold">
+                      <tr>
+                        <td>TOTAL</td>
+                        <td className="text-center">{(data.examensBioParSexe || []).reduce((s, r) => s + r.F, 0)}</td>
+                        <td className="text-center">{(data.examensBioParSexe || []).reduce((s, r) => s + r.M, 0)}</td>
+                        <td className="text-center">{(data.examensBioParSexe || []).reduce((s, r) => s + r.total, 0)}</td>
+                      </tr>
+                    </tfoot>
+                  </Table>
+                </>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
 
       <Row className="g-4 mt-1">
         <Col xl={6} lg={6}>
@@ -757,6 +973,334 @@ export default function Statistique() {
 
       
 
+      {/* Modal état imprimable répartition par médecin */}
+      <Modal show={showRepartitionModal} onHide={() => setShowRepartitionModal(false)} size="xl" centered scrollable>
+        <Modal.Header closeButton className="d-print-none">
+          <Modal.Title><FaChartPie className="me-2" />Répartition des actes par médecin</Modal.Title>
+        </Modal.Header>
+        <Modal.Body id="print-repartition">
+          {data && (() => {
+            const rows = data.repartitionActesDetail || [];
+            const familles = [...new Set(rows.map(r => r.famille))].sort();
+            const medecins = [...new Set(rows.map(r => r.medecin))].sort();
+            // Pivot : medecin → famille → count
+            const pivot = new Map<string, Map<string, number>>();
+            for (const r of rows) {
+              if (!pivot.has(r.medecin)) pivot.set(r.medecin, new Map());
+              pivot.get(r.medecin)!.set(r.famille, r.count);
+            }
+            const totalParFamille = new Map<string, number>();
+            for (const f of familles) totalParFamille.set(f, rows.filter(r => r.famille === f).reduce((s, r) => s + r.count, 0));
+            const totalGeneral = rows.reduce((s, r) => s + r.count, 0);
+            return (
+              <>
+                <div className="d-flex justify-content-between align-items-center mb-3 d-print-block">
+                  <div>
+                    <div className="fw-bold fs-6">RÉPARTITION DES ACTES PAR MÉDECIN</div>
+                    <div className="text-muted small">Période : {new Date(dateDebut).toLocaleDateString('fr-FR')} au {new Date(dateFin).toLocaleDateString('fr-FR')}</div>
+                  </div>
+                  <div className="text-muted small">Total général : <strong>{totalGeneral.toLocaleString('fr-FR')}</strong></div>
+                </div>
+                <Table bordered size="sm" className="mb-0 align-middle" style={{ fontSize: 12 }}>
+                  <thead className="table-dark">
+                    <tr>
+                      <th style={{ minWidth: 160 }}>Médecin</th>
+                      {familles.map(f => <th key={f} className="text-center" style={{ minWidth: 90 }}>{f}</th>)}
+                      <th className="text-center bg-secondary text-white">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {medecins.map(med => {
+                      const row = pivot.get(med)!;
+                      const total = familles.reduce((s, f) => s + (row.get(f) || 0), 0);
+                      if (total === 0) return null;
+                      return (
+                        <tr key={med}>
+                          <td className="fw-semibold">{med}</td>
+                          {familles.map(f => (
+                            <td key={f} className="text-center">{row.get(f) ? row.get(f)!.toLocaleString('fr-FR') : <span className="text-muted">—</span>}</td>
+                          ))}
+                          <td className="text-center fw-bold table-secondary">{total.toLocaleString('fr-FR')}</td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot className="table-dark fw-bold">
+                    <tr>
+                      <td>TOTAL</td>
+                      {familles.map(f => <td key={f} className="text-center">{(totalParFamille.get(f) || 0).toLocaleString('fr-FR')}</td>)}
+                      <td className="text-center">{totalGeneral.toLocaleString('fr-FR')}</td>
+                    </tr>
+                  </tfoot>
+                </Table>
+              </>
+            );
+          })()}
+        </Modal.Body>
+        <Modal.Footer className="d-print-none">
+          <Button variant="secondary" onClick={() => setShowRepartitionModal(false)}>Fermer</Button>
+          <Button variant="outline-primary" onClick={() => {
+            const el = document.getElementById('print-repartition');
+            if (!el) return;
+            const headerHTML = generatePrintHeader(entreprise);
+            const footerHTML = generatePrintFooter(entreprise);
+            createPrintWindow('Répartition des actes par médecin', headerHTML, el.innerHTML, footerHTML);
+          }}>
+            🖨️ Avec entête
+          </Button>
+          <Button variant="primary" onClick={() => {
+            const el = document.getElementById('print-repartition');
+            if (!el) return;
+            createPrintWindowWithoutHeader('Répartition des actes par médecin', el.innerHTML);
+          }}>
+            📄 Sans entête
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ── Modal état imprimable : Montants par assurance ── */}
+      <Modal show={showAssuranceModal} onHide={() => setShowAssuranceModal(false)} size="lg" centered scrollable>
+        <Modal.Header closeButton>
+          <Modal.Title><FaFileInvoice className="me-2" />Montants par assurance</Modal.Title>
+        </Modal.Header>
+        <Modal.Body id="print-assurance">
+          {data && (() => {
+            const rows = data.recapMontantParAssurance;
+            const totalConsult = rows.reduce((s, r) => s + r.montantConsultations, 0);
+            const totalExam   = rows.reduce((s, r) => s + r.montantExamens, 0);
+            const totalGen    = rows.reduce((s, r) => s + r.montantTotal, 0);
+            return (
+              <>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <div className="fw-bold fs-6">MONTANTS PAR ASSURANCE</div>
+                    <div className="text-muted small">Période : {new Date(dateDebut).toLocaleDateString('fr-FR')} au {new Date(dateFin).toLocaleDateString('fr-FR')}</div>
+                  </div>
+                  <div className="text-muted small">Total : <strong>{formatMontant(totalGen)}</strong></div>
+                </div>
+                <Table bordered size="sm" className="mb-0 align-middle" style={{ fontSize: 12 }}>
+                  <thead className="table-dark">
+                    <tr>
+                      <th className="text-center" style={{ width: 40 }}>N°</th>
+                      <th>Assurance</th>
+                      <th className="text-end">Consultations</th>
+                      <th className="text-end">Examens</th>
+                      <th className="text-end">Montant Total</th>
+                      <th className="text-center">Taux (%)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.map((item, i) => (
+                      <tr key={i}>
+                        <td className="text-center text-muted">{i + 1}</td>
+                        <td className="fw-semibold">{item.assurance}</td>
+                        <td className="text-end">{formatMontant(item.montantConsultations)}</td>
+                        <td className="text-end">{formatMontant(item.montantExamens)}</td>
+                        <td className="text-end fw-bold">{formatMontant(item.montantTotal)}</td>
+                        <td className="text-center">{item.taux > 0 ? `${item.taux}%` : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                  <tfoot className="table-dark fw-bold">
+                    <tr>
+                      <td colSpan={2}>TOTAL</td>
+                      <td className="text-end">{formatMontant(totalConsult)}</td>
+                      <td className="text-end">{formatMontant(totalExam)}</td>
+                      <td className="text-end">{formatMontant(totalGen)}</td>
+                      <td></td>
+                    </tr>
+                  </tfoot>
+                </Table>
+              </>
+            );
+          })()}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowAssuranceModal(false)}>Fermer</Button>
+          <Button variant="outline-primary" onClick={() => {
+            const el = document.getElementById('print-assurance');
+            if (!el) return;
+            createPrintWindow('Montants par assurance', generatePrintHeader(entreprise), el.innerHTML, generatePrintFooter(entreprise));
+          }}>🖨️ Avec entête</Button>
+          <Button variant="primary" onClick={() => {
+            const el = document.getElementById('print-assurance');
+            if (!el) return;
+            createPrintWindowWithoutHeader('Montants par assurance', el.innerHTML);
+          }}>📄 Sans entête</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ── Modal état imprimable : Consultations par sexe ── */}
+      <Modal show={showSexeModal} onHide={() => setShowSexeModal(false)} size="lg" centered scrollable>
+        <Modal.Header closeButton>
+          <Modal.Title><FaUsers className="me-2" />Consultations par sexe</Modal.Title>
+        </Modal.Header>
+        <Modal.Body id="print-sexe">
+          {data && (() => {
+            const rows = data.examensConsultationsParSexe;
+
+            // Comptage par acte et sexe depuis les détails
+            const acteMap = new Map<string, { F: number; M: number }>();
+            rows.forEach(r => {
+              const sexeKey = (r.sexe === 'F' || r.sexe?.toLowerCase().startsWith('f')) ? 'F' : 'M';
+              r.details.forEach((d: any) => {
+                const acte = d.designation || 'Consultation';
+                const cur = acteMap.get(acte) || { F: 0, M: 0 };
+                cur[sexeKey]++;
+                acteMap.set(acte, cur);
+              });
+            });
+
+            const actes = [...acteMap.keys()].sort();
+
+            // Totaux calculés depuis acteMap pour cohérence avec les lignes
+            let totalF = 0, totalH = 0;
+            acteMap.forEach(c => { totalF += c.F; totalH += c.M; });
+
+            // Fallback sur r.total si pas de détails
+            if (totalF === 0 && totalH === 0) {
+              rows.forEach(r => {
+                const isF = r.sexe === 'F' || r.sexe?.toLowerCase().startsWith('f');
+                if (isF) totalF += r.total; else totalH += r.total;
+              });
+            }
+            const totalGen = totalF + totalH;
+
+            return (
+              <>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <div className="fw-bold fs-6">CONSULTATIONS PAR SEXE</div>
+                    <div className="text-muted small">Période : {new Date(dateDebut).toLocaleDateString('fr-FR')} au {new Date(dateFin).toLocaleDateString('fr-FR')}</div>
+                  </div>
+                  <div className="text-muted small">Total : <strong>{totalGen}</strong></div>
+                </div>
+                <Table bordered size="sm" className="mb-0 align-middle" style={{ fontSize: 12 }}>
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Acte de consultation</th>
+                      <th className="text-center">Féminin (F)</th>
+                      <th className="text-center">Masculin (M)</th>
+                      <th className="text-center fw-bold">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {actes.length > 0 ? actes.map((acte, i) => {
+                      const c = acteMap.get(acte)!;
+                      return (
+                        <tr key={i}>
+                          <td className="fw-semibold">{acte}</td>
+                          <td className="text-center">{c.F > 0 ? c.F : '—'}</td>
+                          <td className="text-center">{c.M > 0 ? c.M : '—'}</td>
+                          <td className="text-center fw-bold">{c.F + c.M}</td>
+                        </tr>
+                      );
+                    }) : (
+                      <tr>
+                        <td>Toutes consultations</td>
+                        <td className="text-center">{totalF}</td>
+                        <td className="text-center">{totalH}</td>
+                        <td className="text-center fw-bold">{totalGen}</td>
+                      </tr>
+                    )}
+                  </tbody>
+                  <tfoot className="table-dark fw-bold">
+                    <tr>
+                      <td>TOTAL</td>
+                      <td className="text-center">{totalF}</td>
+                      <td className="text-center">{totalH}</td>
+                      <td className="text-center">{totalGen}</td>
+                    </tr>
+                  </tfoot>
+                </Table>
+              </>
+            );
+          })()}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSexeModal(false)}>Fermer</Button>
+          <Button variant="outline-primary" onClick={() => {
+            const el = document.getElementById('print-sexe');
+            if (!el) return;
+            createPrintWindow('Consultations par sexe', generatePrintHeader(entreprise), el.innerHTML, generatePrintFooter(entreprise));
+          }}>🖨️ Avec entête</Button>
+          <Button variant="primary" onClick={() => {
+            const el = document.getElementById('print-sexe');
+            if (!el) return;
+            createPrintWindowWithoutHeader('Consultations par sexe', el.innerHTML);
+          }}>📄 Sans entête</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ── Modal état imprimable : Examens biologiques par sexe ── */}
+      <Modal show={showBioSexeModal} onHide={() => setShowBioSexeModal(false)} size="xl" centered scrollable>
+        <Modal.Header closeButton>
+          <Modal.Title><FaChartBar className="me-2" />Examens biologiques par sexe</Modal.Title>
+        </Modal.Header>
+        <Modal.Body id="print-bio-sexe">
+          {data && (() => {
+            const rows = data.examensBioParSexe || [];
+            const totalF   = rows.reduce((s, r) => s + r.F, 0);
+            const totalH   = rows.reduce((s, r) => s + r.M, 0);
+            const totalGen = rows.reduce((s, r) => s + r.total, 0);
+            return (
+              <>
+                <div className="d-flex justify-content-between align-items-center mb-3">
+                  <div>
+                    <div className="fw-bold fs-6">EXAMENS BIOLOGIQUES PAR SEXE</div>
+                    <div className="text-muted small">Période : {new Date(dateDebut).toLocaleDateString('fr-FR')} au {new Date(dateFin).toLocaleDateString('fr-FR')}</div>
+                  </div>
+                  <div className="text-muted small">Total : <strong>{totalGen.toLocaleString('fr-FR')}</strong></div>
+                </div>
+                <Table bordered size="sm" className="mb-0 align-middle" style={{ fontSize: 12 }}>
+                  <thead className="table-dark">
+                    <tr>
+                      <th>Prestation</th>
+                      <th className="text-center">Féminin (F)</th>
+                      <th className="text-center">Masculin (M)</th>
+                      <th className="text-center fw-bold">Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {rows.length > 0 ? rows.map((item, i) => (
+                      <tr key={i}>
+                        <td className="fw-semibold">{item.prestation}</td>
+                        <td className="text-center">{item.F > 0 ? item.F : '—'}</td>
+                        <td className="text-center">{item.M > 0 ? item.M : '—'}</td>
+                        <td className="text-center fw-bold">{item.total}</td>
+                      </tr>
+                    )) : (
+                      <tr><td colSpan={4} className="text-center text-muted">Aucune donnée</td></tr>
+                    )}
+                  </tbody>
+                  <tfoot className="table-dark fw-bold">
+                    <tr>
+                      <td>TOTAL</td>
+                      <td className="text-center">{totalF}</td>
+                      <td className="text-center">{totalH}</td>
+                      <td className="text-center">{totalGen}</td>
+                    </tr>
+                  </tfoot>
+                </Table>
+              </>
+            );
+          })()}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowBioSexeModal(false)}>Fermer</Button>
+          <Button variant="outline-primary" onClick={() => {
+            const el = document.getElementById('print-bio-sexe');
+            if (!el) return;
+            createPrintWindow('Examens biologiques par sexe', generatePrintHeader(entreprise), el.innerHTML, generatePrintFooter(entreprise));
+          }}>🖨️ Avec entête</Button>
+          <Button variant="primary" onClick={() => {
+            const el = document.getElementById('print-bio-sexe');
+            if (!el) return;
+            createPrintWindowWithoutHeader('Examens biologiques par sexe', el.innerHTML);
+          }}>📄 Sans entête</Button>
+        </Modal.Footer>
+      </Modal>
+
       <Modal show={showDetailModal} onHide={fermerDetails} size="xl" centered scrollable>
         <Modal.Header closeButton>
           <Modal.Title>Détails : {detailTitle}</Modal.Title>
@@ -797,7 +1341,7 @@ export default function Statistique() {
         </Modal.Footer>
       </Modal>
 
-      <style jsx>{`
+      <style>{`
         .statistique-container {
           padding: 22px;
           border-radius: 28px;
@@ -1013,129 +1557,12 @@ export default function Statistique() {
           padding: 8px 12px;
         }
         
-        .custom-chart {
-          height: 300px;
-          padding: 20px;
-        }
-        
-        .chart-container {
-          display: flex;
-          align-items: flex-end;
-          justify-content: space-around;
-          height: 250px;
-          padding: 20px 10px;
-        }
-        
-        .chart-item {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          flex: 1;
-          max-width: 80px;
-        }
-        
-        .chart-button {
-          border: 0;
-          background: transparent;
-          cursor: pointer;
-          padding: 0;
-        }
-
-        .chart-button:hover .chart-bar {
-          filter: brightness(0.9);
-          transform: scaleY(1.02);
-        }
-
         .detail-row {
           cursor: pointer;
         }
 
         .detail-row:hover {
           background: #f0f9ff;
-        }
-
-        .chart-label {
-          font-size: 12px;
-          font-weight: 600;
-          color: #6c757d;
-          margin-bottom: 10px;
-          text-align: center;
-        }
-        
-        .chart-bar-container {
-          position: relative;
-          width: 40px;
-          height: 200px;
-          display: flex;
-          align-items: flex-end;
-        }
-        
-        .chart-bar {
-          width: 100%;
-          border-radius: 4px 4px 0 0;
-          transition: all 0.3s ease;
-          position: relative;
-        }
-        
-        .chart-bar:hover {
-          opacity: 0.8;
-          transform: scaleY(1.05);
-        }
-        
-        .line-chart-bar {
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-        }
-        
-        .bar-chart-bar {
-          background: linear-gradient(135deg, #36a2eb 0%, #4facfe 100%) !important;
-        }
-        
-        .chart-value {
-          position: absolute;
-          top: -25px;
-          left: 50%;
-          transform: translateX(-50%);
-          font-size: 12px;
-          font-weight: 600;
-          color: #495057;
-          white-space: nowrap;
-        }
-        
-        .pie-chart-container {
-          padding: 20px;
-        }
-        
-        .pie-chart {
-          display: flex;
-          flex-direction: column;
-          gap: 15px;
-        }
-        
-        .pie-segment {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          padding: 10px;
-          border-radius: 8px;
-          background: #f8f9fa;
-          transition: all 0.3s ease;
-        }
-        
-        .pie-segment:hover {
-          background: #e9ecef;
-          transform: translateX(5px);
-        }
-        
-        .pie-legend {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        
-        .pie-color {
-          width: 16px;
-          height: 16px;
-          border-radius: 4px;
         }
         
         .trend-badge {

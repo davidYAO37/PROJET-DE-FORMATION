@@ -137,6 +137,9 @@ export async function POST(req: NextRequest) {
             Medecin: medecin ? `${medecin.nom} ${medecin.prenoms}` : "",
             IDMEDECIN: medecin?._id,
 
+            // Ajouter le champ sexe depuis le patient
+            Sexe: patient?.sexe || "",
+
             statutPrescriptionMedecin: 2, // pour afficher l'acte dans la liste des actes prescrits
             AttenteAccueil: false, // Par défaut, le patient est en attente d'accueil
             attenteMedecin: 0, // Par défaut, le patient n'a pas encore vu le médecin

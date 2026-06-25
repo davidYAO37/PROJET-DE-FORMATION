@@ -20,6 +20,8 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
         prixMutuel: 0,
         prixPreferentiel: 0,
         MontantAuMed: 0,
+        MontantAnesthesiste: 0,
+        MontantAideOperatoire: 0,
         IDFAMILLE_ACTE_BIOLOGIE: "",
         consultationviste: false,
     });
@@ -45,7 +47,10 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
-        setForm({ ...form, [name]: value });
+        setForm({ 
+            ...form, 
+            [name]: name === "coefficient" || name.startsWith("prix") || name.startsWith("Montant") ? Number(value) : value 
+        });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -62,7 +67,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
             if (!res.ok) throw new Error("Erreur lors de l'ajout");
             const data = await res.json();
             onAdd(data);
-            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, IDFAMILLE_ACTE_BIOLOGIE: "", consultationviste: false });
+            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, MontantAnesthesiste: 0, MontantAideOperatoire: 0, IDFAMILLE_ACTE_BIOLOGIE: "", consultationviste: false });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -136,6 +141,34 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                             <option value="1">Oui</option>
                         </Form.Select>
                     </Form.Group>
+                    <Row className="mb-2">
+                        <Col md={6}>
+                            <Form.Group>
+                                <Form.Label>Montant anesthésique</Form.Label>
+                                <Form.Select 
+                                    name="MontantAnesthesiste" 
+                                    value={form.MontantAnesthesiste.toString()} 
+                                    onChange={(e) => setForm({ ...form, MontantAnesthesiste: Number(e.target.value) })}
+                                >
+                                    <option value="0">Non</option>
+                                    <option value="1">Oui</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                        <Col md={6}>
+                            <Form.Group>
+                                <Form.Label>Montant aide Opératoire</Form.Label>
+                                <Form.Select 
+                                    name="MontantAideOperatoire" 
+                                    value={form.MontantAideOperatoire.toString()} 
+                                    onChange={(e) => setForm({ ...form, MontantAideOperatoire: Number(e.target.value) })}
+                                >
+                                    <option value="0">Non</option>
+                                    <option value="1">Oui</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
+                    </Row>
                     <Form.Group className="mb-2">
                         <Form.Check 
                             type="checkbox" 
