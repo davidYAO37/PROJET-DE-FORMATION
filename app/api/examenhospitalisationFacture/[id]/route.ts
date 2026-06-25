@@ -23,6 +23,7 @@ const cleanPayload = (payload: any): any => {
     'IDSOCIETEASSURANCE',
     'IdPatient',
     'idMedecin',
+    'idMedecinAnesthesiste',
     'IDSOCIETEPARTENAIRE',
     'IDCHAMBRE',
   ];

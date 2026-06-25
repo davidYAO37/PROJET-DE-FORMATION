@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ActeClinique } from "@/models/acteclinique";
+import { TarifAssurance } from "@/models/tarifassurance";
 import { db } from "@/db/mongoConnect";
 
-// Fonction utilitaire de nettoyage
+// Fonction utilitaire de nettoyage des nombres
 function cleanNumber(value: any): number {
     if (value === null || value === undefined) return 0;
 
@@ -22,9 +23,31 @@ function cleanNumber(value: any): number {
     return isNaN(num) ? 0 : num;
 }
 
+// Fonction utilitaire de nettoyage des textes
+function cleanText(value: any): string {
+    if (value === null || value === undefined) return "";
+    
+    let str = String(value).trim();
+    
+    // Supprimer les caractères de contrôle et les espaces multiples
+    str = str.replace(/[\x00-\x1F\x7F]/g, '').replace(/\s+/g, ' ');
+    
+    // Normaliser les caractères spéciaux courants
+    str = str.replace(/[']/g, "'").replace(/["]/g, '"');
+    
+    return str;
+}
+
 export async function POST(req: NextRequest) {
     await db();
-    const { rows } = await req.json();
+    const { rows, overwriteDuplicates = false, removeDuplicatesAsTarif = false } = await req.json();
+
+    console.log("POST /api/actes/import - Données reçues:", { 
+        rowCount: rows?.length, 
+        firstRow: rows?.[0],
+        overwriteDuplicates,
+        removeDuplicatesAsTarif
+    });
 
     if (!Array.isArray(rows)) {
         return NextResponse.json(
@@ -37,9 +60,9 @@ export async function POST(req: NextRequest) {
         const errors: { index: number; message: string }[] = [];
 
         const actes = rows.map((row: any, i: number) => {
-            // On accepte plusieurs variantes de noms de colonnes
-            const designationacte = (row.designationacte || row["Désignation"] || row["designationacte"] || "").trim();
-            const lettreCle = (row.lettreCle || row["Lettre Clé"] || row["lettreCle"] || "").trim();
+            // On accepte plusieurs variantes de noms de colonnes avec nettoyage
+            const designationacte = cleanText(row.designationacte || row["Désignation"] || row["designationacte"] || "");
+            const lettreCle = cleanText(row.lettreCle || row["Lettre Clé"] || row["lettreCle"] || "");
 
             const coefficient = cleanNumber(row.coefficient || row["Coefficient"] || row["coefficient"]);
             const prixClinique = cleanNumber(row.prixClinique || row["Prix Clinique"] || row["prixClinique"]);
@@ -48,37 +71,70 @@ export async function POST(req: NextRequest) {
                 row.prixPreferentiel || row["Prix Préférentiel"] || row["prixPreferentiel"]
             );
             
-            // Gestion du champ consultationviste
+            // Gestion optionnelle des champs supplémentaires (uniquement si présents dans le fichier)
+            const MontantAuMed = cleanNumber(row.MontantAuMed || row["Montant Au Med"] || row["Acte pour Médecin ?"] || "");
+            const MontantAnesthesiste = cleanNumber(row.MontantAnesthesiste || row["Montant Anesthésique"] || "");
+            const MontantAideOperatoire = cleanNumber(row.MontantAideOperatoire || row["Montant Aide Opératoire"] || "");
+            
+            // Gestion optionnelle du champ consultationviste
             let consultationviste = false;
-            const consultationValue = row.consultationviste || row["Consultation ou visite"] || row["consultationviste"] || "";
-            if (typeof consultationValue === "boolean") {
-                consultationviste = consultationValue;
-            } else if (typeof consultationValue === "string") {
-                const cleanValue = consultationValue.toString().toLowerCase().trim();
-                consultationviste = ["true", "1", "oui", "yes", "on"].includes(cleanValue);
+            if (row.consultationviste || row["Consultation ou visite"]) {
+                const consultationValue = row.consultationviste || row["Consultation ou visite"];
+                if (typeof consultationValue === "boolean") {
+                    consultationviste = consultationValue;
+                } else if (typeof consultationValue === "string") {
+                    const cleanValue = consultationValue.toString().toLowerCase().trim();
+                    consultationviste = ["true", "1", "oui", "yes", "on"].includes(cleanValue);
+                }
             }
 
             let rowError = "";
-            if (!designationacte) rowError += "Champ 'designationacte' manquant. ";
-            if (!lettreCle) rowError += "Champ 'lettreCle' manquant. ";
-            if (isNaN(coefficient)) rowError += "Champ 'coefficient' invalide. ";
-            if (isNaN(prixClinique)) rowError += "Champ 'prixClinique' invalide. ";
-            if (isNaN(prixMutuel)) rowError += "Champ 'prixMutuel' invalide. ";
-            if (isNaN(prixPreferentiel)) rowError += "Champ 'prixPreferentiel' invalide. ";
+            
+            // Validation des champs obligatoires
+            if (!designationacte || designationacte.length === 0) {
+                rowError += "Champ 'designationacte' manquant ou vide. ";
+            } else if (designationacte.length > 200) {
+                rowError += "Champ 'designationacte' trop long (max 200 caractères). ";
+            }
+            
+            if (!lettreCle || lettreCle.length === 0) {
+                rowError += "Champ 'lettreCle' manquant ou vide. ";
+            } else if (lettreCle.length > 10) {
+                rowError += "Champ 'lettreCle' trop long (max 10 caractères). ";
+            }
+            
+            // Validation des nombres avec plages raisonnables
+            if (isNaN(coefficient) || coefficient < 0 || coefficient > 999) {
+                rowError += "Champ 'coefficient' invalide (doit être entre 0 et 999). ";
+            }
+            if (isNaN(prixClinique) || prixClinique < 0 || prixClinique > 999999) {
+                rowError += "Champ 'prixClinique' invalide (doit être entre 0 et 999999). ";
+            }
+            if (isNaN(prixMutuel) || prixMutuel < 0 || prixMutuel > 999999) {
+                rowError += "Champ 'prixMutuel' invalide (doit être entre 0 et 999999). ";
+            }
+            if (isNaN(prixPreferentiel) || prixPreferentiel < 0 || prixPreferentiel > 999999) {
+                rowError += "Champ 'prixPreferentiel' invalide (doit être entre 0 et 999999). ";
+            }
 
             if (rowError) errors.push({ index: i + 2, message: rowError.trim() });
 
-            return {
+            const acteData: any = {
                 designationacte,
                 lettreCle,
                 coefficient,
                 prixClinique,
                 prixMutuel,
                 prixPreferentiel,
-                MontantAuMed: 0,
-                IDFAMILLE_ACTE_BIOLOGIE: "",
-                consultationviste,
             };
+
+            // N'inclure les champs optionnels que s'ils ont des valeurs valides
+            if (MontantAuMed > 0) acteData.MontantAuMed = MontantAuMed;
+            if (MontantAnesthesiste > 0) acteData.MontantAnesthesiste = MontantAnesthesiste;
+            if (MontantAideOperatoire > 0) acteData.MontantAideOperatoire = MontantAideOperatoire;
+            if (consultationviste) acteData.consultationviste = consultationviste;
+
+            return acteData;
         });
 
         // On garde uniquement les lignes valides
@@ -94,35 +150,114 @@ export async function POST(req: NextRequest) {
         }).lean();
 
         const existingDesignations = new Set(existing.map((a: any) => a.designationacte));
+        const toInsert: any[] = [];
+        const toUpdate: any[] = [];
 
-        const toInsert = validActes.filter(a => !existingDesignations.has(a.designationacte));
-
-        // Marquer les doublons dans les erreurs
         validActes.forEach((a, i) => {
             if (existingDesignations.has(a.designationacte)) {
-                errors.push({ index: i + 2, message: `Désignation '${a.designationacte}' déjà existante.` });
+                if (overwriteDuplicates) {
+                    // Préparer pour mise à jour
+                    const existingActe = existing.find(e => e.designationacte === a.designationacte);
+                    if (existingActe) {
+                        toUpdate.push({ ...a, _id: existingActe._id });
+                    }
+                } else {
+                    // Marquer comme doublon
+                    errors.push({ index: i + 2, message: `Désignation '${a.designationacte}' déjà existante.` });
+                }
+            } else {
+                toInsert.push(a);
             }
         });
 
-        if (toInsert.length === 0) {
-            return NextResponse.json({ error: "Aucun acte inséré.", details: errors }, { status: 409 });
+        let inserted: any[] = [];
+        let updated: any[] = [];
+
+        // Insérer les nouveaux actes
+        if (toInsert.length > 0) {
+            inserted = await ActeClinique.insertMany(toInsert);
         }
 
-        const inserted = await ActeClinique.insertMany(toInsert);
+        // Mettre à jour les doublons si demandé (optimisation avec bulkWrite)
+        if (toUpdate.length > 0 && overwriteDuplicates) {
+            const bulkOps = toUpdate.map(acte => ({
+                updateOne: {
+                    filter: { _id: acte._id },
+                    update: { 
+                        $set: { ...acte, updatedAt: new Date() },
+                        $unset: { _id: 1 } // Ne pas essayer de mettre à jour l'_id
+                    },
+                    upsert: false
+                }
+            }));
+            
+            const updateResult = await ActeClinique.bulkWrite(bulkOps);
+            updated = await ActeClinique.find({ 
+                _id: { $in: toUpdate.map(a => a._id) }
+            }).lean();
+        }
+
+        // Retirer les doublons comme tarif acte si demandé (optimisation avec bulk delete)
+        let removedTarifsCount = 0;
+        if (removeDuplicatesAsTarif && existing.length > 0) {
+            // Récupérer tous les actes qui existent déjà et qui sont dans les doublons
+            const duplicateActes = existing.filter(e => 
+                validActes.some(a => a.designationacte === e.designationacte)
+            );
+            
+            if (duplicateActes.length > 0) {
+                // Supprimer tous les tarifs associés en une seule opération
+                const deleteResult = await TarifAssurance.deleteMany({ 
+                    acteId: { $in: duplicateActes.map(a => a._id) }
+                });
+                removedTarifsCount = deleteResult.deletedCount || 0;
+                
+                console.log(`Retrait de ${removedTarifsCount} tarifs pour ${duplicateActes.length} actes en doublon`);
+            }
+        }
+
+        if (inserted.length === 0 && updated.length === 0) {
+            return NextResponse.json({ 
+                error: "Aucun acte inséré ou mis à jour.", 
+                details: errors,
+                suggestion: "Essayez avec l'option overwriteDuplicates: true pour écraser les doublons ou removeDuplicatesAsTarif: true pour retirer les tarifs des doublons"
+            }, { status: 409 });
+        }
+
+        console.log("POST /api/actes/import - Importation réussie:", { 
+            inserted: inserted.length, 
+            updated: updated.length,
+            ignored: validActes.length - toInsert.length - updated.length,
+            removedTarifs: removedTarifsCount,
+            errors: errors.length 
+        });
 
         return NextResponse.json({
             success: true,
-            count: inserted.length,
-            ignored: validActes.length - toInsert.length,
+            inserted: inserted.length,
+            updated: updated.length,
+            ignored: validActes.length - toInsert.length - updated.length,
+            removedTarifs: removedTarifsCount,
             errors,
+            overwriteDuplicates,
+            removeDuplicatesAsTarif,
         });
     } catch (e: any) {
+        console.error("POST /api/actes/import - Erreur:", e.message);
+        console.error("POST /api/actes/import - Détails:", e);
+        
         if (e.code === 11000) {
             return NextResponse.json(
                 { error: "Doublon détecté dans la base de données.", details: e.keyValue },
                 { status: 409 }
             );
         }
+        
+        if (e.name === 'ValidationError') {
+            const errors = Object.values(e.errors).map((err: any) => err.message).join(', ');
+            return NextResponse.json({ error: `Erreur de validation: ${errors}` }, { status: 400 });
+        }
+        
         return NextResponse.json({ error: e.message }, { status: 400 });
     }
 }

@@ -11,7 +11,7 @@ export interface IActeClinique extends Omit<Document, '_id'> {
     IDTYPE_ACTE?: mongoose.Types.ObjectId;
     montantacte?: number;
     TYPEACTE?: string;
-    MontantAuMed?: Number;
+    MontantAuMed?: number;
     resultatacte?: string;
     IDFAMILLE_ACTE_BIOLOGIE?: mongoose.Types.ObjectId;
     TypeResultat?: number;

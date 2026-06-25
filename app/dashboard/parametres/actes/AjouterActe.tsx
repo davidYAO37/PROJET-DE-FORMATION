@@ -58,15 +58,55 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
         setLoading(true);
         setError("");
         try {
-            // Utilise le endpoint sync pour garantir la cohérence acte/tarif
-            const res = await fetch("/api/actes/acte-tarif-sync", {
+            // Nettoyer le formulaire avant l'envoi
+            const cleanedForm = {
+                designationacte: form.designationacte.trim(),
+                lettreCle: form.lettreCle.trim(),
+                coefficient: Number(form.coefficient),
+                prixClinique: Number(form.prixClinique),
+                prixMutuel: Number(form.prixMutuel),
+                prixPreferentiel: Number(form.prixPreferentiel),
+                MontantAuMed: Number(form.MontantAuMed),
+                MontantAnesthesiste: Number(form.MontantAnesthesiste),
+                MontantAideOperatoire: Number(form.MontantAideOperatoire),
+                IDFAMILLE_ACTE_BIOLOGIE: form.IDFAMILLE_ACTE_BIOLOGIE || undefined,
+                consultationviste: Boolean(form.consultationviste),
+            };
+            
+            // Utilise l'API standard pour ajouter un acte
+            const res = await fetch("/api/actes", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                body: JSON.stringify(cleanedForm),
             });
-            if (!res.ok) throw new Error("Erreur lors de l'ajout");
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Erreur lors de l'ajout");
+            }
             const data = await res.json();
-            onAdd(data);
+            // Convertir les données pour correspondre au type ActeClinique
+            const acteData: ActeClinique = {
+                _id: data._id,
+                designationacte: data.designationacte,
+                lettreCle: data.lettreCle,
+                coefficient: data.coefficient,
+                prixClinique: data.prixClinique,
+                prixMutuel: data.prixMutuel,
+                prixPreferentiel: data.prixPreferentiel,
+                MontantAuMed: data.MontantAuMed,
+                IDFAMILLE_ACTE_BIOLOGIE: data.IDFAMILLE_ACTE_BIOLOGIE,
+                consultationviste: data.consultationviste,
+                resultatacte: data.resultatacte,
+                MontantAnesthesiste: data.MontantAnesthesiste,
+                MontantAideOperatoire: data.MontantAideOperatoire,
+                IDTYPE_ACTE: data.IDTYPE_ACTE,
+                montantacte: data.montantacte,
+                TYPEACTE: data.TYPEACTE,
+                TypeResultat: data.TypeResultat,
+                Interpretation: data.Interpretation,
+                ORdonnacementAffichage: data.ORdonnacementAffichage,
+            };
+            onAdd(acteData);
             setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, MontantAnesthesiste: 0, MontantAideOperatoire: 0, IDFAMILLE_ACTE_BIOLOGIE: "", consultationviste: false });
         } catch (err: any) {
             setError(err.message);

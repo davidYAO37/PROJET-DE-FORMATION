@@ -366,8 +366,16 @@ export default function Statistique() {
         ))}
       </Row>
 
-      {/* ── KPI CA ── */}
-      <Row className="g-4 mb-4">
+
+      {/* ════════════════════════════════════════
+          SECTION 1 — FINANCIER
+      ════════════════════════════════════════ */}
+      <div className="section-label">
+        <FaFileInvoice className="me-2" />Financier
+      </div>
+
+      {/* KPI CA + Taux complétion */}
+      <Row className="g-4 mb-3">
         <Col md={6}>
           <Card className="border-0 shadow-sm h-100" style={{ borderLeft: '4px solid #198754' }}>
             <Card.Body className="d-flex align-items-center gap-4 py-3">
@@ -377,7 +385,7 @@ export default function Statistique() {
               <div>
                 <div className="text-muted small">Chiffre d'affaires période</div>
                 <div className="fw-bold" style={{ fontSize: '1.5rem', color: '#198754' }}>{formatMontant(data.kpis.caTotal)}</div>
-                <div className="text-muted small">Facturations + Consultations payées</div>
+                <div className="text-muted small">Facturations + Consultations (PrixClinique)</div>
               </div>
             </Card.Body>
           </Card>
@@ -400,7 +408,177 @@ export default function Statistique() {
         </Col>
       </Row>
 
-      {/* Activité hebdomadaire */}
+      {/* Évolution CA + Top médecins CA */}
+      <Row className="g-4 mb-3">
+        <Col xl={7} lg={12}>
+          <Card className="professional-stat-card border-0 shadow-sm h-100">
+            <Card.Header className="professional-stat-header border-0 variant-green-soft">
+              <h5 className="mb-0"><FaChartLine className="me-2" />Évolution du chiffre d'affaires</h5>
+            </Card.Header>
+            <Card.Body>
+              <ResponsiveContainer width="100%" height={260}>
+                <LineChart data={data.evolutionCA} margin={{ left: 10, right: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="jour" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: any) => `${(v / 1000).toFixed(0)}k`} />
+                  <Tooltip formatter={(v: any) => formatMontant(v)} labelStyle={{ fontWeight: 'bold' }} />
+                  <Legend />
+                  <Line type="monotone" dataKey="ca" name="CA (FCFA)" stroke="#198754" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
+                </LineChart>
+              </ResponsiveContainer>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xl={5} lg={12}>
+          <Card className="professional-stat-card border-0 shadow-sm h-100">
+            <Card.Header className="professional-stat-header border-0 variant-blue-soft">
+              <h5 className="mb-0"><FaChartBar className="me-2" />Top médecins — CA généré</h5>
+            </Card.Header>
+            <Card.Body>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={data.topMedecinsCA} layout="vertical" margin={{ left: 10, right: 30 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v: any) => `${(v / 1000).toFixed(0)}k`} />
+                  <YAxis type="category" dataKey="medecin" tick={{ fontSize: 10 }} width={120} />
+                  <Tooltip formatter={(v: any) => formatMontant(v)} />
+                  <Bar dataKey="ca" name="CA (FCFA)" fill="#2563eb" radius={[0, 4, 4, 0]}>
+                    {data.topMedecinsCA.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* Actes par montant + Montants par assurance */}
+      <Row className="g-4 mb-4">
+        <Col xl={6} lg={6}>
+          <Card className="advanced-stat-card border-0 shadow-sm h-100">
+            <Card.Header className="advanced-stat-header border-0">
+              <div>
+                <h5 className="mb-1">
+                  <FaChartBar className="me-2" />
+                  Actes et examens par montant facturé
+                </h5>
+              </div>
+              <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Actes et examens par montant facturé", data.actesExamensParMontant.flatMap(item => item.details))}>
+                Détails
+              </Button>
+            </Card.Header>
+            <Card.Body>
+              <div className="metric-summary mb-3">
+                <span>Total facturé</span>
+                <strong>{formatMontant(totalMontantsActes)}</strong>
+              </div>
+              <Table responsive hover className="mb-0 align-middle">
+                <thead>
+                  <tr>
+                    <th>Désignation</th>
+                    <th>Montant</th>
+                    <th>% du total</th>
+                    <th>Répartition</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.actesExamensParMontant.map((item, index) => {
+                    const pourcentage = totalMontantsActes === 0 ? 0 : (item.montant / totalMontantsActes) * 100;
+                    return (
+                      <tr key={index} onClick={() => afficherDetails(item.designation, item.details)} className="detail-row">
+                        <td><strong>{item.designation}</strong></td>
+                        <td>{formatMontant(item.montant)}</td>
+                        <td>
+                          <Badge bg={pourcentage >= 40 ? "success" : pourcentage >= 20 ? "info" : "secondary"}>
+                            {pourcentage.toFixed(1)}%
+                          </Badge>
+                        </td>
+                        <td style={{ minWidth: "170px" }}>
+                          <ProgressBar now={Math.min(pourcentage, 100)} label={`${pourcentage.toFixed(0)}%`} variant={pourcentage >= 40 ? "success" : pourcentage >= 20 ? "info" : "warning"} />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+        <Col xl={6} lg={6}>
+          <Card className="advanced-stat-card border-0 shadow-sm h-100">
+            <Card.Header className="advanced-stat-header border-0 variant-orange">
+              <div>
+                <h5 className="mb-1">
+                  <FaChartPie className="me-2" />
+                  Montants examens et consultations par assurance
+                </h5>
+              </div>
+              <div className="d-flex gap-2">
+                <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Montants par assurance", data.recapMontantParAssurance.flatMap(item => item.details))}>
+                  Détails
+                </Button>
+                <Button size="sm" variant="outline-primary" className="details-pill" onClick={() => setShowAssuranceModal(true)}>
+                  <FaDownload className="me-1" />État
+                </Button>
+              </div>
+            </Card.Header>
+            <Card.Body>
+              <div className="metric-summary mb-3">
+                <span>Total assurances</span>
+                <strong>{formatMontant(totalAssurances)}</strong>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <PieChart>
+                  <Pie
+                    data={data.recapMontantParAssurance}
+                    dataKey="montantTotal"
+                    nameKey="assurance"
+                    cx="50%" cy="50%"
+                    outerRadius={80}
+                    onClick={(entry: any) => afficherDetails(entry.assurance, entry.details)}
+                    style={{ cursor: 'pointer' }}
+                  >
+                    {data.recapMontantParAssurance.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(v: any) => formatMontant(v)} />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+              <Table responsive size="sm" className="mt-3 mb-0">
+                <thead>
+                  <tr>
+                    <th>Assurance</th>
+                    <th>Consultations</th>
+                    <th>Examens</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.recapMontantParAssurance.map((item, index) => (
+                    <tr key={index} onClick={() => afficherDetails(item.assurance, item.details)} className="detail-row">
+                      <td>{item.assurance}</td>
+                      <td>{formatMontant(item.montantConsultations)}</td>
+                      <td>{formatMontant(item.montantExamens)}</td>
+                      <td><strong>{formatMontant(item.montantTotal)}</strong></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </Table>
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      {/* ════════════════════════════════════════
+          SECTION 2 — ACTIVITÉ
+      ════════════════════════════════════════ */}
+      <div className="section-label">
+        <FaChartBar className="me-2" />Activité
+      </div>
+
       <Row className="g-4 mb-4">
         <Col xl={8} lg={12}>
           <Card className="professional-stat-card border-0 shadow-sm h-100">
@@ -488,52 +666,14 @@ export default function Statistique() {
         </Col>
       </Row>
 
-      {/* ══ Évolution CA + Top médecins CA ══ */}
-      <Row className="g-4 mt-1 mb-1">
-        <Col xl={7} lg={12}>
-          <Card className="professional-stat-card border-0 shadow-sm h-100">
-            <Card.Header className="professional-stat-header border-0 variant-green-soft">
-              <h5 className="mb-0"><FaChartLine className="me-2" />Évolution du chiffre d'affaires</h5>
-            </Card.Header>
-            <Card.Body>
-              <ResponsiveContainer width="100%" height={260}>
-                <LineChart data={data.evolutionCA} margin={{ left: 10, right: 10 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="jour" tick={{ fontSize: 11 }} />
-                  <YAxis tick={{ fontSize: 11 }} tickFormatter={(v: any) => `${(v / 1000).toFixed(0)}k`} />
-                  <Tooltip formatter={(v: any) => formatMontant(v)} labelStyle={{ fontWeight: 'bold' }} />
-                  <Legend />
-                  <Line type="monotone" dataKey="ca" name="CA (FCFA)" stroke="#198754" strokeWidth={2.5} dot={false} activeDot={{ r: 5 }} />
-                </LineChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col xl={5} lg={12}>
-          <Card className="professional-stat-card border-0 shadow-sm h-100">
-            <Card.Header className="professional-stat-header border-0 variant-blue-soft">
-              <h5 className="mb-0"><FaChartBar className="me-2" />Top médecins — CA généré</h5>
-            </Card.Header>
-            <Card.Body>
-              <ResponsiveContainer width="100%" height={260}>
-                <BarChart data={data.topMedecinsCA} layout="vertical" margin={{ left: 10, right: 30 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={(v: any) => `${(v / 1000).toFixed(0)}k`} />
-                  <YAxis type="category" dataKey="medecin" tick={{ fontSize: 10 }} width={120} />
-                  <Tooltip formatter={(v: any) => formatMontant(v)} />
-                  <Bar dataKey="ca" name="CA (FCFA)" fill="#2563eb" radius={[0, 4, 4, 0]}>
-                    {data.topMedecinsCA.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
+      {/* ════════════════════════════════════════
+          SECTION 3 — MÉDECINS
+      ════════════════════════════════════════ */}
+      <div className="section-label">
+        <FaStethoscope className="me-2" />Médecins
+      </div>
 
-      <Row className="g-4 mt-1">
+      <Row className="g-4 mb-3">
         <Col md={12}>
           <Card className="professional-stat-card border-0 shadow-sm">
             <Card.Header className="professional-stat-header border-0 variant-blue-soft">
@@ -591,72 +731,67 @@ export default function Statistique() {
         </Col>
       </Row>
 
-      <Row className="g-4 mt-1">
-        <Col xl={6} lg={6}>
+      <Row className="g-4 mb-4">
+        <Col xl={12} lg={12}>
           <Card className="advanced-stat-card border-0 shadow-sm h-100">
-            <Card.Header className="advanced-stat-header border-0 variant-orange">
+            <Card.Header className="advanced-stat-header border-0 variant-green">
               <div>
                 <h5 className="mb-1">
-                  <FaChartPie className="me-2" />
-                  Montants examens et consultations par assurance
+                  <FaUsers className="me-2" />
+                  Patients consultés par médecin
                 </h5>
               </div>
-              <div className="d-flex gap-2">
-                <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Montants par assurance", data.recapMontantParAssurance.flatMap(item => item.details))}>
-                  Détails
-                </Button>
-                <Button size="sm" variant="outline-primary" className="details-pill" onClick={() => setShowAssuranceModal(true)}>
-                  <FaDownload className="me-1" />État
-                </Button>
-              </div>
+              <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Patients consultés par médecin", data.patientsConsultesParMedecin.flatMap(item => item.details))}>
+                Détails
+              </Button>
             </Card.Header>
             <Card.Body>
               <div className="metric-summary mb-3">
-                <span>Total assurances</span>
-                <strong>{formatMontant(totalAssurances)}</strong>
+                <span>Patients distincts</span>
+                <strong>{totalPatientsConsultes}</strong>
               </div>
-              <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
-                  <Pie
-                    data={data.recapMontantParAssurance}
-                    dataKey="montantTotal"
-                    nameKey="assurance"
-                    cx="50%" cy="50%"
-                    outerRadius={80}
-                    onClick={(entry: any) => afficherDetails(entry.assurance, entry.details)}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {data.recapMontantParAssurance.map((_, i) => (
-                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip formatter={(v: any) => formatMontant(v)} />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-              <Table responsive size="sm" className="mt-3 mb-0">
+              <Table responsive hover className="mb-0 align-middle">
                 <thead>
                   <tr>
-                    <th>Assurance</th>
-                    <th>Consultations</th>
-                    <th>Examens</th>
-                    <th>Total</th>
+                    <th>Médecin</th>
+                    <th>Patients distincts</th>
+                    <th>% du total</th>
+                    <th>Répartition</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {data.recapMontantParAssurance.map((item, index) => (
-                    <tr key={index} onClick={() => afficherDetails(item.assurance, item.details)} className="detail-row">
-                      <td>{item.assurance}</td>
-                      <td>{formatMontant(item.montantConsultations)}</td>
-                      <td>{formatMontant(item.montantExamens)}</td>
-                      <td><strong>{formatMontant(item.montantTotal)}</strong></td>
-                    </tr>
-                  ))}
+                  {data.patientsConsultesParMedecin.map((item, index) => {
+                    const pourcentage = totalPatientsConsultes === 0 ? 0 : (item.nombre / totalPatientsConsultes) * 100;
+                    return (
+                      <tr key={index} onClick={() => afficherDetails(item.medecin, item.details)} className="detail-row">
+                        <td><strong>{item.medecin}</strong></td>
+                        <td>{item.nombre}</td>
+                        <td>
+                          <Badge bg={pourcentage >= 40 ? "success" : pourcentage >= 20 ? "info" : "secondary"}>
+                            {pourcentage.toFixed(1)}%
+                          </Badge>
+                        </td>
+                        <td style={{ minWidth: "170px" }}>
+                          <ProgressBar now={Math.min(pourcentage, 100)} label={`${pourcentage.toFixed(0)}%`} variant={pourcentage >= 40 ? "success" : pourcentage >= 20 ? "info" : "warning"} />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </Table>
             </Card.Body>
           </Card>
         </Col>
+      </Row>
+
+      {/* ════════════════════════════════════════
+          SECTION 4 — PATIENTS
+      ════════════════════════════════════════ */}
+      <div className="section-label">
+        <FaUsers className="me-2" />Patients
+      </div>
+
+      <Row className="g-4 mb-3">
         <Col xl={6} lg={6}>
           <Card className="advanced-stat-card border-0 shadow-sm h-100">
             <Card.Header className="advanced-stat-header border-0 variant-purple">
@@ -665,7 +800,6 @@ export default function Statistique() {
                   <FaChartPie className="me-2" />
                   Consultations par sexe
                 </h5>
-               
               </div>
               <div className="d-flex gap-2">
                 <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Consultations par sexe", data.examensConsultationsParSexe.flatMap(item => item.details))}>
@@ -720,11 +854,7 @@ export default function Statistique() {
             </Card.Body>
           </Card>
         </Col>
-      </Row>          
-
-      {/* ── Examens biologiques par sexe ── */}
-      <Row className="g-4 mt-1">
-        <Col xl={12} lg={12}>
+        <Col xl={6} lg={6}>
           <Card className="advanced-stat-card border-0 shadow-sm h-100">
             <Card.Header className="advanced-stat-header border-0 variant-teal">
               <div>
@@ -781,7 +911,14 @@ export default function Statistique() {
         </Col>
       </Row>
 
-      <Row className="g-4 mt-1">
+      {/* ════════════════════════════════════════
+          SECTION 5 — INDICATEURS & PROGRESSION
+      ════════════════════════════════════════ */}
+      <div className="section-label">
+        <FaChartLine className="me-2" />Indicateurs &amp; Progression
+      </div>
+
+      <Row className="g-4 mb-4">
         <Col xl={6} lg={6}>
           <Card className="professional-stat-card border-0 shadow-sm h-100">
             <Card.Header className="professional-stat-header border-0 variant-green-soft">
@@ -868,110 +1005,7 @@ export default function Statistique() {
         </Col>
       </Row>
 
-      <Row className="g-4 mt-1">
-        <Col xl={6} lg={6}>
-          <Card className="advanced-stat-card border-0 shadow-sm h-100">
-            <Card.Header className="advanced-stat-header border-0">
-              <div>
-                <h5 className="mb-1">
-                  <FaChartBar className="me-2" />
-                  Actes et examens par montant payé
-                </h5>
-              </div>
-              <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Actes et examens par montant payé", data.actesExamensParMontant.flatMap(item => item.details))}>
-                Détails
-              </Button>
-            </Card.Header>
-            <Card.Body>
-              <div className="metric-summary mb-3">
-                <span>Total payé</span>
-                <strong>{formatMontant(totalMontantsActes)}</strong>
-              </div>
-              <Table responsive hover className="mb-0 align-middle">
-                <thead>
-                  <tr>
-                    <th>Désignation</th>
-                    <th>Montant</th>
-                    <th>% du total</th>
-                    <th>Répartition</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.actesExamensParMontant.map((item, index) => {
-                    const pourcentage = totalMontantsActes === 0 ? 0 : (item.montant / totalMontantsActes) * 100;
-                    return (
-                      <tr key={index} onClick={() => afficherDetails(item.designation, item.details)} className="detail-row">
-                        <td><strong>{item.designation}</strong></td>
-                        <td>{formatMontant(item.montant)}</td>
-                        <td>
-                          <Badge bg={pourcentage >= 40 ? "success" : pourcentage >= 20 ? "info" : "secondary"}>
-                            {pourcentage.toFixed(1)}%
-                          </Badge>
-                        </td>
-                        <td style={{ minWidth: "170px" }}>
-                          <ProgressBar now={Math.min(pourcentage, 100)} label={`${pourcentage.toFixed(0)}%`} variant={pourcentage >= 40 ? "success" : pourcentage >= 20 ? "info" : "warning"} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-        <Col xl={6} lg={6}>
-          <Card className="advanced-stat-card border-0 shadow-sm h-100">
-            <Card.Header className="advanced-stat-header border-0 variant-green">
-              <div>
-                <h5 className="mb-1">
-                  <FaUsers className="me-2" />
-                  Patients consultés par médecin
-                </h5>
-              </div>
-              <Button size="sm" variant="light" className="details-pill" onClick={() => afficherDetails("Patients consultés par médecin", data.patientsConsultesParMedecin.flatMap(item => item.details))}>
-                Détails
-              </Button>
-            </Card.Header>
-            <Card.Body>
-              <div className="metric-summary mb-3">
-                <span>Patients distincts</span>
-                <strong>{totalPatientsConsultes}</strong>
-              </div>
-              <Table responsive hover className="mb-0 align-middle">
-                <thead>
-                  <tr>
-                    <th>Médecin</th>
-                    <th>Patients distincts</th>
-                    <th>% du total</th>
-                    <th>Répartition</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.patientsConsultesParMedecin.map((item, index) => {
-                    const pourcentage = totalPatientsConsultes === 0 ? 0 : (item.nombre / totalPatientsConsultes) * 100;
-                    return (
-                      <tr key={index} onClick={() => afficherDetails(item.medecin, item.details)} className="detail-row">
-                        <td><strong>{item.medecin}</strong></td>
-                        <td>{item.nombre}</td>
-                        <td>
-                          <Badge bg={pourcentage >= 40 ? "success" : pourcentage >= 20 ? "info" : "secondary"}>
-                            {pourcentage.toFixed(1)}%
-                          </Badge>
-                        </td>
-                        <td style={{ minWidth: "170px" }}>
-                          <ProgressBar now={Math.min(pourcentage, 100)} label={`${pourcentage.toFixed(0)}%`} variant={pourcentage >= 40 ? "success" : pourcentage >= 20 ? "info" : "warning"} />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </Table>
-            </Card.Body>
-          </Card>
-        </Col>
-      </Row>
 
-      
 
       {/* Modal état imprimable répartition par médecin */}
       <Modal show={showRepartitionModal} onHide={() => setShowRepartitionModal(false)} size="xl" centered scrollable>
@@ -1522,6 +1556,26 @@ export default function Statistique() {
 
         .advanced-stat-header.variant-blue {
           background: linear-gradient(135deg, #0891b2 0%, #0369a1 100%);
+        }
+
+        .advanced-stat-header.variant-teal {
+          background: linear-gradient(135deg, #0d9488 0%, #0f766e 100%);
+        }
+
+        .section-label {
+          display: flex;
+          align-items: center;
+          margin: 28px 0 14px;
+          padding: 8px 18px;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 800;
+          letter-spacing: 0.07em;
+          text-transform: uppercase;
+          color: #fff;
+          background: linear-gradient(90deg, #075985 0%, #0f766e 100%);
+          box-shadow: 0 4px 14px rgba(7, 89, 133, 0.18);
+          width: fit-content;
         }
 
         .details-pill {

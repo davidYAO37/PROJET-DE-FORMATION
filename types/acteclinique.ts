@@ -7,11 +7,21 @@ export interface ActeClinique {
     prixPreferentiel: number;
     coefficient: number;
     MontantAuMed?: number;
-    IDFAMILLE_ACTE_BIOLOGIE?: string;
+    IDFAMILLE_ACTE_BIOLOGIE?: string; // Gardé en string pour le frontend, converti en ObjectId dans l'API
     consultationviste?: boolean;
     resultatacte?: string;
     MontantAnesthesiste?: number;
     MontantAideOperatoire?: number;
+    IDTYPE_ACTE?: string; // Gardé en string pour le frontend, converti en ObjectId dans l'API
+    montantacte?: number;
+    TYPEACTE?: string;
+    TypeResultat?: number;
+    Interpretation?: string;
+    ORdonnacementAffichage?: number;
+    // Champs ajoutés par MongoDB
+    createdAt?: string;
+    updatedAt?: string;
+    __v?: number;
 }
 /* export interface ActeClinique {
     _id: string;
@@ -36,6 +46,8 @@ export interface ActeSelectionne {
     surplus?: number;
     reliquat?: number;
     montantMedecin?: number;
+    montantAnesthesiste?: number;
+    montantAideOperatoire?: number;
 }
 
 // Fonction principale : ajoute un acte et calcule toutes les valeurs
@@ -57,8 +69,10 @@ export function ajouterActe(
     // Prix total
     const prixTotal = prixUnitaire * coefficient * quantite;
 
-    // Montant pour médecin
+    // Montants pour différents rôles
     const montantMedecin = acte.MontantAuMed ? prixTotal : 0;
+    const montantAnesthesiste = acte.MontantAnesthesiste ? prixTotal : 0;
+    const montantAideOperatoire = acte.MontantAideOperatoire ? prixTotal : 0;
 
     return {
         _id: acte._id,
@@ -71,6 +85,8 @@ export function ajouterActe(
         surplus,
         reliquat,
         montantMedecin,
+        montantAnesthesiste,
+        montantAideOperatoire,
     };
 }
 

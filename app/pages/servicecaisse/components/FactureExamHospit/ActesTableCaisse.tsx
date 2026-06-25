@@ -20,6 +20,8 @@ export interface IActeClinique {
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     ORdonnacementAffichage?: number;
     // ... autres champs si besoin
+   MontantAnesthesiste?: string | number; // "1" ou 1
+   MontantAideOperatoire?: string | number; // "1" ou 1
 }
 
 // Type TarifAssurance
@@ -52,7 +54,16 @@ export interface ILignePrestation {
     Reliquat: number;
     TotalRelicatCoefAssur: number;
     Montant_MedExecutant: number;
+    MontantAnesthesiste: number;
+    MontantAideOperatoire: number;
+     IDmedecinAideOperatoire?: string;
+    IDAnesthesiste?: string;
+    numMedecinExecutant?: string;
+    medecinExecutant?: string;
+    MedecinAffiche: string;
     StatutMedecinActe: string;
+    StatutMedecinAnesthesiste: string; // "NON" ou "OUI"
+    StatutMedecinAideOperatoire: string; // "NON" ou "OUI"
     IDACTE: string; // _id de l'acte
     Exclusion: "Accepter" | "Refuser";
     COEFFICIENT_ASSURANCE: number;
@@ -253,7 +264,16 @@ const emptyLigne = (): ILignePrestation => ({
     Reliquat: 0,
     TotalRelicatCoefAssur: 0,
     Montant_MedExecutant: 0,
+    MontantAnesthesiste: 0,
+    MontantAideOperatoire: 0,
+    IDmedecinAideOperatoire: "",
+    IDAnesthesiste: "",
+    numMedecinExecutant: "",
+    medecinExecutant: "",
+    MedecinAffiche: "",
     StatutMedecinActe: "NON",
+    StatutMedecinAnesthesiste: "NON", // "NON" par défaut
+    StatutMedecinAideOperatoire: "NON", // "NON" par défaut
     IDACTE: "",
     Exclusion: "Accepter",
     COEFFICIENT_ASSURANCE: 0,
@@ -276,6 +296,7 @@ const emptyLigne = (): ILignePrestation => ({
 export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, assuranceDbId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
     const [actes, setActes] = useState<IActeClinique[]>([]);
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
+    const [medecins, setMedecins] = useState<any[]>([]);
     const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [nomUtilisateur, setNomUtilisateur] = useState<string>("");
@@ -286,6 +307,8 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         totalTaxe: 0,
         totalSurplus: 0,
         montantExecutant: 0,
+        montantAnesthesiste: 0,
+        montantAideOperatoire: 0,
         montantARegler: 0
     });
 
@@ -313,6 +336,8 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     MontantAuMed: a.MontantAuMed,
                     IDFAMILLE_ACTE_BIOLOGIE: a.IDFAMILLE_ACTE_BIOLOGIE,
                     ORdonnacementAffichage: a.ORdonnacementAffichage,
+                    MontantAnesthesiste: a.MontantAnesthesiste,
+                    MontantAideOperatoire: a.MontantAideOperatoire,
                 }));
                 setActes(mapped);
             })
@@ -347,23 +372,56 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
     }, [assuranceDbId]);
 
     useEffect(() => {
+        // Charger la liste des médecins pour l'aide opératoire
+        fetch("/api/medecins")
+            .then((r) => r.json())
+            .then((data) => {
+                setMedecins(Array.isArray(data) ? data : []);
+            })
+            .catch(() => {
+                setMedecins([]);
+            });
+    }, []);
+
+    useEffect(() => {
         // recalculer totaux à chaque modification de lignes
         facturePharmacie();
         if (onLinesChange) onLinesChange(lignes);
     }, [lignes]);
 
+    // Fonction pour nettoyer les lignes chargées depuis la base de données
+    const cleanLoadedLines = useCallback((lines: any[]): ILignePrestation[] => {
+        return lines.map(line => ({
+            ...line,
+            // Assurer que les statuts sont correctement initialisés
+            StatutMedecinAnesthesiste: line.StatutMedecinAnesthesiste ?? "NON",
+            StatutMedecinAideOperatoire: line.StatutMedecinAideOperatoire ?? "NON",
+            // Autres champs avec valeurs par défaut si nécessaire
+            StatutMedecinActe: line.StatutMedecinActe || "NON",
+            Montant_MedExecutant: line.Montant_MedExecutant || 0,
+            MontantAnesthesiste: line.MontantAnesthesiste || 0,
+            MontantAideOperatoire: line.MontantAideOperatoire || 0,
+            IDmedecinAideOperatoire: line.IDmedecinAideOperatoire || "",
+            IDAnesthesiste: line.IDAnesthesiste || "",
+            numMedecinExecutant: line.numMedecinExecutant || "",
+            medecinExecutant: line.medecinExecutant || "",
+            MedecinAffiche: line.MedecinAffiche || "",
+        }));
+    }, []);
+
     // Réinitialisation/chargement externe des lignes
     useEffect(() => {
         if (externalResetKey === undefined) return;
         if (Array.isArray(presetLines) && presetLines.length > 0) {
-            setLignes(presetLines);
+            const cleanedLines = cleanLoadedLines(presetLines);
+            setLignes(cleanedLines);
         } else {
             // Toujours garder au moins une ligne vide pour permettre l'ajout
             setLignes([emptyLigne()]);
         }
         // Effacer message d'erreur éventuel
         setErrorMsg(null);
-    }, [externalResetKey]);
+    }, [externalResetKey, presetLines, cleanLoadedLines]);
 
     // ---------- Helpers pour rechercher objets -------------
     function findActeById(id: string) {
@@ -738,6 +796,51 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
             ligne.StatutMedecinActe = "NON";
             ligne.Montant_MedExecutant = 0;
         }
+
+        // On cherche le cas ou le montant est pour l'anesthésiste
+        if (acte && (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1")) {
+            ligne.MontantAnesthesiste = ligne.PrixTotal;
+        } else {
+            ligne.MontantAnesthesiste = 0;
+        }
+
+        // On cherche le cas ou le montant est pour l'aide opératoire
+        if (acte && (acte.MontantAideOperatoire === 1 || acte.MontantAideOperatoire === "1")) {
+            ligne.MontantAideOperatoire = ligne.PrixTotal;
+        } else {
+            ligne.MontantAideOperatoire = 0;
+        }
+    }
+
+    // Fonction pour mettre à jour MedecinAffiche selon les statuts
+    function updateMedecinAffiche(ligne: ILignePrestation, medecins: any[]) {
+        // Par défaut, MedecinAffiche est vide
+        ligne.MedecinAffiche = "";
+
+        // Priorité : Médecin exécutant > Anesthésiste > Aide opératoire
+        if (ligne.StatutMedecinActe === "OUI") {
+            // Essayer d'abord avec numMedecinExecutant (ID)
+            if (ligne.numMedecinExecutant) {
+                const medecin = medecins.find(m => m._id === ligne.numMedecinExecutant);
+                if (medecin) {
+                    ligne.MedecinAffiche = `${medecin.nom} ${medecin.prenoms}`;
+                }
+            }
+            // Si numMedecinExecutant est vide, essayer avec medecinExecutant (nom direct)
+            else if (ligne.medecinExecutant) {
+                ligne.MedecinAffiche = ligne.medecinExecutant;
+            }
+        } else if (ligne.StatutMedecinAnesthesiste === "OUI" && ligne.IDAnesthesiste) {
+            const medecin = medecins.find(m => m._id === ligne.IDAnesthesiste);
+            if (medecin) {
+                ligne.MedecinAffiche = `${medecin.nom} ${medecin.prenoms}`;
+            }
+        } else if (ligne.StatutMedecinAideOperatoire === "OUI" && ligne.IDmedecinAideOperatoire) {
+            const medecin = medecins.find(m => m._id === ligne.IDmedecinAideOperatoire);
+            if (medecin) {
+                ligne.MedecinAffiche = `${medecin.nom} ${medecin.prenoms}`;
+            }
+        }
     }
 
     function facturePharmacie() {
@@ -749,6 +852,8 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
             totalTaxe: 0,
             totalSurplus: 0,
             montantExecutant: 0,
+            montantAnesthesiste: 0,
+            montantAideOperatoire: 0,
             montantARegler: 0
         };
 
@@ -762,6 +867,8 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
             s.totalTaxe += Number(l.TAXE || 0);
             s.totalSurplus += Number((l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0));
             s.montantExecutant += Number(l.Montant_MedExecutant || 0);
+            s.montantAnesthesiste += Number(l.MontantAnesthesiste || 0);
+            s.montantAideOperatoire += Number(l.MontantAideOperatoire || 0);
         }
 
         s.montantARegler = s.totalSurplus + s.partAssure;
@@ -904,13 +1011,44 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     copy.Montant_MedExecutant = 0;
                 }
 
+                // Logique pour MontantAnesthesiste - statut
+                if (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1") {
+                    copy.StatutMedecinAnesthesiste = "OUI"; // "OUI" pour anesthésiste
+                } else {
+                    copy.StatutMedecinAnesthesiste = "NON"; // "NON" pour anesthésiste
+                }
+
+                // Logique pour MontantAideOperatoire - statut
+                if (acte.MontantAideOperatoire === 1 || acte.MontantAideOperatoire === "1") {
+                    copy.StatutMedecinAideOperatoire = "OUI"; // "OUI" pour aide opératoire
+                } else {
+                    copy.StatutMedecinAideOperatoire = "NON"; // "NON" pour aide opératoire
+                }
+
+                // Initialiser les montants pour anesthésiste et aide opératoire
+                copy.MontantAnesthesiste = 0;
+                copy.MontantAideOperatoire = 0;
+
                 // Calcul du prix
                 prixActe(copy, acte);
 
-                // si MontantAuMed=1, on chante la valeur
+                // si MontantAuMed=1, on change la valeur
                 if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
                     copy.Montant_MedExecutant = copy.PrixTotal;
                 }
+
+                // si MontantAnesthesiste=1, on change la valeur
+                if (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1") {
+                    copy.MontantAnesthesiste = copy.PrixTotal;
+                }
+
+                // si MontantAideOperatoire=1, on change la valeur
+                if (acte.MontantAideOperatoire === 1 || acte.MontantAideOperatoire === "1") {
+                    copy.MontantAideOperatoire = copy.PrixTotal;
+                }
+
+                // Mettre à jour MedecinAffiche selon les statuts
+                updateMedecinAffiche(copy, medecins);
 
                 return copy;
             })
@@ -957,6 +1095,12 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     // pas d'acte sélectionné -> recalcul simple
                     copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
                 }
+
+                // Mettre à jour MedecinAffiche si un champ de médecin a changé
+                if (field === 'numMedecinExecutant' || field === 'IDAnesthesiste' || field === 'IDmedecinAideOperatoire') {
+                    updateMedecinAffiche(copy, medecins);
+                }
+
                 return copy;
             })
         );
@@ -1015,6 +1159,8 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                             <th style={{ width: '70px' }}>Qtité</th>
                             <th style={{ width: '120px' }}>Prix unitaire</th>
                             <th style={{ width: '120px' }}>Montant Total</th>
+                            <th style={{ width: '150px' }}>Médecin Anesthésiste</th>
+                            <th style={{ width: '150px' }}>Aide opératoire</th>
                             <th style={{ width: '80px', textAlign: 'center' }}>Accepter</th>
                             <th style={{ width: '60px', textAlign: 'center' }}>Action</th>
                         </tr>
@@ -1121,6 +1267,64 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                                     {/* PrixTotal */}
                                     <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '8px', fontSize: '13px' }}>
                                         {Math.round(Number(l.PrixTotal || 0)).toLocaleString('fr-FR')}
+                                    </td>
+
+                                    {/* Médecin Anesthésiste - conditionnel si StatutMedecinAnesthesiste="OUI" */}
+                                    <td style={{ padding: '4px' }}>
+                                        {l.StatutMedecinAnesthesiste === "OUI" ? (
+                                            <Form.Select
+                                                size="sm"
+                                                value={l.IDAnesthesiste || ""}
+                                                onChange={(e) => onFieldChangeAndRecalc(l.IDLignePrestation, 'IDAnesthesiste', e.target.value)}
+                                                disabled={!isEditable}
+                                                style={{ fontSize: '12px' }}
+                                            >
+                                                <option value="">Sélectionner...</option>
+                                                {medecins.map((medecin: any) => (
+                                                    <option key={medecin._id} value={medecin._id}>
+                                                        {medecin.nom} {medecin.prenoms}
+                                                    </option>
+                                                ))}
+                                            </Form.Select>
+                                        ) : (
+                                            <span style={{ color: '#999', fontSize: '12px' }}>
+                                                {l.IDAnesthesiste ? 
+                                                    medecins.find((m: any) => m._id === l.IDAnesthesiste)?.nom + ' ' + 
+                                                    medecins.find((m: any) => m._id === l.IDAnesthesiste)?.prenoms || 
+                                                    'Médecin supprimé' : 
+                                                    '-'
+                                                }
+                                            </span>
+                                        )}
+                                    </td>
+
+                                    {/* Aide opératoire - conditionnel si StatutMedecinAideOperatoire="OUI" */}
+                                    <td style={{ padding: '4px' }}>
+                                        {l.StatutMedecinAideOperatoire === "OUI" ? (
+                                            <Form.Select
+                                                size="sm"
+                                                value={l.IDmedecinAideOperatoire || ""}
+                                                onChange={(e) => onFieldChangeAndRecalc(l.IDLignePrestation, 'IDmedecinAideOperatoire', e.target.value)}
+                                                disabled={!isEditable}
+                                                style={{ fontSize: '12px' }}
+                                            >
+                                                <option value="">Sélectionner...</option>
+                                                {medecins.map((medecin: any) => (
+                                                    <option key={medecin._id} value={medecin._id}>
+                                                        {medecin.nom} {medecin.prenoms}
+                                                    </option>
+                                                ))}
+                                            </Form.Select>
+                                        ) : (
+                                            <span style={{ color: '#999', fontSize: '12px' }}>
+                                                {l.IDmedecinAideOperatoire ? 
+                                                    medecins.find((m: any) => m._id === l.IDmedecinAideOperatoire)?.nom + ' ' + 
+                                                    medecins.find((m: any) => m._id === l.IDmedecinAideOperatoire)?.prenoms || 
+                                                    'Médecin supprimé' : 
+                                                    '-'
+                                                }
+                                            </span>
+                                        )}
                                     </td>
 
                                     {/* Exclusion */}

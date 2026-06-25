@@ -101,13 +101,32 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
         setError("");
 
         try {
-            const res = await fetch(`/api/actes/${acte._id}`, {
+            // Nettoyer le formulaire avant l'envoi
+            const cleanedForm = {
+                designationacte: form.designationacte.trim(),
+                lettreCle: form.lettreCle.trim(),
+                coefficient: Number(form.coefficient),
+                prixClinique: Number(form.prixClinique),
+                prixMutuel: Number(form.prixMutuel),
+                prixPreferentiel: Number(form.prixPreferentiel),
+                MontantAuMed: Number(form.MontantAuMed),
+                MontantAnesthesiste: Number(form.MontantAnesthesiste),
+                MontantAideOperatoire: Number(form.MontantAideOperatoire),
+                IDFAMILLE_ACTE_BIOLOGIE: form.IDFAMILLE_ACTE_BIOLOGIE || undefined,
+                consultationviste: Boolean(form.consultationviste),
+            };
+
+            // Utilise l'API acte-tarif-sync pour la modification (garantit la cohérence)
+            const res = await fetch("/api/actes/acte-tarif-sync", {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(form),
+                body: JSON.stringify({ ...cleanedForm, id: acte._id }),
             });
 
-            if (!res.ok) throw new Error("Erreur lors de la modification");
+            if (!res.ok) {
+                const errorData = await res.json();
+                throw new Error(errorData.error || "Erreur lors de la modification");
+            }
 
             const data: ActeClinique = await res.json();
             onSave(data);

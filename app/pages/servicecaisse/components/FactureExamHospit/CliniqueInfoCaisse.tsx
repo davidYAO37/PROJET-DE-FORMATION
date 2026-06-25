@@ -43,6 +43,7 @@ export default function CliniqueInfoCaisse({ formData, setFormData, hasActesMede
         }
     }, [hasActesMedecin, formData.medecinId, setFormData]);
 
+    
     const handleMedecinExecutantChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const medecinId = e.target.value;
 
@@ -52,6 +53,7 @@ export default function CliniqueInfoCaisse({ formData, setFormData, hasActesMede
         }));
     };
 
+    
     return (
         <Card>
             <Card.Header> Clinique Info</Card.Header>

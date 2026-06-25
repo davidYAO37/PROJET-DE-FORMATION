@@ -45,6 +45,7 @@ export interface IExamenHospitalisation extends Omit<Document, '_id'> {
     MontantMedecin?: number;
     PartApporteur?: number;
     idMedecin?: Types.ObjectId;
+    idMedecinAnesthesiste?: Types.ObjectId;
     Statumed?: string;
     BanqueC?: string;
     NumCheque?: string;
@@ -139,6 +140,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         MontantMedecin: { type: Number },
         PartApporteur: { type: Number },
         idMedecin: { type: Schema.Types.ObjectId, ref: 'Medecin' },
+        idMedecinAnesthesiste: { type: Schema.Types.ObjectId, ref: 'Medecin' },
         Statumed: { type: String, maxlength: 5 },
         BanqueC: { type: String, maxlength: 50 },
         NumCheque: { type: String, maxlength: 50 },

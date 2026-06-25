@@ -22,10 +22,29 @@ export async function GET(req: NextRequest) {
 export async function POST(req: NextRequest) {
     await db();
     const body = await req.json();
+    
+    console.log("POST /api/actes - Données reçues:", body);
+    
     try {
         const acte = await ActeClinique.create(body);
+        console.log("POST /api/actes - Acte créé avec succès:", acte._id);
         return NextResponse.json(acte);
     } catch (e: any) {
+        console.error("POST /api/actes - Erreur:", e.message);
+        console.error("POST /api/actes - Détails:", e);
+        
+        // Gérer les erreurs spécifiques
+        if (e.code === 11000) {
+            // Erreur de duplicité (designationacte unique)
+            return NextResponse.json({ error: "Cette désignation d'acte existe déjà" }, { status: 400 });
+        }
+        
+        if (e.name === 'ValidationError') {
+            // Erreur de validation Mongoose
+            const errors = Object.values(e.errors).map((err: any) => err.message).join(', ');
+            return NextResponse.json({ error: `Erreur de validation: ${errors}` }, { status: 400 });
+        }
+        
         return NextResponse.json({ error: e.message }, { status: 400 });
     }
 }

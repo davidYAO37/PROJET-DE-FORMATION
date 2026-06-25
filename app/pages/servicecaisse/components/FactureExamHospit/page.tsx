@@ -208,6 +208,13 @@ export default function HospitalisationPageCaisse({
                 TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
                 Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
                 StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
+                StatutMedecinAnesthesiste: l.StatutMedecinAnesthesiste ?? "NON",
+                StatutMedecinAideOperatoire: l.StatutMedecinAideOperatoire ?? "NON",
+                IDAnesthesiste: l.IDAnesthesiste || "",
+                IDmedecinAideOperatoire: l.IDmedecinAideOperatoire || "",
+                numMedecinExecutant: l.numMedecinExecutant || "",
+                medecinExecutant: l.medecinExecutant || "",
+                MedecinAffiche: l.MedecinAffiche || "",
                 IDACTE: String(l.idActe || ""),
                 Exclusion: l.exclusionActe === "Refuser" ? "Refuser" : "Accepter",
                 COEFFICIENT_ASSURANCE: Number(l.coefficientAssur ?? 0),
@@ -228,7 +235,14 @@ export default function HospitalisationPageCaisse({
                 Action: "",
             }));
 
-            setPresetLines(mappedLines);
+            // S'assurer que les statuts sont correctement initialisés avant d'envoyer
+            const cleanedLines = mappedLines.map((line: any) => ({
+                ...line,
+                StatutMedecinAnesthesiste: line.StatutMedecinAnesthesiste ?? "NON",
+                StatutMedecinAideOperatoire: line.StatutMedecinAideOperatoire ?? "NON",
+            }));
+            
+            setPresetLines(cleanedLines);
             // Déclenche la réinit dans ActesTable et rechargement des lignes
             setResetKey((k) => k + 1);
         } catch (_) {
@@ -480,6 +494,13 @@ export default function HospitalisationPageCaisse({
                 TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
                 Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
                 StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
+                StatutMedecinAnesthesiste: l.StatutMedecinAnesthesiste ?? "NON",
+                StatutMedecinAideOperatoire: l.StatutMedecinAideOperatoire ?? "NON",
+                IDAnesthesiste: l.IDAnesthesiste || "",
+                IDmedecinAideOperatoire: l.IDmedecinAideOperatoire || "",
+                numMedecinExecutant: l.numMedecinExecutant || "",
+                medecinExecutant: l.medecinExecutant || "",
+                MedecinAffiche: l.MedecinAffiche || "",
                 IDACTE: String(l.idActe || ""),
                 Exclusion: l.exclusionActe === "Refuser" ? "Refuser" : "Accepter",
                 COEFFICIENT_ASSURANCE: Number(l.coefficientAssur ?? 0),
@@ -500,7 +521,14 @@ export default function HospitalisationPageCaisse({
                 Action: "",
             }));
 
-            setPresetLines(mappedLines);
+            // S'assurer que les statuts sont correctement initialisés avant d'envoyer
+            const cleanedLines = mappedLines.map((line: any) => ({
+                ...line,
+                StatutMedecinAnesthesiste: line.StatutMedecinAnesthesiste ?? "NON",
+                StatutMedecinAideOperatoire: line.StatutMedecinAideOperatoire ?? "NON",
+            }));
+            
+            setPresetLines(cleanedLines);
             setResetKey((k) => k + 1);
         } else {
             resetCreationState(typeActeValue);

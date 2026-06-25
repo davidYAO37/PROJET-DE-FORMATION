@@ -238,6 +238,7 @@ export async function POST(req: NextRequest) {
                 CautionPatient: header.CautionPatient || 0,
                 Modepaiement: header.Modepaiement || "",
                 IDMEDECIN: header.IDMEDECIN || undefined,
+                idMedecinAnesthesiste: header.IDMEDECIN_ANESTHESISTE ? new mongoose.Types.ObjectId(header.IDMEDECIN_ANESTHESISTE) : undefined,
                 MontantMedecin: header.MontantMedecin || 0,
                 DateFacturation: currentDate,
                 Heure_Facturation: new Date().toLocaleTimeString("fr-FR"),

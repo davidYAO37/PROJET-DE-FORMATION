@@ -216,6 +216,10 @@ export async function POST(req: NextRequest) {
                         
                         // Ajouter le champ sexe depuis la consultation
                         sexe: consultationData.Sexe || "",
+                        
+                        // Ajouter les statuts pour anesthésiste et aide opératoire
+                        StatutMedecinAnesthesiste: l.StatutMedecinAnesthesiste || "NON",
+                        StatutMedecinAideOperatoire: l.StatutMedecinAideOperatoire || "NON",
                     };
 
                     // Ajouter idTypeActe uniquement s'il est valide

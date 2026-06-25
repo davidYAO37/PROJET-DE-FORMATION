@@ -184,8 +184,8 @@ export async function GET(request: NextRequest) {
         { $sort: { _id: 1 } },
       ]),
       Consultation.aggregate([
-        { $match: { Date_consulation: { $gte: periodStart, $lte: periodEnd }, statutPrescriptionMedecin: 3, ...medecinFilter, ...consultationServiceFilter } },
-        { $group: { _id: '$designationC', montant: { $sum: { $ifNull: ['$montantapayer', 0] } }, nombre: { $sum: 1 }, details: { $push: { date: '$Date_consulation', designation: '$designationC', montant: '$montantapayer', patient: '$PatientP', codeDossier: '$Code_dossier', type: 'Consultation' } } } },
+        { $match: { Date_consulation: { $gte: periodStart, $lte: periodEnd }, ...medecinFilter, ...consultationServiceFilter } },
+        { $group: { _id: '$designationC', montant: { $sum: { $ifNull: ['$PrixClinique', 0] } }, nombre: { $sum: 1 }, details: { $push: { date: '$Date_consulation', designation: '$designationC', montant: '$PrixClinique', patient: '$PatientP', codeDossier: '$Code_dossier', type: 'Consultation' } } } },
         { $sort: { _id: 1 } },
       ]),
       Consultation.aggregate([
@@ -198,8 +198,8 @@ export async function GET(request: NextRequest) {
         { $sort: { montantTotal: -1 } },
       ]),
       Consultation.aggregate([
-        { $match: { Date_consulation: { $gte: periodStart, $lte: periodEnd }, statutPrescriptionMedecin: 3, ...medecinFilter, ...consultationServiceFilter } },
-        { $group: { _id: '$assurance', montantConsultations: { $sum: { $ifNull: ['$montantapayer', 0] } }, montantTotal: { $sum: { $ifNull: ['$montantapayer', 0] } }, details: { $push: { date: '$Date_consulation', assurance: '$assurance', designation: '$designationC', montant: '$montantapayer', patient: '$PatientP', codeDossier: '$Code_dossier', type: 'Consultation' } } } },
+        { $match: { Date_consulation: { $gte: periodStart, $lte: periodEnd }, ...medecinFilter, ...consultationServiceFilter } },
+        { $group: { _id: '$assurance', montantConsultations: { $sum: { $ifNull: ['$PrixClinique', 0] } }, montantTotal: { $sum: { $ifNull: ['$PrixClinique', 0] } }, details: { $push: { date: '$Date_consulation', assurance: '$assurance', designation: '$designationC', montant: '$PrixClinique', patient: '$PatientP', codeDossier: '$Code_dossier', type: 'Consultation' } } } },
         { $sort: { montantTotal: -1 } },
       ]),
       Consultation.aggregate([
@@ -215,8 +215,8 @@ export async function GET(request: NextRequest) {
         { $group: { _id: null, total: { $sum: { $ifNull: ['$Montanttotal', 0] } } } },
       ]),
       Consultation.aggregate([
-        { $match: { Date_consulation: { $gte: periodStart, $lte: periodEnd }, statutPrescriptionMedecin: 3, ...medecinFilter, ...consultationServiceFilter } },
-        { $group: { _id: null, total: { $sum: { $ifNull: ['$montantapayer', 0] } } } },
+        { $match: { Date_consulation: { $gte: periodStart, $lte: periodEnd }, ...medecinFilter, ...consultationServiceFilter } },
+        { $group: { _id: null, total: { $sum: { $ifNull: ['$PrixClinique', 0] } } } },
       ]),
       Patient.countDocuments({ dateCreation: { $gte: periodStart, $lte: periodEnd } }),
       Patient.countDocuments({ dateCreation: { $gte: previousStart, $lte: previousEnd } }),
@@ -385,7 +385,7 @@ export async function GET(request: NextRequest) {
         const dayEnd = endOfDay(day);
         const [fact, consult] = await Promise.all([
           Facturation.aggregate([{ $match: { DateFacturation: { $gte: day, $lte: dayEnd }, ...facturationMedecinFilter } }, { $group: { _id: null, total: { $sum: { $ifNull: ['$Montanttotal', 0] } } } }]),
-          Consultation.aggregate([{ $match: { Date_consulation: { $gte: day, $lte: dayEnd }, statutPrescriptionMedecin: 3, ...medecinFilter } }, { $group: { _id: null, total: { $sum: { $ifNull: ['$montantapayer', 0] } } } }]),
+          Consultation.aggregate([{ $match: { Date_consulation: { $gte: day, $lte: dayEnd }, ...medecinFilter } }, { $group: { _id: null, total: { $sum: { $ifNull: ['$PrixClinique', 0] } } } }]),
         ]);
         return {
           jour: day.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),

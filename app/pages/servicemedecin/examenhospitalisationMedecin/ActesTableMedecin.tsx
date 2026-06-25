@@ -18,6 +18,8 @@ export interface IActeClinique {
     PrixMutualiste?: number;
     PrixAssure?: number;
     MontantAuMed?: string | number; // "1" ou 1
+    MontantAnesthesiste?: string | number; // "1" ou 1
+    MontantAideOperatoire?: string | number; // "1" ou 1
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     ORdonnacementAffichage?: number;
     // ... autres champs si besoin
@@ -53,6 +55,8 @@ export interface ILignePrestation {
     TotalRelicatCoefAssur: number;
     Montant_MedExecutant: number;
     StatutMedecinActe: string;
+    StatutMedecinAnesthesiste: string; // "NON" ou "OUI"
+    StatutMedecinAideOperatoire: string; // "NON" ou "OUI"
     IDACTE: string; // _id de l'acte
     Exclusion: "Accepter" | "Refuser";
     COEFFICIENT_ASSURANCE: number;
@@ -250,6 +254,8 @@ const emptyLigne = (): ILignePrestation => ({
     TotalRelicatCoefAssur: 0,
     Montant_MedExecutant: 0,
     StatutMedecinActe: "NON",
+    StatutMedecinAnesthesiste: "NON", // "NON" par défaut
+    StatutMedecinAideOperatoire: "NON", // "NON" par défaut
     IDACTE: "",
     Exclusion: "Accepter",
     COEFFICIENT_ASSURANCE: 0,
@@ -300,6 +306,8 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                     PrixMutualiste: a.prixMutuel,
                     PrixAssure: a.prixPreferentiel,
                     MontantAuMed: a.MontantAuMed,
+                    MontantAnesthesiste: a.MontantAnesthesiste,
+                    MontantAideOperatoire: a.MontantAideOperatoire,
                     IDFAMILLE_ACTE_BIOLOGIE: a.IDFAMILLE_ACTE_BIOLOGIE,
                     ORdonnacementAffichage: a.ORdonnacementAffichage,
                 }));
@@ -885,6 +893,20 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                     copy.Montant_MedExecutant = 0;
                 }
 
+                // Logique pour MontantAnesthesiste
+                if (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1") {
+                    copy.StatutMedecinAnesthesiste = "OUI"; // "OUI" pour anesthésiste
+                } else {
+                    copy.StatutMedecinAnesthesiste = "NON"; // "NON" pour anesthésiste
+                }
+
+                // Logique pour MontantAideOperatoire
+                if (acte.MontantAideOperatoire === 1 || acte.MontantAideOperatoire === "1") {
+                    copy.StatutMedecinAideOperatoire = "OUI"; // "OUI" pour aide opératoire
+                } else {
+                    copy.StatutMedecinAideOperatoire = "NON"; // "NON" pour aide opératoire
+                }
+
                 // Calcul du prix
                 prixActe(copy, acte);
 
@@ -932,6 +954,20 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                 } else {
                     nouvelleLigne.StatutMedecinActe = "NON";
                     nouvelleLigne.Montant_MedExecutant = 0;
+                }
+
+                // Logique pour MontantAnesthesiste
+                if (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1") {
+                    nouvelleLigne.StatutMedecinAnesthesiste = "OUI"; // "OUI" pour anesthésiste
+                } else {
+                    nouvelleLigne.StatutMedecinAnesthesiste = "NON"; // "NON" pour anesthésiste
+                }
+
+                // Logique pour MontantAideOperatoire
+                if (acte.MontantAideOperatoire === 1 || acte.MontantAideOperatoire === "1") {
+                    nouvelleLigne.StatutMedecinAideOperatoire = "OUI"; // "OUI" pour aide opératoire
+                } else {
+                    nouvelleLigne.StatutMedecinAideOperatoire = "NON"; // "NON" pour aide opératoire
                 }
 
                 // Calcul du prix

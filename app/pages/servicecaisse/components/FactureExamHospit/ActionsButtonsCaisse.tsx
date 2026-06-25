@@ -126,6 +126,7 @@ export default function ActionsButtonsCaisse({
         CautionPatient: formData.Modepaiement === "Caution" ? formData.TotalapayerPatient : 0,
         Modepaiement: formData.Modepaiement,
         IDMEDECIN: formData.medecinId,
+        IDMEDECIN_ANESTHESISTE: formData.medecinAnesthesisteId,
         MontantMedecin: formData.MontantMedecinExécutant || 0,
         assuranceInfo: formData.assurance,
       },

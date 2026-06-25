@@ -74,10 +74,10 @@ export interface ILignePrestation extends Omit<Document, '_id'> {
     Code_dossier?: string;
 
     IDmedecinAideOperatoire?: string;
-    StatutMedecinAideOperatoire?: number;
+    StatutMedecinAideOperatoire?: string;
     MedecinAideOperatoire?: string;
     MedecinAnesthesiste?: string;
-    StatutMedecinAnesthesiste?: number;
+    StatutMedecinAnesthesiste?: string;
     IDAnesthesiste?: string;
     MedecinAffiche?: string;
     AnesthesistePaye?: number;
@@ -157,10 +157,10 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         entrepriseId: { type: String },
         Code_dossier: { type: String },
         IDmedecinAideOperatoire: { type: String },
-        StatutMedecinAideOperatoire: { type: Number },
+        StatutMedecinAideOperatoire: { type: String },
         MedecinAideOperatoire: { type: String },
         MedecinAnesthesiste: { type: String },
-        StatutMedecinAnesthesiste: { type: Number },
+        StatutMedecinAnesthesiste: { type: String },
         IDAnesthesiste: { type: String },
         MedecinAffiche: { type: String },
         AnesthesistePaye: { type: Number },
