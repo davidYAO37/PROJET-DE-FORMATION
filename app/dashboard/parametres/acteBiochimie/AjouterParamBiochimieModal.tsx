@@ -64,13 +64,12 @@ export default function AjouterParamBiochimieModal({ show, onHide, onSave, onAdd
       return;
     }
 
-    const paramsToAdd = Array.from(selectedParams).map(id => {
-      const param = paramBiochimies.find(p => p._id === id);
-      return {
-        IDPARAM_BIOCHIME: param?._id,
-        param_designb: param?.LibelleB || ""
-      };
-    });
+    const paramsToAdd = paramBiochimies
+      .filter(p => p._id && selectedParams.has(p._id))
+      .map(param => ({
+        IDPARAM_BIOCHIME: param._id,
+        param_designb: param.LibelleB || ""
+      }));
 
     if (onAdd) {
       onAdd(paramsToAdd);
@@ -101,6 +100,18 @@ export default function AjouterParamBiochimieModal({ show, onHide, onSave, onAdd
     param.CodeB?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const toggleAllSelection = () => {
+    const filteredIds = filteredParams.map(p => p._id).filter((id): id is string => id !== undefined);
+    const allFilteredSelected = filteredIds.every(id => selectedParams.has(id)) && filteredIds.length > 0;
+    const newSelected = new Set(selectedParams);
+    if (allFilteredSelected) {
+      filteredIds.forEach(id => newSelected.delete(id));
+    } else {
+      filteredIds.forEach(id => newSelected.add(id));
+    }
+    setSelectedParams(newSelected);
+  };
+
   return (
     <>
       <Modal show={show} onHide={onHide} size="xl">
@@ -118,10 +129,20 @@ export default function AjouterParamBiochimieModal({ show, onHide, onSave, onAdd
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ width: "300px" }}
             />
-            <Button variant="success" onClick={() => setShowAjoutParamModal(true)}>
-              <FaPlus className="me-2" />
-              Nouveau Paramètre
-            </Button>
+            <div className="d-flex align-items-center gap-2">
+              <Badge bg="primary">
+                {selectedParams.size} paramètre(s) sélectionné(s)
+              </Badge>
+              <Button variant="outline-secondary" size="sm" onClick={toggleAllSelection} disabled={loading}>
+                {filteredParams.length > 0 && filteredParams.every(p => p._id && selectedParams.has(p._id))
+                  ? "Désélectionner tout"
+                  : "Sélectionner tout"}
+              </Button>
+              <Button variant="success" onClick={() => setShowAjoutParamModal(true)}>
+                <FaPlus className="me-2" />
+                Nouveau Paramètre
+              </Button>
+            </div>
           </div>
 
           {loading ? (
@@ -134,7 +155,12 @@ export default function AjouterParamBiochimieModal({ show, onHide, onSave, onAdd
             <Table striped hover responsive>
               <thead>
                 <tr>
-                  <th style={{ width: "50px" }}>Sélection</th>
+                  <th style={{ width: "50px" }} className="text-center">
+                    <Form.Check
+                      checked={filteredParams.length > 0 && filteredParams.every(p => p._id && selectedParams.has(p._id))}
+                      onChange={toggleAllSelection}
+                    />
+                  </th>
                   <th>Code B</th>
                   <th>Libellé B</th>
                   <th style={{ width: "80px" }}>Actions</th>
@@ -170,11 +196,6 @@ export default function AjouterParamBiochimieModal({ show, onHide, onSave, onAdd
             </Table>
           )}
 
-          <div className="mt-3">
-            <Badge bg="info">
-              {selectedParams.size} paramètre(s) sélectionné(s)
-            </Badge>
-          </div>
         </Modal.Body>
         <Modal.Footer>
           <Button variant="secondary" onClick={onHide}>

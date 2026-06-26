@@ -160,6 +160,9 @@ export default function SaisieResultat({
       const resultatsResponse = await fetch(
         `/api/laboratoire/resultats/ligne/${prestation._id}`,
       );
+      if (!resultatsResponse.ok) {
+        throw new Error(`Erreur HTTP ${resultatsResponse.status}`);
+      }
       const resultatsData = await resultatsResponse.json();
 
       if (resultatsData.hasResultats && resultatsData.resultats.length > 0) {
@@ -725,6 +728,15 @@ export default function SaisieResultat({
                   </tr>
                 </thead>
                 <tbody>
+                  {parametres.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="text-center py-3 text-muted fst-italic">
+                        {!selectedPrestation
+                          ? "Sélectionnez un acte dans la liste pour afficher ses résultats"
+                          : "Aucun résultat associé à cet acte — paramétrez d'abord l'acte pour saisir un résultat"}
+                      </td>
+                    </tr>
+                  )}
                   {parametres.map((ligne, index) => (
                     <tr key={index}>
                       <td

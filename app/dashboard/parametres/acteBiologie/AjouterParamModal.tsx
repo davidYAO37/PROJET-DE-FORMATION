@@ -58,19 +58,25 @@ export default function AjouterParamModal({ show, onHide, acteSelectionne, onSav
     setSelectedParams(newSelected);
   };
 
-  const toggleAllSelection = () => {
-    if (selectedParams.size === paramLabos.length) {
-      setSelectedParams(new Set());
-    } else {
-      setSelectedParams(new Set(paramLabos.map(p => p._id).filter((id): id is string => id !== undefined)));
-    }
-  };
-
   // Filtrer les paramètres selon le terme de recherche
   const paramLabosFiltres = paramLabos.filter(param =>
     (param.Param_designation?.toLowerCase().includes(searchTerm.toLowerCase()) || '') ||
     (param.NUM_PARAM?.toString().toLowerCase().includes(searchTerm.toLowerCase()) || '')
   );
+
+  const toggleAllSelection = () => {
+    const filteredIds = paramLabosFiltres.map(p => p._id).filter((id): id is string => id !== undefined);
+    const allFilteredSelected = filteredIds.every(id => selectedParams.has(id)) && filteredIds.length > 0;
+    const newSelected = new Set(selectedParams);
+    if (allFilteredSelected) {
+      // Désélectionner uniquement les éléments visibles
+      filteredIds.forEach(id => newSelected.delete(id));
+    } else {
+      // Ajouter les éléments visibles à la sélection existante
+      filteredIds.forEach(id => newSelected.add(id));
+    }
+    setSelectedParams(newSelected);
+  };
 
   const handleNouveauParametre = () => {
     setShowAjoutParamModal(true);
@@ -112,10 +118,11 @@ export default function AjouterParamModal({ show, onHide, acteSelectionne, onSav
       setMessage("");
 
       // Préparer les paramètres sélectionnés
-      const nouveauxActesParams = paramLabosFiltres
+      const nouveauxActesParams = paramLabos
         .filter(param => param._id && selectedParams.has(param._id))
         .map(param => ({
           ...param,
+          _id: undefined,
           IDACTEP: acteSelectionne._id,
           IDACTE_PARAMLABO: param.NUM_PARAM,
           ValeurMaxNormale: param.ValeurMaxNormale,
@@ -215,7 +222,7 @@ export default function AjouterParamModal({ show, onHide, acteSelectionne, onSav
               onClick={toggleAllSelection}
               disabled={loading}
             >
-              {selectedParams.size === paramLabos.length && paramLabos.length > 0 
+              {paramLabosFiltres.length > 0 && paramLabosFiltres.every(p => p._id && selectedParams.has(p._id))
                 ? "Désélectionner tout" 
                 : "Sélectionner tout"
               }
@@ -228,7 +235,7 @@ export default function AjouterParamModal({ show, onHide, acteSelectionne, onSav
                 <tr>
                   <th className="text-center" style={{ width: "60px" }}>
                     <Form.Check
-                      checked={selectedParams.size === paramLabos.length && paramLabos.length > 0}
+                      checked={paramLabosFiltres.length > 0 && paramLabosFiltres.every(p => p._id && selectedParams.has(p._id))}
                       onChange={toggleAllSelection}
                     />
                   </th>

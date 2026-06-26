@@ -411,14 +411,14 @@ export default function ListePatientAttentes() {
                           >
                             <i className="bi bi-file-earmark-text"></i>
                           </Button>
-                          <Button
+                          {/* <Button
                             variant="outline-info"
                             size="sm"
                             onClick={() => router.push(`/pages/servicemedecin/fiche-patient/${patient._id}`)}
                             title="Voir la fiche patient"
                           >
                             <i className="bi bi-person"></i>
-                          </Button>
+                          </Button> */}
                         </div>
                       </td>
                     </tr>

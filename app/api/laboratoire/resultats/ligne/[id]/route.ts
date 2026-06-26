@@ -8,6 +8,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         await db();
         const { id } = await params;
 
+        if (!id || !/^[a-fA-F0-9]{24}$/.test(id)) {
+            return NextResponse.json({ hasResultats: false, count: 0, resultats: [] });
+        }
+
         const resultats = await ResultatLignePrestation.find({
             IDLIGNE_PRESTATION: id
         }).lean();

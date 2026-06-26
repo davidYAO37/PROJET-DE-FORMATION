@@ -157,12 +157,12 @@ export default function FichePrescriptionMedecin() {
         const result = await response.json();
         const lignes = Array.isArray(result?.data) ? result.data : [];
 
-        // Extraire les examens paracliniques (lettre clé = "B", "Z", "KC", "D")
+        // Extraire les examens paracliniques (lettre clé = "K", "KC", "B", "Z", "D")
         const examens = lignes
           .filter((ligne: any) => {
             const lettreCle = ligne.lettreCle;
             return (
-              ["B", "Z", "KC", "D"].includes(lettreCle) && ligne.prestation
+              ["K", "KC", "B", "Z", "D"].includes(lettreCle) && ligne.prestation
             );
           })
           .map((ligne: any) => ligne.prestation);
