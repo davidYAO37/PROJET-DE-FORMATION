@@ -17,8 +17,8 @@ const TarifAssuranceSchema = new Schema<ITarifAssurance>(
     acteId: { type: Schema.Types.ObjectId, ref: "ActeClinique", required: true }, // lien direct
     lettreCle: { type: String, required: true },
     coefficient: { type: Number, required: true },
-    prixmutuel: { type: Number, required: true },
-    prixpreferenciel: { type: Number, required: true },
+    prixmutuel: { type: Number, required: true, default: 0 },
+    prixpreferenciel: { type: Number, required: true, default: 0 },
     assurance: { type: Schema.Types.ObjectId, ref: "Assurance", required: true },
     entrepriseId: { type: String },
   },

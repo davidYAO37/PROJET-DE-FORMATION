@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { Table, Button, Form } from "react-bootstrap";
 import { FaTrash, FaArrowUp, FaArrowDown } from "react-icons/fa";
 
@@ -16,6 +16,147 @@ interface ActePrestation {
 interface Props {
     familleId: string | null;
 }
+
+interface ActeSelectProps {
+    actes: ActePrestation[];
+    selectedId: string;
+    onSelect: (acte: ActePrestation) => void;
+}
+
+const ActeSelect = memo(function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
+    const [searchTerm, setSearchTerm] = useState("");
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+
+    const filteredActes = useMemo(() => {
+        const lower = searchTerm.toLowerCase();
+        const list = searchTerm
+            ? actes.filter(
+                (a) =>
+                    a.designationacte?.toLowerCase().includes(lower) ||
+                    a.lettreCle?.toLowerCase().includes(lower)
+            )
+            : actes;
+        return list.slice(0, 50);
+    }, [searchTerm, actes]);
+
+    useEffect(() => {
+        if (showDropdown && inputRef.current) {
+            const rect = inputRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + 5,
+                left: rect.left,
+                width: rect.width,
+            });
+        }
+    }, [showDropdown]);
+
+    const handleClickOutside = useCallback((event: MouseEvent) => {
+        if (
+            dropdownRef.current &&
+            !dropdownRef.current.contains(event.target as Node) &&
+            inputRef.current &&
+            !inputRef.current.contains(event.target as Node)
+        ) {
+            setShowDropdown(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [handleClickOutside]);
+
+    const handleSelect = useCallback(
+        (acte: ActePrestation) => {
+            onSelect(acte);
+            setSearchTerm("");
+            setShowDropdown(false);
+        },
+        [onSelect]
+    );
+
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        setShowDropdown(true);
+    }, []);
+
+    const selectedActe = useMemo(
+        () => actes.find((a) => a._id === selectedId),
+        [actes, selectedId]
+    );
+
+    return (
+        <div style={{ position: "relative" }}>
+            <Form.Control
+                ref={inputRef}
+                type="text"
+                size="sm"
+                placeholder="Rechercher un acte..."
+                value={searchTerm || selectedActe?.designationacte || ""}
+                onChange={handleInputChange}
+                onFocus={() => setShowDropdown(true)}
+            />
+            {showDropdown && (
+                <div
+                    ref={dropdownRef}
+                    style={{
+                        position: "fixed",
+                        top: `${dropdownPosition.top}px`,
+                        left: `${dropdownPosition.left}px`,
+                        width: `${dropdownPosition.width}px`,
+                        maxHeight: "200px",
+                        overflow: "auto",
+                        backgroundColor: "white",
+                        border: "1px solid #dee2e6",
+                        borderRadius: "0.375rem",
+                        boxShadow: "0 0.5rem 1rem rgba(0, 0, 0, 0.15)",
+                        zIndex: 1050,
+                    }}
+                >
+                    {filteredActes.length === 0 ? (
+                        <div style={{ padding: "8px", color: "#6c757d", fontSize: "13px" }}>
+                            Aucun acte trouvé
+                        </div>
+                    ) : (
+                        filteredActes.map((acte) => (
+                            <div
+                                key={acte._id}
+                                onClick={() => handleSelect(acte)}
+                                style={{
+                                    padding: "8px",
+                                    cursor: "pointer",
+                                    fontSize: "13px",
+                                    borderBottom: "1px solid #f8f9fa",
+                                    backgroundColor: acte._id === selectedId ? "#e3f2fd" : "white",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#f8f9fa";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor =
+                                        acte._id === selectedId ? "#e3f2fd" : "white";
+                                }}
+                            >
+                                <div>
+                                    <strong>{acte.designationacte}</strong>
+                                </div>
+                                {acte.lettreCle && (
+                                    <div style={{ fontSize: "11px", color: "#6c757d" }}>
+                                        {acte.lettreCle}
+                                        {acte.coefficient ? ` · Coef. ${acte.coefficient}` : ""}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
 
 export default function TablePrestation({ familleId }: Props) {
     const [prestations, setPrestations] = useState<ActePrestation[]>([]);
@@ -53,7 +194,7 @@ export default function TablePrestation({ familleId }: Props) {
                     // Filtrer et trier par ordre d'affichage
                     const sorted = data
                         .filter((a: ActePrestation) => a.IDFAMILLE_ACTE_BIOLOGIE === familleId)
-                        .sort((a: ActePrestation, b: ActePrestation) => 
+                        .sort((a: ActePrestation, b: ActePrestation) =>
                             (a.ORdonnacementAffichage || 0) - (b.ORdonnacementAffichage || 0)
                         );
                     setPrestations(sorted);
@@ -65,19 +206,14 @@ export default function TablePrestation({ familleId }: Props) {
         fetchPrestations();
     }, [familleId]);
 
-    // Ajouter un acte à la liste
-    const handleActeSelect = async (designation: string, index: number) => {
-        if (!designation || !familleId) return;
+    const handleActeSelect = (acte: ActePrestation, index: number) => {
+        if (!acte || !familleId) return;
 
-        const acte = actesDisponibles.find(a => a.designationacte === designation);
-        if (!acte) return;
-
-        // Mettre à jour la ligne
         const newPrestations = [...prestations];
         newPrestations[index] = {
             ...acte,
             IDFAMILLE_ACTE_BIOLOGIE: familleId,
-            ORdonnacementAffichage: index + 1
+            ORdonnacementAffichage: index + 1,
         };
         setPrestations(newPrestations);
     };
@@ -119,28 +255,38 @@ export default function TablePrestation({ familleId }: Props) {
         if (!window.confirm("Voulez-vous retirer cet acte ?")) return;
 
         const acte = prestations[index];
-        if (acte._id) {
-            try {
-                // Retirer l'acte de la famille
-                await fetch(`/api/actes/${acte._id}`, {
-                    method: "PUT",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({
-                        ...acte,
-                        IDFAMILLE_ACTE_BIOLOGIE: "",
-                        ORdonnacementAffichage: 0
-                    })
-                });
-                alert("Acte retiré avec succès");
-            } catch (err) {
-                console.error("Erreur lors de la suppression", err);
-            }
+        if (!acte._id) {
+            // Ligne non encore liée à un acte réel : suppression locale uniquement
+            const newPrestations = prestations.filter((_, i) => i !== index);
+            newPrestations.forEach((p, i) => p.ORdonnacementAffichage = i + 1);
+            setPrestations(newPrestations);
+            return;
         }
-        
-        const newPrestations = prestations.filter((_, i) => i !== index);
-        // Réorganiser les numéros d'ordre
-        newPrestations.forEach((p, i) => p.ORdonnacementAffichage = i + 1);
-        setPrestations(newPrestations);
+
+        try {
+            const res = await fetch(`/api/actes/${acte._id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    ...acte,
+                    IDFAMILLE_ACTE_BIOLOGIE: "",
+                    ORdonnacementAffichage: 0
+                })
+            });
+
+            if (!res.ok) {
+                const data = await res.json().catch(() => ({}));
+                throw new Error(data.error || "Erreur lors du retrait de l'acte");
+            }
+
+            const newPrestations = prestations.filter((_, i) => i !== index);
+            newPrestations.forEach((p, i) => p.ORdonnacementAffichage = i + 1);
+            setPrestations(newPrestations);
+            alert("Acte retiré avec succès");
+        } catch (err: any) {
+            console.error("Erreur lors de la suppression", err);
+            alert(err.message || "Erreur lors du retrait de l'acte");
+        }
     };
 
     // Valider et enregistrer toutes les modifications
@@ -207,18 +353,11 @@ export default function TablePrestation({ familleId }: Props) {
                         prestations.map((prestation, index) => (
                             <tr key={index}>
                                 <td>
-                                    <Form.Select
-                                        size="sm"
-                                        value={prestation.designationacte}
-                                        onChange={(e) => handleActeSelect(e.target.value, index)}
-                                    >
-                                        <option value="">-- Sélectionner un acte --</option>
-                                        {actesDisponibles.map((acte) => (
-                                            <option key={acte._id} value={acte.designationacte}>
-                                                {acte.designationacte}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
+                                    <ActeSelect
+                                        actes={actesDisponibles}
+                                        selectedId={prestation._id}
+                                        onSelect={(acte) => handleActeSelect(acte, index)}
+                                    />
                                 </td>
                                 <td>
                                     <Form.Control

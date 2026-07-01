@@ -360,7 +360,7 @@ export default function SaisieResultat({
     }
   }
 
-// fonction pour supprimer un parametre
+  // fonction pour supprimer un parametre
   async function supprimerParametre(index: number) {
     const parametre = parametres[index];
     const ok = window.confirm("Voulez-vous retirer ce Paramètre ?");
@@ -378,7 +378,7 @@ export default function SaisieResultat({
 
     try {
       const response = await fetch(
-        `/api/laboratoire/resultat/${parametre.IDResultat}`,
+        `/api/laboratoire/resultat/parametre/${parametre.IDResultat}`,
         {
           method: "DELETE",
         },
@@ -583,8 +583,8 @@ export default function SaisieResultat({
                 {prestations.map((prestation) => {
                   const date = prestation.dateLignePrestation
                     ? new Date(
-                        prestation.dateLignePrestation,
-                      ).toLocaleDateString("fr-FR")
+                      prestation.dateLignePrestation,
+                    ).toLocaleDateString("fr-FR")
                     : "-";
                   const aResultat = prestation.resultatSaisiePar && prestation.resultatSaisiePar !== "";
                   const cellStyle = aResultat ? { backgroundColor: "#90EE90" } : {};

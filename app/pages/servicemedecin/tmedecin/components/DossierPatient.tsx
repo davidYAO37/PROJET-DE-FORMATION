@@ -1,7 +1,8 @@
 'use client';
-import { useState, useEffect } from 'react';
-import { Container, Card, Row, Col, Table, Badge, Button, Modal, Nav, Tab, Alert } from 'react-bootstrap';
-import { FaUserInjured, FaHistory, FaNotesMedical, FaHospital, FaMicroscope, FaPills, FaFileAlt } from 'react-icons/fa';
+import React, { useState, useEffect } from 'react';
+import { Card, Row, Col, Table, Badge, Button, Modal, Nav, Tab, Alert } from 'react-bootstrap';
+import { FaUserInjured, FaHistory, FaNotesMedical, FaHospital, FaMicroscope, FaPills, FaFileAlt, FaChevronDown, FaChevronRight, FaThermometerHalf, FaWeight, FaHeartbeat, FaStethoscope, FaPrint } from 'react-icons/fa';
+import PrintFichePrescription from '../../MesImpressions/printFichePrescription';
 
 interface Patient {
   _id: string;
@@ -35,8 +36,10 @@ interface Consultation {
   Tension?: string;
   Glycemie?: string;
   Medecin?: string;
-  StatutPaiement?: string;
-  montantapayer?: number;
+  TraitementClinique?: string;
+  ExamenParaclinique?: string;
+  CodeAffection?: string;
+  
 }
 
 interface Prescription {
@@ -85,6 +88,11 @@ export default function DossierPatient({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('consultations');
+  const [expandedConsultation, setExpandedConsultation] = useState<string | null>(null);
+  const [printConsultation, setPrintConsultation] = useState<Consultation | null>(null);
+
+  const toggleConsultation = (id: string) =>
+    setExpandedConsultation(prev => (prev === id ? null : id));
 
   // Charger les données du patient
   useEffect(() => {
@@ -197,6 +205,7 @@ export default function DossierPatient({
   }
 
   return (
+    <>
     <Modal show={show} onHide={onHide} size="xl" className="dossier-patient-modal">
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title className="d-flex align-items-center">
@@ -301,41 +310,151 @@ export default function DossierPatient({
             {/* Historique des Consultations */}
             <Tab.Pane eventKey="consultations">
               <Card>
-                <Card.Header className="bg-primary text-white">
-                  <h6 className="mb-0">Historique des Consultations</h6>
+                <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center">
+                  <h6 className="mb-0"><FaHistory className="me-2" />Historique des Consultations</h6>
+                  <Badge bg="light" text="dark">{consultations.length} consultation(s)</Badge>
                 </Card.Header>
-                <Card.Body>
+                <Card.Body className="p-0">
                   {consultations.length > 0 ? (
-                    <Table striped hover responsive>
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Code Prestation</th>
-                          <th>Motif</th>
-                          <th>Médecin</th>
-                          <th>Diagnostic</th>
-                          <th>Statut</th>
-                          <th>Montant</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {consultations.map((consultation) => (
-                          <tr key={consultation._id}>
-                            <td>{new Date(consultation.Date_consulation).toLocaleDateString('fr-FR')}</td>
-                            <td className="text-primary fw-bold">{consultation.CodePrestation}</td>
-                            <td>{consultation.MotifConsultation?.substring(0, 50) || 'N/A'}...</td>
-                            <td>{consultation.Medecin || 'N/A'}</td>
-                            <td>{consultation.Diagnostic?.substring(0, 30) || 'N/A'}...</td>
-                            <td>
-                              <Badge bg={consultation.StatutPaiement === 'Payé' ? 'success' : 'warning'}>
-                                {consultation.StatutPaiement || 'N/A'}
-                              </Badge>
-                            </td>
-                            <td className="text-end">{consultation.montantapayer || 0} FCFA</td>
+                    <div>
+                      {/* En-tête résumé */}
+                      <Table size="sm" className="mb-0" hover>
+                        <thead className="table-light">
+                          <tr>
+                            <th style={{width: 50}} className="text-center">Action</th>
+                            <th style={{width: 30}}></th>
+                            <th>Date</th>
+                            <th>Code Prestation</th>
+                            <th>Motif</th>
+                            <th>Médecin</th>
+                            <th className="text-center">Constantes</th>
+                            <th>Diagnostic</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </Table>
+                        </thead>
+                        <tbody>
+                          {[...consultations]
+                            .sort((a, b) => new Date(b.Date_consulation).getTime() - new Date(a.Date_consulation).getTime())
+                            .map((consultation) => {
+                              const isOpen = expandedConsultation === consultation._id;
+                              const hasConstantes = consultation.Poids || consultation.Temperature || consultation.Tension || consultation.Glycemie;
+                              return (
+                                <React.Fragment key={consultation._id}>
+                                  <tr
+                                    style={{ cursor: 'pointer' }}
+                                    className={isOpen ? 'table-primary' : ''}
+                                  >
+                                    <td className="text-center" onClick={e => e.stopPropagation()}>
+                                      <Button
+                                        size="sm"
+                                        variant="outline-primary"
+                                        title="Imprimer la fiche de prescription"
+                                        style={{ padding: '2px 6px' }}
+                                        onClick={() => setPrintConsultation(consultation)}
+                                      >
+                                        <FaPrint size={11} />
+                                      </Button>
+                                    </td>
+                                    <td className="text-center text-muted" onClick={() => toggleConsultation(consultation._id)}>
+                                      {isOpen ? <FaChevronDown size={12} /> : <FaChevronRight size={12} />}
+                                    </td>
+                                    <td className="small fw-semibold text-nowrap" onClick={() => toggleConsultation(consultation._id)}>
+                                      {new Date(consultation.Date_consulation).toLocaleDateString('fr-FR')}
+                                    </td>
+                                    <td onClick={() => toggleConsultation(consultation._id)}><span className="badge bg-primary small">{consultation.CodePrestation}</span></td>
+                                    <td className="small" onClick={() => toggleConsultation(consultation._id)}>{consultation.MotifConsultation
+                                      ? consultation.MotifConsultation.length > 40
+                                        ? consultation.MotifConsultation.substring(0, 40) + '…'
+                                        : consultation.MotifConsultation
+                                      : <span className="text-muted">—</span>}
+                                    </td>
+                                    <td className="small text-muted" onClick={() => toggleConsultation(consultation._id)}>{consultation.Medecin || '—'}</td>
+                                    <td className="text-center" onClick={() => toggleConsultation(consultation._id)}>
+                                      {hasConstantes ? (
+                                        <span className="text-success small">
+                                          {consultation.Temperature && <span className="me-2" title="Temp."><FaThermometerHalf className="me-1" />{consultation.Temperature}°</span>}
+                                          {consultation.Poids && <span className="me-2" title="Poids"><FaWeight className="me-1" />{consultation.Poids}kg</span>}
+                                          {consultation.Tension && <span title="Tension"><FaHeartbeat className="me-1" />{consultation.Tension}</span>}
+                                        </span>
+                                      ) : <span className="text-muted small">—</span>}
+                                    </td>
+                                    <td className="small" onClick={() => toggleConsultation(consultation._id)}>{consultation.Diagnostic
+                                      ? consultation.Diagnostic.length > 35
+                                        ? consultation.Diagnostic.substring(0, 35) + '…'
+                                        : consultation.Diagnostic
+                                      : <span className="text-muted">—</span>}
+                                    </td>
+                                  </tr>
+                                  {/* Ligne de détail accordéon */}
+                                  {isOpen && (
+                                    <tr key={consultation._id + '_detail'}>
+                                      <td colSpan={8} className="p-0 bg-light border-top-0">
+                                        <div className="p-3">
+                                          <Row className="g-3">
+                                            {consultation.ExamenClinique && (
+                                              <Col md={6}>
+                                                <div className="p-2 bg-white rounded border">
+                                                  <div className="small fw-bold text-primary mb-1"><FaMicroscope className="me-1" />Examen Clinique</div>
+                                                  <div className="small" style={{ whiteSpace: 'pre-line' }}>{consultation.ExamenClinique}</div>
+                                                </div>
+                                              </Col>
+                                            )}
+                                            {consultation.ExamenParaclinique && (
+                                              <Col md={6}>
+                                                <div className="p-2 bg-white rounded border">
+                                                  <div className="small fw-bold text-info mb-1"><FaMicroscope className="me-1" />Examens Paracliniques</div>
+                                                  <div className="small" style={{ whiteSpace: 'pre-line' }}>{consultation.ExamenParaclinique}</div>
+                                                </div>
+                                              </Col>
+                                            )}
+                                            {consultation.CodeAffection && (
+                                              <Col md={6}>
+                                                <div className="p-2 bg-white rounded border">
+                                                  <div className="small fw-bold text-warning mb-1"><FaStethoscope className="me-1" />Code Affection</div>
+                                                  <div className="small" style={{ whiteSpace: 'pre-line' }}>{consultation.CodeAffection}</div>
+                                                </div>
+                                              </Col>
+                                            )}
+                                            {consultation.TraitementClinique && (
+                                              <Col md={6}>
+                                                <div className="p-2 bg-white rounded border">
+                                                  <div className="small fw-bold text-success mb-1"><FaPills className="me-1" />Traitement</div>
+                                                  <div className="small" style={{ whiteSpace: 'pre-line' }}>{consultation.TraitementClinique}</div>
+                                                </div>
+                                              </Col>
+                                            )}
+                                            {consultation.ConclusionClinique && (
+                                              <Col md={6}>
+                                                <div className="p-2 bg-white rounded border">
+                                                  <div className="small fw-bold text-secondary mb-1"><FaFileAlt className="me-1" />Conclusion</div>
+                                                  <div className="small" style={{ whiteSpace: 'pre-line' }}>{consultation.ConclusionClinique}</div>
+                                                </div>
+                                              </Col>
+                                            )}
+                                            {/* Constantes complètes */}
+                                            {hasConstantes && (
+                                              <Col md={12}>
+                                                <div className="p-2 bg-white rounded border">
+                                                  <div className="small fw-bold text-warning mb-2"><FaThermometerHalf className="me-1" />Constantes</div>
+                                                  <Row className="g-2">
+                                                    {consultation.Temperature && <Col xs="auto"><Badge bg="danger" className="small">Temp : {consultation.Temperature} °C</Badge></Col>}
+                                                    {consultation.Poids && <Col xs="auto"><Badge bg="secondary" className="small">Poids : {consultation.Poids} kg</Badge></Col>}
+                                                    {consultation.Tension && <Col xs="auto"><Badge bg="primary" className="small">TA : {consultation.Tension}</Badge></Col>}
+                                                    {consultation.Glycemie && <Col xs="auto"><Badge bg="warning" text="dark" className="small">Glycémie : {consultation.Glycemie}</Badge></Col>}
+                                                  </Row>
+                                                </div>
+                                              </Col>
+                                            )}
+                                          </Row>
+                                        </div>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              );
+                          })}
+                        </tbody>
+                      </Table>
+                    </div>
                   ) : (
                     <div className="text-center py-4">
                       <FaHistory className="text-muted fs-1 mb-3" />
@@ -591,5 +710,26 @@ export default function DossierPatient({
         </Button>
       </Modal.Footer>
     </Modal>
-  );
+
+    {/* Modal Impression Fiche de Prescription */}
+
+    {printConsultation && (
+      <Modal show={!!printConsultation} onHide={() => setPrintConsultation(null)} size="xl">
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <FaPrint className="me-2" />
+            Impression de la Fiche de Prescription
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
+          <PrintFichePrescription
+            consultationId={printConsultation!.CodePrestation}
+            patientId={patient?._id}
+            patientNom={patient?.Nom}
+            patientPrenoms={patient?.Prenoms}
+          />
+        </Modal.Body>
+      </Modal>
+    )}
+  </>);
 }

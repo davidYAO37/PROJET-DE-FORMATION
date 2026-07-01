@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
                 acte: a.designationacte,
                 lettreCle: a.lettreCle,
                 coefficient: a.coefficient,
-                prixmutuel: a.prixMutuel,
-                prixpreferenciel: a.prixPreferentiel,
+                prixmutuel: a.prixMutuel ?? 0,
+                prixpreferenciel: a.prixPreferentiel ?? 0,
                 assurance: assuranceId,
                 acteId: a._id, // lien direct avec l'acte
             }));

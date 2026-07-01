@@ -1,7 +1,6 @@
 import { db } from "@/db/mongoConnect";
 import { ActeClinique } from "@/models/acteclinique";
 import { TarifAssurance } from "@/models/tarifassurance";
-import { promises } from "dns";
 import { NextRequest, NextResponse } from "next/server";
 
 // ✅ Récupération des tarifs ou initialisation si vides
@@ -13,20 +12,25 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
         // 1. On récupère les tarifs existants
         let tarifs = await TarifAssurance.find({ assurance: id }).lean();
 
-        // 2. Si aucun tarif => initialisation depuis ActeClinique
-        if (tarifs.length === 0) {
-            const actes = await ActeClinique.find().lean();
-            const nouveauxTarifs = actes.map((acte: any) => ({
+        // 2. Compléter avec les actes cliniques manquants
+        const actes = await ActeClinique.find().lean();
+        const acteIdsExistants = new Set(tarifs.map((t: any) => t.acteId?.toString()));
+        const nouveauxTarifs = actes
+            .filter((acte: any) => !acteIdsExistants.has(acte._id.toString()))
+            .map((acte: any) => ({
                 acte: acte.designationacte,
-                lettreCle: acte.lettreCle,
-                coefficient: acte.coefficient,
-                prixmutuel: acte.prixMutuel,
-                prixpreferenciel: acte.prixPreferentiel,
+                lettreCle: acte.lettreCle ?? "",
+                coefficient: acte.coefficient ?? 0,
+                prixmutuel: acte.prixMutuel ?? 0,
+                prixpreferenciel: acte.prixPreferentiel ?? 0,
                 assurance: id,
-                acteId: acte._id, // lien direct avec l'acte
+                acteId: acte._id,
             }));
 
-            await TarifAssurance.insertMany(nouveauxTarifs);
+        if (nouveauxTarifs.length > 0) {
+            await TarifAssurance.insertMany(nouveauxTarifs, { ordered: false }).catch((err) => {
+                if (err.code !== 11000) throw err;
+            });
             tarifs = await TarifAssurance.find({ assurance: id }).lean();
         }
 

@@ -82,6 +82,22 @@ export default function ListeResultatValides() {
   };
 
 
+  const handleImprimer = (idHospitalisation: string) => {
+    if (!idHospitalisation) return;
+    window.open(
+      `/api/laboratoire/resultat/${idHospitalisation}/pdf?avecEntete=true`,
+      '_blank'
+    );
+  };
+
+  const handleImprimerSansEntete = (idHospitalisation: string) => {
+    if (!idHospitalisation) return;
+    window.open(
+      `/api/laboratoire/resultat/${idHospitalisation}/pdf?avecEntete=false`,
+      '_blank'
+    );
+  };
+
   const handleRenvoyerResultat = async (idHospitalisation: string) => {
     const confirmed = window.confirm('Voulez-vous renvoyer le résultat de ce patient ?');
     if (!confirmed) return;
@@ -266,7 +282,23 @@ export default function ListeResultatValides() {
                     <td>{item.PatientP ?? ''}</td>
                     <td>{item.resultatSaisiePar ?? ''}</td>
                     <td>{item.Biologiste ?? ''}</td>
-                    <td>
+                    <td className="d-flex gap-2 flex-wrap">
+                      <Button
+                        variant="outline-primary"
+                        size="sm"
+                        onClick={() => handleImprimer(itemId)}
+                      >
+                        <i className="bi bi-printer me-1"></i>
+                        Avec entête
+                      </Button>
+                      <Button
+                        variant="outline-secondary"
+                        size="sm"
+                        onClick={() => handleImprimerSansEntete(itemId)}
+                      >
+                        <i className="bi bi-file-earmark me-1"></i>
+                        Sans entête
+                      </Button>
                       <Button
                         variant="outline-danger"
                         size="sm"

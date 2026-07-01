@@ -25,17 +25,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         }
 
         // Mettre à jour tous les tarifs liés à cet acte
+        const tarifUpdate: any = {
+            acte: body.designationacte,
+            lettreCle: body.lettreCle,
+            coefficient: body.coefficient,
+        };
+        if (body.prixMutuel !== undefined) tarifUpdate.prixmutuel = body.prixMutuel;
+        if (body.prixPreferentiel !== undefined) tarifUpdate.prixpreferenciel = body.prixPreferentiel;
+
         await TarifAssurance.updateMany(
             { acteId: id },
-            {
-                $set: {
-                    acte: body.designationacte,
-                    lettreCle: body.lettreCle,
-                    coefficient: body.coefficient,
-                    prixmutuel: body.prixMutuel,
-                    prixpreferenciel: body.prixPreferentiel,
-                },
-            }
+            { $set: tarifUpdate }
         );
 
         return NextResponse.json(updated);

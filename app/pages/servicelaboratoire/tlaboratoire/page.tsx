@@ -20,6 +20,7 @@ export default function Dashboard() {
   const [annulerningId, setAnnulerningId] = useState<string | null>(null);
   const [showSaisieResultatModal, setShowSaisieResultatModal] = useState(false);
   const [selectedIdHospitalisation, setSelectedIdHospitalisation] = useState<string>('');
+  const [envoyerBilogisteId, setEnvoyerBilogisteId] = useState<string | null>(null);
   const [saisieInitialProps, setSaisieInitialProps] = useState({
     ProvenanceExamen: '',
     NIdentificationExamen: '',
@@ -131,7 +132,39 @@ export default function Dashboard() {
       setReceptionningId(null);
     }
   };
+// envoie le resultat au biologiste
 
+  const handleEnvoyerBilogiste = async (idHospitalisation: string) => {
+    const confirmed = window.confirm('Voulez-vous envoyer le resultat de ce patient au biologiste ?');
+    if (!confirmed) return;
+
+    setEnvoyerBilogisteId(idHospitalisation);
+    try {
+      const response = await fetch('/api/ReceptionExamenLabo/envoyerResultat', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          idHospitalisation,
+          Transferepar: getUtilisateur(),
+        }),
+      });
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data?.message || data?.error || 'Erreur lors de l\'envoi au biologiste.');
+      }
+
+      await loadReceptions();
+      alert('✅ Resultat envoyé au biologiste avec succès.');
+    } catch (error) {
+      console.error('Erreur envoi au biologiste :', error);
+      alert(`❌ ${(error as Error).message}`);
+    } finally {
+      setEnvoyerBilogisteId(null);
+    }
+  };
+
+// Annuler la réception
   const handleAnnulerReception = async (idHospitalisation: string) => {
     const confirmed = window.confirm('Voulez-vous annuler la réception de ce patient ?');
     if (!confirmed) return;
@@ -374,6 +407,16 @@ export default function Dashboard() {
                           onClick={() => handleAnnulerReception(item._id)}
                         >
                           {annulerningId === item._id ? 'Traitement...' : 'Annuler la réception'}
+                        </Button>
+                        {/* Envoir au bilogiste */}
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          className="ms-2"
+                          disabled={envoyerBilogisteId === item._id}
+                          onClick={() => handleEnvoyerBilogiste(item._id)}
+                        >
+                          {envoyerBilogisteId === item._id ? 'Traitement...' : 'Envoyer au bilogiste'}
                         </Button>
                       </td>
                     </tr>

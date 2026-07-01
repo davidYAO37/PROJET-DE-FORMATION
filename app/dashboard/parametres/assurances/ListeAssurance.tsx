@@ -20,6 +20,8 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
     const [itemsPerPage, setItemsPerPage] = useState(25);
     const [showSocieteModal, setShowSocieteModal] = useState(false);
     const [selectedSocieteAssurance, setSelectedSocieteAssurance] = useState<Assurance | null>(null);
+    const [syncingId, setSyncingId] = useState<string | null>(null);
+    const [modalKey, setModalKey] = useState(0);
     const filteredAssurances = assurances.filter((a) =>
         a.designationassurance?.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -104,18 +106,31 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
                                             size="sm"
                                             variant="outline-success"
                                             title="Voir le tarif assurance"
+                                            disabled={syncingId === a._id}
                                             onClick={async () => {
-                                                setSelectedAssurance(a);
-                                                // Synchroniser les actes cliniques dans les tarifs de cette assurance
-                                                await fetch("/api/tarifassurance/sync-actes", {
-                                                    method: "POST",
-                                                    headers: { "Content-Type": "application/json" },
-                                                    body: JSON.stringify({ assuranceId: a._id }),
-                                                });
-                                                setShowTarifs(true);
+                                                if (!a._id) return;
+                                                setSyncingId(a._id);
+                                                try {
+                                                    const res = await fetch("/api/tarifassurance/sync-actes", {
+                                                        method: "POST",
+                                                        headers: { "Content-Type": "application/json" },
+                                                        body: JSON.stringify({ assuranceId: a._id }),
+                                                    });
+                                                    if (!res.ok) {
+                                                        const data = await res.json().catch(() => ({}));
+                                                        throw new Error(data.error || "Erreur lors de la synchronisation des tarifs");
+                                                    }
+                                                    setSelectedAssurance(a);
+                                                    setModalKey(k => k + 1); // force le rechargement du modal
+                                                    setShowTarifs(true);
+                                                } catch (err: any) {
+                                                    alert(err.message || "Erreur lors de la synchronisation des tarifs");
+                                                } finally {
+                                                    setSyncingId(null);
+                                                }
                                             }}
                                         >
-                                            Tarif Assurance
+                                            {syncingId === a._id ? "Chargement..." : "Tarif Assurance"}
                                         </Button>
                                         <Button
                                             size="sm"
@@ -160,6 +175,7 @@ export default function ListeAssurance({ assurances, onEdit }: Props) {
             )}
             {/* ⚠️ On sort le modal du tableau, sinon il se répète dans chaque ligne */}
             <TarifAssuranceModal
+                key={modalKey}
                 show={showTarifs}
                 onHide={() => setShowTarifs(false)}
                 assurance={selectedAssurance}
