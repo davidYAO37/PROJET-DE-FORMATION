@@ -78,13 +78,28 @@ export async function GET(req: NextRequest) {
                 { $group: { _id: '$sexe', total: { $sum: '$qte' } } },
                 { $project: { _id: 0, sexe: { $ifNull: ['$_id', 'Non renseigné'] }, total: 1 } }
             ]),
-            // Répartition par famille d'acte biologique
+            // Répartition par famille d'acte biologique (lookup pour récupérer la description)
             LignePrestation.aggregate([
                 { $match: { ...ligneFilter } },
-                { $group: { _id: '$familleActe', total: { $sum: '$qte' }, montant: { $sum: '$montantTotalAPayer' } } },
+                {
+                    $lookup: {
+                        from: 'familleactes',
+                        localField: 'idFamilleActeBiologie',
+                        foreignField: '_id',
+                        as: 'familleInfo',
+                    }
+                },
+                { $unwind: { path: '$familleInfo', preserveNullAndEmptyArrays: true } },
+                {
+                    $group: {
+                        _id: { $ifNull: ['$familleInfo.Description', { $ifNull: ['$familleActe', 'Non classé'] }] },
+                        total: { $sum: '$qte' },
+                        montant: { $sum: '$montantTotalAPayer' },
+                    }
+                },
                 { $sort: { total: -1 } },
                 { $limit: 8 },
-                { $project: { _id: 0, famille: { $ifNull: ['$_id', 'Non classé'] }, total: 1, montant: 1 } }
+                { $project: { _id: 0, famille: '$_id', total: 1, montant: 1 } }
             ]),
             // Montant total des actes biologiques
             LignePrestation.aggregate([

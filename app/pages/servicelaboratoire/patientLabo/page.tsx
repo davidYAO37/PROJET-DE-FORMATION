@@ -12,7 +12,7 @@ import dayjs from 'dayjs';
 import ModifierPatient from './ModifierPatient';
 import ExamenHospitalisationModal from '../components/ExamenHospitModal';
 import FicheConsultation from '../components/ConsultationAdd/FicheConsultation';
-import PatientServiceModalLabo from '../components/PatientServiceModalAccueil';
+import PatientServiceModalLabo from '@/components/PatientServiceModalLabo';
 
 
 const ITEMS_PER_PAGE = 10;

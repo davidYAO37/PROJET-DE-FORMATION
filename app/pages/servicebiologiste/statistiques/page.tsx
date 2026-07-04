@@ -290,7 +290,11 @@ export default function StatistiquesLabo() {
                                                 <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
                                                 <Tooltip formatter={(v: any) => fmt(v)} />
                                                 <Legend />
-                                                <Bar dataKey="total" name="Quantité" fill="#198754" radius={[4, 4, 0, 0]} />
+                                                <Bar dataKey="total" name="Quantité" radius={[4, 4, 0, 0]}>
+                                                    {data.examensFamilleActe.map((_, i) => (
+                                                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                                                    ))}
+                                                </Bar>
                                             </BarChart>
                                         </ResponsiveContainer>
                                     </Card.Body>

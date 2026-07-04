@@ -29,6 +29,45 @@ export default function SidebarLabo() {
     const [showResultatsValidésModal, setShowResultatsValidésModal] = useState(false);
     const [showAutomateModal,setShowAutomateModal]=useState(false);
 
+    // Notifications
+    const [nbAReceptionner, setNbAReceptionner] = useState(0);
+    const [nbASaisir, setNbASaisir] = useState(0);
+    const [nbRetour, setNbRetour] = useState(0);
+
+    useEffect(() => {
+        const fetchCounts = async () => {
+            try {
+                const now = new Date();
+                const debut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+                const fin = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+
+                const [resReception, resSaisir, resRetour] = await Promise.all([
+                    fetch(`/api/ReceptionExamenLabo/ListeAreceptioner?startDate=${debut}&endDate=${fin}`),
+                    fetch(`/api/ReceptionExamenLabo/ListeAsaisir?startDate=${debut}&endDate=${fin}`),
+                    fetch(`/api/ReceptionExamenLabo/retourResultat?startDate=${debut}&endDate=${fin}`),
+                ]);
+
+                const dataReception = await resReception.json();
+                const dataSaisir = await resSaisir.json();
+                const dataRetour = await resRetour.json();
+
+                setNbAReceptionner(Array.isArray(dataReception) ? dataReception.length : 0);
+                setNbASaisir(Array.isArray(dataSaisir) ? dataSaisir.length : 0);
+                setNbRetour(Array.isArray(dataRetour) ? dataRetour.length : 0);
+            } catch { 
+                setNbAReceptionner(0);
+                setNbASaisir(0);
+                setNbRetour(0);
+            }
+        };
+        fetchCounts();
+        const interval = setInterval(fetchCounts, 60000);
+        window.addEventListener('labo-counts-updated', fetchCounts);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('labo-counts-updated', fetchCounts);
+        };
+    }, []);
 
     // Charger l'utilisateur connecté au montage
     useEffect(() => {
@@ -139,7 +178,20 @@ export default function SidebarLabo() {
                                     onClick={handleLinkClick}
                                 >
                                     {item.icon}
-                                    <span>{item.label}</span>
+                                    <span>{item.label}</span>                                    
+                                    {item.label === 'Tableau de bord' && (
+                                        <>
+                                            {nbAReceptionner > 0 && (
+                                                <span className="badge bg-success ms-auto">{nbAReceptionner}</span>
+                                            )}
+                                            {nbASaisir > 0 && (
+                                                <span className="badge bg-danger ms-1">{nbASaisir}</span>
+                                            )}
+                                        </>
+                                    )}
+                                    {item.label === 'Liste Resultat Retour' && nbRetour > 0 && (
+                                        <span className="badge bg-warning text-dark ms-auto">{nbRetour}</span>
+                                    )}
                                 </Link>
                             )}
                         </Nav.Item>

@@ -88,7 +88,7 @@ export default function SaisieResultat({
   const [conclusionGenerale, setConclusionGenerale] = useState(
     CONCLUSIONGENE || "",
   );
-  const [interpretation, setInterpretation] = useState("");
+  const [interpretations, setInterpretations] = useState<Record<string, string>>({});
   const [provenance, setProvenance] = useState(ProvenanceExamen || "");
   const [identificationExamen, setIdentificationExamen] = useState(
     NIdentificationExamen || "",
@@ -186,9 +186,10 @@ export default function SaisieResultat({
 
         setParametres(parametresExistants);
 
-        // Charger l'interprétation
-        if (prestation.observationExamen) {
-          setInterpretation(prestation.observationExamen);
+        // Charger l'interprétation de cette prestation si pas déjà saisie
+        if (!(prestation._id in interpretations)) {
+          const interpExistante = parametresExistants[0]?.Interpretation || prestation.observationExamen || '';
+          setInterpretations(prev => ({ ...prev, [prestation._id]: interpExistante }));
         }
         return;
       }
@@ -213,32 +214,29 @@ export default function SaisieResultat({
 
       const data = await response.json();
 
-      // Utiliser l'interprétation renvoyée par l'API si disponible
-      if (data.length > 0 && data[0].Interpretation) {
-        setInterpretation(data[0].Interpretation);
-      } else {
-        // Si pas d'interprétation dans les résultats, chercher dans ActeClinique
-        if (prestation.idActe) {
+      // Charger l'interprétation de cette prestation si pas déjà saisie
+      if (!(prestation._id in interpretations)) {
+        let interp = '';
+        if (data.length > 0 && data[0].Interpretation) {
+          interp = data[0].Interpretation;
+        } else if (prestation.idActe) {
           try {
             const acteRes = await fetch(
               `/api/acteclinique?id=${prestation.idActe}`,
             );
             if (acteRes.ok) {
               const acte = await acteRes.json();
-              if (acte.Interpretation) {
-                setInterpretation(acte.Interpretation);
-              } else {
-                setInterpretation(prestation.observationExamen || "");
-              }
+              interp = acte.Interpretation || prestation.observationExamen || '';
             } else {
-              setInterpretation(prestation.observationExamen || "");
+              interp = prestation.observationExamen || '';
             }
           } catch (error) {
-            setInterpretation(prestation.observationExamen || "");
+            interp = prestation.observationExamen || '';
           }
         } else {
-          setInterpretation(prestation.observationExamen || "");
+          interp = prestation.observationExamen || '';
         }
+        setInterpretations(prev => ({ ...prev, [prestation._id]: interp }));
       }
 
       setParametres(data);
@@ -280,27 +278,27 @@ export default function SaisieResultat({
 
           setParametres(parametresAutomates);
 
-          // Charger l'interprétation depuis ActeClinique
-          if (prestation.idActe) {
-            try {
-              const acteRes = await fetch(
-                `/api/acteclinique?id=${prestation.idActe}`,
-              );
-              if (acteRes.ok) {
-                const acte = await acteRes.json();
-                if (acte.Interpretation) {
-                  setInterpretation(acte.Interpretation);
+          // Charger l'interprétation de cette prestation si pas déjà saisie
+          if (!(prestation._id in interpretations)) {
+            let interp = '';
+            if (prestation.idActe) {
+              try {
+                const acteRes = await fetch(
+                  `/api/acteclinique?id=${prestation.idActe}`,
+                );
+                if (acteRes.ok) {
+                  const acte = await acteRes.json();
+                  interp = acte.Interpretation || prestation.observationExamen || '';
                 } else {
-                  setInterpretation(prestation.observationExamen || "");
+                  interp = prestation.observationExamen || '';
                 }
-              } else {
-                setInterpretation(prestation.observationExamen || "");
+              } catch (error) {
+                interp = prestation.observationExamen || '';
               }
-            } catch (error) {
-              setInterpretation(prestation.observationExamen || "");
+            } else {
+              interp = prestation.observationExamen || '';
             }
-          } else {
-            setInterpretation(prestation.observationExamen || "");
+            setInterpretations(prev => ({ ...prev, [prestation._id]: interp }));
           }
         } else {
           alert(automateData.message || "Aucun paramètre automate trouvé pour cette prestation");
@@ -342,8 +340,10 @@ export default function SaisieResultat({
         const result = await response.json();
         alert("Résultats annulés avec succès");
 
-        // Réinitialiser l'interprétation
-        setInterpretation("");
+        // Réinitialiser l'interprétation de cette prestation
+        if (selectedPrestation) {
+          setInterpretations(prev => ({ ...prev, [selectedPrestation._id]: '' }));
+        }
 
         // Recharger les données pour mettre à jour le surlignage
         await chargerDonnees();
@@ -490,6 +490,15 @@ export default function SaisieResultat({
     if (!selectedPrestation) {
       return;
     }
+
+    // Vérifier qu'au moins un résultat numérique (non texte) est saisi
+    const lignesNonTexte = parametres.filter((p: any) => !p.TypeTexte);
+    const auMoinsUnSaisi = lignesNonTexte.some((p: any) => p.ChampResultat !== undefined && p.ChampResultat !== null && String(p.ChampResultat).trim() !== '');
+    if (lignesNonTexte.length > 0 && !auMoinsUnSaisi) {
+      alert("Veuillez saisir au moins un résultat avant d'enregistrer.");
+      return;
+    }
+
     // charger les donnees apres enregistrement
     const ok = window.confirm(
       `Voulez-vous enregistrer le résultat de ${selectedPrestation.prestation} ?`,
@@ -503,18 +512,23 @@ export default function SaisieResultat({
         ? (localStorage.getItem("nom_utilisateur") ?? "")
         : "";
 
+    // Enregistrer : tous les paramètres texte + les numériques saisis uniquement
+    const parametresFiltres = parametres.filter((p: any) =>
+      p.TypeTexte || (p.ChampResultat !== undefined && p.ChampResultat !== null && String(p.ChampResultat).trim() !== '')
+    );
+
     const payload = {
       idHospitalisation,
       lignePrestationId: selectedPrestation._id,
       conclusionGenerale,
-      interpretation,
+      interpretation: selectedPrestation ? (interpretations[selectedPrestation._id] || '') : '',
       provenance,
       identificationExamen,
       externeInterne: lieu,
       medecinId,
       medecinNom: medecin ? `${medecin.nom} ${medecin.prenoms}` : "",
       resultatSaisiePar: Utilisateur,
-      parametres,
+      parametres: parametresFiltres,
     };
 
     const response = await fetch("/api/laboratoire/enregistrer", {
@@ -815,8 +829,12 @@ export default function SaisieResultat({
                   <Form.Control
                     as="textarea"
                     rows={6}
-                    value={interpretation}
-                    onChange={(e) => setInterpretation(e.target.value)}
+                    value={selectedPrestation ? (interpretations[selectedPrestation._id] || '') : ''}
+                    onChange={(e) => {
+                      if (selectedPrestation) {
+                        setInterpretations(prev => ({ ...prev, [selectedPrestation._id]: e.target.value }));
+                      }
+                    }}
                   />
                 </Col>
 

@@ -7,9 +7,16 @@ import Barcode from 'react-barcode';
 import SaisieResultat from '../../SaisieResultat/page';
 
 export default function Dashboard() {
+   // Par défaut : premier et dernier jour du mois en cours
+    const now = new Date();
+    const premierJour = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+    const dernierJour = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+  
+    const [startDate, setStartDate] = useState(premierJour);
+    const [endDate, setEndDate] = useState(dernierJour);
+  
   const [activeKey, setActiveKey] = useState<string>('reception');
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+
   const [receptions, setReceptions] = useState<any[]>([]);
   const [loadingReceptions, setLoadingReceptions] = useState(false);
   const [receptionError, setReceptionError] = useState<string | null>(null);
@@ -29,16 +36,7 @@ export default function Dashboard() {
     idMedecin: '',
   });
 
-  useEffect(() => {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1);
-    const monday = new Date(now.setDate(diff));
-    const sunday = new Date(now.setDate(diff + 6));
 
-    setStartDate(monday.toISOString().slice(0, 10));
-    setEndDate(sunday.toISOString().slice(0, 10));
-  }, []);
 
   const getUtilisateur = () => {
     if (typeof window !== 'undefined') {
@@ -124,6 +122,7 @@ export default function Dashboard() {
       }
 
       await loadReceptions();
+      window.dispatchEvent(new Event('labo-counts-updated'));
       alert('✅ Examen réceptionné avec succès.');
     } catch (error) {
       console.error('Erreur réception :', error);
@@ -155,6 +154,7 @@ export default function Dashboard() {
       }
 
       await loadReceptions();
+      window.dispatchEvent(new Event('labo-counts-updated'));
       alert('✅ Resultat envoyé au biologiste avec succès.');
     } catch (error) {
       console.error('Erreur envoi au biologiste :', error);
@@ -186,6 +186,7 @@ export default function Dashboard() {
       }
 
       await loadReceptions();
+      window.dispatchEvent(new Event('labo-counts-updated'));
       alert('✅ Réception annulée avec succès.');
     } catch (error) {
       console.error('Erreur annulation de la réception :', error);
@@ -203,6 +204,39 @@ export default function Dashboard() {
 
   return (
     <Container className="py-4">
+      {/* Bande défilante de notifications */}
+      <div
+        className="mb-3 py-2 px-3 rounded shadow-sm"
+        style={{ background: 'linear-gradient(90deg, #1e3a5f, #2d5a8e)', overflow: 'hidden' }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            whiteSpace: 'nowrap',
+            animation: 'scroll-left 50s linear infinite',
+          }}
+        >
+          <span className="text-white fw-semibold me-5">
+            <i className="bi bi-bell-fill text-warning me-2"></i>
+            🟢 Examens à réceptionner : <span className="badge bg-success">{receptions.length}</span>
+          </span>
+          <span className="text-white fw-semibold me-5">
+            🔴 Résultats à saisir : <span className="badge bg-danger">{resultats.length}</span>
+          </span>
+          <span className="text-white fw-semibold me-5">
+            🟡 Résultats retournés par le biologiste : <span className="badge bg-warning text-dark">consulter liste retour</span>
+          </span>
+          <span className="text-white fw-semibold me-5">
+            📅 Période : {startDate} au {endDate}
+          </span>
+        </div>
+      </div>
+      <style>{`
+        @keyframes scroll-left {
+          0% { transform: translateX(100%); }
+          100% { transform: translateX(-100%); }
+        }
+      `}</style>
       <h2 className="mb-4 text-primary">Bienvenue sur le Tableau de Bord</h2>
       <Row className="g-4 mt-2">
         <Col>

@@ -156,9 +156,24 @@ export default function ResumeMontantsUpdateCaisse({
                     <Form.Control
                         type="number"
                         value={montantEncaisse}
-                        onChange={(e) =>
-                            setMontantEncaisse?.(Math.max(0, Math.round(Number(e.target.value))))
-                        }
+                        onChange={(e) => {
+                            const parsed = Number(e.target.value);
+                            if (!Number.isNaN(parsed)) {
+                                // Appliquer la formule de calcul
+                                const reduction = 0; // Pas de réduction dans ce contexte
+                                const montantRegle = Math.max(0, (totalPatient || 0) - reduction);
+                                let encaisse = Math.max(0, parsed);
+                                
+                                if (encaisse > montantRegle && parsed !== montantRegle) {
+                                    setMontantEncaisse?.(montantRegle);
+                                    encaisse = montantRegle;
+                                } else {
+                                    setMontantEncaisse?.(encaisse);
+                                }
+                            } else {
+                                setMontantEncaisse?.(0);
+                            }
+                        }}
                         size="lg"
                         className="text-center fw-bold"
                     />

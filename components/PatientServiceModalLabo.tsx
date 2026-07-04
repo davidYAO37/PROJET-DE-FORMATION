@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { Modal, Tabs, Tab, Button, Spinner, Alert, Table, Badge } from 'react-bootstrap';
+import { Modal, Tabs, Tab, Button, Spinner, Alert, Table, Badge, ButtonGroup, Pagination, Form } from 'react-bootstrap';
+import { FaPrint } from 'react-icons/fa';
 
 interface PatientServiceModalLaboProps {
     show: boolean;
@@ -35,7 +36,8 @@ interface Examen {
     designationTypeActe: string;
     montant: number;
     date: string;
-    statut: boolean;
+    statut: string;
+    StatutLaboratoire: number;
     codePrestation: string;
     NomMed?: string;
 }
@@ -48,13 +50,15 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
     const [consultationsLoading, setConsultationsLoading] = useState(false);
     const [consultationsError, setConsultationsError] = useState('');
 
-    const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
-    const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
-    const [prescriptionsError, setPrescriptionsError] = useState('');
 
     const [examens, setExamens] = useState<Examen[]>([]);
     const [examensLoading, setExamensLoading] = useState(false);
     const [examensError, setExamensError] = useState('');
+
+    // Pagination
+    const ITEMS_PER_PAGE = 10;
+    const [consultPage, setConsultPage] = useState(1);
+    const [examenPage, setExamenPage] = useState(1);
 
     useEffect(() => {
         if (!show || !patientId) return;
@@ -84,6 +88,7 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
             if (!response.ok) throw new Error('Erreur lors du chargement des consultations');
             const data = await response.json();
             setConsultations(Array.isArray(data) ? data : []);
+            setConsultPage(1);
         } catch (error) {
             console.error('Erreur consultations:', error);
             setConsultationsError('Impossible de charger les consultations.');
@@ -93,24 +98,7 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
         }
     };
 
-    const loadPrescriptions = async () => {
-        if (!patientId) return;
-        setPrescriptionsLoading(true);
-        setPrescriptionsError('');
-
-        try {
-            const response = await fetch(`/api/ListePrescription?patientId=${patientId}`);
-            if (!response.ok) throw new Error('Erreur lors du chargement des prescriptions');
-            const data = await response.json();
-            setPrescriptions(Array.isArray(data) ? data : []);
-        } catch (error) {
-            console.error('Erreur prescriptions:', error);
-            setPrescriptionsError('Impossible de charger les prescriptions.');
-            setPrescriptions([]);
-        } finally {
-            setPrescriptionsLoading(false);
-        }
-    };
+  
 
     const loadExamens = async () => {
         if (!patientId) return;
@@ -118,10 +106,11 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
         setExamensError('');
 
         try {
-            const response = await fetch(`/api/ListeAutreActes?patientId=${patientId}`);
+            const response = await fetch(`/api/ListeAutreActes?patientId=${patientId}&typeActe=EXAMEN BIOLOGIQUE`);
             if (!response.ok) throw new Error('Erreur lors du chargement des examens');
             const data = await response.json();
             setExamens(Array.isArray(data) ? data : []);
+            setExamenPage(1);
         } catch (error) {
             console.error('Erreur examens:', error);
             setExamensError('Impossible de charger les examens.');
@@ -136,9 +125,6 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
         switch (activeTab) {
             case 'consultations':
                 loadConsultations();
-                break;
-            case 'prescriptions':
-                loadPrescriptions();
                 break;
             case 'examens':
                 loadExamens();
@@ -166,9 +152,16 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
                             <Alert variant="danger">{consultationsError}</Alert>
                         ) : consultations.length === 0 ? (
                             <Alert variant="info">Aucune consultation trouvée pour ce patient.</Alert>
-                        ) : (
+                        ) : (() => {
+                            const totalConsultPages = Math.ceil(consultations.length / ITEMS_PER_PAGE);
+                            const paginatedConsults = consultations.slice((consultPage - 1) * ITEMS_PER_PAGE, consultPage * ITEMS_PER_PAGE);
+                            return (
+                            <>
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                <small className="text-muted">{consultations.length} consultation(s) &mdash; Page {consultPage}/{totalConsultPages || 1}</small>
+                            </div>
                             <div className="table-responsive">
-                                <Table striped bordered hover>
+                                <Table striped bordered hover size="sm">
                                     <thead>
                                         <tr>
                                             <th>Date</th>
@@ -180,7 +173,7 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {consultations.map((consult) => (
+                                        {paginatedConsults.map((consult) => (
                                             <tr key={consult._id}>
                                                 <td>{new Date(consult.Date_consulation).toLocaleDateString()}</td>
                                                 <td><code>{consult.CodePrestation}</code></td>
@@ -197,52 +190,30 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
                                     </tbody>
                                 </Table>
                             </div>
-                        )}
+                            {totalConsultPages > 1 && (
+                                <div className="d-flex justify-content-center">
+                                    <Pagination size="sm" className="mb-0">
+                                        <Pagination.First onClick={() => setConsultPage(1)} disabled={consultPage === 1} />
+                                        <Pagination.Prev onClick={() => setConsultPage(p => Math.max(1, p - 1))} disabled={consultPage === 1} />
+                                        {Array.from({ length: totalConsultPages }, (_, i) => i + 1)
+                                            .filter(p => p === 1 || p === totalConsultPages || Math.abs(p - consultPage) <= 2)
+                                            .map((p, idx, arr) => (
+                                                <React.Fragment key={p}>
+                                                    {idx > 0 && arr[idx - 1] !== p - 1 && <Pagination.Ellipsis disabled />}
+                                                    <Pagination.Item active={p === consultPage} onClick={() => setConsultPage(p)}>{p}</Pagination.Item>
+                                                </React.Fragment>
+                                            ))}
+                                        <Pagination.Next onClick={() => setConsultPage(p => Math.min(totalConsultPages, p + 1))} disabled={consultPage === totalConsultPages} />
+                                        <Pagination.Last onClick={() => setConsultPage(totalConsultPages)} disabled={consultPage === totalConsultPages} />
+                                    </Pagination>
+                                </div>
+                            )}
+                            </>
+                            );
+                        })()}
                     </Tab>
-                    <Tab eventKey="prescriptions" title="Prescriptions">
-                        {prescriptionsLoading ? (
-                            <div className="text-center py-4">
-                                <Spinner animation="border" /> Chargement des prescriptions...
-                            </div>
-                        ) : prescriptionsError ? (
-                            <Alert variant="danger">{prescriptionsError}</Alert>
-                        ) : prescriptions.length === 0 ? (
-                            <Alert variant="info">Aucune prescription trouvée pour ce patient.</Alert>
-                        ) : (
-                            <div className="table-responsive">
-                                <Table striped bordered hover>
-                                    <thead>
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Code</th>
-                                            <th>Désignation</th>
-                                            <th>Montant</th>
-                                            <th>Medecin Prescripteur</th>
-                                            <th>Statut</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {prescriptions.map((presc) => (
-                                            <tr key={presc._id}>
-                                                <td>{new Date(presc.date).toLocaleDateString()}</td>
-                                                <td><code>{presc.codePrestation}</code></td>
-                                                <td>{presc.designation}</td>
-                                                <td>{presc.montant.toLocaleString()} FCFA</td>
-                                                <td>{presc.NomMed || '-'}</td>
-                                                <td>
-                                                    <Badge bg={presc.statut ? 'success' : 'warning'}>
-                                                        {presc.statut ? 'Validée' : 'En attente'}
-                                                    </Badge>
-                                                </td>
-
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </Table>
-                            </div>
-                        )}
-                    </Tab>
-                    <Tab eventKey="examens" title="Examens / Hospitalisations">
+                    
+                    <Tab eventKey="examens" title="Examens Biologiques">
                         {examensLoading ? (
                             <div className="text-center py-4">
                                 <Spinner animation="border" /> Chargement des examens...
@@ -250,22 +221,30 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
                         ) : examensError ? (
                             <Alert variant="danger">{examensError}</Alert>
                         ) : examens.length === 0 ? (
-                            <Alert variant="info">Aucun examen d'hospitalisation trouvé pour ce patient.</Alert>
-                        ) : (
+                            <Alert variant="info">Aucun examen biologique trouvé pour ce patient.</Alert>
+                        ) : (() => {
+                            const totalExamenPages = Math.ceil(examens.length / ITEMS_PER_PAGE);
+                            const paginatedExamens = examens.slice((examenPage - 1) * ITEMS_PER_PAGE, examenPage * ITEMS_PER_PAGE);
+                            return (
+                            <>
+                            <div className="d-flex justify-content-between align-items-center mb-2">
+                                <small className="text-muted">{examens.length} examen(s) &mdash; Page {examenPage}/{totalExamenPages || 1}</small>
+                            </div>
                             <div className="table-responsive">
-                                <Table striped bordered hover>
+                                <Table striped bordered hover size="sm">
                                     <thead>
                                         <tr>
                                             <th>Date</th>
                                             <th>Code</th>
                                             <th>Désignation</th>
                                             <th>Montant</th>
-                                            <th>Medecin Prescripteur</th>
-                                            <th>Statut</th>
+                                            <th>Prescripteur</th>
+                                            <th>Statut Labo</th>
+                                            <th>Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        {examens.map((examen) => (
+                                        {paginatedExamens.map((examen) => (
                                             <tr key={examen._id}>
                                                 <td>{new Date(examen.date).toLocaleDateString()}</td>
                                                 <td><code>{examen.codePrestation}</code></td>
@@ -273,16 +252,67 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
                                                 <td>{examen.montant.toLocaleString()} FCFA</td>
                                                 <td>{examen.NomMed || '-'}</td>
                                                 <td>
-                                                    <Badge bg={examen.statut ? 'success' : 'warning'}>
-                                                        {examen.statut ? 'Validé' : 'En attente'}
+                                                    <Badge bg={
+                                                        examen.StatutLaboratoire === 5 ? 'info' :
+                                                        examen.StatutLaboratoire === 4 ? 'success' :
+                                                        examen.StatutLaboratoire === 3 ? 'primary' :
+                                                        examen.StatutLaboratoire >= 1 ? 'warning' : 'secondary'
+                                                    }>
+                                                        {examen.StatutLaboratoire === 5 ? 'Retourné' :
+                                                         examen.StatutLaboratoire === 4 ? 'Validé' :
+                                                         examen.StatutLaboratoire === 3 ? 'En Saisie' :
+                                                         examen.StatutLaboratoire === 2 ? 'Réceptionné' :
+                                                         examen.StatutLaboratoire === 1 ? 'En cours de reception' : 'En attente de reception'}
                                                     </Badge>
+                                                </td>
+                                                <td>
+                                                    {examen.StatutLaboratoire >= 3 ? (
+                                                        <ButtonGroup size="sm">
+                                                            <Button
+                                                                variant="outline-primary"
+                                                                title="Imprimer avec entête"
+                                                                onClick={() => window.open(`/api/laboratoire/resultat/${examen._id}/pdf?avecEntete=true`, '_blank')}
+                                                            >
+                                                                <FaPrint /> <small>Entête</small>
+                                                            </Button>
+                                                            <Button
+                                                                variant="outline-secondary"
+                                                                title="Imprimer sans entête"
+                                                                onClick={() => window.open(`/api/laboratoire/resultat/${examen._id}/pdf?avecEntete=false`, '_blank')}
+                                                            >
+                                                                <FaPrint /> <small>Sans</small>
+                                                            </Button>
+                                                        </ButtonGroup>
+                                                    ) : (
+                                                        <span className="text-muted small">—</span>
+                                                    )}
                                                 </td>
                                             </tr>
                                         ))}
                                     </tbody>
                                 </Table>
                             </div>
-                        )}
+                            {totalExamenPages > 1 && (
+                                <div className="d-flex justify-content-center">
+                                    <Pagination size="sm" className="mb-0">
+                                        <Pagination.First onClick={() => setExamenPage(1)} disabled={examenPage === 1} />
+                                        <Pagination.Prev onClick={() => setExamenPage(p => Math.max(1, p - 1))} disabled={examenPage === 1} />
+                                        {Array.from({ length: totalExamenPages }, (_, i) => i + 1)
+                                            .filter(p => p === 1 || p === totalExamenPages || Math.abs(p - examenPage) <= 2)
+                                            .map((p, idx, arr) => (
+                                                <React.Fragment key={p}>
+                                                    {idx > 0 && arr[idx - 1] !== p - 1 && <Pagination.Ellipsis disabled />}
+                                                    <Pagination.Item active={p === examenPage} onClick={() => setExamenPage(p)}>{p}</Pagination.Item>
+                                                </React.Fragment>
+                                            ))}
+                                        <Pagination.Next onClick={() => setExamenPage(p => Math.min(totalExamenPages, p + 1))} disabled={examenPage === totalExamenPages} />
+                                        <Pagination.Last onClick={() => setExamenPage(totalExamenPages)} disabled={examenPage === totalExamenPages} />
+                                    </Pagination>
+                                </div>
+                            )}
+                            </>
+                            );
+                        })()}
                     </Tab>
                 </Tabs>
             </Modal.Body>
@@ -292,9 +322,6 @@ export default function PatientServiceModalLabo({ show, onHide, patientId }: Pat
                     switch (activeTab) {
                         case 'consultations':
                             loadConsultations();
-                            break;
-                        case 'prescriptions':
-                            loadPrescriptions();
                             break;
                         case 'examens':
                             loadExamens();

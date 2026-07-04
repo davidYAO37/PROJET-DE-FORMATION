@@ -264,11 +264,12 @@ export default function TablePrestation({ familleId }: Props) {
         }
 
         try {
-            const res = await fetch(`/api/actes/${acte._id}`, {
+            const { _id, ...acteData } = acte as any;
+            const res = await fetch(`/api/actes/${_id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    ...acte,
+                    ...acteData,
                     IDFAMILLE_ACTE_BIOLOGIE: "",
                     ORdonnacementAffichage: 0
                 })
@@ -295,14 +296,17 @@ export default function TablePrestation({ familleId }: Props) {
 
         setLoading(true);
         try {
-            for (const prestation of prestations) {
+            for (let i = 0; i < prestations.length; i++) {
+                const prestation = prestations[i];
                 if (prestation._id && prestation.designationacte) {
-                    await fetch(`/api/actes/${prestation._id}`, {
+                    const { _id, ...data } = prestation as any;
+                    await fetch(`/api/actes/${_id}`, {
                         method: "PUT",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                            ...prestation,
+                            ...data,
                             IDFAMILLE_ACTE_BIOLOGIE: familleId,
+                            ORdonnacementAffichage: i + 1,
                         })
                     });
                 }

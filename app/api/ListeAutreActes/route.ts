@@ -19,7 +19,14 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        const examens = await ExamenHospitalisation.find({ $or: [{ IdPatient: patientId }, { PatientP: patientId }] })
+        const typeActe = searchParams.get("typeActe");
+
+        const filter: any = { $or: [{ IdPatient: patientId }, { PatientP: patientId }] };
+        if (typeActe) {
+            filter.Designationtypeacte = typeActe;
+        }
+
+        const examens = await ExamenHospitalisation.find(filter)
             .populate("IDASSURANCE", "designationassurance")
             .populate("IdPatient", "Nom Prenoms")
             .populate("idMedecin", "nom prenoms")
@@ -31,7 +38,8 @@ export async function GET(req: NextRequest) {
             designation: examen.Designationtypeacte || "Non spécifié",
             montant: examen.Montanttotal || 0,
             date: examen.DatePres,
-            statut: examen.Payeoupas || false,
+            statut: examen.Payeoupas ? 'Validé' : 'En attente',
+            StatutLaboratoire: examen.StatutLaboratoire || 0,
             patientId: examen.IdPatient?._id?.toString(),
             codePrestation: examen.CodePrestation || "",
             designationTypeActe: examen.Designationtypeacte || "",

@@ -47,10 +47,19 @@ export async function GET(req: NextRequest) {
             const raw = await LignePrestation.aggregate([
                 { $match: baseMatch },
                 {
+                    $lookup: {
+                        from: 'familleactes',
+                        localField: 'idFamilleActeBiologie',
+                        foreignField: '_id',
+                        as: 'familleInfo',
+                    }
+                },
+                { $unwind: { path: '$familleInfo', preserveNullAndEmptyArrays: true } },
+                {
                     $group: {
                         _id: {
                             familleId: '$idFamilleActeBiologie',
-                            familleLabel: '$familleActe',
+                            familleLabel: { $ifNull: ['$familleInfo.Description', { $ifNull: ['$familleActe', 'Non classé'] }] },
                         },
                         montant: { $sum: { $ifNull: ['$prixTotal', 0] } },
                         nombre: { $sum: 1 },
@@ -67,15 +76,24 @@ export async function GET(req: NextRequest) {
                 pourcentageNombre: nombreTotal > 0 ? (r.nombre * 100) / nombreTotal : 0,
             }));
         } else {
-            // Regroupement par acte (prestation)
+            // Regroupement par acte (prestation) avec lookup famille
             const raw = await LignePrestation.aggregate([
                 { $match: baseMatch },
+                {
+                    $lookup: {
+                        from: 'familleactes',
+                        localField: 'idFamilleActeBiologie',
+                        foreignField: '_id',
+                        as: 'familleInfo',
+                    }
+                },
+                { $unwind: { path: '$familleInfo', preserveNullAndEmptyArrays: true } },
                 {
                     $group: {
                         _id: {
                             acteId: '$idActe',
                             acteLabel: '$prestation',
-                            famille: '$familleActe',
+                            famille: { $ifNull: ['$familleInfo.Description', { $ifNull: ['$familleActe', ''] }] },
                         },
                         montant: { $sum: { $ifNull: ['$prixTotal', 0] } },
                         nombre: { $sum: 1 },

@@ -34,6 +34,15 @@ export async function GET(req: NextRequest) {
                 StatutLaboratoire: 1,
                 IdPatient: 1,
                 Datetransferbiologiste: 1,
+                Transferepar: 1,
+                resultatSaisiePar: 1,
+                ProvenanceExamen: 1,
+                NIdentificationExamen: 1,
+                Externe_Interne: 1,
+                CONCLUSIONGENE: 1,
+                ObservationC: 1,
+                idMedecin: 1,
+                IDHOSPITALISATION: 1,
             }
         )
             .sort({ Datetransferbiologiste: -1 })

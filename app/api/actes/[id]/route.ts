@@ -10,16 +10,28 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const { id } = await params;
         const body = await req.json();
 
-        // Nettoyer les champs ObjectId vides
+        // Supprimer les champs immuables
+        delete body._id;
+        delete body.__v;
+
+        // Gérer les champs ObjectId vides : les retirer de la base avec $unset
+        const unsetFields: Record<string, any> = {};
+
         if (body.IDFAMILLE_ACTE_BIOLOGIE === "" || body.IDFAMILLE_ACTE_BIOLOGIE === null) {
+            unsetFields.IDFAMILLE_ACTE_BIOLOGIE = "";
             delete body.IDFAMILLE_ACTE_BIOLOGIE;
         }
         if (body.IDTYPE_ACTE === "" || body.IDTYPE_ACTE === null) {
+            unsetFields.IDTYPE_ACTE = "";
             delete body.IDTYPE_ACTE;
         }
 
         // Mettre à jour l'acte
-        const updated = await ActeClinique.findByIdAndUpdate(id, body, { new: true });
+        const updateOp: any = { $set: body };
+        if (Object.keys(unsetFields).length > 0) {
+            updateOp.$unset = unsetFields;
+        }
+        const updated = await ActeClinique.findByIdAndUpdate(id, updateOp, { new: true });
         if (!updated) {
             return NextResponse.json({ error: "Acte introuvable" }, { status: 404 });
         }

@@ -59,6 +59,28 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
     const [montantEncaisse, setMontantEncaisse] = useState<number>(0);
     const [modePaiement, setModePaiement] = useState<string>("Espèce");
 
+    // Fonction pour gérer le changement du montant encaissé avec la formule de calcul
+    const handleMontantEncaisseChange = (value: number) => {
+        // Calculer le montant à régler en tenant compte de la réduction (s'il y en a une)
+        const reduction = 0; // Pas de réduction dans ce contexte, mais laissé pour compatibilité avec la formule
+        const montantRegle = Math.max(0, (totalPatient || 0) - reduction);
+        
+        // S'assurer que le montant encaissé n'est pas négatif
+        let encaisse = Math.max(0, value);
+        
+        // Limiter le montant encaissé au montant à régler
+        if (encaisse > montantRegle && value !== montantRegle) {
+            setMontantEncaisse(montantRegle);
+            encaisse = montantRegle;
+        } else {
+            setMontantEncaisse(encaisse);
+        }
+        
+        // Calculer le reste à payer (pour information)
+        const reste = Math.max(0, montantRegle - encaisse);
+        return reste;
+    };
+
     useEffect(() => {
         const nom = localStorage.getItem("nom_utilisateur");
         if (nom) setRecuPar(nom);
@@ -117,7 +139,8 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                 setSocietePatient("");
             }
             
-            setMontantEncaisse(currentConsultation.Montantencaisse || 0);
+            // Appliquer la formule de calcul au montant encaisse chargé
+            handleMontantEncaisseChange(currentConsultation.Montantencaisse || 0);
             setModePaiement(currentConsultation.Modepaiement || "Espèce");
             
             // Marquer comme chargé après avoir tout mis à jour

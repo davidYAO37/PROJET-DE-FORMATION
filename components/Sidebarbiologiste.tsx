@@ -1,6 +1,6 @@
 'use client';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Button, Modal, Nav } from 'react-bootstrap';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
@@ -9,11 +9,13 @@ import ActeBiologie from '@/app/dashboard/parametres/acteBiologie/page';
 import ListeResultatValides from '@/app/pages/ResultatValides/page';
 import AutomatExamen from './AutomatExamen';
 
+
+
+
 const menu = [
     { label: 'Accueil Patient', path: '/pages/servicebiologiste/patientLabo', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
     { label: 'Examens à valider', path: '/pages/servicebiologiste/tbiologiste', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
     { label: 'Liste Examens Validés', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
-    { label: 'Resultats Validés', path: '#', isModal: true, icon: <i className="bi bi-people-fill me-2 text-warning"></i> },
     { label: 'Gestion des automates', path: '#', isModal: true, icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
     { label: 'Paramètres Examens', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
     { label: 'Paramètres Biochimie', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
@@ -25,6 +27,28 @@ const menu = [
 export default function SidebarBiologiste() {
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
+    const [nbAValider, setNbAValider] = useState(0);
+
+    useEffect(() => {
+        const fetchNbAValider = async () => {
+            try {
+                const now = new Date();
+                const debut = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().slice(0, 10);
+                const fin = new Date(now.getFullYear(), now.getMonth() + 1, 0).toISOString().slice(0, 10);
+                const res = await fetch(`/api/examens/aValider?dateDebut=${debut}&dateFin=${fin}`);
+                const data = await res.json();
+                setNbAValider(data.total || 0);
+            } catch { setNbAValider(0); }
+        };
+        fetchNbAValider();
+        const interval = setInterval(fetchNbAValider, 60000);
+        // Écouter les mises à jour après validation/retour
+        window.addEventListener('examens-avalider-updated', fetchNbAValider);
+        return () => {
+            clearInterval(interval);
+            window.removeEventListener('examens-avalider-updated', fetchNbAValider);
+        };
+    }, []);
     const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
     const [showParametreExamenModal, setShowParametreExamenModal] = useState(false);
     const [showParametreBiochimieModal, setShowParametreBiochimieModal] = useState(false);
@@ -120,11 +144,9 @@ export default function SidebarBiologiste() {
                                                 ? handleParametreBiochimieClick
                                                 : item.label === 'Mot de passe'
                                                     ? handleMotDePasseClick
-                                                    : item.label === 'Resultats Validés'
-                                                        ? handleResultatsValidésClick
-                                                        : item.label === 'Liste Examens Validés'
-                                                            ? handleExamensValidésClick
-                                                            : undefined
+                                                    : item.label === 'Liste Examens Validés'
+                                                        ? handleExamensValidésClick
+                                                        : undefined
                                     }
                                 >
                                     {item.icon}
@@ -138,6 +160,9 @@ export default function SidebarBiologiste() {
                                 >
                                     {item.icon}
                                     <span>{item.label}</span>
+                                    {item.label === 'Examens à valider' && nbAValider > 0 && (
+                                        <span className="badge bg-danger ms-auto">{nbAValider}</span>
+                                    )}
                                 </Link>
                             )}
                         </Nav.Item>

@@ -113,6 +113,7 @@ export default function ListeResultatRetour() {
       }
 
       alert('✅ Renvoi du résultat effectué avec succès.');
+      window.dispatchEvent(new Event('labo-counts-updated'));
       await loadResultats();
     } catch (error) {
       console.error('Erreur renvoi du résultat :', error);
@@ -183,7 +184,7 @@ export default function ListeResultatRetour() {
                 <tr>
                   <th>Retourné le</th>
                   <th>N°Prestation</th>
-                  <th>Designation</th>
+                  <th>Motif retour</th>
                   <th>Patient</th>
                   {/* <th>Code Barre</th> */}
                   <th>Actions</th>
@@ -215,7 +216,7 @@ export default function ListeResultatRetour() {
                       <tr key={itemId}>
                         <td>{item.dateretour ? new Date(item.dateretour).toISOString().slice(0, 10) : ''}</td>
                         <td>{item.CodePrestation ?? ''}</td>
-                        <td>{item.Designationtypeacte ?? item.IDTYPE_ACTE ?? ''}</td>
+                        <td>{item.ObservationC ?? ''}</td>
                         <td>{item.PatientP ?? ''}</td>
                         <td>
                           <Button
