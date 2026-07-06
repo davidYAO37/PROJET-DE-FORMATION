@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import DisponibilitePrescriptuerModal from '@/app/pages/servicemedecin/tmedecin/components/DisponibilitePrescripteurModal';
 import ServiceRadioModal from '@/components/ServiceRadioModal';
+import { useRouter } from 'next/navigation';
 
 interface Statistiques {
   patientsEnAttente: number;
@@ -25,6 +26,7 @@ const menu = [
 
 export default function SidebarMedecin() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [user, setUser] = useState('');
@@ -116,6 +118,11 @@ export default function SidebarMedecin() {
     setOpen(false);
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/connexion');
+  };
+
   return (
     <>
       {/* Bouton burger visible sur mobile */}
@@ -191,6 +198,16 @@ export default function SidebarMedecin() {
             </Nav.Item>
           ))}
         </Nav>
+        <div className="mt-auto px-3 pb-3">
+          <button
+            className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+            onClick={handleLogout}
+            style={{ cursor: 'pointer' }}
+          >
+            <i className="bi bi-box-arrow-right"></i>
+            <span>Se déconnecter</span>
+          </button>
+        </div>
       </aside>
 
       {/* Modal de modification du mot de passe */}

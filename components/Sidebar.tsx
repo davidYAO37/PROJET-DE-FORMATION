@@ -10,6 +10,7 @@ import { useAuthUser } from "@/hooks/useAuthUser";
 import ModifierMotDePasseModal from "@/components/ModifierMotDePasseModal";
 import GestionLienAutomate from "@/components/GestionLienAutomate";
 import GestionParametreNfs from "@/components/GestionParametreNfs";
+import { useRouter } from "next/navigation";
 // import ListeAnnulationFactureModal from "@/pages/servicecaisse/components/ListeAnnulationFactureModal";
 // import ListeAnnulationEncaissementModal from "@/pages/servicecaisse/components/ListeAnnulationEncaissementModal";
 
@@ -29,6 +30,7 @@ export default function Sidebar() {
   const [showParametreNfsModal, setShowParametreNfsModal] = useState(false);
   const { user, loading } = useAuthUser();
   const pathname = usePathname();
+  const router = useRouter();
 
   const handleListePlanningClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -38,6 +40,11 @@ export default function Sidebar() {
   const handleDisponibiliteClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowDisponibiliteModal(true);
+  };
+
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/connexion');
   };
 
   return (
@@ -342,7 +349,7 @@ export default function Sidebar() {
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link
-                    href="/labo/prelevements"
+                    href="/pages/serviceinfirmier/tinfirmier"
                     className="sidebar-link-medical d-flex align-items-center"
                   >
                     <i className="bi bi-bandaid me-2 text-info"></i> Gestion
@@ -469,6 +476,15 @@ export default function Sidebar() {
                         >
                           <i className="bi bi-person-badge-fill me-2 text-success"></i>{" "}
                           Gestion Medecins
+                        </Link>
+                      </li>
+                      <li>
+                        <Link
+                          href="/dashboard/parametres/infirmier"
+                          className="sidebar-link-medical d-flex align-items-center"
+                        >
+                          <i className="bi bi-person-heart me-2 text-info"></i>{" "}
+                          Gestion Infirmiers
                         </Link>
                       </li>
                       <li>
@@ -623,9 +639,17 @@ export default function Sidebar() {
             </Accordion.Body>
           </Accordion.Item>
         </Accordion>
+        <div className="px-3 pb-3 mt-3">
+          <button
+            className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+            onClick={handleLogout}
+            style={{ cursor: 'pointer' }}
+          >
+            <i className="bi bi-box-arrow-right"></i>
+            <span>Se déconnecter</span>
+          </button>
+        </div>
       </aside>
-
-    
 
       {/* Modal Liens Automates */}
       <Modal show={showLienAutomateModal} onHide={() => setShowLienAutomateModal(false)} centered size="lg" scrollable>

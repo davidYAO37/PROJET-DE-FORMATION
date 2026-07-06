@@ -7,4 +7,6 @@ export type Medecin = {
   TauxHonoraire?: number;
   TauxPrescription?: number;
   TauxExecution?: number;
+  TauxAideOperatoire?: number;
+  TauxAnesthesiste?: number;
 };

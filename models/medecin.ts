@@ -9,6 +9,8 @@ export interface IMedecin extends Omit<Document, '_id'> {
   TauxHonoraire?: number;
   TauxPrescription?: number;
   TauxExecution?: number;
+  TauxAideOperatoire?: number;
+  TauxAnesthesiste?: number;
   entrepriseId?: string;
   userId?: mongoose.Types.ObjectId;
 }
@@ -22,6 +24,8 @@ const MedecinSchema = new Schema<IMedecin>(
     TauxHonoraire: { type: Number },
     TauxPrescription: { type: Number },
     TauxExecution: { type: Number },
+    TauxAideOperatoire: { type: Number },
+    TauxAnesthesiste: { type: Number },
     entrepriseId: { type: String },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
   },

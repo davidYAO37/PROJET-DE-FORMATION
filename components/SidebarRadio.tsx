@@ -5,6 +5,7 @@ import { Nav, Badge } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import DisponibilitePrescriptuerModalRadio from '@/app/pages/serviceradio/tradio/components/DisponibilitePrescripteurModalRadio';
+import { useRouter } from 'next/navigation';
 
 interface Statistiques {
   patientsEnAttente: number;
@@ -19,6 +20,7 @@ const menu = [
 
 export default function SidebarRadio() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [showDisponibiliteModalRadio, setShowDisponibiliteModalRadio] = useState(false);
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
@@ -150,6 +152,10 @@ export default function SidebarRadio() {
     setOpen(false);
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/connexion');
+  };
 
   return (
     <>
@@ -219,8 +225,17 @@ export default function SidebarRadio() {
             </Nav.Item>
           ))}
         </Nav>
+        <div className="mt-auto px-3 pb-3">
+          <button
+            className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+            onClick={handleLogout}
+            style={{ cursor: 'pointer' }}
+          >
+            <i className="bi bi-box-arrow-right"></i>
+            <span>Se déconnecter</span>
+          </button>
+        </div>
       </aside>
-      
 
       {/* Modal de modification du mot de passe */}
       <ModifierMotDePasseModal

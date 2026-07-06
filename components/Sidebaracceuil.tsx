@@ -11,6 +11,7 @@ import ListePlanningModal from './ListePlanningModal';
 import PlanningModal from './PlanningModal';
 import DisponibiliteMedecinModal from './DisponibiliteMedecinModal';
 import ModalPointSaisieAccueil from './ModalPointSaisieAccueil';
+import { useRouter } from 'next/navigation';
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
   { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
@@ -26,6 +27,7 @@ const menu = [
 
 export default function Sidebaracceuil() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [showTransfertModal, setShowTransfertModal] = useState(false);
   const [showSalleAttenteModal, setShowSalleAttenteModal] = useState(false);
@@ -103,6 +105,11 @@ export default function Sidebaracceuil() {
     setOpen(false);
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/connexion');
+  };
+
   return (
     <>
       {/* Bouton burger visible sur mobile */}
@@ -165,6 +172,16 @@ export default function Sidebaracceuil() {
             </Nav.Item>
           ))}
         </Nav>
+        <div className="mt-auto px-3 pb-3">
+          <button
+            className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+            onClick={handleLogout}
+            style={{ cursor: 'pointer' }}
+          >
+            <i className="bi bi-box-arrow-right"></i>
+            <span>Se déconnecter</span>
+          </button>
+        </div>
       </aside>
 
       {/* Modal de transfert de patient */}

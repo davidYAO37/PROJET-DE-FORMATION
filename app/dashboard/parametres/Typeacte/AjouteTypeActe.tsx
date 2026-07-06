@@ -4,18 +4,20 @@ import { useState } from "react";
 import { Button, Form, Modal } from "react-bootstrap";
 
 interface Props {
-    onSave: (data: { Designation: string }) => void;
+    onSave: (data: { Designation: string; Hospitalisation: boolean }) => void;
 }
 
 export default function AjoutTypeActe({ onSave }: Props) {
     const [show, setShow] = useState(false);
     const [designation, setDesignation] = useState("");
+    const [hospitalisation, setHospitalisation] = useState(false);
 
     const handleSubmit = () => {
         if (!designation.trim()) return;
-        onSave({ Designation: designation });
+        onSave({ Designation: designation, Hospitalisation: hospitalisation });
         setShow(false);
         setDesignation("");
+        setHospitalisation(false);
     };
 
     return (
@@ -33,6 +35,14 @@ export default function AjoutTypeActe({ onSave }: Props) {
                             <Form.Control
                                 value={designation}
                                 onChange={(e) => setDesignation(e.target.value)}
+                            />
+                        </Form.Group>
+                        <Form.Group>
+                            <Form.Check
+                                type="checkbox"
+                                label="Acte d'hospitalisation"
+                                checked={hospitalisation}
+                                onChange={(e) => setHospitalisation(e.target.checked)}
                             />
                         </Form.Group>
                     </Form>

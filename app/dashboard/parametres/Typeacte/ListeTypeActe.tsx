@@ -3,7 +3,7 @@
 import { Table, Button } from "react-bootstrap";
 
 interface Props {
-    data: { _id: string; Designation: string }[];
+    data: { _id: string; Designation: string; Hospitalisation: boolean }[];
     onEdit: (item: any) => void;
     onDelete: (id: string) => void;
 }
@@ -14,6 +14,7 @@ export default function ListeTypeActe({ data, onEdit, onDelete }: Props) {
             <thead>
                 <tr>
                     <th>Désignation</th>
+                    <th>Acte d'hospitalisation</th>
                     <th>Actions</th>
                 </tr>
             </thead>
@@ -22,6 +23,7 @@ export default function ListeTypeActe({ data, onEdit, onDelete }: Props) {
                     data.map((item) => (
                         <tr key={item._id}>
                             <td>{item.Designation}</td>
+                            <td>{item.Hospitalisation ? 'Oui' : 'Non'}</td>
                             <td>
                                 <Button variant="warning" size="sm" onClick={() => onEdit(item)}>Modifier</Button>{" "}
                                 <Button variant="danger" size="sm" onClick={() => onDelete(item._id)}>Supprimer</Button>
@@ -30,7 +32,7 @@ export default function ListeTypeActe({ data, onEdit, onDelete }: Props) {
                     ))
                 ) : (
                     <tr>
-                        <td colSpan={2}>Aucun type d’acte enregistré.</td>
+                        <td colSpan={3}>Aucun type d’acte enregistré.</td>
                     </tr>
                 )}
             </tbody>

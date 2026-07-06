@@ -11,6 +11,7 @@ import PointCaisseModal from '@/app/pages/servicecaisse/components/PointCaisseMo
 import ListeEncaissementModal from '@/app/pages/servicecaisse/components/ListeEncaissementModal';
 import MenuImpressionFactureModal from '@/app/pages/servicecaisse/components/MenuImpressionFactureModal';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
+import { useRouter } from 'next/navigation';
 
 
 const menu = [
@@ -27,6 +28,7 @@ const menu = [
 
 export default function Sidebarcaisse() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState('');
   const [showFactureModal, setShowFactureModal] = useState(false);
@@ -171,6 +173,10 @@ export default function Sidebarcaisse() {
     setOpen(false);
   };
 
+  const handleLogout = () => {
+    localStorage.clear();
+    router.push('/connexion');
+  };
 
 
   return (
@@ -246,6 +252,16 @@ export default function Sidebarcaisse() {
             </Nav.Item>
           ))}
         </Nav>
+        <div className="mt-auto px-3 pb-3">
+          <button
+            className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+            onClick={handleLogout}
+            style={{ cursor: 'pointer' }}
+          >
+            <i className="bi bi-box-arrow-right"></i>
+            <span>Se déconnecter</span>
+          </button>
+        </div>
       </aside>
 
       {/* Modal pour la facture */}

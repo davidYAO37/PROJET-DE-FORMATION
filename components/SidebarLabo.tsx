@@ -8,6 +8,7 @@ import ActeBiochimie from '@/app/dashboard/parametres/acteBiochimie/page';
 import ActeBiologie from '@/app/dashboard/parametres/acteBiologie/page';
 import ListeResultatValides from '@/app/pages/ResultatValides/page';
 import AutomatExamen from './AutomatExamen';
+import { useRouter } from 'next/navigation';
 const menu = [
     { label: 'Tableau de bord', path: '/pages/servicelaboratoire/tlaboratoire', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
     { label: 'Accueil Patient', path: '/pages/servicelaboratoire/patientLabo', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
@@ -21,6 +22,7 @@ const menu = [
 
 export default function SidebarLabo() {
     const pathname = usePathname();
+    const router = useRouter();
     const [open, setOpen] = useState(false);
     const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
     const [user, setUser] = useState('');
@@ -112,6 +114,11 @@ export default function SidebarLabo() {
         setOpen(false);
     };
 
+    const handleLogout = () => {
+        localStorage.clear();
+        router.push('/connexion');
+    };
+
     return (
         <>
             {/* Bouton burger visible sur mobile */}
@@ -197,6 +204,16 @@ export default function SidebarLabo() {
                         </Nav.Item>
                     ))}
                 </Nav>
+                <div className="mt-auto px-3 pb-3">
+                    <button
+                        className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+                        onClick={handleLogout}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <i className="bi bi-box-arrow-right"></i>
+                        <span>Se déconnecter</span>
+                    </button>
+                </div>
             </aside>
             {/* Modal pour les paramètres examens et biochimie */}
             <Modal

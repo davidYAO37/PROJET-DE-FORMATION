@@ -3,7 +3,7 @@ import mongoose, { Schema, model, Document, Types, Model } from 'mongoose';
 export interface IObservationHospit extends Document {
     Date?: Date;
     Heure?: string;
-    Medecin?: Types.ObjectId;
+    Intervenant?: string ;
     ObservationC?: string;
     Patient?: Types.ObjectId;
     Hospitalisation?: Types.ObjectId;
@@ -21,7 +21,7 @@ const ObservationHospitSchema = new Schema<IObservationHospit>(
     {
         Date: { type: Date },
         Heure: { type: String, maxlength: 10 },
-        Medecin: { type: Schema.Types.ObjectId, ref: 'Medecin' },
+        Intervenant: { type: String, maxlength: 100 },
         ObservationC: { type: String, maxlength: 1000 },
         Patient: { type: Schema.Types.ObjectId, ref: 'Patient' },
         Hospitalisation: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation' },

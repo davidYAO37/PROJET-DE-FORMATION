@@ -8,7 +8,7 @@ import ActeBiochimie from '@/app/dashboard/parametres/acteBiochimie/page';
 import ActeBiologie from '@/app/dashboard/parametres/acteBiologie/page';
 import ListeResultatValides from '@/app/pages/ResultatValides/page';
 import AutomatExamen from './AutomatExamen';
-
+import { useRouter } from 'next/navigation';
 
 
 
@@ -26,6 +26,7 @@ const menu = [
 
 export default function SidebarBiologiste() {
     const pathname = usePathname();
+    const router = useRouter();
     const [open, setOpen] = useState(false);
     const [nbAValider, setNbAValider] = useState(0);
 
@@ -92,6 +93,11 @@ export default function SidebarBiologiste() {
         e.preventDefault();
         setShowExamensValidésModal(true);
         setOpen(false);
+    };
+
+    const handleLogout = () => {
+        localStorage.clear();
+        router.push('/connexion');
     };
 
     return (
@@ -168,6 +174,16 @@ export default function SidebarBiologiste() {
                         </Nav.Item>
                     ))}
                 </Nav>
+                <div className="mt-auto px-3 pb-3">
+                    <button
+                        className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
+                        onClick={handleLogout}
+                        style={{ cursor: 'pointer' }}
+                    >
+                        <i className="bi bi-box-arrow-right"></i>
+                        <span>Se déconnecter</span>
+                    </button>
+                </div>
             </aside>
 
             {/* Modal Paramètres Examens */}

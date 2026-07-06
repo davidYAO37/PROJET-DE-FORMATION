@@ -6,21 +6,23 @@ import { Button, Form, Modal } from "react-bootstrap";
 interface Props {
     show: boolean;
     onHide: () => void;
-    data: { _id: string; Designation: string } | null;
+    data: { _id: string; Designation: string; Hospitalisation: boolean } | null;
     onSave: (data: any) => void;
 }
 
 export default function ModifieTypeActe({ show, onHide, data, onSave }: Props) {
     const [designation, setDesignation] = useState("");
+    const [hospitalisation, setHospitalisation] = useState(false);
 
     useEffect(() => {
-        setDesignation(data?.Designation || "");
+        setDesignation(data?.Designation || ""); 
+        setHospitalisation(data?.Hospitalisation || false);
     }, [data]);
 
     if (!data) return null;
 
     const handleSubmit = () => {
-        onSave({ ...data, Designation: designation });
+        onSave({ ...data, Designation: designation, Hospitalisation: hospitalisation });
         onHide();
     };
 
@@ -36,6 +38,14 @@ export default function ModifieTypeActe({ show, onHide, data, onSave }: Props) {
                         <Form.Control
                             value={designation}
                             onChange={(e) => setDesignation(e.target.value)}
+                        />
+                    </Form.Group>
+                    <Form.Group>
+                        <Form.Check
+                            type="checkbox"
+                            label="Acte d'hospitalisation"
+                            checked={hospitalisation}
+                            onChange={(e) => setHospitalisation(e.target.checked)}
                         />
                     </Form.Group>
                 </Form>
