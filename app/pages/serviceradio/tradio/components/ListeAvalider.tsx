@@ -264,7 +264,7 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
           MedecinPrescripteur: result.donnees.MedecinPrescripteur,
           Docteursaisieresultat: result.donnees.Docteursaisieresultat,
           resultatacte: result.donnees.resultatacte,
-          ObservationExame: result.donnees.ObservationExame
+          ObservationExame: result.donnees.ObservationExame,
         };
 
         // Ouvrir le modal d'impression avec le nouveau design
@@ -317,7 +317,7 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
           MedecinPrescripteur: result.donnees.MedecinPrescripteur,
           Docteursaisieresultat: result.donnees.Docteursaisieresultat,
           resultatacte: result.donnees.resultatacte,
-          ObservationExame: result.donnees.ObservationExame
+          ObservationExame: result.donnees.ObservationExame,
         };
 
         // Ouvrir le modal d'impression sans entête
@@ -619,7 +619,6 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
                 {printData && (
                   <PrintCompteRenduUnified 
                     donnees={printData.donnees}
-                    titre="COMPTE RENDU RADIOLOGIQUE"
                   />
                 )}
               </div>

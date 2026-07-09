@@ -5,6 +5,13 @@ import { Modal, Button, Form, Row, Col, Table, Alert } from "react-bootstrap";
 import { Pharmacie } from "@/types/pharmacie";
 
 // Type pour une ligne d'achat
+interface StockInfo {
+  QteEnStock: number;
+  QteMinimum: number;
+  QteMaximum: number;
+  QteStockVirtuel: number;
+}
+
 interface LigneAchat {
   id: string;
   medicament: Pharmacie | null;
@@ -13,6 +20,11 @@ interface LigneAchat {
   taxe: number;
   reference: string;
   prixVente: number;
+  stockInfo: StockInfo | null;
+  qteMinimum: number;
+  qteMaximum: number;
+  datePeremption: string;
+  numeroLot: string;
 }
 
 // Composant de recherche de médicament avec autocomplétion (même style que SearchableActeSelect)
@@ -219,6 +231,11 @@ export default function AjouterAchat({
         taxe: 0,
         reference: "",
         prixVente: 0,
+        stockInfo: null,
+        qteMinimum: 0,
+        qteMaximum: 0,
+        datePeremption: "",
+        numeroLot: "",
       },
     ]);
   };
@@ -274,7 +291,7 @@ export default function AjouterAchat({
   const totalGeneral = montantTTC;
 
   // Gestion de la sélection d'un médicament
-  const handleSelectMedicament = (ligneId: string, medicamentId: string) => {
+  const handleSelectMedicament = async (ligneId: string, medicamentId: string) => {
     const medicament = medicaments.find((m) => m._id === medicamentId);
     if (medicament) {
       updateLigne(ligneId, {
@@ -282,7 +299,34 @@ export default function AjouterAchat({
         reference: medicament.Reference || "",
         prixAchat: medicament.PrixAchat || 0,
         prixVente: medicament.PrixVente || 0,
+        stockInfo: null,
+        qteMinimum: 0,
+        qteMaximum: 0,
+        datePeremption: "",
+        numeroLot: "",
       });
+      // Charger le stock actuel du médicament
+      try {
+        const res = await fetch(`/api/stock?IDMEDICAMENT=${medicamentId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const stock = Array.isArray(data) && data.length > 0 ? data[0] : null;
+          updateLigne(ligneId, {
+            stockInfo: stock
+              ? {
+                  QteEnStock: stock.QteEnStock ?? 0,
+                  QteMinimum: stock.QteMinimum ?? 0,
+                  QteMaximum: stock.QteMaximum ?? 0,
+                  QteStockVirtuel: stock.QteStockVirtuel ?? 0,
+                }
+              : null,
+            qteMinimum: stock?.QteMinimum ?? 0,
+            qteMaximum: stock?.QteMaximum ?? 0,
+          });
+        }
+      } catch (err) {
+        console.error("Erreur chargement stock médicament:", err);
+      }
     }
   };
 
@@ -341,6 +385,10 @@ export default function AjouterAchat({
           PRIXTHT: ligne.quantite * ligne.prixAchat,
           TVAEntree: ligne.taxe,
           MontantTTCE: calculerTotalLigne(ligne),
+          QteMinimum: ligne.qteMinimum,
+          QteMaximum: ligne.qteMaximum,
+          DatePeremption: ligne.datePeremption || null,
+          NumeroLot: ligne.numeroLot || "",
           Observations: observation,
           SaisiLe: dateDuJour,
           SaisiPar: utilisateur,
@@ -387,6 +435,8 @@ export default function AjouterAchat({
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               QteEnStock: (stockExistant.QteEnStock || 0) + ligne.quantite,
+              QteMinimum: ligne.qteMinimum,
+              QteMaximum: ligne.qteMaximum,
               AuteurModif: utilisateur,
               DateModif: dateDuJour,
             }),
@@ -401,6 +451,8 @@ export default function AjouterAchat({
             AuteurModif: utilisateur,
             DateModif: dateDuJour,
             QteEnStock: ligne.quantite,
+            QteMinimum: ligne.qteMinimum,
+            QteMaximum: ligne.qteMaximum,
             Reference: ligne.reference,
             Medicament: ligne.medicament?.Designation,
             IDMEDICAMENT:ligne.medicament?._id,
@@ -474,14 +526,19 @@ export default function AjouterAchat({
                 style={{ position: "sticky", top: 0, zIndex: 2 }}
               >
                 <tr className="text-center">
-                  <th style={{ width: "35%" }}>Médicament</th>
-                  <th style={{ width: "15%" }}>Référence</th>
-                  <th style={{ width: "12%" }}>Prix de vente</th>
-                  <th style={{ width: "12%" }}>Prix d'achat</th>
-                  <th style={{ width: "10%" }}>Qyé Achetée</th>
-                  <th style={{ width: "12%" }}>Taxe</th>
-                  <th style={{ width: "12%" }}>Total</th>
-                  <th style={{ width: "4%" }}>Actions</th>
+                  <th style={{ width: "18%" }}>Médicament</th>
+                  <th style={{ width: "7%" }}>Référence</th>
+                  <th style={{ width: "7%" }}>Prix vente</th>
+                  <th style={{ width: "7%" }}>Prix achat</th>
+                  <th style={{ width: "5%" }}>Qté</th>
+                  <th style={{ width: "5%" }}>Taxe</th>
+                  <th style={{ width: "6%" }}>Total</th>
+                  <th style={{ width: "6%" }}>Stock actuel</th>
+                  <th style={{ width: "5%" }}>Seuil min</th>
+                  <th style={{ width: "5%" }}>Seuil max</th>
+                  <th style={{ width: "8%" }}>N° Lot</th>
+                  <th style={{ width: "9%" }}>Date péremption</th>
+                  <th style={{ width: "3%" }}></th>
                 </tr>
               </thead>
               <tbody>
@@ -557,6 +614,73 @@ export default function AjouterAchat({
                     </td>
                     <td className="text-end fw-bold">
                       {calculerTotalLigne(ligne).toFixed(2)}
+                    </td>
+                    <td className="text-center" style={{ fontSize: "11px", verticalAlign: "middle" }}>
+                      {ligne.stockInfo ? (
+                        <span
+                          className={`badge ${
+                            ligne.stockInfo.QteEnStock <= 0
+                              ? "bg-danger"
+                              : ligne.stockInfo.QteMinimum > 0 && ligne.stockInfo.QteEnStock <= ligne.stockInfo.QteMinimum
+                              ? "bg-warning text-dark"
+                              : "bg-success"
+                          }`}
+                          title="Stock physique actuel"
+                        >
+                          {ligne.stockInfo.QteEnStock}
+                        </span>
+                      ) : ligne.medicament ? (
+                        <span className="text-muted" style={{ fontSize: "10px" }}>...</span>
+                      ) : (
+                        <span className="text-muted">—</span>
+                      )}
+                    </td>
+                    <td>
+                      <Form.Control
+                        type="number"
+                        min={0}
+                        value={ligne.qteMinimum}
+                        onChange={(e) =>
+                          updateLigne(ligne.id, { qteMinimum: Number(e.target.value) || 0 })
+                        }
+                        size="sm"
+                        title="Quantité minimum de réapprovisionnement"
+                      />
+                    </td>
+                    <td>
+                      <Form.Control
+                        type="number"
+                        min={0}
+                        value={ligne.qteMaximum}
+                        onChange={(e) =>
+                          updateLigne(ligne.id, { qteMaximum: Number(e.target.value) || 0 })
+                        }
+                        size="sm"
+                        title="Quantité maximum en stock"
+                      />
+                    </td>
+                    <td>
+                      <Form.Control
+                        type="text"
+                        value={ligne.numeroLot}
+                        onChange={(e) =>
+                          updateLigne(ligne.id, { numeroLot: e.target.value })
+                        }
+                        size="sm"
+                        placeholder="Ex: LOT-001"
+                        title="Numéro de lot fournisseur"
+                      />
+                    </td>
+                    <td>
+                      <Form.Control
+                        type="date"
+                        value={ligne.datePeremption}
+                        onChange={(e) =>
+                          updateLigne(ligne.id, { datePeremption: e.target.value })
+                        }
+                        size="sm"
+                        title="Date de péremption du lot"
+                      />
                     </td>
                     <td className="text-center">
                       <Button

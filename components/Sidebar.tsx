@@ -256,7 +256,7 @@ export default function Sidebar() {
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link
-                    href="/medecin/consultations"
+                    href="/pages/servicepharmacie"
                     className="sidebar-link-medical d-flex align-items-center"
                   >
                     <i className="bi bi-prescription2 me-2 text-danger"></i>{" "}

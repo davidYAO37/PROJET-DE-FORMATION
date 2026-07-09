@@ -151,7 +151,7 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
           MedecinPrescripteur: result.donnees.MedecinPrescripteur,
           Docteursaisieresultat: result.donnees.Docteursaisieresultat,
           resultatacte: result.donnees.resultatacte,
-          ObservationExame: result.donnees.ObservationExame
+          ObservationExame: result.donnees.ObservationExame,
         };
 
         const validationInfo = {
@@ -355,7 +355,6 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
         <PrintCompteRenduUnified
           donnees={printData.donnees}
           validationInfo={printData.validationInfo}
-          titre="COMPTE RENDU RADIOLOGIQUE"
           autoPrint={false}
         />
       )}

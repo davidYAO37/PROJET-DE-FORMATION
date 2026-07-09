@@ -17,6 +17,10 @@ export interface IEntreeStock extends Omit<Document, '_id'> {
     PrixVente?: number;
     Medicament?: string;
     IDMEDICAMENT?: Types.ObjectId;
+    DatePeremption?: Date;
+    NumeroLot?: string;
+    QteMinimum?: number;
+    QteMaximum?: number;
     createdAt?: Date;
     updatedAt?: Date;
     entrepriseId?: string;
@@ -38,6 +42,10 @@ const EntreeStockSchema = new Schema<IEntreeStock>({
     PrixVente: { type: Number },
     Medicament: { type: String, maxlength: 250 },
     IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
+    DatePeremption: { type: Date },
+    NumeroLot: { type: String, maxlength: 60 },
+    QteMinimum: { type: Number },
+    QteMaximum: { type: Number },
     entrepriseId: { type: String },
 }, { timestamps: true });
 export const EntreeStock: Model<IEntreeStock> = mongoose.models.EntreeStock || mongoose.model<IEntreeStock>("EntreeStock", EntreeStockSchema);

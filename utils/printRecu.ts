@@ -51,6 +51,10 @@ export const getPrintCSS = (): string => {
     @media print {
       body { margin: 0; padding: 10px; }
       @page { margin: 10mm; }
+      * {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
     }
     body { 
       font-family: Arial, sans-serif; 
@@ -223,6 +227,10 @@ export const createPrintWindowWithoutHeader = (
             @page { 
               margin: 0;
               size: A4;
+            }
+            * {
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
           }
           body { 

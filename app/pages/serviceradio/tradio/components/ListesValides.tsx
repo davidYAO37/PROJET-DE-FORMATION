@@ -133,7 +133,7 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
           MedecinPrescripteur: result.donnees.MedecinPrescripteur,
           Docteursaisieresultat: result.donnees.Docteursaisieresultat,
           resultatacte: result.donnees.resultatacte,
-          ObservationExame: result.donnees.ObservationExame
+          ObservationExame: result.donnees.ObservationExame,
         };
 
         const validationInfo = {
@@ -191,7 +191,7 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
           MedecinPrescripteur: result.donnees.MedecinPrescripteur,
           Docteursaisieresultat: result.donnees.Docteursaisieresultat,
           resultatacte: result.donnees.resultatacte,
-          ObservationExame: result.donnees.ObservationExame
+          ObservationExame: result.donnees.ObservationExame,
         };
 
         const validationInfo = {
@@ -521,7 +521,6 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
                   <PrintCompteRenduUnified 
                     donnees={printData.donnees}
                     validationInfo={printData.validationInfo}
-                    titre="COMPTE RENDU RADIOLOGIQUE VALIDÉ"
                   />
                 )}
               </div>

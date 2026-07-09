@@ -8,10 +8,12 @@ export interface ISortieStock extends Omit<Document, '_id'> {
     Prix_unitaire?: number;
     Prix_TotalS?: number;
     Motif?: string;
+    TypeMouvement?: string;
     Observations?: string;
     SaisiPar?: string;
     SaisiLe?: Date;
     ArticleS?: string;
+    IDMEDICAMENT?: Types.ObjectId;
     Prescription?: Types.ObjectId | null;
     Patient?: Types.ObjectId | null;
     createdAt?: Date;
@@ -31,6 +33,8 @@ const SortieStockSchema = new Schema<ISortieStock>({
     SaisiPar: { type: String, maxlength: 40 },
     SaisiLe: { type: Date },
     ArticleS: { type: String, maxlength: 60 },
+    TypeMouvement: { type: String, maxlength: 60 },
+    IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
     Prescription: { type: Schema.Types.ObjectId, ref: 'Prescription', required: false },
     Patient: { type: Schema.Types.ObjectId, ref: 'Patient', required: false },
     entrepriseId: { type: String },

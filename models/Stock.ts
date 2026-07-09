@@ -5,6 +5,8 @@ export interface IStock extends Omit<Document, '_id'> {
     Reference?: string;
     QteEnStock?: number;
     QteStockVirtuel?: number;
+    QteMinimum?: number;
+    QteMaximum?: number;
     AuteurModif?: string;
     DateModif?: Date;
     Medicament?: string;
@@ -19,6 +21,8 @@ const StockSchema = new Schema<IStock>({
     Reference: { type: String, maxlength: 100 },
     QteEnStock: { type: Number },
     QteStockVirtuel: { type: Number },
+    QteMinimum: { type: Number, default: 0 },
+    QteMaximum: { type: Number, default: 0 },
     AuteurModif: { type: String, maxlength: 60 },
     DateModif: { type: Date },
     Medicament: { type: String, maxlength: 250 },
