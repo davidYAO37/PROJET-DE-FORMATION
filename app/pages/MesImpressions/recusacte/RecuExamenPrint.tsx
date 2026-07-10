@@ -80,9 +80,6 @@ interface Facturation {
   Restapayer?:number;
 }
 
-interface Props {
-  facturationId: string;
-}
 export default function RecuExamenPrint({ params }: { params: { id: string } }) {
   const [loading, setLoading] = useState(true);
   const [patient, setPatient] = useState<Patient | null>(null);
@@ -121,24 +118,23 @@ if (params.id) {
     }
   }, [params.id]);
 
-  const handlePrint = () => {
+  const getContent = () => {
     const printContent = document.getElementById('print-content');
-    if (!printContent) return;
-    
+    if (!printContent) return "";
+    return extractContentWithoutHeaderAndFooter(printContent.innerHTML);
+  };
+
+  const handlePrint = () => {
+    const restContent = getContent();
+    if (!restContent) return;
     const headerHTML = generatePrintHeader(entreprise);
     const footerHTML = generatePrintFooter(entreprise);
-    const restContent = extractContentWithoutHeaderAndFooter(printContent.innerHTML);
-    
     createPrintWindow('Reçu Examens', headerHTML, restContent, footerHTML);
   };
 
   const handlePrintWithoutHeader = () => {
-    const printContent = document.getElementById('print-content');
-    if (!printContent) return;
-    
-    // Extraire le contenu sans header ni footer pour l'impression sans entête
-    const restContent = extractContentWithoutHeaderAndFooter(printContent.innerHTML);
-    
+    const restContent = getContent();
+    if (!restContent) return;
     createPrintWindowWithoutHeader('Reçu Examens (sans entête)', restContent);
   };
 

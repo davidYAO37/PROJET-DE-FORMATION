@@ -8,6 +8,8 @@ const MENU = [
     { key: 'dashboard',         label: 'Tableau de bord',          icon: 'bi bi-speedometer2',      color: 'text-primary' },
     { key: 'stock',             label: 'Gestion du stock',          icon: 'bi bi-capsule',            color: 'text-success' },
     { key: 'approvisionnement', label: 'Approvisionnement',         icon: 'bi bi-cart-plus',          color: 'text-warning' },
+    { key: 'commandes',         label: 'Commandes en cours',        icon: 'bi bi-box-seam',            color: 'text-primary' },
+    { key: 'fournisseurs',      label: 'Fournisseurs',              icon: 'bi bi-truck',              color: 'text-warning' },
     { key: 'historique',        label: 'Historique mouvements',     icon: 'bi bi-clock-history',      color: 'text-info'    },
     { key: 'mouvements',        label: 'Mouvements manuels',        icon: 'bi bi-arrow-left-right',   color: 'text-danger'  },
     { key: 'inventaire',        label: 'Inventaire complet',        icon: 'bi bi-clipboard2-check',   color: 'text-secondary' },

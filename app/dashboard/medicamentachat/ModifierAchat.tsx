@@ -4,6 +4,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Modal, Button, Form, Row, Col, Table, Alert } from "react-bootstrap";
 import { Pharmacie } from "@/types/pharmacie";
 
+interface Fournisseur {
+  _id?: string;
+  Nom?: string;
+  Telephone?: string;
+  Ville?: string;
+}
+
 // Type pour une ligne d'achat
 interface StockInfo {
   QteEnStock: number;
@@ -215,7 +222,10 @@ export default function ModifierAchat({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [observation, setObservation] = useState("");
-  
+  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
+  const [selectedFournisseur, setSelectedFournisseur] = useState("");
+  const [numeroFacture, setNumeroFacture] = useState("");
+
   // États pour les totaux (selon la logique WinDev)
   const [totalHT, setTotalHT] = useState(0);
   const [totalTVA, setTotalTVA] = useState(0);
@@ -289,6 +299,14 @@ export default function ModifierAchat({
     CalculeTotal();
   }, [lignes]);
 
+  // Charger les fournisseurs
+  useEffect(() => {
+    fetch("/api/fournisseur?actif=true")
+      .then(r => r.json())
+      .then(d => setFournisseurs(Array.isArray(d) ? d : []))
+      .catch(console.error);
+  }, []);
+
   // Charger les entrées de stock existantes quand l'approvisionnement change
   useEffect(() => {
     if (Approvisionnement && show) {
@@ -323,6 +341,8 @@ export default function ModifierAchat({
         setTotalHT(Approvisionnement.PrixHT || 0);
         setTotalTVA(Approvisionnement.tVAApro || 0);
         setMontantTTC(Approvisionnement.MontantTTC || 0);
+        setSelectedFournisseur(Approvisionnement.IDFournisseur?.toString() || "");
+        setNumeroFacture(Approvisionnement.NumeroFacture || "");
       }
     } catch (err) {
       console.error("Erreur lors du chargement des entrées de stock:", err);
@@ -391,6 +411,7 @@ export default function ModifierAchat({
       const dateDuJour = new Date().toISOString();
 
       // 1. MODIFIER L'APPROVISIONNEMENT
+      const fournisseur = fournisseurs.find(f => f._id === selectedFournisseur);
       const approvisionnementModifie = {
         DateAppro: dateDuJour,
         PrixHT: totalHT,
@@ -399,6 +420,9 @@ export default function ModifierAchat({
         SaisiLe: dateDuJour,
         SaisiPar: utilisateur,
         Observations: observation,
+        IDFournisseur: selectedFournisseur || null,
+        NomFournisseur: fournisseur?.Nom || "",
+        NumeroFacture: numeroFacture,
       };
 
       const resAppro = await fetch(`/api/approvisionnement/${Approvisionnement._id}`, {
@@ -572,6 +596,8 @@ export default function ModifierAchat({
       setTotalHT(0);
       setTotalTVA(0);
       setMontantTTC(0);
+      setSelectedFournisseur("");
+      setNumeroFacture("");
     }
   }, [show]);
 
@@ -582,13 +608,39 @@ export default function ModifierAchat({
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
-          <Row className="mb-2">
+          {/* Fournisseur + N° Facture */}
+          <Row className="mb-3 g-2 align-items-end">
+            <Col md={5}>
+              <Form.Group>
+                <Form.Label className="fw-semibold small mb-1">Fournisseur</Form.Label>
+                <Form.Select
+                  size="sm"
+                  value={selectedFournisseur}
+                  onChange={e => setSelectedFournisseur(e.target.value)}
+                >
+                  <option value="">— Sélectionner un fournisseur —</option>
+                  {fournisseurs.map(f => (
+                    <option key={f._id} value={f._id}>{f.Nom}{f.Ville ? ` — ${f.Ville}` : ""}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label className="fw-semibold small mb-1">N° Facture fournisseur</Form.Label>
+                <Form.Control
+                  size="sm"
+                  placeholder="Ex: FAC-2025-001"
+                  value={numeroFacture}
+                  onChange={e => setNumeroFacture(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
             <Col className="text-end">
               <Button
                 variant="primary"
                 onClick={ajouterLigne}
                 disabled={loading}
-                className="mt-2"
               >
                 + Ajouter une ligne
               </Button>

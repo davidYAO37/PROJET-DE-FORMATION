@@ -233,7 +233,7 @@ export default function Sidebar() {
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link
-                    href="/compta/recettes"
+                    href="/pages/servicecomptabilite/tcompta"
                     className="sidebar-link-medical d-flex align-items-center"
                   >
                     <i className="bi bi-receipt me-2 text-secondary"></i>{" "}

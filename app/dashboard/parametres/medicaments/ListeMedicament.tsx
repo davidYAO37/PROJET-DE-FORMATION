@@ -155,13 +155,16 @@ const ListeMedicament: React.FC<Props> = ({ Medicaments, onEdit, onDelete }) => 
                             <th onClick={() => handleSort("PrixVente")} style={{ cursor: "pointer" }}>
                                 Prix de vente {renderSortIcon("PrixVente")}
                             </th>
+                            <th onClick={() => handleSort("TypeArticle")} style={{ cursor: "pointer" }}>
+                                Type {renderSortIcon("TypeArticle")}
+                            </th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         {paginated.length === 0 ? (
                             <tr>
-                                <td colSpan={7} className="text-center">
+                                <td colSpan={6} className="text-center">
                                     Aucun acte trouvé.
                                 </td>
                             </tr>
@@ -172,6 +175,11 @@ const ListeMedicament: React.FC<Props> = ({ Medicaments, onEdit, onDelete }) => 
                                     <td>{a.Designation}</td>
                                     <td>{a.PrixAchat}</td>
                                     <td>{a.PrixVente}</td>
+                                    <td>
+                                        <span className={`badge ${a.TypeArticle === "LABORATOIRE" ? "bg-warning text-dark" : "bg-info"}`}>
+                                            {a.TypeArticle || "PHARMACIE"}
+                                        </span>
+                                    </td>
                                     <td className="bg-primary bg-opacity-10">
                                         <Button 
                                             size="sm" 

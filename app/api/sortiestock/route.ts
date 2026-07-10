@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { SortieStock } from "@/models/SortieStock";
+import { Stock } from "@/models/Stock";
 
 // GET /api/sortiestock?reference=xxx&IDPRESCRIPTION=xxx
 export async function GET(request: Request) {
@@ -57,7 +58,24 @@ export async function POST(request: NextRequest) {
         
         // Créer une nouvelle sortie de stock
         const newSortieStock = await SortieStock.create(sortieStockData);
-        
+
+        // Mise à jour du stock physique uniquement si IDMEDICAMENT est fourni
+        // (les ventes caisse gèrent leur propre décrément via /api/stock/:id)
+        const idMed = sortieStockData.IDMEDICAMENT;
+        const qte   = Number(sortieStockData.Quantite) || 0;
+        if (idMed && qte > 0) {
+            const stock = await Stock.findOne({ IDMEDICAMENT: idMed });
+            if (stock) {
+                await Stock.findByIdAndUpdate(stock._id, {
+                    QteEnStock: Math.max(0, (stock.QteEnStock ?? 0) - qte),
+                    AuteurModif: sortieStockData.SaisiPar || "Système",
+                    DateModif: new Date(),
+                });
+            }
+        }
+        // Note: si pas d'IDMEDICAMENT (ex: vente caisse via référence), le décrément est
+        // géré directement par le client via PUT /api/stock/:id
+
         return NextResponse.json({
             success: true,
             data: newSortieStock,

@@ -185,7 +185,7 @@ export default function Dashboard() {
         throw new Error(data?.message || data?.error || 'Erreur lors de l\'annulation de la réception.');
       }
 
-      await loadReceptions();
+      await loadResultats();
       window.dispatchEvent(new Event('labo-counts-updated'));
       alert('✅ Réception annulée avec succès.');
     } catch (error) {
@@ -206,8 +206,8 @@ export default function Dashboard() {
     <Container className="py-4">
       {/* Bande défilante de notifications */}
       <div
-        className="mb-3 py-2 px-3 rounded shadow-sm"
-        style={{ background: 'linear-gradient(90deg, #1e3a5f, #2d5a8e)', overflow: 'hidden' }}
+        className="mb-2 py-1 px-2 rounded shadow-sm"
+        style={{ background: 'linear-gradient(90deg, #1e3a5f, #2d5a8e)', overflow: 'hidden', fontSize: '12px' }}
       >
         <div
           style={{
@@ -216,18 +216,18 @@ export default function Dashboard() {
             animation: 'scroll-left 50s linear infinite',
           }}
         >
-          <span className="text-white fw-semibold me-5">
-            <i className="bi bi-bell-fill text-warning me-2"></i>
-            🟢 Examens à réceptionner : <span className="badge bg-success">{receptions.length}</span>
+          <span className="text-white fw-semibold me-4">
+            <i className="bi bi-bell-fill text-warning me-1"></i>
+            🟢 À réceptionner : <span className="badge bg-success" style={{ fontSize: '10px' }}>{receptions.length}</span>
           </span>
-          <span className="text-white fw-semibold me-5">
-            🔴 Résultats à saisir : <span className="badge bg-danger">{resultats.length}</span>
+          <span className="text-white fw-semibold me-4">
+            🔴 À saisir : <span className="badge bg-danger" style={{ fontSize: '10px' }}>{resultats.length}</span>
           </span>
-          <span className="text-white fw-semibold me-5">
-            🟡 Résultats retournés par le biologiste : <span className="badge bg-warning text-dark">consulter liste retour</span>
+          <span className="text-white fw-semibold me-4">
+            🟡 Retours biologiste : <span className="badge bg-warning text-dark" style={{ fontSize: '10px' }}>liste retour</span>
           </span>
-          <span className="text-white fw-semibold me-5">
-            📅 Période : {startDate} au {endDate}
+          <span className="text-white fw-semibold me-4">
+            📅 {startDate} au {endDate}
           </span>
         </div>
       </div>
@@ -237,9 +237,9 @@ export default function Dashboard() {
           100% { transform: translateX(-100%); }
         }
       `}</style>
-      <h2 className="mb-4 text-primary">Bienvenue sur le Tableau de Bord</h2>
+      <h2 className="mb-4 text-primary text-center">Bienvenue sur le Tableau de Bord</h2>
       <Row className="g-4 mt-2">
-        <Col>
+        <Col xs={12}>
           <Card className="shadow-sm">
             <Card.Body>
               <Card.Title className="h5 mb-3">Filtrer par Période</Card.Title>
@@ -263,8 +263,8 @@ export default function Dashboard() {
                   </Col>
                   <Col xs={12} md={6} className="d-flex gap-2">
                     <ButtonGroup className="ms-auto">
-                      <Button variant="outline-primary" onClick={loadReceptions}>
-                        Nouvelle Réception
+                      <Button variant="outline-primary" onClick={loadReceptions} title="Nouvelle Réception">
+                        <i className="bi bi-plus-circle"> Nouvelle Réception</i>
                       </Button>
                       <Button
                         variant="outline-secondary"
@@ -272,8 +272,9 @@ export default function Dashboard() {
                           setActiveKey('resultats');
                           loadResultats();
                         }}
+                        title="Résultats à saisir et code barre"
                       >
-                        Resultat a saisir et code barre
+                        <i className="bi bi-clipboard-plus"> Résultats à saisir et code barre</i>
                       </Button>
                     </ButtonGroup>
                   </Col>
@@ -291,14 +292,17 @@ export default function Dashboard() {
           if (k === 'resultats') {
             loadResultats();
           }
-        }}>
+        }} className="justify-content-center d-none">
           <Nav.Item>
-            <Nav.Link eventKey="reception" className="d-none">Les Réceptions</Nav.Link>
+            <Nav.Link eventKey="reception">Réceptions</Nav.Link>
           </Nav.Item>
           <Nav.Item>
-            <Nav.Link eventKey="resultats" className="d-none">Les Résultats à Saisir et Code Barre</Nav.Link>
+            <Nav.Link eventKey="resultats">Résultats / Code barre</Nav.Link>
           </Nav.Item>
         </Nav>
+
+        <Row>
+          <Col xs={12}>
 
         {/* Liste des receptions */}
         {activeKey === 'reception' && (
@@ -346,8 +350,13 @@ export default function Dashboard() {
                           size="sm"
                           disabled={receptionningId === item._id || item.StatutLaboratoire === 2}
                           onClick={() => handleReceptionner(item._id)}
+                          title="Réceptionner"
                         >
-                          {receptionningId === item._id ? 'Traitement...' : 'Réceptionner ici'}
+                          {receptionningId === item._id ? (
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                          ) : (
+                            <i className="bi bi-check-circle"></i>
+                          )}
                         </Button>
                       </td>
                     </tr>
@@ -361,17 +370,18 @@ export default function Dashboard() {
         {/* Liste des resultats a saisir */}
         {activeKey === 'resultats' && (
           <div className="mt-3 text-muted">
+
             <div className="d-flex justify-content-between align-items-center mb-2">
               <strong className="text-dark">Liste des résultats à saisir ou a techniquer</strong>
-              <Button variant="outline-info" size="sm" onClick={handlePrintBarcodes}>
-                Code Barre
+              <Button variant="outline-info" size="sm" onClick={handlePrintBarcodes} title="Code Barre">
+                <i className="bi bi-upc-scan"></i>
               </Button>
             </div>
 
             <Table responsive striped bordered hover className="align-middle">
               <thead>
                 <tr>
-                  <th>Receptionné le</th>
+                  <th>Reçu le</th>
                   <th>N°Prestation</th>
                   <th>Designation</th>
                   <th>Patient</th>
@@ -430,8 +440,9 @@ export default function Dashboard() {
                             });
                             setShowSaisieResultatModal(true);
                           }}
+                          title="Saisir les résultats"
                         >
-                          Saisir les résultats
+                          <i className="bi bi-pencil-square"></i>
                         </Button>
                         <Button
                           variant="outline-danger"
@@ -439,18 +450,28 @@ export default function Dashboard() {
                           className="ms-2"
                           disabled={annulerningId === item._id}
                           onClick={() => handleAnnulerReception(item._id)}
+                          title="Annuler la réception"
                         >
-                          {annulerningId === item._id ? 'Traitement...' : 'Annuler la réception'}
+                          {annulerningId === item._id ? (
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                          ) : (
+                            <i className="bi bi-x-circle"></i>
+                          )}
                         </Button>
-                        {/* Envoir au bilogiste */}
+                        {/* Envoyer au biologiste */}
                         <Button
                           variant="outline-success"
                           size="sm"
                           className="ms-2"
                           disabled={envoyerBilogisteId === item._id}
                           onClick={() => handleEnvoyerBilogiste(item._id)}
+                          title="Envoyer au biologiste"
                         >
-                          {envoyerBilogisteId === item._id ? 'Traitement...' : 'Envoyer au bilogiste'}
+                          {envoyerBilogisteId === item._id ? (
+                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                          ) : (
+                            <i className="bi bi-send"></i>
+                          )}
                         </Button>
                       </td>
                     </tr>
@@ -460,7 +481,7 @@ export default function Dashboard() {
             </Table>
 
             <div className="barcode-print-area" style={{ display: 'none' }}>
-              <h2>Table des Codes Barre</h2>
+              <h2 className="text-center">Table des Codes Barre</h2>
               <Table responsive bordered className="align-middle">
                 <thead>
                   <tr>
@@ -495,6 +516,9 @@ export default function Dashboard() {
             </div>
           </div>
         )}
+
+          </Col>
+        </Row>
       </div>
 
       <style>{`

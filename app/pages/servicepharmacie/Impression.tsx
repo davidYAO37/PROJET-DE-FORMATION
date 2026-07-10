@@ -3,15 +3,21 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { Row, Col, Form, Button, Spinner, Table, Badge } from "react-bootstrap";
 import { FaPrint, FaSync, FaFileMedical } from "react-icons/fa";
+import { useEntreprise } from "@/hooks/useEntreprise";
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from "@/utils/printRecu";
 
-type TypeRapport = "stock" | "entrees" | "sorties" | "inventaire" | "historique_inventaire";
+type TypeRapport = "stock" | "entrees" | "sorties" | "inventaire" | "historique_inventaire"
+    | "fiche_inventaire" | "tableau_bord" | "indicateur_quantite";
 
 const RAPPORTS: { key: TypeRapport; label: string }[] = [
-    { key: "stock",                 label: "État du stock"            },
-    { key: "entrees",               label: "Entrées de stock"         },
-    { key: "sorties",               label: "Sorties de stock"         },
-    { key: "inventaire",            label: "Inventaire actuel"        },
-    { key: "historique_inventaire", label: "Historique des inventaires" },
+    { key: "stock",                 label: "État du stock"             },
+    { key: "entrees",               label: "Entrées de stock"          },
+    { key: "sorties",               label: "Sorties de stock"          },
+    { key: "inventaire",            label: "Inventaire actuel"         },
+    { key: "historique_inventaire", label: "Historique des inventaires"},
+    { key: "fiche_inventaire",      label: "Fiche d'inventaire"        },
+    { key: "tableau_bord",          label: "Tableau de bord du stock"  },
+    { key: "indicateur_quantite",   label: "Indicateur de quantité"    },
 ];
 
 export default function Impression() {
@@ -21,17 +27,51 @@ export default function Impression() {
     const [data, setData] = useState<any[]>([]);
     const [loading, setLoading] = useState(false);
     const printRef = useRef<HTMLDivElement>(null);
+    const { entreprise } = useEntreprise();
 
     const today = new Date().toISOString().slice(0, 10);
+
+    // État supplémentaire pour les rapports croisés
+    const [entrees, setEntrees] = useState<any[]>([]);
+    const [sorties, setSorties] = useState<any[]>([]);
+    const [stocks,  setStocks]  = useState<any[]>([]);
+
+    const filtrerDate = (rows: any[], champDate: string) => {
+        if (!dateDebut && !dateFin) return rows;
+        const debut = dateDebut ? new Date(dateDebut).getTime() : 0;
+        const fin   = dateFin   ? new Date(dateFin + "T23:59:59").getTime() : Infinity;
+        return rows.filter((r: any) => {
+            const d = new Date(r[champDate] || r.DateAppro || r.DateSortie || r.createdAt || 0).getTime();
+            return d >= debut && d <= fin;
+        });
+    };
 
     const charger = useCallback(async () => {
         setLoading(true);
         setData([]);
         try {
+            if (type === "fiche_inventaire" || type === "tableau_bord" || type === "indicateur_quantite") {
+                // Charger les 3 sources en parallèle
+                const [invRes, entRes, sorRes] = await Promise.all([
+                    fetch("/api/gestionstock/inventaire"),
+                    fetch("/api/gestionstock/entrestock"),
+                    fetch("/api/gestionstock/sortiestock"),
+                ]);
+                const [inv, ent, sor] = await Promise.all([invRes.json(), entRes.json(), sorRes.json()]);
+                const invData = Array.isArray(inv) ? inv : [];
+                const entData = Array.isArray(ent) ? filtrerDate(ent, "DateAppro") : [];
+                const sorData = Array.isArray(sor) ? filtrerDate(sor, "DateSortie") : [];
+                setStocks(invData);
+                setEntrees(entData);
+                setSorties(sorData);
+                setData(invData); // pour le compteur
+                return;
+            }
+
             let url = "";
             const params = new URLSearchParams();
             if (dateDebut) params.set("debut", dateDebut);
-            if (dateFin) params.set("fin", dateFin);
+            if (dateFin)   params.set("fin", dateFin);
 
             if (type === "stock" || type === "inventaire") {
                 url = "/api/gestionstock/inventaire";
@@ -47,16 +87,9 @@ export default function Impression() {
             const json = await res.json();
             let rows = Array.isArray(json) ? json : [];
 
-            // Filtrer par date côté client si nécessaire
             if (dateDebut || dateFin) {
-                const debut = dateDebut ? new Date(dateDebut).getTime() : 0;
-                const fin = dateFin ? new Date(dateFin + "T23:59:59").getTime() : Infinity;
-                rows = rows.filter((r: any) => {
-                    const d = new Date(r.DateAppro || r.DateSortie || r.DateInventaire || r.createdAt || 0).getTime();
-                    return d >= debut && d <= fin;
-                });
+                rows = filtrerDate(rows, type === "sorties" ? "DateSortie" : "DateAppro");
             }
-
             setData(rows);
         } catch (e) { console.error(e); }
         finally { setLoading(false); }
@@ -64,40 +97,22 @@ export default function Impression() {
 
     useEffect(() => { charger(); }, [charger]);
 
-    const imprimer = () => {
-        const contenu = printRef.current?.innerHTML;
+    const getTitre = () => `Rapport Pharmacie — ${RAPPORTS.find(r => r.key === type)?.label || ""}`;
+
+    const getContenu = () => printRef.current?.innerHTML || "";
+
+    const imprimerAvecEntete = () => {
+        const contenu = getContenu();
         if (!contenu) return;
-        const win = window.open("", "_blank", "width=1100,height=800");
-        if (!win) return;
-        win.document.write(`
-            <!DOCTYPE html>
-            <html lang="fr">
-            <head>
-                <meta charset="UTF-8"/>
-                <title>Rapport Pharmacie — ${RAPPORTS.find(r => r.key === type)?.label}</title>
-                <style>
-                    * { box-sizing: border-box; margin: 0; padding: 0; }
-                    body { font-family: Arial, sans-serif; font-size: 12px; color: #222; padding: 20px; }
-                    h2 { font-size: 18px; margin-bottom: 4px; }
-                    .meta { font-size: 11px; color: #666; margin-bottom: 16px; }
-                    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-                    th { background: #1e3a5f; color: #fff; padding: 6px 8px; text-align: left; font-size: 11px; }
-                    td { padding: 5px 8px; border-bottom: 1px solid #ddd; font-size: 11px; }
-                    tr:nth-child(even) { background: #f5f7fa; }
-                    .badge-success { background:#198754; color:#fff; padding:2px 6px; border-radius:4px; }
-                    .badge-danger  { background:#dc3545; color:#fff; padding:2px 6px; border-radius:4px; }
-                    .badge-warning { background:#ffc107; color:#000; padding:2px 6px; border-radius:4px; }
-                    .badge-info    { background:#0dcaf0; color:#000; padding:2px 6px; border-radius:4px; }
-                    tfoot td { font-weight: bold; background: #e9ecef; }
-                    @media print { body { padding: 0; } }
-                </style>
-            </head>
-            <body>${contenu}</body>
-            </html>
-        `);
-        win.document.close();
-        win.focus();
-        setTimeout(() => { win.print(); }, 400);
+        const headerHTML = generatePrintHeader(entreprise);
+        const footerHTML = generatePrintFooter(entreprise);
+        createPrintWindow(getTitre(), headerHTML, contenu, footerHTML);
+    };
+
+    const imprimerSansEntete = () => {
+        const contenu = getContenu();
+        if (!contenu) return;
+        createPrintWindowWithoutHeader(getTitre(), contenu);
     };
 
     const formatDate = (d: any) => d ? new Date(d).toLocaleDateString("fr-FR") : "—";
@@ -230,6 +245,222 @@ export default function Impression() {
             );
         }
 
+        // ===== FICHE D'INVENTAIRE =====
+        if (type === "fiche_inventaire") {
+            return (
+                <Table bordered size="sm" className="align-middle" style={{ fontSize: 11 }}>
+                    <thead>
+                        <tr className="text-center" style={{ background: "#b8d4e8" }}>
+                            <th rowSpan={2} className="align-middle">Référence</th>
+                            <th rowSpan={2} className="align-middle">Désignation</th>
+                            <th colSpan={3} style={{ background: "#cce0f0" }}>Stock initial</th>
+                            <th colSpan={3} style={{ background: "#d4edda" }}>Achat de marchandise</th>
+                            <th colSpan={3} style={{ background: "#f8d7da" }}>Sortie de marchandise</th>
+                            <th colSpan={3} style={{ background: "#fff3cd" }}>Stock final</th>
+                        </tr>
+                        <tr className="text-center" style={{ fontSize: 10 }}>
+                            <th>Qté initiale</th><th>Prix Stock</th><th>Valeur</th>
+                            <th>Qté Achetée</th><th>Prix d'achat</th><th>Montant</th>
+                            <th>Qté Sortie</th><th>Prix de Revient</th><th>Valeur</th>
+                            <th>Qté Restante</th><th>Prix de Vente</th><th>Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {stocks.map((s: any, i: number) => {
+                            const matchMed = (e: any) => (e.IDMEDICAMENT && e.IDMEDICAMENT.toString() === s.IDMEDICAMENT?.toString()) || (e.Reference && e.Reference === s.Reference);
+                            const entsM = entrees.filter(matchMed);
+                            const sorsM = sorties.filter(matchMed);
+                            const qteAchetee   = entsM.reduce((a: number, e: any) => a + (e.Quantite || 0), 0);
+                            const montantAchat = entsM.reduce((a: number, e: any) => a + (e.MontantTTCE || e.PRIXTHT || 0), 0);
+                            const prixAchat    = qteAchetee > 0 ? Math.round(montantAchat / qteAchetee) : 0;
+                            const qteSortie    = sorsM.reduce((a: number, e: any) => a + (e.Quantite || 0), 0);
+                            const valSortie    = sorsM.reduce((a: number, e: any) => a + (e.Prix_TotalS || 0), 0);
+                            const prixRevient  = qteSortie > 0 ? Math.round(valSortie / qteSortie) : 0;
+                            const qteInit      = (s.QteEnStock || 0) + qteSortie - qteAchetee;
+                            const valInit      = qteInit * (s.PrixAchat || 0);
+                            const qteFinal     = s.QteEnStock || 0;
+                            const montantFinal = qteFinal * (s.PrixVente || 0);
+                            return (
+                                <tr key={i} className="text-center">
+                                    <td className="text-start">{s.Reference || "—"}</td>
+                                    <td className="text-start">{s.Medicament || "—"}</td>
+                                    <td>{qteInit}</td>
+                                    <td>{fmt(s.PrixAchat)} F CFA</td>
+                                    <td>{fmt(valInit)} F CFA</td>
+                                    <td>{qteAchetee}</td>
+                                    <td>{fmt(prixAchat)} F CFA</td>
+                                    <td>{fmt(montantAchat)} F CFA</td>
+                                    <td>{qteSortie}</td>
+                                    <td>{fmt(prixRevient)} F CFA</td>
+                                    <td>{fmt(valSortie)} F CFA</td>
+                                    <td className="fw-bold">{qteFinal}</td>
+                                    <td>{fmt(s.PrixVente)} F CFA</td>
+                                    <td className="fw-bold">{fmt(montantFinal)} F CFA</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                    <tfoot>
+                        <tr className="fw-bold text-center" style={{ background: "#e9ecef" }}>
+                            <td colSpan={2} className="text-end">TOTAL</td>
+                            <td></td>
+                            <td></td>
+                            <td>{fmt(stocks.reduce((a: number, s: any) => { const e2 = entrees.filter((e: any) => e.IDMEDICAMENT?.toString() === s.IDMEDICAMENT?.toString()); const q = e2.reduce((x: number, e: any) => x + (e.Quantite || 0), 0); const qInit = (s.QteEnStock || 0) + sorties.filter((e: any) => e.IDMEDICAMENT?.toString() === s.IDMEDICAMENT?.toString()).reduce((x: number, e: any) => x + (e.Quantite || 0), 0) - q; return a + qInit * (s.PrixAchat || 0); }, 0))} F CFA</td>
+                            <td>{fmt(entrees.reduce((a: number, e: any) => a + (e.Quantite || 0), 0))}</td>
+                            <td></td>
+                            <td>{fmt(entrees.reduce((a: number, e: any) => a + (e.MontantTTCE || e.PRIXTHT || 0), 0))} F CFA</td>
+                            <td>{fmt(sorties.reduce((a: number, e: any) => a + (e.Quantite || 0), 0))}</td>
+                            <td></td>
+                            <td>{fmt(sorties.reduce((a: number, e: any) => a + (e.Prix_TotalS || 0), 0))} F CFA</td>
+                            <td>{fmt(stocks.reduce((a: number, s: any) => a + (s.QteEnStock || 0), 0))}</td>
+                            <td></td>
+                            <td>{fmt(stocks.reduce((a: number, s: any) => a + (s.QteEnStock || 0) * (s.PrixVente || 0), 0))} F CFA</td>
+                        </tr>
+                    </tfoot>
+                </Table>
+            );
+        }
+
+        // ===== TABLEAU DE BORD DU STOCK =====
+        if (type === "tableau_bord") {
+            return (
+                <Table bordered size="sm" className="align-middle" style={{ fontSize: 10 }}>
+                    <thead>
+                        <tr className="text-center" style={{ background: "#d0d0d0" }}>
+                            <th rowSpan={2} className="align-middle">Référence</th>
+                            <th rowSpan={2} className="align-middle">Désignation</th>
+                            <th colSpan={3}>Stock initial</th>
+                            <th colSpan={3}>Entrée de marchandise</th>
+                            <th colSpan={3}>Sortie de marchandises</th>
+                            <th colSpan={4}>Stock Final</th>
+                            <th rowSpan={2} className="align-middle">Marge</th>
+                        </tr>
+                        <tr className="text-center" style={{ fontSize: 9, background: "#e0e0e0" }}>
+                            <th>Qté initiale</th><th>Prix stock</th><th>Valeur</th>
+                            <th>Qté Achetée</th><th>Prix d'achat</th><th>Montant</th>
+                            <th>Qté Sortie</th><th>Prix de Revient</th><th>Total vendu</th>
+                            <th>Qté Restante</th><th>Valeur stock</th><th>Qté Vendue</th><th>Montant vendu</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {stocks.map((s: any, i: number) => {
+                            const matchMed = (e: any) => (e.IDMEDICAMENT && e.IDMEDICAMENT.toString() === s.IDMEDICAMENT?.toString()) || (e.Reference && e.Reference === s.Reference);
+                            const entsM    = entrees.filter(matchMed);
+                            const sorsM    = sorties.filter(matchMed);
+                            const qteAchet = entsM.reduce((a: number, e: any) => a + (e.Quantite || 0), 0);
+                            const montAcht = entsM.reduce((a: number, e: any) => a + (e.MontantTTCE || e.PRIXTHT || 0), 0);
+                            const prixAcht = qteAchet > 0 ? Math.round(montAcht / qteAchet) : 0;
+                            const qteSor   = sorsM.reduce((a: number, e: any) => a + (e.Quantite || 0), 0);
+                            const totalVdu = sorsM.reduce((a: number, e: any) => a + (e.Prix_TotalS || 0), 0);
+                            const prixRev  = qteSor > 0 ? Math.round(totalVdu / qteSor) : 0;
+                            const qteInit  = (s.QteEnStock || 0) + qteSor - qteAchet;
+                            const valInit  = qteInit * (s.PrixAchat || 0);
+                            const qteFin   = s.QteEnStock || 0;
+                            const valFin   = qteFin * (s.PrixAchat || 0);
+                            const montVdu  = qteSor * (s.PrixVente || 0);
+                            const marge    = montVdu - totalVdu;
+                            return (
+                                <tr key={i} className="text-center">
+                                    <td className="text-start">{s.Reference || "—"}</td>
+                                    <td className="text-start">{s.Medicament || "—"}</td>
+                                    <td style={{ color: qteInit > 0 ? "blue" : undefined }}>{qteInit}</td>
+                                    <td>{fmt(s.PrixAchat)}</td>
+                                    <td>{fmt(valInit)}</td>
+                                    <td>{qteAchet}</td>
+                                    <td>{fmt(prixAcht)}</td>
+                                    <td>{fmt(montAcht)}</td>
+                                    <td style={{ color: qteSor > 0 ? "blue" : undefined }}>{qteSor}</td>
+                                    <td>{fmt(prixRev)}</td>
+                                    <td>{fmt(totalVdu)}</td>
+                                    <td className="fw-bold">{qteFin}</td>
+                                    <td>{fmt(valFin)}</td>
+                                    <td>{qteSor}</td>
+                                    <td>{fmt(montVdu)}</td>
+                                    <td className={marge > 0 ? "text-success fw-bold" : marge < 0 ? "text-danger fw-bold" : ""}>{fmt(marge)}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                    <tfoot>
+                        <tr className="fw-bold text-center" style={{ background: "#e9ecef" }}>
+                            <td colSpan={2} className="text-end">TOTAL</td>
+                            <td colSpan={3}></td>
+                            <td>{fmt(entrees.reduce((a: number, e: any) => a + (e.Quantite || 0), 0))}</td>
+                            <td></td>
+                            <td>{fmt(entrees.reduce((a: number, e: any) => a + (e.MontantTTCE || e.PRIXTHT || 0), 0))}</td>
+                            <td>{fmt(sorties.reduce((a: number, e: any) => a + (e.Quantite || 0), 0))}</td>
+                            <td></td>
+                            <td>{fmt(sorties.reduce((a: number, e: any) => a + (e.Prix_TotalS || 0), 0))}</td>
+                            <td>{fmt(stocks.reduce((a: number, s: any) => a + (s.QteEnStock || 0), 0))}</td>
+                            <td>{fmt(stocks.reduce((a: number, s: any) => a + (s.QteEnStock || 0) * (s.PrixAchat || 0), 0))}</td>
+                            <td colSpan={2}></td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </Table>
+            );
+        }
+
+        // ===== INDICATEUR DE QUANTITÉ =====
+        if (type === "indicateur_quantite") {
+            return (
+                <Table bordered size="sm" className="align-middle text-center" style={{ fontSize: 11 }}>
+                    <thead className="table-dark">
+                        <tr>
+                            <th className="text-start">Référence</th>
+                            <th className="text-start">Article</th>
+                            <th>Qté Initiale</th>
+                            <th>Qté Appro</th>
+                            <th>Nb Appro</th>
+                            <th>Qté vendue</th>
+                            <th>Qté Sortie</th>
+                            <th>Qté Disponible</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {stocks.map((s: any, i: number) => {
+                            const matchMed = (e: any) => (e.IDMEDICAMENT && e.IDMEDICAMENT.toString() === s.IDMEDICAMENT?.toString()) || (e.Reference && e.Reference === s.Reference);
+                            const entsM    = entrees.filter(matchMed);
+                            const sorsM    = sorties.filter(matchMed);
+                            const qteAppro = entsM.reduce((a: number, e: any) => a + (e.Quantite || 0), 0);
+                            const nbAppro  = entsM.length;
+                            // Sorties de type vente vs manuelles
+                            const sorsVente  = sorsM.filter((e: any) => !e.Motif || e.Motif === "Vente" || e.TypeMouvement === "Vente");
+                            const sorsManu   = sorsM.filter((e: any) => e.Motif && e.Motif !== "Vente" && e.TypeMouvement !== "Vente");
+                            const qteVendue  = sorsVente.reduce((a: number, e: any) => a + (e.Quantite || 0), 0);
+                            const qteSortie  = sorsManu.reduce((a: number, e: any) => a + (e.Quantite || 0), 0);
+                            const qteInit    = (s.QteEnStock || 0) + sorsM.reduce((a: number, e: any) => a + (e.Quantite || 0), 0) - qteAppro;
+                            const qteDispo   = s.QteEnStock || 0;
+                            const rowStyle: React.CSSProperties = qteDispo <= 0 ? { background: "#ffe6e6" } : (s.QteMinimum > 0 && qteDispo < s.QteMinimum) ? { background: "#fff3cd" } : {};
+                            return (
+                                <tr key={i} style={rowStyle}>
+                                    <td className="text-start">{s.Reference || "—"}</td>
+                                    <td className="text-start">{s.Medicament || "—"}</td>
+                                    <td>{qteInit}</td>
+                                    <td style={{ color: qteAppro > 0 ? "green" : undefined }}>{qteAppro}</td>
+                                    <td>{nbAppro}</td>
+                                    <td style={{ color: qteVendue > 0 ? "blue" : undefined }}>{qteVendue}</td>
+                                    <td style={{ color: qteSortie < 0 ? "red" : undefined }}>{qteSortie > 0 ? `-${qteSortie}` : qteSortie}</td>
+                                    <td className="fw-bold" style={{ color: qteDispo <= 0 ? "red" : qteDispo < (s.QteMinimum || 0) ? "orange" : "green" }}>{qteDispo}</td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                    <tfoot>
+                        <tr className="fw-bold" style={{ background: "#e9ecef" }}>
+                            <td colSpan={2} className="text-end">TOTAL</td>
+                            <td></td>
+                            <td>{fmt(entrees.reduce((a: number, e: any) => a + (e.Quantite || 0), 0))}</td>
+                            <td>{entrees.length}</td>
+                            <td></td>
+                            <td></td>
+                            <td>{fmt(stocks.reduce((a: number, s: any) => a + (s.QteEnStock || 0), 0))}</td>
+                        </tr>
+                    </tfoot>
+                </Table>
+            );
+        }
+
         return null;
     };
 
@@ -258,33 +489,44 @@ export default function Impression() {
                     )}
                     <Col md="auto" className="ms-auto d-flex gap-2">
                         <Button size="sm" variant="outline-secondary" onClick={charger}><FaSync /></Button>
-                        <Button size="sm" variant="primary" onClick={imprimer} disabled={!data.length || loading}>
-                            <FaPrint className="me-1" /> Imprimer
+                        <Button size="sm" variant="outline-primary" onClick={imprimerSansEntete} disabled={!data.length || loading}>
+                            <FaPrint className="me-1" /> Sans entête
+                        </Button>
+                        <Button size="sm" variant="primary" onClick={imprimerAvecEntete} disabled={!data.length || loading}>
+                            <FaPrint className="me-1" /> Avec entête
                         </Button>
                     </Col>
                 </Row>
             </div>
 
-            {/* Zone imprimable */}
-            <div ref={printRef}>
+            {/* Zone imprimable — styles alignés avec la fenêtre d'impression */}
+            <div ref={printRef} style={{ fontFamily: "Arial, sans-serif", fontSize: 12, color: "#222" }}>
                 {/* En-tête rapport */}
-                <div className="d-flex justify-content-between align-items-start mb-3">
+                <div className="d-flex justify-content-between align-items-start mb-3 pb-2" style={{ borderBottom: "2px solid #1e3a5f" }}>
                     <div>
-                        <h5 className="fw-bold mb-0 d-flex align-items-center gap-2">
-                            <FaFileMedical className="text-primary" /> {labelRapport}
-                        </h5>
-                        <div className="text-muted small">
+                        <div className="fw-bold" style={{ fontSize: 16, color: "#1e3a5f" }}>
+                            <FaFileMedical className="me-2" />{labelRapport}
+                        </div>
+                        <div style={{ fontSize: 11, color: "#666", marginTop: 2 }}>
                             Service Pharmacie
                             {(dateDebut || dateFin) && (
                                 <span> &mdash; Période : {dateDebut ? formatDate(dateDebut) : "début"} → {dateFin ? formatDate(dateFin) : "aujourd'hui"}</span>
                             )}
                         </div>
-                        <div className="text-muted small">Généré le {formatDate(new Date())} &mdash; {data.length} enregistrement(s)</div>
+                        <div style={{ fontSize: 11, color: "#666" }}>Généré le {formatDate(new Date())} &mdash; {data.length} enregistrement(s)</div>
                     </div>
                 </div>
 
                 {renderTable()}
             </div>
+
+            {/* Styles aperçu identiques à l'impression */}
+            <style>{`
+                .table th { background: #1e3a5f !important; color: #fff !important; font-size: 11px; padding: 6px 8px; }
+                .table td { font-size: 11px; padding: 5px 8px; border-bottom: 1px solid #ddd; }
+                .table tbody tr:nth-child(even) { background: #f5f7fa; }
+                .table tfoot td { font-weight: bold; background: #e9ecef; }
+            `}</style>
         </div>
     );
 }

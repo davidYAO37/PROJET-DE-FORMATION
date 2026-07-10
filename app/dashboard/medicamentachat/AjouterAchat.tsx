@@ -4,6 +4,13 @@ import React, { useState, useEffect, useRef } from "react";
 import { Modal, Button, Form, Row, Col, Table, Alert } from "react-bootstrap";
 import { Pharmacie } from "@/types/pharmacie";
 
+interface Fournisseur {
+  _id?: string;
+  Nom?: string;
+  Telephone?: string;
+  Ville?: string;
+}
+
 // Type pour une ligne d'achat
 interface StockInfo {
   QteEnStock: number;
@@ -213,6 +220,9 @@ export default function AjouterAchat({
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [observation, setObservation] = useState("");
+  const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
+  const [selectedFournisseur, setSelectedFournisseur] = useState("");
+  const [numeroFacture, setNumeroFacture] = useState("");
   
   // États pour les totaux (selon la logique WinDev)
   const [totalHT, setTotalHT] = useState(0);
@@ -350,6 +360,7 @@ export default function AjouterAchat({
       const dateDuJour = new Date().toISOString();
 
       // 1. AJOUTER UNE NOUVELLE COMMANDE (APPROVISIONNEMENT)
+      const fournisseur = fournisseurs.find(f => f._id === selectedFournisseur);
       const approvisionnement = {
         DateAppro: dateDuJour,
         PrixHT: totalHT,
@@ -358,6 +369,9 @@ export default function AjouterAchat({
         SaisiLe: dateDuJour,
         SaisiPar: utilisateur,
         Observations: observation,
+        IDFournisseur: selectedFournisseur || null,
+        NomFournisseur: fournisseur?.Nom || "",
+        NumeroFacture: numeroFacture,
       };
 
       // Créer l'approvisionnement
@@ -485,6 +499,14 @@ export default function AjouterAchat({
     }
   };
 
+  // Charger les fournisseurs
+  useEffect(() => {
+    fetch("/api/fournisseur?actif=true")
+      .then(r => r.json())
+      .then(d => setFournisseurs(Array.isArray(d) ? d : []))
+      .catch(console.error);
+  }, []);
+
   // Réinitialiser le formulaire à la fermeture
   useEffect(() => {
     if (!show) {
@@ -494,23 +516,51 @@ export default function AjouterAchat({
       setTotalHT(0);
       setTotalTVA(0);
       setMontantTTC(0);
+      setSelectedFournisseur("");
+      setNumeroFacture("");
     }
   }, [show]);
 
   return (
     <Modal show={show} onHide={onHide} size="xl">
       <Modal.Header closeButton>
-        <Modal.Title>Nouvel achat de médicaments</Modal.Title>
+        <Modal.Title>Nouvel approvisionnement</Modal.Title>
       </Modal.Header>
       <Form onSubmit={handleSubmit}>
         <Modal.Body>
-          <Row className="mb-2">
+          {/* Fournisseur + N° Facture */}
+          <Row className="mb-3 g-2 align-items-end">
+            <Col md={5}>
+              <Form.Group>
+                <Form.Label className="fw-semibold small mb-1">Fournisseur</Form.Label>
+                <Form.Select
+                  size="sm"
+                  value={selectedFournisseur}
+                  onChange={e => setSelectedFournisseur(e.target.value)}
+                >
+                  <option value="">— Sélectionner un fournisseur —</option>
+                  {fournisseurs.map(f => (
+                    <option key={f._id} value={f._id}>{f.Nom}{f.Ville ? ` — ${f.Ville}` : ""}</option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label className="fw-semibold small mb-1">N° Facture fournisseur</Form.Label>
+                <Form.Control
+                  size="sm"
+                  placeholder="Ex: FAC-2025-001"
+                  value={numeroFacture}
+                  onChange={e => setNumeroFacture(e.target.value)}
+                />
+              </Form.Group>
+            </Col>
             <Col className="text-end">
               <Button
                 variant="primary"
                 onClick={ajouterLigne}
                 disabled={loading}
-                className="mt-2"
               >
                 + Ajouter une ligne
               </Button>

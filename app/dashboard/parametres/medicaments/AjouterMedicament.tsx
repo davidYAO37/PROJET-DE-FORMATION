@@ -18,6 +18,7 @@ type Props = {
         Designation: "",
         PrixAchat: 0,
         PrixVente: 0,
+        TypeArticle: "PHARMACIE",
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -41,7 +42,7 @@ type Props = {
             if (!res.ok) throw new Error("Erreur lors de l'ajout");
             const data = await res.json();
             onAdd(data);
-            setForm({ Designation: "", Reference: "", PrixAchat: 0, PrixVente: 0 });
+            setForm({ Designation: "", Reference: "", PrixAchat: 0, PrixVente: 0, TypeArticle: "PHARMACIE" });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -78,6 +79,15 @@ type Props = {
                             <Form.Group>
                                 <Form.Label>Prix de vente</Form.Label>
                                 <Form.Control name="PrixVente" type="number" value={form.PrixVente} onChange={handleChange} />
+                            </Form.Group>
+                        </Col>
+                        <Col md={4}>
+                            <Form.Group>
+                                <Form.Label>Type</Form.Label>
+                                <Form.Select name="TypeArticle" value={form.TypeArticle} onChange={handleChange}>
+                                    <option value="PHARMACIE">Pharmacie</option>
+                                    <option value="LABORATOIRE">Laboratoire</option>
+                                </Form.Select>
                             </Form.Group>
                         </Col>
                     </Row>

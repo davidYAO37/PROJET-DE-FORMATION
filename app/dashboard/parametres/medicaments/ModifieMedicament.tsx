@@ -16,7 +16,7 @@ export default function ModifierMedicament({ show, onHide, Medicament, onSave }:
         Designation: "",
         PrixAchat: 0,
         PrixVente: 0,
-       
+        TypeArticle: "PHARMACIE",
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -29,7 +29,8 @@ export default function ModifierMedicament({ show, onHide, Medicament, onSave }:
                 Reference: Medicament.Reference || "",
                 Designation: Medicament.Designation || "",
                 PrixAchat: Medicament.PrixAchat || 0,
-                PrixVente: Medicament.PrixVente || 0,                
+                PrixVente: Medicament.PrixVente || 0,
+                TypeArticle: Medicament.TypeArticle || "PHARMACIE",
             });
         }
     }, [Medicament]);
@@ -42,6 +43,7 @@ export default function ModifierMedicament({ show, onHide, Medicament, onSave }:
                 Designation: "",
                 PrixAchat: 0,
                 PrixVente: 0,
+                TypeArticle: "PHARMACIE",
             });
             setError("");
         }
@@ -130,10 +132,18 @@ export default function ModifierMedicament({ show, onHide, Medicament, onSave }:
                                     type="number"
                                     value={form.PrixVente}
                                     onChange={handleChange}
-                                    
                                 />
                             </Form.Group>
-                        </Col>          
+                        </Col>
+                        <Col md={4}>
+                            <Form.Group>
+                                <Form.Label>Type</Form.Label>
+                                <Form.Select name="TypeArticle" value={form.TypeArticle} onChange={handleChange}>
+                                    <option value="PHARMACIE">Pharmacie</option>
+                                    <option value="LABORATOIRE">Laboratoire</option>
+                                </Form.Select>
+                            </Form.Group>
+                        </Col>
                     </Row>
                                      
                 </Modal.Body>
