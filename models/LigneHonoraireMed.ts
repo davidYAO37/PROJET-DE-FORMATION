@@ -3,7 +3,7 @@ import mongoose, { Model, Schema, Types } from "mongoose";
 export interface ILigneHonoraireMed extends Document {
     legacyId?: number;
     DatePres?: Date;
-    IdPres?: number;
+    IdPres?: string | number;
     PrestationMed?: string;
     Montantpres?: number;
     Medecin?: Types.ObjectId | null;
@@ -22,7 +22,7 @@ export interface ILigneHonoraireMed extends Document {
 const LigneHonoraireMedSchema = new Schema<ILigneHonoraireMed>({
     legacyId: { type: Number },
     DatePres: { type: Date },
-    IdPres: { type: Number },
+    IdPres: { type: Schema.Types.Mixed },
     PrestationMed: { type: String, maxlength: 50 },
     Montantpres: { type: Number },
     Medecin: { type: Schema.Types.ObjectId, ref: 'Medecin' },
@@ -34,4 +34,4 @@ const LigneHonoraireMedSchema = new Schema<ILigneHonoraireMed>({
     Patient: { type: String, maxlength: 60 },
     entrepriseId: { type: String },
 }, { timestamps: true });
-export const LigneHonoraireMed: Model<ILigneHonoraireMed> = mongoose.models.LigneHonoraireMedModel || mongoose.model<ILigneHonoraireMed>("LigneHonoraireMed", LigneHonoraireMedSchema);
+export const LigneHonoraireMed: Model<ILigneHonoraireMed> = mongoose.models.LigneHonoraireMed || mongoose.model<ILigneHonoraireMed>("LigneHonoraireMed", LigneHonoraireMedSchema);

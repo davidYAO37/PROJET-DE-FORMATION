@@ -1,9 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db/mongoConnect';
-import { HonraireMed } from '@/models/HonoraireMed';
+import { HonoraireMed } from '@/models/HonoraireMed';
 import { HonorairePaye } from '@/models/HonorairePaye';
 import { LigneHonoraireMed } from '@/models/LigneHonoraireMed';
 import { Medecin } from '@/models/medecin';
+import mongoose from 'mongoose';
 
 export async function GET(request: NextRequest) {
   try {
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     const filtreMedecin = medecinId ? { Medecin: medecinId } : {};
 
-    const honoraires = await HonraireMed.find({
+    const honoraires = await HonoraireMed.find({
       ...filtreDate,
       ...filtreMedecin,
       ...filtreEntreprise,
@@ -103,38 +104,66 @@ export async function POST(request: NextRequest) {
 
     if (action === 'payer') {
       const { honoraireId, montant, modePaiement, banque, numeroCheque, payePar, entrepriseId } = body;
-      if (!honoraireId || !montant) {
-        return NextResponse.json({ success: false, message: 'Données manquantes' }, { status: 400 });
-      }
-      const honoraire = await HonraireMed.findById(honoraireId);
-      if (!honoraire) {
-        return NextResponse.json({ success: false, message: 'Honoraire introuvable' }, { status: 404 });
+      if (!honoraireId || typeof montant !== 'number' || montant <= 0) {
+        return NextResponse.json({ success: false, message: 'Données manquantes ou montant invalide' }, { status: 400 });
       }
 
-      const paiement = new HonorairePaye({
-        Date: new Date(),
-        Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-        MontantPayé: montant,
-        Restapayer: Math.max(0, (honoraire.Restapayer || honoraire.Totalnetapayer || 0) - montant),
-        PayéPar: payePar || '',
-        Recupar: payePar || '',
-        Medecin: honoraire.Medecin,
-        HonoraireMed: honoraireId,
-        BanqueC: banque || '',
-        NCheque: numeroCheque || '',
-        Modepaiement: modePaiement || 'ESPECE',
-        entrepriseId: entrepriseId || honoraire.entrepriseId || '',
-      });
+      const session = await mongoose.startSession();
+      let paiement: any = null;
 
-      await paiement.save();
+      try {
+        await session.withTransaction(async () => {
+          const honoraire = await HonoraireMed.findById(honoraireId).session(session);
+          if (!honoraire) {
+            throw new Error('Honoraire introuvable');
+          }
 
-      // Mettre à jour le reste à payer sur l'honoraire
-      const nouveauReste = Math.max(0, (honoraire.Restapayer || honoraire.Totalnetapayer || 0) - montant);
-      const nouveauPaye = (honoraire.MontantPayé || 0) + montant;
-      await HonraireMed.findByIdAndUpdate(honoraireId, {
-        MontantPayé: nouveauPaye,
-        Restapayer: nouveauReste,
-      });
+          const resteActuel = honoraire.Restapayer ?? honoraire.Totalnetapayer ?? 0;
+          if (montant > resteActuel) {
+            throw new Error('Le montant payé dépasse le reste à payer');
+          }
+
+          const nouveauReste = Math.max(0, resteActuel - montant);
+          const nouveauPaye = (honoraire.MontantPayé || 0) + montant;
+
+          paiement = new HonorairePaye({
+            Date: new Date(),
+            Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            MontantJour: honoraire.MontantJour || 0,
+            MontantPayé: montant,
+            Restapayer: nouveauReste,
+            PayéPar: payePar || '',
+            Recupar: payePar || '',
+            Medecin: honoraire.Medecin,
+            HonoraireMed: honoraireId,
+            BanqueC: banque || '',
+            NCheque: numeroCheque || '',
+            Modepaiement: modePaiement || 'ESPECE',
+            entrepriseId: entrepriseId || honoraire.entrepriseId || '',
+          });
+
+          await paiement.save({ session });
+
+          await HonoraireMed.findByIdAndUpdate(
+            honoraireId,
+            { MontantPayé: nouveauPaye, Restapayer: nouveauReste },
+            { session }
+          );
+        });
+      } catch (error: any) {
+        if (error.message === 'Honoraire introuvable') {
+          await session.endSession();
+          return NextResponse.json({ success: false, message: error.message }, { status: 404 });
+        }
+        if (error.message === 'Le montant payé dépasse le reste à payer') {
+          await session.endSession();
+          return NextResponse.json({ success: false, message: error.message }, { status: 400 });
+        }
+        await session.endSession();
+        throw error;
+      }
+
+      await session.endSession();
 
       return NextResponse.json({ success: true, message: 'Paiement enregistré', data: paiement });
     }

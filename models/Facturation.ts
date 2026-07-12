@@ -14,7 +14,7 @@ export interface IFacturation extends Omit<Document, '_id'> {
     TotaleTaxe?: number;//----
     MontantRecu?: number;
     reduction?: number;
-    // tauxreduction?: number; a retirer
+    tauxreduction?: number;
     MotifRemise?: string;
     Restapayer?: number;
     TotalapayerPatient?: number;
@@ -114,7 +114,7 @@ const FacturationSchema = new Schema<IFacturation>(
         TotaleTaxe: { type: Number },
         MontantRecu: { type: Number },
         reduction: { type: Number },
-        // tauxreduction: { type: Number },
+        tauxreduction: { type: Number },
         MotifRemise: { type: String, maxlength: 100 },
         Restapayer: { type: Number },
         TotalapayerPatient: { type: Number },

@@ -1,9 +1,9 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
-import { Card, Row, Col, Button, Form, Table, Badge, Spinner, Alert } from 'react-bootstrap';
+import { Card, Row, Col, Button, Form, Table, Badge, Spinner, Alert, Tabs, Tab } from 'react-bootstrap';
 import FicheCaisseModal from '../components/FicheCaisseModal';
 import { useEntreprise } from '@/hooks/useEntreprise';
-import { generatePrintHeader, generatePrintFooter, createPrintWindow } from '@/utils/printRecu';
+import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from '@/utils/printRecu';
 
 interface ICaisseDoc {
   _id: string;
@@ -144,6 +144,7 @@ function printBon(doc: ICaisseDoc, entreprise: any) {
   }, 400);
 }
 
+
 export default function CaissePage() {
   const { entreprise } = useEntreprise();
   const [entrepriseId, setEntrepriseId] = useState('');
@@ -157,6 +158,10 @@ export default function CaissePage() {
   const [recherche, setRecherche] = useState('');
   const [showFiche, setShowFiche] = useState(false);
   const [caisseIdEdition, setCaisseIdEdition] = useState<string | null>(null);
+  const [onglet, setOnglet] = useState('caisse');
+  const [facturations, setFacturations] = useState<any[]>([]);
+  const [loadingFacturations, setLoadingFacturations] = useState(false);
+  const [recherchePrestations, setRecherchePrestations] = useState('');
 
   useEffect(() => {
     setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
@@ -164,17 +169,16 @@ export default function CaissePage() {
   }, []);
 
   const charger = useCallback(async () => {
-    if (!entrepriseId) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ entrepriseId, dateDebut, dateFin });
+      const params = new URLSearchParams({ dateDebut, dateFin });
       if (filtreType) params.set('typeC', filtreType);
       const res = await fetch(`/api/caisse?${params}`);
       if (res.ok) { const json = await res.json(); setDocs(json.data || []); }
     } finally { setLoading(false); }
-  }, [entrepriseId, dateDebut, dateFin, filtreType]);
+  }, [dateDebut, dateFin, filtreType]);
 
-  useEffect(() => { if (entrepriseId) charger(); }, [charger, entrepriseId]);
+  useEffect(() => { charger(); }, [charger]);
 
   const handleSupprimer = async (doc: ICaisseDoc) => {
     if (doc.AjouterParC !== utilisateur) { setMessage({ type: 'danger', text: 'Vous ne pouvez supprimer que vos propres enregistrements.' }); return; }
@@ -184,6 +188,28 @@ export default function CaissePage() {
     if (json.success) { setMessage({ type: 'success', text: 'Supprimé.' }); charger(); }
     else setMessage({ type: 'danger', text: json.message || 'Erreur.' });
   };
+
+  const chargerFacturations = useCallback(async () => {
+    setLoadingFacturations(true);
+    try {
+      const params = new URLSearchParams({ dateDebut, dateFin });
+      const res = await fetch(`/api/facturations/mouvements?${params}`);
+      if (res.ok) {
+        const json = await res.json();
+        setFacturations(json.data || []);
+      }
+    } catch {
+      setFacturations([]);
+    } finally {
+      setLoadingFacturations(false);
+    }
+  }, [dateDebut, dateFin]);
+
+  useEffect(() => {
+    if (onglet === 'prestations') {
+      chargerFacturations();
+    }
+  }, [onglet, chargerFacturations]);
 
   const docsFiltres = docs.filter(d =>
     !recherche || (d.Operation || '').toLowerCase().includes(recherche.toLowerCase()) ||
@@ -196,7 +222,172 @@ export default function CaissePage() {
   const totalSorties = docsFiltres.filter(d => (d.typeC || '').includes('Sortie')).reduce((s, d) => s + (d.MOntantC || 0), 0);
   const solde = totalEntrees - totalSorties;
 
+  // Filtrage des prestations
+  const facturationsFiltrees = facturations.filter(f =>
+    !recherchePrestations || 
+    (f.patientNom || '').toLowerCase().includes(recherchePrestations.toLowerCase()) ||
+    (f.typeActe || '').toLowerCase().includes(recherchePrestations.toLowerCase()) ||
+    (f.modePaiement || '').toLowerCase().includes(recherchePrestations.toLowerCase()) ||
+    (f.numero || '').toLowerCase().includes(recherchePrestations.toLowerCase()) ||
+    (f.source || '').toLowerCase().includes(recherchePrestations.toLowerCase())
+  );
+
+  // Totaux pour les facturations et encaissements
+  const totalFactures = facturationsFiltrees.reduce((s, f) => s + (f.montantTotal || 0), 0);
+  const totalEncaisses = facturationsFiltrees.reduce((s, f) => s + (f.montantPaye || 0), 0);
+  const totalRestant = facturationsFiltrees.reduce((s, f) => s + (f.resteAPayer || 0), 0);
+
   const periode = `${dateDebut.split('-').reverse().join('/')} — ${dateFin.split('-').reverse().join('/')}`;
+
+  const imprimerPrestations = () => {
+    const now = new Date();
+    const printedBy = localStorage.getItem('nom_utilisateur') || '';
+    const printDateTime = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR');
+
+    const titreRapport = 'ETAT DES MOUVEMENTS DE PRESTATIONS';
+    
+    // Calculer les totaux
+    const totalFactures = facturationsFiltrees.reduce((s, f) => s + (f.montantTotal || 0), 0);
+    const totalEncaisses = facturationsFiltrees.reduce((s, f) => s + (f.montantPaye || 0), 0);
+    const totalRestant = facturationsFiltrees.reduce((s, f) => s + (f.resteAPayer || 0), 0);
+
+    // Interface pour les prestations
+    interface Prestation {
+      _id: string;
+      type: string;
+      dateFacture: string;
+      patientNom: string;
+      typeActe: string;
+      montantTotal: number;
+      montantPaye: number;
+      resteAPayer: number;
+      modePaiement: string;
+      statut: string;
+      source: string;
+    }
+
+    // Grouper les prestations par mode de paiement
+    const prestationsParMode = facturationsFiltrees.reduce((acc, f) => {
+      const mode = f.modePaiement || 'Non spécifié';
+      if (!acc[mode]) {
+        acc[mode] = [];
+      }
+      acc[mode].push(f);
+      return acc;
+    }, {} as Record<string, Prestation[]>);
+
+    // Calculer les sous-totaux par mode de paiement
+    const sousTotauxParMode: {
+      mode: string;
+      prestations: Prestation[];
+      totalFacture: number;
+      totalEncaisse: number;
+      totalRestant: number;
+    }[] = [];
+
+    for (const [mode, prestations] of Object.entries(prestationsParMode)) {
+      const typedPrestations = prestations as Prestation[];
+      const totalFacture = typedPrestations.reduce((s, f) => s + (f.montantTotal || 0), 0);
+      const totalEncaisse = typedPrestations.reduce((s, f) => s + (f.montantPaye || 0), 0);
+      const totalRestant = typedPrestations.reduce((s, f) => s + (f.resteAPayer || 0), 0);
+      sousTotauxParMode.push({ mode, prestations: typedPrestations, totalFacture, totalEncaisse, totalRestant });
+    }
+
+    const rapportHTML = `
+      <div class="print-area">
+        <!-- Titre et informations -->
+        <div class="sub-header">
+          <h2>${titreRapport}</h2>
+          <div class="info"><strong>Période :</strong> ${dateDebut.split('-').reverse().join('/')} au ${dateFin.split('-').reverse().join('/')}</div>
+          <div class="info"><strong>Imprimé par :</strong> ${printedBy} le ${printDateTime}</div>
+        </div>
+
+        <!-- Tableau des prestations par mode de paiement -->
+        ${sousTotauxParMode.map(({ mode, prestations, totalFacture, totalEncaisse, totalRestant }, indexMode) => `
+          <!-- Section pour ${mode} -->
+          <div style="margin-bottom:25px;">
+            <h3 style="background:#6a1b9a;color:#fff;padding:8px 12px;margin:0 0 10px 0;font-size:14px;font-weight:bold;border-radius:4px;">
+              ${mode} (${prestations.length} prestation(s))
+            </h3>
+            
+            <table style="width:100%;border-collapse:collapse;margin-bottom:10px;font-size:10px;">
+              <thead>
+                <tr style="background:#f0f0f0;font-weight:bold;">
+                  <th style="border:1px solid #000;padding:5px;text-align:left;">Date</th>
+                  <th style="border:1px solid #000;padding:5px;text-align:left;">Patient</th>
+                  <th style="border:1px solid #000;padding:5px;text-align:left;">Type Acte</th>
+                  <th style="border:1px solid #000;padding:5px;text-align:right;">Total Facturé</th>
+                  <th style="border:1px solid #000;padding:5px;text-align:right;">Montant Payé</th>
+                  <th style="border:1px solid #000;padding:5px;text-align:right;">Reste à Payer</th>
+                  <th style="border:1px solid #000;padding:5px;text-align:left;">Statut</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${prestations.map((f, i) => {
+                  const estSoldé = (f.resteAPayer || 0) <= 0;
+                  const estPartiel = (f.montantPaye || 0) > 0 && !estSoldé;
+                  const statutText = estSoldé ? 'Soldé' : estPartiel ? 'Partiel' : 'Impayé';
+                  const statutClass = estSoldé ? 'bg-success' : estPartiel ? 'bg-warning' : 'bg-danger';
+                  
+                  return `
+                    <tr style="${i % 2 === 0 ? 'background:#ffffff;' : 'background:#f9f9f9;'}">
+                      <td style="border:1px solid #000;padding:5px;">${f.dateFacture ? new Date(f.dateFacture).toLocaleDateString('fr-FR') : '-'}</td>
+                      <td style="border:1px solid #000;padding:5px;font-weight:bold;">${f.patientNom || '-'}</td>
+                      <td style="border:1px solid #000;padding:5px;">${f.typeActe || '-'}</td>
+                      <td style="border:1px solid #000;padding:5px;text-align:right;">${fmt(f.montantTotal || 0)}</td>
+                      <td style="border:1px solid #000;padding:5px;text-align:right;color:#2e7d32;">${fmt(f.montantPaye || 0)}</td>
+                      <td style="border:1px solid #000;padding:5px;text-align:right;color:${(f.resteAPayer || 0) > 0 ? '#b71c1c' : '#2e7d32'};">${fmt(f.resteAPayer || 0)}</td>
+                      <td style="border:1px solid #000;padding:5px;text-align:center;">
+                        <span class="badge ${statutClass}">${statutText}</span>
+                      </td>
+                    </tr>
+                  `;
+                }).join('')}
+                <!-- Ligne de sous-total pour ${mode} -->
+                <tr style="background:#6a1b9a;color:#fff;font-weight:bold;">
+                  <td colspan="3" style="border:1px solid #000;padding:5px;text-align:right;">SOUS-TOTAL ${mode.toUpperCase()} :</td>
+                  <td style="border:1px solid #000;padding:5px;text-align:right;">${fmt(totalFacture)}</td>
+                  <td style="border:1px solid #000;padding:5px;text-align:right;">${fmt(totalEncaisse)}</td>
+                  <td style="border:1px solid #000;padding:5px;text-align:right;">${fmt(totalRestant)}</td>
+                  <td colspan="2" style="border:1px solid #000;padding:5px;text-align:center;">${prestations.length} presta.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        `).join('')}
+
+        <!-- Total Général -->
+        <div style="border:3px solid #000;padding:12px;margin-top:20px;background:#fff;">
+          <h3 style="text-align:center;margin:0 0 15px 0;font-size:16px;font-weight:bold;color:#000;">TOTAL GÉNÉRAL</h3>
+          <table style="width:100%;border-collapse:collapse;">
+            <tr>
+              <td style="width:25%;text-align:right;padding:8px;font-weight:bold;color:#6a1b9a;font-size:12px;">Total Facturé Général :</td>
+              <td style="width:25%;text-align:right;padding:8px;font-weight:bold;color:#6a1b9a;font-size:12px;">${fmt(totalFactures)} F</td>
+              <td style="width:25%;text-align:right;padding:8px;font-weight:bold;color:#1b5e20;font-size:12px;">Total Encaissé Général :</td>
+              <td style="width:25%;text-align:right;padding:8px;font-weight:bold;color:#1b5e20;font-size:12px;">${fmt(totalEncaisses)} F</td>
+            </tr>
+            <tr>
+              <td colspan="2" style="text-align:right;padding:8px;font-weight:bold;color:${totalRestant > 0 ? '#b71c1c' : '#006064'};font-size:12px;">Reste à Payer Général :</td>
+              <td colspan="2" style="text-align:right;padding:8px;font-weight:bold;color:${totalRestant > 0 ? '#b71c1c' : '#006064'};font-size:12px;">${fmt(totalRestant)} F</td>
+            </tr>
+          </table>
+        </div>
+
+        <!-- Résumé -->
+        <div style="text-align:center;font-size:11px;color:#666;margin-top:20px;">
+          <p><strong>${facturationsFiltrees.length}</strong> prestation(s) trouvée(s) pour cette période</p>
+          <p><strong>${Object.keys(prestationsParMode).length}</strong> mode(s) de paiement différent(s)</p>
+          ${recherchePrestations ? `<p>Filtre appliqué : "${recherchePrestations}"</p>` : ''}
+        </div>
+      </div>
+    `;
+
+    // Utiliser le système printRecu pour gérer l'en-tête et le pied de page
+    const headerHTML = generatePrintHeader(entreprise);
+    const footerHTML = generatePrintFooter(entreprise);
+
+    createPrintWindow('Etat des Mouvements de Prestations', headerHTML, rapportHTML, footerHTML);
+  };
 
   return (
     <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '8px 10px' }}>
@@ -217,130 +408,275 @@ export default function CaissePage() {
       </div>
 
       {message && <Alert variant={message.type} dismissible onClose={() => setMessage(null)} className="py-2 mb-2" style={{ fontSize: '0.8rem' }}>{message.text}</Alert>}
+ {/* FILTRES COMMUNS */}
+          <Card className="mb-2" style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+            <Card.Body style={{ padding: '8px 14px' }}>
+              <Row className="g-2 align-items-end">
+                <Col xs="auto"><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Début</Form.Label><Form.Control type="date" size="sm" value={dateDebut} onChange={e => setDateDebut(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }} /></Col>
+                <Col xs="auto"><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Fin</Form.Label><Form.Control type="date" size="sm" value={dateFin} onChange={e => setDateFin(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }} /></Col>
+                <Col xs="auto" className="ms-auto d-flex gap-2">
+                  <Button onClick={onglet === 'caisse' ? charger : chargerFacturations} disabled={loading || loadingFacturations} style={{ background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', border: 'none', fontWeight: 700, fontSize: '0.78rem', padding: '5px 14px', borderRadius: 6 }}>
+                    {(loading || loadingFacturations) ? <><Spinner size="sm" animation="border" className="me-1" />…</> : <><i className="bi bi-search me-1"></i>Rechercher</>}
+                  </Button>
+                  <Button variant="outline-secondary" onClick={onglet === 'caisse' ? charger : chargerFacturations} disabled={loading || loadingFacturations} style={{ borderRadius: 6, fontSize: '0.78rem', padding: '5px 10px' }}><i className="bi bi-arrow-clockwise"></i></Button>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+      <Tabs activeKey={onglet} onSelect={(k) => setOnglet(k || 'caisse')} className="mb-2" style={{ background: 'transparent' }}>
+        <Tab eventKey="caisse" title={<><i className="bi bi-cash-register me-1"></i>Mouvements Caisse</>}>
+          {/* FILTRES CAISSE */}
+          <Card className="mb-2" style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+            <Card.Body style={{ padding: '8px 14px' }}>
+              <Row className="g-2 align-items-end">
+                <Col xs="auto">
+                  <Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Type</Form.Label>
+                  <Form.Select size="sm" value={filtreType} onChange={e => setFiltreType(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }}>
+                    <option value="">Tous</option>
+                    <option value="Entrée de caisse">Entrées</option>
+                    <option value="Sortie de caisse">Sorties</option>
+                  </Form.Select>
+                </Col>
+                <Col xs={12} md={4}>
+                  <Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Recherche</Form.Label>
+                  <Form.Control 
+                    type="text" 
+                    size="sm" 
+                    placeholder="Opération, motif, personne…" 
+                    value={recherche} 
+                    onChange={e => setRecherche(e.target.value)} 
+                    style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem' }} 
+                  />
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
 
-      {/* KPIs */}
-      <Row className="g-2 mb-2">
-        {[
-          { label: 'Total Entrées', value: totalEntrees, bg: 'linear-gradient(135deg,#1b5e20,#66bb6a)', icon: 'bi-arrow-down-circle-fill' },
-          { label: 'Total Sorties', value: totalSorties, bg: 'linear-gradient(135deg,#b71c1c,#ef9a9a)', icon: 'bi-arrow-up-circle-fill' },
-          { label: 'Solde Caisse',  value: solde, bg: solde >= 0 ? 'linear-gradient(135deg,#006064,#26c6da)' : 'linear-gradient(135deg,#880e4f,#f48fb1)', icon: 'bi-wallet2' },
-          { label: 'Nb opérations', value: docsFiltres.length, bg: 'linear-gradient(135deg,#1565c0,#42a5f5)', icon: 'bi-list-ol', isCount: true },
-        ].map((kpi, ki) => (
-          <Col key={ki} xs={6} md={3}>
-            <div style={{ background: kpi.bg, borderRadius: 8, padding: '8px 12px', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <div>
-                  <div style={{ fontSize: '0.65rem', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: 1 }}>{kpi.label}</div>
-                  <div style={{ fontSize: '0.95rem', fontWeight: 800, marginTop: 2 }}>
-                    {(kpi as any).isCount ? kpi.value : `${loading ? '…' : fmt(kpi.value)} F`}
+          {/* KPIs */}
+          <Row className="g-2 mb-2">
+            {[
+              { label: 'Total Entrées', value: totalEntrees, bg: 'linear-gradient(135deg,#1b5e20,#66bb6a)', icon: 'bi-arrow-down-circle-fill' },
+              { label: 'Total Sorties', value: totalSorties, bg: 'linear-gradient(135deg,#b71c1c,#ef9a9a)', icon: 'bi-arrow-up-circle-fill' },
+              { label: 'Solde Caisse',  value: solde, bg: solde >= 0 ? 'linear-gradient(135deg,#006064,#26c6da)' : 'linear-gradient(135deg,#880e4f,#f48fb1)', icon: 'bi-wallet2' },
+              { label: 'Nb opérations', value: docsFiltres.length, bg: 'linear-gradient(135deg,#1565c0,#42a5f5)', icon: 'bi-list-ol', isCount: true },
+            ].map((kpi, ki) => (
+              <Col key={ki} xs={6} md={3}>
+                <div style={{ background: kpi.bg, borderRadius: 8, padding: '8px 12px', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: 1 }}>{kpi.label}</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, marginTop: 2 }}>
+                        {(kpi as any).isCount ? kpi.value : `${loading ? '…' : fmt(kpi.value)} F`}
+                      </div>
+                    </div>
+                    <i className={`bi ${kpi.icon}`} style={{ fontSize: '1.2rem', opacity: 0.35 }}></i>
                   </div>
                 </div>
-                <i className={`bi ${kpi.icon}`} style={{ fontSize: '1.2rem', opacity: 0.35 }}></i>
+              </Col>
+            ))}
+          </Row>
+
+         
+
+          {/* TABLEAU */}
+          <Card style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+            <div style={{ background: 'linear-gradient(90deg,#1b5e20,#2e7d32)', color: '#fff', padding: '7px 14px', borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.78rem', letterSpacing: 1 }}><i className="bi bi-table me-2"></i>MOUVEMENTS DE CAISSE — {periode}</span>
+              {docsFiltres.length > 0 && <span style={{ fontSize: '0.72rem', opacity: 0.85 }}>{docsFiltres.length} ligne(s)</span>}
+            </div>
+            <Card.Body className="p-0">
+              <div style={{ overflowX: 'auto', maxHeight: '52vh', overflowY: 'auto' }}>
+                <Table bordered className="mb-0" style={{ fontSize: '0.73rem', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                      {['Date','Opération','Motif','Montant','Personne','Saisi par','Actions'].map((h, hi) => (
+                        <th key={hi} style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #b0bec5', textAlign: hi === 3 ? 'right' : hi === 6 ? 'center' : 'left' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {loading ? (
+                      <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#78909c' }}><Spinner animation="border" size="sm" className="me-2" />Chargement…</td></tr>
+                    ) : docsFiltres.length === 0 ? (
+                      <tr><td colSpan={7} style={{ textAlign: 'center', padding: '50px', color: '#90a4ae' }}>
+                        <i className="bi bi-inbox" style={{ fontSize: '2.5rem', display: 'block', marginBottom: 8 }}></i>Aucun enregistrement trouvé
+                      </td></tr>
+                    ) : docsFiltres.map((d, i) => {
+                      const isEntree = (d.typeC || '').includes('Entrée');
+                      const estMien = d.AjouterParC === utilisateur;
+                      return (
+                        <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f7f9fc', borderLeft: `3px solid ${isEntree ? '#2e7d32' : '#b71c1c'}` }}>
+                          <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>
+                            {d.dAteC ? new Date(d.dAteC).toLocaleDateString('fr-FR') : '-'}
+                            {d.HeureC && <small style={{ color: '#90a4ae', marginLeft: 4 }}>{d.HeureC}</small>}
+                          </td>
+                          <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>
+                            <Badge bg={isEntree ? 'success' : 'danger'} className="me-1" style={{ fontSize: '0.6rem' }}>{isEntree ? '↑' : '↓'}</Badge>
+                            <span style={{ fontWeight: 600 }}>{d.Operation}</span>
+                          </td>
+                          <td style={{ padding: '3px 8px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>{d.MOtif}</td>
+                          <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: isEntree ? '#2e7d32' : '#b71c1c', borderRight: '1px solid #e0e0e0' }}>
+                            {isEntree ? '+' : '-'}{fmt(d.MOntantC || 0)}
+                          </td>
+                          <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>{d.NomPrenoms || '-'}</td>
+                          <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0', color: estMien ? '#1565c0' : '#546e7a', fontWeight: estMien ? 700 : 400 }}>{d.AjouterParC}</td>
+                          <td style={{ padding: '3px 8px', textAlign: 'center' }}>
+                            <div style={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
+                              <Button size="sm" variant={estMien ? 'outline-primary' : 'outline-secondary'} style={{ padding: '2px 6px' }} title={estMien ? 'Modifier' : 'Non autorisé'}
+                                onClick={() => { if (!estMien) { setMessage({ type: 'danger', text: 'Vous ne pouvez modifier que vos propres enregistrements.' }); return; } setCaisseIdEdition(d._id); setShowFiche(true); }}>
+                                <i className="bi bi-pencil-fill" style={{ fontSize: '0.7rem' }}></i>
+                              </Button>
+                              <Button size="sm" variant="outline-dark" style={{ padding: '2px 6px' }} title="Imprimer" onClick={() => printBon(d, entreprise)}>
+                                <i className="bi bi-printer-fill" style={{ fontSize: '0.7rem' }}></i>
+                              </Button>
+                              <Button size="sm" variant={estMien ? 'outline-danger' : 'outline-secondary'} style={{ padding: '2px 6px' }} title={estMien ? 'Supprimer' : 'Non autorisé'} onClick={() => handleSupprimer(d)}>
+                                <i className="bi bi-trash-fill" style={{ fontSize: '0.7rem' }}></i>
+                              </Button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+            <div style={{ background: '#eceff1', borderRadius: '0 0 8px 8px', padding: '6px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '2px solid #cfd8dc' }}>
+              <span style={{ fontSize: '0.72rem', color: '#78909c' }}>{docsFiltres.length} enregistrement(s)</span>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#2e7d32', textTransform: 'uppercase' }}>Entrées</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#2e7d32' }}>{fmt(totalEntrees)} F</div></div>
+                <div style={{ width: 1, height: 28, background: '#b0bec5' }}></div>
+                <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#b71c1c', textTransform: 'uppercase' }}>Sorties</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#b71c1c' }}>{fmt(totalSorties)} F</div></div>
+                <div style={{ width: 1, height: 28, background: '#b0bec5' }}></div>
+                <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: solde >= 0 ? '#006064' : '#880e4f', textTransform: 'uppercase' }}>Solde</div><div style={{ fontSize: '1rem', fontWeight: 800, color: solde >= 0 ? '#006064' : '#880e4f' }}>{fmt(solde)} F</div></div>
               </div>
             </div>
-          </Col>
-        ))}
-      </Row>
+          </Card>
+        </Tab>
 
-      {/* FILTRES */}
-      <Card className="mb-2" style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
-        <Card.Body style={{ padding: '8px 14px' }}>
-          <Row className="g-2 align-items-end">
-            <Col xs="auto"><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Début</Form.Label><Form.Control type="date" size="sm" value={dateDebut} onChange={e => setDateDebut(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }} /></Col>
-            <Col xs="auto"><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Fin</Form.Label><Form.Control type="date" size="sm" value={dateFin} onChange={e => setDateFin(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }} /></Col>
-            <Col xs="auto">
-              <Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Type</Form.Label>
-              <Form.Select size="sm" value={filtreType} onChange={e => setFiltreType(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }}>
-                <option value="">Tous</option>
-                <option value="Entrée de caisse">Entrées</option>
-                <option value="Sortie de caisse">Sorties</option>
-              </Form.Select>
-            </Col>
-            <Col xs={12} md={3}><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Recherche</Form.Label><Form.Control type="text" size="sm" placeholder="Opération, motif, personne…" value={recherche} onChange={e => setRecherche(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem' }} /></Col>
-            <Col xs="auto" className="ms-auto d-flex gap-2">
-              <Button onClick={charger} disabled={loading} style={{ background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', border: 'none', fontWeight: 700, fontSize: '0.78rem', padding: '5px 14px', borderRadius: 6 }}>
-                {loading ? <><Spinner size="sm" animation="border" className="me-1" />…</> : <><i className="bi bi-search me-1"></i>Rechercher</>}
-              </Button>
-              <Button variant="outline-secondary" onClick={charger} disabled={loading} style={{ borderRadius: 6, fontSize: '0.78rem', padding: '5px 10px' }}><i className="bi bi-arrow-clockwise"></i></Button>
-            </Col>
+        <Tab eventKey="prestations" title={<><i className="bi bi-file-earmark-medical me-1"></i>Mouvements Prestations</>}>
+          {/* FILTRES PRESTATIONS */}
+          <Card className="mb-2" style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+            <Card.Body style={{ padding: '8px 14px' }}>
+              <Row className="g-2 align-items-end">
+                <Col xs={12} md={8}>
+                  <Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Recherche</Form.Label>
+                  <Form.Control 
+                    type="text" 
+                    size="sm" 
+                    placeholder="Patient, type acte, mode paiement, numéro, source..." 
+                    value={recherchePrestations} 
+                    onChange={e => setRecherchePrestations(e.target.value)} 
+                    style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem' }} 
+                  />
+                </Col>
+                <Col xs={12} md={4}>
+                  <Button
+                    variant="outline-primary"
+                    size="sm"
+                    className="w-100"
+                    onClick={() => imprimerPrestations()}
+                    style={{ fontSize: '0.75rem', fontWeight: 600 }}
+                  >
+                    <i className="bi bi-printer me-1"></i>Imprimer les prestations
+                  </Button>
+                </Col>
+              </Row>
+            </Card.Body>
+          </Card>
+
+          {/* KPIs pour les prestations */}
+          <Row className="g-2 mb-2">
+            {[
+              { label: 'Total Facturé', value: totalFactures, bg: 'linear-gradient(135deg,#6a1b9a,#ba68c8)', icon: 'bi-file-earmark-text-fill' },
+              { label: 'Total Encaissé', value: totalEncaisses, bg: 'linear-gradient(135deg,#1b5e20,#66bb6a)', icon: 'bi-cash-stack' },
+              { label: 'Reste à Payer', value: totalRestant, bg: totalRestant > 0 ? 'linear-gradient(135deg,#b71c1c,#ef9a9a)' : 'linear-gradient(135deg,#006064,#26c6da)', icon: 'bi-exclamation-circle-fill' },
+              { label: 'Nb Prestations', value: facturationsFiltrees.length, bg: 'linear-gradient(135deg,#1565c0,#42a5f5)', icon: 'bi-list-check', isCount: true },
+            ].map((kpi, ki) => (
+              <Col key={ki} xs={6} md={3}>
+                <div style={{ background: kpi.bg, borderRadius: 8, padding: '8px 12px', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                    <div>
+                      <div style={{ fontSize: '0.65rem', fontWeight: 600, opacity: 0.85, textTransform: 'uppercase', letterSpacing: 1 }}>{kpi.label}</div>
+                      <div style={{ fontSize: '0.95rem', fontWeight: 800, marginTop: 2 }}>
+                        {(kpi as any).isCount ? kpi.value : `${loadingFacturations ? '…' : fmt(kpi.value)} F`}
+                      </div>
+                    </div>
+                    <i className={`bi ${kpi.icon}`} style={{ fontSize: '1.2rem', opacity: 0.35 }}></i>
+                  </div>
+                </div>
+              </Col>
+            ))}
           </Row>
-        </Card.Body>
-      </Card>
 
-      {/* TABLEAU */}
-      <Card style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
-        <div style={{ background: 'linear-gradient(90deg,#1b5e20,#2e7d32)', color: '#fff', padding: '7px 14px', borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-          <span style={{ fontWeight: 700, fontSize: '0.78rem', letterSpacing: 1 }}><i className="bi bi-table me-2"></i>MOUVEMENTS DE CAISSE — {periode}</span>
-          {docsFiltres.length > 0 && <span style={{ fontSize: '0.72rem', opacity: 0.85 }}>{docsFiltres.length} ligne(s)</span>}
-        </div>
-        <Card.Body className="p-0">
-          <div style={{ overflowX: 'auto', maxHeight: '52vh', overflowY: 'auto' }}>
-            <Table bordered className="mb-0" style={{ fontSize: '0.73rem', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                  {['Date','Opération','Motif','Montant','Personne','Saisi par','Actions'].map((h, hi) => (
-                    <th key={hi} style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #b0bec5', textAlign: hi === 3 ? 'right' : hi === 6 ? 'center' : 'left' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#78909c' }}><Spinner animation="border" size="sm" className="me-2" />Chargement…</td></tr>
-                ) : docsFiltres.length === 0 ? (
-                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '50px', color: '#90a4ae' }}>
-                    <i className="bi bi-inbox" style={{ fontSize: '2.5rem', display: 'block', marginBottom: 8 }}></i>Aucun enregistrement trouvé
-                  </td></tr>
-                ) : docsFiltres.map((d, i) => {
-                  const isEntree = (d.typeC || '').includes('Entrée');
-                  const estMien = d.AjouterParC === utilisateur;
-                  return (
-                    <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f7f9fc', borderLeft: `3px solid ${isEntree ? '#2e7d32' : '#b71c1c'}` }}>
-                      <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>
-                        {d.dAteC ? new Date(d.dAteC).toLocaleDateString('fr-FR') : '-'}
-                        {d.HeureC && <small style={{ color: '#90a4ae', marginLeft: 4 }}>{d.HeureC}</small>}
-                      </td>
-                      <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>
-                        <Badge bg={isEntree ? 'success' : 'danger'} className="me-1" style={{ fontSize: '0.6rem' }}>{isEntree ? '↑' : '↓'}</Badge>
-                        <span style={{ fontWeight: 600 }}>{d.Operation}</span>
-                      </td>
-                      <td style={{ padding: '3px 8px', maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>{d.MOtif}</td>
-                      <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: isEntree ? '#2e7d32' : '#b71c1c', borderRight: '1px solid #e0e0e0' }}>
-                        {isEntree ? '+' : '-'}{fmt(d.MOntantC || 0)}
-                      </td>
-                      <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>{d.NomPrenoms || '-'}</td>
-                      <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0', color: estMien ? '#1565c0' : '#546e7a', fontWeight: estMien ? 700 : 400 }}>{d.AjouterParC}</td>
-                      <td style={{ padding: '3px 8px', textAlign: 'center' }}>
-                        <div style={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
-                          <Button size="sm" variant={estMien ? 'outline-primary' : 'outline-secondary'} style={{ padding: '2px 6px' }} title={estMien ? 'Modifier' : 'Non autorisé'}
-                            onClick={() => { if (!estMien) { setMessage({ type: 'danger', text: 'Vous ne pouvez modifier que vos propres enregistrements.' }); return; } setCaisseIdEdition(d._id); setShowFiche(true); }}>
-                            <i className="bi bi-pencil-fill" style={{ fontSize: '0.7rem' }}></i>
-                          </Button>
-                          <Button size="sm" variant="outline-dark" style={{ padding: '2px 6px' }} title="Imprimer" onClick={() => printBon(d, entreprise)}>
-                            <i className="bi bi-printer-fill" style={{ fontSize: '0.7rem' }}></i>
-                          </Button>
-                          <Button size="sm" variant={estMien ? 'outline-danger' : 'outline-secondary'} style={{ padding: '2px 6px' }} title={estMien ? 'Supprimer' : 'Non autorisé'} onClick={() => handleSupprimer(d)}>
-                            <i className="bi bi-trash-fill" style={{ fontSize: '0.7rem' }}></i>
-                          </Button>
-                        </div>
-                      </td>
+          
+          {/* TABLEAU DES PRESTATIONS */}
+          <Card style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+            <div style={{ background: 'linear-gradient(90deg,#6a1b9a,#9c27b0)', color: '#fff', padding: '7px 14px', borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontWeight: 700, fontSize: '0.78rem', letterSpacing: 1 }}><i className="bi bi-table me-2"></i>FACTURATIONS ET ENCAISSEMENTS — {periode}</span>
+              {facturationsFiltrees.length > 0 && <span style={{ fontSize: '0.72rem', opacity: 0.85 }}>{facturationsFiltrees.length} prestation(s)</span>}
+            </div>
+            <Card.Body className="p-0">
+              <div style={{ overflowX: 'auto', maxHeight: '52vh', overflowY: 'auto' }}>
+                <Table bordered className="mb-0" style={{ fontSize: '0.73rem', borderCollapse: 'collapse' }}>
+                  <thead>
+                    <tr style={{ position: 'sticky', top: 0, zIndex: 1 }}>
+                      {['Date','Patient','Type Acte','Total Facturé','Montant Payé','Reste à Payer','Mode Paiement','Statut'].map((h, hi) => (
+                        <th key={hi} style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #b0bec5', textAlign: [3,4,5].includes(hi) ? 'right' : 'left' }}>{h}</th>
+                      ))}
                     </tr>
-                  );
-                })}
-              </tbody>
-            </Table>
-          </div>
-        </Card.Body>
-        <div style={{ background: '#eceff1', borderRadius: '0 0 8px 8px', padding: '6px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '2px solid #cfd8dc' }}>
-          <span style={{ fontSize: '0.72rem', color: '#78909c' }}>{docsFiltres.length} enregistrement(s)</span>
-          <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-            <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#2e7d32', textTransform: 'uppercase' }}>Entrées</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#2e7d32' }}>{fmt(totalEntrees)} F</div></div>
-            <div style={{ width: 1, height: 28, background: '#b0bec5' }}></div>
-            <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#b71c1c', textTransform: 'uppercase' }}>Sorties</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#b71c1c' }}>{fmt(totalSorties)} F</div></div>
-            <div style={{ width: 1, height: 28, background: '#b0bec5' }}></div>
-            <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: solde >= 0 ? '#006064' : '#880e4f', textTransform: 'uppercase' }}>Solde</div><div style={{ fontSize: '1rem', fontWeight: 800, color: solde >= 0 ? '#006064' : '#880e4f' }}>{fmt(solde)} F</div></div>
-          </div>
-        </div>
-      </Card>
+                  </thead>
+                  <tbody>
+                    {loadingFacturations ? (
+                      <tr><td colSpan={8} style={{ textAlign: 'center', padding: '40px', color: '#78909c' }}><Spinner animation="border" size="sm" className="me-2" />Chargement…</td></tr>
+                    ) : facturationsFiltrees.length === 0 ? (
+                      <tr><td colSpan={8} style={{ textAlign: 'center', padding: '50px', color: '#90a4ae' }}>
+                        <i className="bi bi-inbox" style={{ fontSize: '2.5rem', display: 'block', marginBottom: 8 }}></i>
+                        {recherchePrestations ? 'Aucune prestation trouvée pour cette recherche' : 'Aucune prestation trouvée pour cette période'}
+                      </td></tr>
+                    ) : facturationsFiltrees.map((f, i) => {
+                      const estSoldé = (f.resteAPayer || 0) <= 0;
+                      const estPartiel = (f.montantPaye || 0) > 0 && !estSoldé;
+                      return (
+                        <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f7f9fc', borderLeft: `3px solid ${estSoldé ? '#2e7d32' : estPartiel ? '#f57c00' : '#b71c1c'}` }}>
+                          <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>
+                            {f.dateFacture ? new Date(f.dateFacture).toLocaleDateString('fr-FR') : '-'}
+                          </td>
+                          <td style={{ padding: '3px 8px', fontWeight: 600, borderRight: '1px solid #e0e0e0' }}>{f.patientNom || '-'}</td>
+                          <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>
+                            <Badge bg="info" style={{ fontSize: '0.6rem' }}>{f.typeActe || '-'}</Badge>
+                          </td>
+                          <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>{fmt(f.montantTotal || 0)}</td>
+                          <td style={{ padding: '3px 8px', textAlign: 'right', color: '#2e7d32', fontWeight: 700, borderRight: '1px solid #e0e0e0' }}>{fmt(f.montantPaye || 0)}</td>
+                          <td style={{ padding: '3px 8px', textAlign: 'right', color: (f.resteAPayer || 0) > 0 ? '#b71c1c' : '#2e7d32', fontWeight: 700, borderRight: '1px solid #e0e0e0' }}>{fmt(f.resteAPayer || 0)}</td>
+                          <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>
+                            <Badge bg="secondary" style={{ fontSize: '0.6rem' }}>{f.modePaiement || '-'}</Badge>
+                          </td>
+                          <td style={{ padding: '3px 8px' }}>
+                            <Badge bg={estSoldé ? 'success' : estPartiel ? 'warning' : 'danger'} style={{ fontSize: '0.6rem' }}>
+                              {estSoldé ? 'Soldé' : estPartiel ? 'Partiel' : 'Impayé'}
+                            </Badge>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </Table>
+              </div>
+            </Card.Body>
+            <div style={{ background: '#eceff1', borderRadius: '0 0 8px 8px', padding: '6px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '2px solid #cfd8dc' }}>
+              <span style={{ fontSize: '0.72rem', color: '#78909c' }}>{facturationsFiltrees.length} prestation(s)</span>
+              <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+                <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#6a1b9a', textTransform: 'uppercase' }}>Facturé</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#6a1b9a' }}>{fmt(totalFactures)} F</div></div>
+                <div style={{ width: 1, height: 28, background: '#b0bec5' }}></div>
+                <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#1b5e20', textTransform: 'uppercase' }}>Encaissé</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1b5e20' }}>{fmt(totalEncaisses)} F</div></div>
+                <div style={{ width: 1, height: 28, background: '#b0bec5' }}></div>
+                <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: totalRestant > 0 ? '#b71c1c' : '#006064', textTransform: 'uppercase' }}>Reste</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: totalRestant > 0 ? '#b71c1c' : '#006064' }}>{fmt(totalRestant)} F</div></div>
+              </div>
+            </div>
+          </Card>
+        </Tab>
+      </Tabs>
 
       <FicheCaisseModal show={showFiche} onHide={() => { setShowFiche(false); setCaisseIdEdition(null); }} caisseId={caisseIdEdition} onSaved={charger} />
     </div>

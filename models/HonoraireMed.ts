@@ -22,6 +22,12 @@ export interface IHonoraireMed extends Document {
     partexcu?: number;
     Totalnetapayer?: number;
     Totalretenue?: number;
+    NBAideOperatoire?: number;
+    ParAide?: number;
+    MontantAideTotal?: number;
+    NBAnestesiste?: number;
+    ParAnesthesiste?: number;
+    MontantTotalAnestesiste?: number;
     createdAt?: Date;
     updatedAt?: Date;
     entrepriseId?: string;
@@ -50,6 +56,12 @@ const HonoraireMedSchema = new Schema<IHonoraireMed>({
     partexcu: { type: Number },
     Totalnetapayer: { type: Number },
     Totalretenue: { type: Number },
+    NBAideOperatoire: { type: Number },
+    ParAide: { type: Number },
+    MontantAideTotal: { type: Number },
+    NBAnestesiste: { type: Number },
+    ParAnesthesiste: { type: Number },
+    MontantTotalAnestesiste: { type: Number },
     entrepriseId: { type: String },
 }, { timestamps: true });
-export const HonraireMed: Model<IHonoraireMed> = mongoose.models.HonoraireMed || mongoose.model<IHonoraireMed>("HonoraireMed", HonoraireMedSchema);
+export const HonoraireMed: Model<IHonoraireMed> = mongoose.models.HonoraireMed || mongoose.model<IHonoraireMed>("HonoraireMed", HonoraireMedSchema);
