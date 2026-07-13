@@ -16,6 +16,7 @@ export interface ILigneFacture extends Document {
     idHospitalisation?: Types.ObjectId;
     IDCONSULTATION?: Types.ObjectId;
     IDPRESCRIPTION?: Types.ObjectId;
+    IDFACTURATION?: Types.ObjectId;
     IDANNALYSE?: Types.ObjectId;
     IDMAGERIE?: Types.ObjectId;
     IDCHIRURGIE?: Types.ObjectId;
@@ -40,6 +41,7 @@ const LigneFactureSchema = new Schema<ILigneFacture>({
     idHospitalisation: { type: Schema.Types.ObjectId, ref: 'ExamenHospitalisation' },
     IDCONSULTATION: { type: Schema.Types.ObjectId, ref: 'Consultation' },
     IDPRESCRIPTION: { type: Schema.Types.ObjectId, ref: 'Prescription' },
+    IDFACTURATION: { type: Schema.Types.ObjectId, ref: 'Facturation' },
     IDANNALYSE: { type: Schema.Types.ObjectId, ref: 'Analyse' },
     IDMAGERIE: { type: Schema.Types.ObjectId, ref: 'Imagerie' },
     IDCHIRURGIE: { type: Schema.Types.ObjectId, ref: 'Chirurgie' },

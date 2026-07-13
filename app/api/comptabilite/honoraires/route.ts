@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       ...filtreMedecin,
       ...filtreEntreprise,
     })
-      .populate('Medecin', 'nom prenoms specialite')
+      .populate('Medecin', 'nom prenoms specialite TauxHonoraire TauxPrescription TauxExecution TauxAideOperatoire TauxAnesthesiste')
       .lean();
 
     const honoraireIds = honoraires.map(h => h._id);
@@ -108,62 +108,46 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Données manquantes ou montant invalide' }, { status: 400 });
       }
 
-      const session = await mongoose.startSession();
-      let paiement: any = null;
-
-      try {
-        await session.withTransaction(async () => {
-          const honoraire = await HonoraireMed.findById(honoraireId).session(session);
-          if (!honoraire) {
-            throw new Error('Honoraire introuvable');
-          }
-
-          const resteActuel = honoraire.Restapayer ?? honoraire.Totalnetapayer ?? 0;
-          if (montant > resteActuel) {
-            throw new Error('Le montant payé dépasse le reste à payer');
-          }
-
-          const nouveauReste = Math.max(0, resteActuel - montant);
-          const nouveauPaye = (honoraire.MontantPayé || 0) + montant;
-
-          paiement = new HonorairePaye({
-            Date: new Date(),
-            Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-            MontantJour: honoraire.MontantJour || 0,
-            MontantPayé: montant,
-            Restapayer: nouveauReste,
-            PayéPar: payePar || '',
-            Recupar: payePar || '',
-            Medecin: honoraire.Medecin,
-            HonoraireMed: honoraireId,
-            BanqueC: banque || '',
-            NCheque: numeroCheque || '',
-            Modepaiement: modePaiement || 'ESPECE',
-            entrepriseId: entrepriseId || honoraire.entrepriseId || '',
-          });
-
-          await paiement.save({ session });
-
-          await HonoraireMed.findByIdAndUpdate(
-            honoraireId,
-            { MontantPayé: nouveauPaye, Restapayer: nouveauReste },
-            { session }
-          );
-        });
-      } catch (error: any) {
-        if (error.message === 'Honoraire introuvable') {
-          await session.endSession();
-          return NextResponse.json({ success: false, message: error.message }, { status: 404 });
-        }
-        if (error.message === 'Le montant payé dépasse le reste à payer') {
-          await session.endSession();
-          return NextResponse.json({ success: false, message: error.message }, { status: 400 });
-        }
-        await session.endSession();
-        throw error;
+      const honoraire = await HonoraireMed.findById(honoraireId);
+      if (!honoraire) {
+        return NextResponse.json({ success: false, message: 'Honoraire introuvable' }, { status: 404 });
       }
 
-      await session.endSession();
+      const resteActuel = honoraire.Restapayer ?? honoraire.Totalnetapayer ?? 0;
+      if (montant > resteActuel) {
+        return NextResponse.json({ success: false, message: 'Le montant payé dépasse le reste à payer' }, { status: 400 });
+      }
+
+      const nouveauReste = Math.max(0, resteActuel - montant);
+      const nouveauPaye = (honoraire.MontantPayé || 0) + montant;
+
+      const paiement = new HonorairePaye({
+        Date: new Date(),
+        Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        MontantJour: honoraire.MontantJour || 0,
+        MontantPayé: montant,
+        Restapayer: nouveauReste,
+        PayéPar: payePar || '',
+        Recupar: payePar || '',
+        Medecin: honoraire.Medecin,
+        HonoraireMed: honoraireId,
+        BanqueC: banque || '',
+        NCheque: numeroCheque || '',
+        Modepaiement: modePaiement || 'ESPECE',
+        entrepriseId: entrepriseId || honoraire.entrepriseId || '',
+      });
+
+      await paiement.save();
+
+      try {
+        await HonoraireMed.findByIdAndUpdate(
+          honoraireId,
+          { MontantPayé: nouveauPaye, Restapayer: nouveauReste }
+        );
+      } catch (updateError) {
+        await HonorairePaye.findByIdAndDelete(paiement._id);
+        throw updateError;
+      }
 
       return NextResponse.json({ success: true, message: 'Paiement enregistré', data: paiement });
     }

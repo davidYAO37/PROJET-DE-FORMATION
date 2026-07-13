@@ -75,6 +75,8 @@ export interface IConsultation extends Document {
 
   // Champs pour l'annulation
   StatutFacturation: boolean;
+  StatutFacture?: boolean;
+  Numfacture?: string;
   Ordonnerlannulation: number;
   AnnulOrdonnerPar: string;
   AnnulationOrdonneLe: Date;
@@ -156,6 +158,8 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
 
     // Champs pour l'annulation
     StatutFacturation: { type: Boolean, default: false },
+    StatutFacture: { type: Boolean, default: false },
+    Numfacture: { type: String },
     Ordonnerlannulation: { type: Number, default: 0 },
     AnnulOrdonnerPar: { type: String },
     AnnulationOrdonneLe: { type: Date },

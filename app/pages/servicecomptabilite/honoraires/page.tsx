@@ -1,8 +1,20 @@
 'use client';
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Row, Col, Button, Form, Table, Spinner, Alert, Badge, Modal } from 'react-bootstrap';
+import { useEntreprise } from '@/hooks/useEntreprise';
+import { generatePrintHeader, generatePrintFooter, createPrintWindow } from '@/utils/printRecu';
 
-interface Medecin { _id: string; nom: string; prenoms?: string; specialite?: string; }
+interface Medecin {
+  _id: string;
+  nom: string;
+  prenoms?: string;
+  specialite?: string;
+  TauxHonoraire?: number;
+  TauxPrescription?: number;
+  TauxExecution?: number;
+  TauxAideOperatoire?: number;
+  TauxAnesthesiste?: number;
+}
 
 interface Acte {
   idActe: string;
@@ -28,6 +40,33 @@ interface HonoraireHistorique {
   Medecin?: string | { _id: string; nom?: string; prenoms?: string };
   DEBUTD?: string;
   FIND?: string;
+  NBHONRAIRE?: number;
+  NBPRESCRIPTION?: number;
+  NBEXECUTANT?: number;
+  NBAideOperatoire?: number;
+  NBAnestesiste?: number;
+  montanttotalhono?: number;
+  montanttaotalPrescrip?: number;
+  MontanttotalExeut?: number;
+  MontantAideTotal?: number;
+  MontantTotalAnestesiste?: number;
+  parthonoraire?: number;
+  partpres?: number;
+  partexcu?: number;
+  ParAide?: number;
+  ParAnesthesiste?: number;
+  paiements?: {
+    _id: string;
+    Date?: string;
+    Heure?: string;
+    MontantPayé?: number;
+    Restapayer?: number;
+    PayéPar?: string;
+    Recupar?: string;
+    Modepaiement?: string;
+    BanqueC?: string;
+    NCheque?: string;
+  }[];
 }
 
 const fmt = (n: number) => (n || 0).toLocaleString('fr-FR');
@@ -43,6 +82,7 @@ const typeBadge = (type: string) => {
 };
 
 export default function HonorairesPage() {
+  const { entreprise } = useEntreprise();
   const [medecins, setMedecins] = useState<Medecin[]>([]);
   const [actes, setActes] = useState<Acte[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -55,6 +95,98 @@ export default function HonorairesPage() {
   const [ongletActif, setOngletActif] = useState<'actes' | 'historique'>('actes');
   const [historique, setHistorique] = useState<HonoraireHistorique[]>([]);
   const [loadingHistorique, setLoadingHistorique] = useState(false);
+
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const toggleExpand = (id: string) => setExpandedRows(prev => {
+    const next = new Set(prev);
+    if (next.has(id)) next.delete(id); else next.add(id);
+    return next;
+  });
+
+  // Modal modifier paiement
+  const [showModalModifierPaiement, setShowModalModifierPaiement] = useState(false);
+  const [paiementAModifier, setPaiementAModifier] = useState<NonNullable<HonoraireHistorique['paiements']>[number] | null>(null);
+  const [honorairePaiementEdit, setHonorairePaiementEdit] = useState<HonoraireHistorique | null>(null);
+  const [montantEdit, setMontantEdit] = useState('');
+  const [recuParEdit, setRecuParEdit] = useState('');
+  const [modePaiementEdit, setModePaiementEdit] = useState('Espèce');
+  const [banqueEdit, setBanqueEdit] = useState('');
+  const [nChequeEdit, setNChequeEdit] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+
+  const ouvrirModifierPaiement = (p: NonNullable<HonoraireHistorique['paiements']>[number], h: HonoraireHistorique) => {
+    setPaiementAModifier(p);
+    setHonorairePaiementEdit(h);
+    setMontantEdit(String(p.MontantPayé || ''));
+    setRecuParEdit(p.Recupar || p.PayéPar || '');
+    setModePaiementEdit(p.Modepaiement || 'Espèce');
+    setBanqueEdit(p.BanqueC || '');
+    setNChequeEdit(p.NCheque || '');
+    setShowModalModifierPaiement(true);
+  };
+
+  const fermerModifierPaiement = () => {
+    setShowModalModifierPaiement(false);
+    setPaiementAModifier(null);
+    setHonorairePaiementEdit(null);
+  };
+
+  const handleModifierPaiement = async () => {
+    if (!paiementAModifier?._id || !honorairePaiementEdit?._id) return;
+    const montant = parseInt(montantEdit, 10);
+    if (isNaN(montant) || montant <= 0) {
+      setMessage({ type: 'danger', text: 'Montant invalide.' });
+      return;
+    }
+    setSavingEdit(true);
+    try {
+      const res = await fetch(`/api/comptabilite/honoraires/payer/${paiementAModifier._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          honoraireId: honorairePaiementEdit._id,
+          ancienMontant: paiementAModifier.MontantPayé || 0,
+          montant,
+          modePaiement: modePaiementEdit,
+          banque: banqueEdit,
+          numeroCheque: nChequeEdit,
+          payePar: recuParEdit,
+        }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setMessage({ type: 'success', text: 'Paiement modifié avec succès.' });
+        fermerModifierPaiement();
+        await chargerHistorique();
+      } else {
+        setMessage({ type: 'danger', text: json.message || 'Erreur lors de la modification.' });
+      }
+    } catch {
+      setMessage({ type: 'danger', text: 'Erreur serveur.' });
+    } finally {
+      setSavingEdit(false);
+    }
+  };
+
+  const handleAnnulerPaiement = async (p: NonNullable<HonoraireHistorique['paiements']>[number], h: HonoraireHistorique) => {
+    if (!window.confirm(`Annuler ce paiement de ${fmt(p.MontantPayé || 0)} F ?`)) return;
+    try {
+      const res = await fetch(`/api/comptabilite/honoraires/payer/${p._id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ honoraireId: h._id, montant: p.MontantPayé || 0 }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setMessage({ type: 'success', text: 'Paiement annulé avec succès.' });
+        await chargerHistorique();
+      } else {
+        setMessage({ type: 'danger', text: json.message || 'Erreur lors de l\'annulation du paiement.' });
+      }
+    } catch {
+      setMessage({ type: 'danger', text: 'Erreur serveur.' });
+    }
+  };
 
   // Modal de paiement
   const [showModalPaiement, setShowModalPaiement] = useState(false);
@@ -165,7 +297,10 @@ export default function HonorairesPage() {
   const ouvrirPaiement = (h: HonoraireHistorique) => {
     setHonorairePaiement(h);
     setMontantClient(String(h.Restapayer || 0));
-    setRecuPar('');
+    const medPop = h.Medecin && typeof h.Medecin === 'object' ? h.Medecin as any : null;
+    const medIdStr = medPop ? String(medPop._id) : String(h.Medecin || '');
+    const medObj = medecins.find(m => String(m._id) === medIdStr) ?? medPop ?? null;
+    setRecuPar(medObj ? `${medObj.prenoms || ''} ${medObj.nom || ''}`.trim() : '');
     setModePaiement('Espèce');
     setBanque('');
     setNCheque('');
@@ -242,6 +377,288 @@ export default function HonorairesPage() {
     } catch (error) {
       console.error('Erreur annulation:', error);
       setMessage({ type: 'danger', text: 'Erreur serveur.' });
+    }
+  };
+
+  const imprimerListe = async (id: string) => {
+    try {
+      const res = await fetch(`/api/comptabilite/honoraires/${id}/lignes`);
+      const json = await res.json();
+      if (!json.success) return;
+
+      const lignes = json.data || [];
+      const honoraire = json.honoraire || {};
+      const medPop = honoraire.Medecin && typeof honoraire.Medecin === 'object' ? honoraire.Medecin : null;
+      const medIdStr = medPop ? String(medPop._id) : String(honoraire.Medecin || '');
+      const medecinObj = medecins.find(m => String(m._id) === medIdStr) ?? medPop ?? null;
+      const nomMedecin = medecinObj
+        ? `${medecinObj.prenoms || ''} ${medecinObj.nom || ''}`.trim()
+        : 'Médecin';
+
+      const lignesHTML = lignes.map((l: any) => `
+        <tr>
+          <td style="padding:4px;border:1px solid #000;">${l.DatePres ? new Date(l.DatePres).toLocaleDateString('fr-FR') : '-'}</td>
+          <td style="padding:4px;border:1px solid #000;">${l.Patient || '-'}</td>
+          <td style="padding:4px;border:1px solid #000;">${l.PrestationMed || '-'}</td>
+          <td style="padding:4px;border:1px solid #000;text-align:right;">${fmt(l.Totalacte || 0)}</td>
+          <td style="padding:4px;border:1px solid #000;text-align:right;">${fmt(l.Montantpres || 0)}</td>
+          <td style="padding:4px;border:1px solid #000;text-align:right;">${fmt(l.TAXE || 0)}</td>
+          <td style="padding:4px;border:1px solid #000;text-align:right;">${fmt(l.Netapayer || 0)}</td>
+        </tr>
+      `).join('');
+
+      const totalActe  = lignes.reduce((s: number, l: any) => s + (l.Totalacte  || 0), 0);
+      const totalPart  = lignes.reduce((s: number, l: any) => s + (l.Montantpres || 0), 0);
+      const totalTaxe  = lignes.reduce((s: number, l: any) => s + (l.TAXE       || 0), 0);
+      const totalNet   = lignes.reduce((s: number, l: any) => s + (l.Netapayer  || 0), 0);
+
+      const contentHTML = `
+        <div style="font-family:Arial,sans-serif;padding:20px;">
+          <div style="text-align:center;margin-bottom:8px;">
+            <h4 style="font-weight:bold;font-size:18px;margin-bottom:6px;">LISTE DES ACTES</h4>
+            <div style="font-size:13px;"><strong>Liste des Actes et Honoraires de : ${nomMedecin}</strong></div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin-top:20px;">
+            <thead>
+              <tr>
+                <th style="background:#f0f0f0;padding:6px 4px;border:1px solid #000;">Date Prestation</th>
+                <th style="background:#f0f0f0;padding:6px 4px;border:1px solid #000;">Patient</th>
+                <th style="background:#f0f0f0;padding:6px 4px;border:1px solid #000;">Acte</th>
+                <th style="background:#f0f0f0;padding:6px 4px;border:1px solid #000;text-align:right;">Total acte</th>
+                <th style="background:#f0f0f0;padding:6px 4px;border:1px solid #000;text-align:right;">Part Médecin</th>
+                <th style="background:#f0f0f0;padding:6px 4px;border:1px solid #000;text-align:right;">Taxe</th>
+                <th style="background:#f0f0f0;padding:6px 4px;border:1px solid #000;text-align:right;">Net à payer</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${lignesHTML}
+              <tr style="background:#f0f0f0;font-weight:bold;border-top:2px solid #000;">
+                <td style="padding:6px 4px;border:1px solid #000;" colspan="3">TOTAL (${lignes.length} acte(s))</td>
+                <td style="padding:6px 4px;border:1px solid #000;text-align:right;">${fmt(totalActe)}</td>
+                <td style="padding:6px 4px;border:1px solid #000;text-align:right;">${fmt(totalPart)}</td>
+                <td style="padding:6px 4px;border:1px solid #000;text-align:right;">${fmt(totalTaxe)}</td>
+                <td style="padding:6px 4px;border:1px solid #000;text-align:right;color:#006064;">${fmt(totalNet)}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="margin-top:14px;font-size:12px;font-style:italic;color:#555;">
+            Imprimé le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+          </div>
+        </div>
+      `;
+
+      const headerHTML = generatePrintHeader(entreprise);
+      const footerHTML = generatePrintFooter(entreprise);
+      createPrintWindow('Liste des actes', headerHTML, contentHTML, footerHTML);
+    } catch (error) {
+      console.error('Erreur impression liste:', error);
+      setMessage({ type: 'danger', text: 'Erreur lors de l\'impression de la liste.' });
+    }
+  };
+
+  const imprimerRecuPaiement = (
+    p: NonNullable<HonoraireHistorique['paiements']>[number],
+    h: HonoraireHistorique
+  ) => {
+    const medecinPopulate = h.Medecin && typeof h.Medecin === 'object' ? h.Medecin as any : null;
+    const medecinIdStr = medecinPopulate ? String(medecinPopulate._id) : String(h.Medecin || '');
+    const medecinObj = medecins.find(m => String(m._id) === medecinIdStr) ?? medecinPopulate ?? null;
+    const nomMedecin = medecinObj
+      ? `${medecinObj.prenoms || ''} ${medecinObj.nom || ''}`.trim()
+      : 'Médecin';
+
+    const datePaie = p.Date ? new Date(p.Date).toLocaleDateString('fr-FR') : '-';
+    const heurePaie = p.Heure || '-';
+    const debut = h.DEBUTD ? new Date(h.DEBUTD).toLocaleDateString('fr-FR') : '-';
+    const fin = h.FIND ? new Date(h.FIND).toLocaleDateString('fr-FR') : '-';
+    const payePar = p.PayéPar && p.PayéPar !== p.Recupar ? p.PayéPar : '';
+
+    const chequeInfo = (p.Modepaiement || '').toLowerCase().includes('cheque') || (p.Modepaiement || '').toLowerCase().includes('chèque')
+      ? `<tr><td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;color:#555;">Banque</td><td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;font-weight:bold;">${p.BanqueC || '-'}</td></tr>
+         <tr><td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;color:#555;">N° Chèque</td><td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;font-weight:bold;">${p.NCheque || '-'}</td></tr>`
+      : '';
+
+    const payeParRow = payePar
+      ? `<tr style="background:#f5f5f5;"><td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;color:#555;">Payé par</td><td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;font-weight:bold;">${payePar}</td></tr>`
+      : '';
+
+    const contentHTML = `
+      <div style="font-family:Arial,sans-serif;padding:20px;max-width:600px;margin:0 auto;">
+        <div style="text-align:center;margin-bottom:20px;">
+          <div style="display:inline-block;background:#2e7d32;color:#fff;padding:6px 24px;border-radius:4px;font-size:16px;font-weight:bold;letter-spacing:1px;">
+            REÇU DE PAIEMENT MÉDECIN
+          </div>
+        </div>
+
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px;font-size:13px;">
+          <tr style="background:#f5f5f5;">
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;color:#555;width:40%;">Médecin</td>
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;font-weight:bold;">${nomMedecin}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;color:#555;">Période</td>
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;">Du <strong>${debut}</strong> au <strong>${fin}</strong></td>
+          </tr>
+          <tr style="background:#f5f5f5;">
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;color:#555;">Date paiement</td>
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;">${datePaie} à ${heurePaie}</td>
+          </tr>
+          <tr>
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;color:#555;">Reçu par</td>
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;font-weight:bold;">${p.Recupar || nomMedecin}</td>
+          </tr>
+          ${payeParRow}
+          <tr style="background:#f5f5f5;">
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;color:#555;">Mode de paiement</td>
+            <td style="padding:6px 12px;border-bottom:1px solid #e0e0e0;">${p.Modepaiement || '-'}</td>
+          </tr>
+          ${chequeInfo}
+        </table>
+
+        <table style="width:100%;border-collapse:collapse;font-size:14px;margin-bottom:20px;">
+          <tr style="background:#e8f5e9;">
+            <td style="padding:10px 14px;border:1px solid #a5d6a7;color:#1b5e20;font-weight:bold;">Net à payer (bordereau)</td>
+            <td style="padding:10px 14px;border:1px solid #a5d6a7;text-align:right;font-size:15px;font-weight:bold;color:#1b5e20;">${fmt(h.Totalnetapayer || 0)} F</td>
+          </tr>
+          <tr style="background:#fff9c4;">
+            <td style="padding:10px 14px;border:1px solid #f9a825;font-weight:bold;color:#e65100;">Montant payé</td>
+            <td style="padding:10px 14px;border:1px solid #f9a825;text-align:right;font-size:16px;font-weight:bold;color:#e65100;">${fmt(p.MontantPayé || 0)} F</td>
+          </tr>
+          <tr style="background:#ffebee;">
+            <td style="padding:10px 14px;border:1px solid #ef9a9a;font-weight:bold;color:#c62828;">Reste à payer</td>
+            <td style="padding:10px 14px;border:1px solid #ef9a9a;text-align:right;font-size:15px;font-weight:bold;color:#c62828;">${fmt(p.Restapayer || 0)} F</td>
+          </tr>
+        </table>
+
+        <div style="text-align:center;margin-top:30px;font-size:11px;color:#888;border-top:1px solid #eee;padding-top:10px;">
+          Imprimé le ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
+        </div>
+      </div>
+    `;
+
+    const headerHTML = generatePrintHeader(entreprise);
+    const footerHTML = generatePrintFooter(entreprise);
+    createPrintWindow('Reçu paiement médecin', headerHTML, contentHTML, footerHTML);
+  };
+
+  const imprimerBordereau = async (id: string, h: HonoraireHistorique) => {
+    try {
+      const medecinPopulate = h.Medecin && typeof h.Medecin === 'object' ? h.Medecin as any : null;
+      const medecinIdStr = medecinPopulate ? String(medecinPopulate._id) : String(h.Medecin || '');
+      const medecinFromList = medecins.find(m => String(m._id) === medecinIdStr);
+      const medecinObj = medecinFromList ?? medecinPopulate ?? null;
+      const nomMedecin = medecinObj
+        ? `${medecinObj.prenoms || ''} ${medecinObj.nom || ''}`.trim()
+        : 'Médecin';
+
+      const TAX_RATE = 0.075;
+
+      const debut = h.DEBUTD ? new Date(h.DEBUTD).toLocaleDateString('fr-FR') : '-';
+      const fin = h.FIND ? new Date(h.FIND).toLocaleDateString('fr-FR') : '-';
+
+      const allLignes = [
+        {
+          label: 'CONSULTATION',
+          taux: medecinObj?.TauxHonoraire ?? 0,
+          nb: h.NBHONRAIRE || 0,
+          total: h.montanttotalhono || 0,
+          part: h.parthonoraire || 0,
+        },
+        {
+          label: 'PRESCRIPTION',
+          taux: medecinObj?.TauxPrescription ?? 0,
+          nb: h.NBPRESCRIPTION || 0,
+          total: h.montanttaotalPrescrip || 0,
+          part: h.partpres || 0,
+        },
+        {
+          label: "EXÉCUTION D'ACTES",
+          taux: medecinObj?.TauxExecution ?? 0,
+          nb: h.NBEXECUTANT || 0,
+          total: h.MontanttotalExeut || 0,
+          part: h.partexcu || 0,
+        },
+        {
+          label: 'AIDE OPÉRATOIRE',
+          taux: medecinObj?.TauxAideOperatoire ?? 0,
+          nb: h.NBAideOperatoire || 0,
+          total: h.MontantAideTotal || 0,
+          part: h.ParAide || 0,
+        },
+        {
+          label: 'ANESTHÉSISTE',
+          taux: medecinObj?.TauxAnesthesiste ?? 0,
+          nb: h.NBAnestesiste || 0,
+          total: h.MontantTotalAnestesiste || 0,
+          part: h.ParAnesthesiste || 0,
+        },
+      ].filter(row => row.taux > 0 || row.part > 0);
+
+      const lignesTableHTML = allLignes.map(row => {
+        const taxe = Math.round(row.part * TAX_RATE);
+        const net = row.part - taxe;
+        return `
+          <tr>
+            <td style="padding:6px 8px;border:1px solid #000;">${row.label}</td>
+            <td style="padding:6px 8px;border:1px solid #000;text-align:right;">${row.nb}</td>
+            <td style="padding:6px 8px;border:1px solid #000;text-align:right;">${fmt(row.total)}</td>
+            <td style="padding:6px 8px;border:1px solid #000;text-align:right;">${row.taux > 0 ? row.taux + ' %' : '-'}</td>
+            <td style="padding:6px 8px;border:1px solid #000;text-align:right;">${fmt(row.part)}</td>
+            <td style="padding:6px 8px;border:1px solid #000;text-align:right;">${fmt(taxe)}</td>
+            <td style="padding:6px 8px;border:1px solid #000;text-align:right;font-weight:bold;">${fmt(net)}</td>
+          </tr>
+        `;
+      }).join('');
+
+      const totauxHTML = [
+        { label: 'TOTAL BRUT HONORAIRE', val: h.MontantJour || 0, bold: false },
+        { label: 'RETENUE (7,5%)',        val: h.Totalretenue || 0, bold: false },
+        { label: 'NET À PAYER',           val: h.Totalnetapayer || 0, bold: true, bg: '#f5f5f5' },
+        { label: 'MONTANT PAYÉ',          val: h.MontantPayé || 0, bold: false },
+        { label: 'RESTE À PAYER',         val: h.Restapayer || 0, bold: false },
+      ].map(r => `
+        <div style="display:flex;justify-content:space-between;border:1px solid #ccc;padding:6px 10px;${r.bg ? `background:${r.bg};` : ''}">
+          <span>${r.label}</span>
+          <${r.bold ? 'strong' : 'span'}>${fmt(r.val)} F</${r.bold ? 'strong' : 'span'}>
+        </div>
+      `).join('');
+
+      const contentHTML = `
+        <div style="font-family:Arial,sans-serif;padding:20px;">
+          <div style="text-align:center;margin-bottom:16px;">
+            <h4 style="font-weight:bold;font-size:18px;margin-bottom:4px;">FICHE HONORAIRE</h4>
+            <div style="font-size:13px;">Du <strong>${debut}</strong> Au <strong>${fin}</strong></div>
+            <div style="font-size:13px;margin-top:6px;"><strong>MÉDECIN : ${nomMedecin}</strong></div>
+          </div>
+          <table style="width:100%;border-collapse:collapse;margin-top:20px;">
+            <thead>
+              <tr>
+                <th style="background:#f0f0f0;padding:6px 8px;border:1px solid #000;text-align:left;">Type</th>
+                <th style="background:#f0f0f0;padding:6px 8px;border:1px solid #000;text-align:right;">NB</th>
+                <th style="background:#f0f0f0;padding:6px 8px;border:1px solid #000;text-align:right;">Montant total</th>
+                <th style="background:#f0f0f0;padding:6px 8px;border:1px solid #000;text-align:right;">Taux</th>
+                <th style="background:#f0f0f0;padding:6px 8px;border:1px solid #000;text-align:right;">Part Médecin</th>
+                <th style="background:#f0f0f0;padding:6px 8px;border:1px solid #000;text-align:right;">Taxe</th>
+                <th style="background:#f0f0f0;padding:6px 8px;border:1px solid #000;text-align:right;">Net à payer</th>
+              </tr>
+            </thead>
+            <tbody>${allLignes.length > 0 ? lignesTableHTML : '<tr><td colspan="7" style="text-align:center;padding:10px;">Aucune ligne</td></tr>'}</tbody>
+          </table>
+          <div style="display:flex;justify-content:flex-end;margin-top:24px;">
+            <div style="width:340px;">${totauxHTML}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:20px;font-size:12px;font-style:italic;">
+            <span>Imprimé le ${new Date().toLocaleDateString('fr-FR')}</span>
+          </div>
+        </div>
+      `;
+
+      const headerHTML = generatePrintHeader(entreprise);
+      const footerHTML = generatePrintFooter(entreprise);
+      createPrintWindow('Fiche Honoraire', headerHTML, contentHTML, footerHTML);
+    } catch (error) {
+      console.error('Erreur impression bordereau:', error);
+      setMessage({ type: 'danger', text: "Erreur lors de l'impression du bordereau." });
     }
   };
 
@@ -476,26 +893,94 @@ export default function HonorairesPage() {
                   <tr><td colSpan={11} style={{ textAlign: 'center', padding: '50px', color: '#90a4ae' }}>
                     <i className="bi bi-inbox" style={{ fontSize: '2.5rem', display: 'block', marginBottom: 8 }}></i>Aucun honoraire trouvé pour ce médecin
                   </td></tr>
-                ) : historique.map((h, i) => (
-                  <tr key={h._id} style={{ background: i % 2 === 0 ? '#fff' : '#e3f2fd' }}>
-                    <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0', textAlign: 'center' }}>{i + 1}</td>
-                    <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>{h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0', textAlign: 'center' }}>{h.Heure || '-'}</td>
-                    <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>{fmt(h.MontantJour || 0)}</td>
-                    <td style={{ padding: '3px 8px', textAlign: 'right', borderRight: '1px solid #e0e0e0' }}>{fmt(h.Totalretenue || 0)}</td>
-                    <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#006064', borderRight: '1px solid #e0e0e0' }}>{fmt(h.Totalnetapayer || 0)}</td>
-                    <td style={{ padding: '3px 8px', textAlign: 'right', borderRight: '1px solid #e0e0e0' }}>{fmt(h.MontantPayé || 0)}</td>
-                    <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#c62828', borderRight: '1px solid #e0e0e0' }}>{fmt(h.Restapayer || 0)}</td>
-                    <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0', textAlign: 'center' }}>{h.DEBUTD ? new Date(h.DEBUTD).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0', textAlign: 'center' }}>{h.FIND ? new Date(h.FIND).toLocaleDateString('fr-FR') : '-'}</td>
-                    <td style={{ padding: '3px 6px', whiteSpace: 'nowrap', textAlign: 'center' }}>
-                      <Button variant="success" size="sm" className="me-1 py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => ouvrirPaiement(h)} title="Payer"><i className="bi bi-cash-coin"></i></Button>
-                      <Button variant="info" size="sm" className="me-1 py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => window.open(`/pages/servicecomptabilite/honoraires/imprimer/liste/${h._id}`, '_blank')} title="Liste détaillée"><i className="bi bi-list-ul"></i></Button>
-                      <Button variant="primary" size="sm" className="me-1 py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => window.open(`/pages/servicecomptabilite/honoraires/imprimer/bordereau/${h._id}`, '_blank')} title="Bordereau"><i className="bi bi-file-earmark-text"></i></Button>
-                      <Button variant="danger" size="sm" className="py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => handleAnnuler(h._id)} title="Annuler"><i className="bi bi-trash"></i></Button>
-                    </td>
-                  </tr>
-                ))}
+                ) : historique.map((h, i) => {
+                  const expanded = expandedRows.has(h._id);
+                  const paiements = h.paiements || [];
+                  return (
+                    <React.Fragment key={h._id}>
+                      <tr style={{ background: i % 2 === 0 ? '#fff' : '#e3f2fd' }}>
+                        <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0', textAlign: 'center' }}>
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                            {i + 1}
+                            {paiements.length > 0 && (
+                              <span
+                                onClick={() => toggleExpand(h._id)}
+                                style={{ cursor: 'pointer', color: '#1565c0', fontSize: '0.8rem', userSelect: 'none', lineHeight: 1 }}
+                                title={expanded ? 'Masquer paiements' : 'Voir paiements'}
+                              >
+                                <i className={`bi bi-chevron-${expanded ? 'up' : 'down'}`}></i>
+                              </span>
+                            )}
+                          </span>
+                        </td>
+                        <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>{h.date ? new Date(h.date).toLocaleDateString('fr-FR') : '-'}</td>
+                        <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0', textAlign: 'center' }}>{h.Heure || '-'}</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>{fmt(h.MontantJour || 0)}</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', borderRight: '1px solid #e0e0e0' }}>{fmt(h.Totalretenue || 0)}</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#006064', borderRight: '1px solid #e0e0e0' }}>{fmt(h.Totalnetapayer || 0)}</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', borderRight: '1px solid #e0e0e0' }}>{fmt(h.MontantPayé || 0)}</td>
+                        <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: '#c62828', borderRight: '1px solid #e0e0e0' }}>{fmt(h.Restapayer || 0)}</td>
+                        <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0', textAlign: 'center' }}>{h.DEBUTD ? new Date(h.DEBUTD).toLocaleDateString('fr-FR') : '-'}</td>
+                        <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0', textAlign: 'center' }}>{h.FIND ? new Date(h.FIND).toLocaleDateString('fr-FR') : '-'}</td>
+                        <td style={{ padding: '3px 6px', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                          <Button variant="success" size="sm" className="me-1 py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => ouvrirPaiement(h)} title="Payer"><i className="bi bi-cash-coin"></i></Button>
+                          <Button variant="info" size="sm" className="me-1 py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => imprimerListe(h._id)} title="Liste détaillée"><i className="bi bi-list-ul"></i></Button>
+                          <Button variant="primary" size="sm" className="me-1 py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => imprimerBordereau(h._id, h)} title="Bordereau"><i className="bi bi-file-earmark-text"></i></Button>
+                          <Button variant="danger" size="sm" className="py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => handleAnnuler(h._id)} title="Annuler"><i className="bi bi-trash"></i></Button>
+                        </td>
+                      </tr>
+                      {expanded && paiements.length > 0 && (
+                        <tr key={`${h._id}-paiements`} style={{ background: '#e8f5e9' }}>
+                          <td colSpan={11} style={{ padding: '6px 24px', borderTop: '1px dashed #a5d6a7' }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: '#2e7d32', marginBottom: 4 }}>
+                              <i className="bi bi-credit-card me-1"></i>Détail des paiements
+                            </div>
+                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.7rem' }}>
+                              <thead>
+                                <tr style={{ background: '#c8e6c9' }}>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'center' }}>Date</th>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'center' }}>Heure</th>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'right' }}>Montant payé</th>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'right' }}>Reste après</th>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'center' }}>Reçu par</th>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'center' }}>Mode</th>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'center' }}>Banque</th>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'center' }}>N° Chèque</th>
+                                  <th style={{ padding: '3px 8px', border: '1px solid #a5d6a7', textAlign: 'center' }}>Reçu</th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {paiements.map((p, pi) => (
+                                  <tr key={p._id || pi} style={{ background: pi % 2 === 0 ? '#f1f8e9' : '#fff' }}>
+                                    <td style={{ padding: '3px 8px', border: '1px solid #dcedc8', textAlign: 'center' }}>{p.Date ? new Date(p.Date).toLocaleDateString('fr-FR') : '-'}</td>
+                                    <td style={{ padding: '3px 8px', border: '1px solid #dcedc8', textAlign: 'center' }}>{p.Heure || '-'}</td>
+                                    <td style={{ padding: '3px 8px', border: '1px solid #dcedc8', textAlign: 'right', fontWeight: 'bold', color: '#2e7d32' }}>{fmt(p.MontantPayé || 0)} F</td>
+                                    <td style={{ padding: '3px 8px', border: '1px solid #dcedc8', textAlign: 'right', color: '#c62828' }}>{fmt(p.Restapayer || 0)} F</td>
+                                    <td style={{ padding: '3px 8px', border: '1px solid #dcedc8', textAlign: 'center' }}>{p.Recupar || p.PayéPar || '-'}</td>
+                                    <td style={{ padding: '3px 8px', border: '1px solid #dcedc8', textAlign: 'center' }}>{p.Modepaiement || '-'}</td>
+                                    <td style={{ padding: '3px 8px', border: '1px solid #dcedc8', textAlign: 'center' }}>{p.BanqueC || '-'}</td>
+                                    <td style={{ padding: '3px 8px', border: '1px solid #dcedc8', textAlign: 'center' }}>{p.NCheque || '-'}</td>
+                                    <td style={{ padding: '3px 6px', border: '1px solid #dcedc8', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                                      <Button variant="outline-success" size="sm" className="py-0 px-1 me-1" style={{ fontSize: '0.65rem' }} onClick={() => imprimerRecuPaiement(p, h)} title="Imprimer le reçu">
+                                        <i className="bi bi-printer"></i>
+                                      </Button>
+                                      <Button variant="outline-primary" size="sm" className="py-0 px-1 me-1" style={{ fontSize: '0.65rem' }} onClick={() => ouvrirModifierPaiement(p, h)} title="Modifier">
+                                        <i className="bi bi-pencil"></i>
+                                      </Button>
+                                      <Button variant="outline-danger" size="sm" className="py-0 px-1" style={{ fontSize: '0.65rem' }} onClick={() => handleAnnulerPaiement(p, h)} title="Annuler ce paiement">
+                                        <i className="bi bi-x-circle"></i>
+                                      </Button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
               </tbody>
             </Table>
           </div>
@@ -505,6 +990,71 @@ export default function HonorairesPage() {
         </div>
       </Card>
       )}
+
+      {/* MODAL MODIFIER PAIEMENT */}
+      <Modal show={showModalModifierPaiement} onHide={fermerModifierPaiement} centered size="lg">
+        <Modal.Header closeButton style={{ background: 'linear-gradient(90deg,#1565c0,#42a5f5)', color: '#fff' }}>
+          <Modal.Title style={{ fontSize: '0.95rem' }}><i className="bi bi-pencil me-2"></i>Modifier le paiement</Modal.Title>
+        </Modal.Header>
+        <Modal.Body style={{ fontSize: '0.8rem' }}>
+          <Row className="mb-3">
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>Montant payé actuel</Form.Label>
+                <Form.Control type="text" readOnly value={`${fmt(paiementAModifier?.MontantPayé || 0)} F`} style={{ background: '#e3f2fd', fontWeight: 'bold' }} />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>Nouveau montant</Form.Label>
+                <Form.Control type="number" value={montantEdit} onChange={e => setMontantEdit(e.target.value)} min={1} style={{ fontWeight: 'bold', color: '#1565c0' }} />
+              </Form.Group>
+            </Col>
+          </Row>
+          <Row className="mb-3">
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>Reçu par</Form.Label>
+                <Form.Control type="text" value={recuParEdit} onChange={e => setRecuParEdit(e.target.value)} />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label>Mode de paiement</Form.Label>
+                <Form.Select value={modePaiementEdit} onChange={e => setModePaiementEdit(e.target.value)}>
+                  <option value="Espèce">Espèce</option>
+                  <option value="Chèque">Chèque</option>
+                  <option value="Virement">Virement</option>
+                  <option value="Mobile Money">Mobile Money</option>
+                </Form.Select>
+              </Form.Group>
+            </Col>
+          </Row>
+          {modePaiementEdit === 'Chèque' && (
+            <Row className="mb-3">
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>Banque</Form.Label>
+                  <Form.Control type="text" value={banqueEdit} onChange={e => setBanqueEdit(e.target.value)} />
+                </Form.Group>
+              </Col>
+              <Col md={6}>
+                <Form.Group>
+                  <Form.Label>N° chèque</Form.Label>
+                  <Form.Control type="text" value={nChequeEdit} onChange={e => setNChequeEdit(e.target.value)} />
+                </Form.Group>
+              </Col>
+            </Row>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" size="sm" onClick={fermerModifierPaiement}>Fermer</Button>
+          <Button variant="primary" size="sm" onClick={handleModifierPaiement} disabled={savingEdit}>
+            {savingEdit ? <Spinner animation="border" size="sm" className="me-1" /> : null}
+            Enregistrer
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* MODAL DE PAIEMENT */}
       <Modal show={showModalPaiement} onHide={fermerPaiement} centered size="lg">

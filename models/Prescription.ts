@@ -24,6 +24,7 @@ export interface IPrescription extends Omit<Document, '_id'> {
     StatutFacture?: boolean;
     Numfacture?: string;
     NumBon?: string;
+    Numcarte?: string;
     Modepaiement?: string;
     Document?: Buffer;
     ExtensionF?: string;
@@ -71,6 +72,7 @@ const PrescriptionSchema = new Schema<IPrescription>(
         StatutFacture: { type: Boolean },
         Numfacture: { type: String },
         NumBon: { type: String },
+        Numcarte: { type: String },
         Modepaiement: { type: String },
         Document: { type: Buffer },
         ExtensionF: { type: String },
