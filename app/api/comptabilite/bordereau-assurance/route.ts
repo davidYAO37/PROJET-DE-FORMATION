@@ -211,6 +211,7 @@ export async function POST(request: NextRequest) {
         IDPRESCRIPTION: l.idPrescription ? new mongoose.Types.ObjectId(l.idPrescription) : undefined,
         idHospitalisation: l.idHospitalisation ? new mongoose.Types.ObjectId(l.idHospitalisation) : undefined,
         IDFACTURATION: l.idFacturation ? new mongoose.Types.ObjectId(l.idFacturation) : undefined,
+        AHospitalisation: l.aHospitalisation || 0,
       }).save();
     }
 

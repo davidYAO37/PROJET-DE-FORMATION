@@ -243,6 +243,29 @@ export default function Sidebar() {
               </ul>
             </Accordion.Body>
           </Accordion.Item>
+          {/* Service Facturation */}
+          <Accordion.Item eventKey="3b">
+            <Accordion.Header>
+              <i
+                className="bi bi-receipt-cutoff me-2 text-primary"
+                style={{ fontSize: "20px" }}
+              ></i>
+              Service Facturation
+            </Accordion.Header>
+            <Accordion.Body className="ps-2">
+              <ul className="nav flex-column gap-2">
+                <li>
+                  <Link
+                    href="/pages/servicefacturation/tfacturation"
+                    className="sidebar-link-medical d-flex align-items-center"
+                  >
+                    <i className="bi bi-receipt-cutoff me-2 text-primary"></i>{" "}
+                    Gestion Facturation
+                  </Link>
+                </li>
+              </ul>
+            </Accordion.Body>
+          </Accordion.Item>
           {/* Service pharmacie */}
           <Accordion.Item eventKey="4">
             <Accordion.Header>
@@ -256,7 +279,7 @@ export default function Sidebar() {
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link
-                    href="/pages/servicepharmacie"
+                    href="/pages/servicepharmacie/tpharmacie"
                     className="sidebar-link-medical d-flex align-items-center"
                   >
                     <i className="bi bi-prescription2 me-2 text-danger"></i>{" "}

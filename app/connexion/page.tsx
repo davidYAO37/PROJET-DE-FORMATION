@@ -61,7 +61,8 @@ export default function ConnexionPage() {
           else if (profil?.type === 'biologiste') router.push('/pages/servicebiologiste/tbiologiste');
           else if (profil?.type === 'technicienlabo') router.push('/pages/servicelaboratoire/tlaboratoire');
           else if (profil?.type === 'caisse') router.push('/pages/servicecaisse/tcaisse');
-          else if (profil?.type === 'comptable') router.push('/pages/servicecomptable/tcomptable');
+          else if (profil?.type === 'comptable') router.push('/pages/servicecomptabilite/tcompta');
+          else if (profil?.type === 'facturation') router.push('/pages/servicefacturation/tfacturation');
           else if (profil?.type === 'accueil') router.push('/pages/serviceaccueil/tpatient');
           else if (profil?.type === 'adminsuper') router.push('/dashboard');
         }, 1000);

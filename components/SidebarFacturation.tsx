@@ -5,8 +5,7 @@ import { Nav } from 'react-bootstrap';
 import { useEffect, useState } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 
-const BASE = '/pages/servicecomptabilite';
-const BASE_FACTURE_ASSUR = '/pages/factureassurance';
+const BASE = '/pages/servicefacturation';
 
 interface MenuItem {
   label: string;
@@ -17,20 +16,13 @@ interface MenuItem {
 }
 
 const menu: MenuItem[] = [
-  { label: 'Tableau de bord', path: `${BASE}/tcompta`, icon: 'bi-speedometer2', color: 'text-primary' },
-  { label: 'Honoraires', path: `${BASE}/honoraires`, icon: 'bi-person-badge-fill', color: 'text-warning' },
-  { label: 'Caisse', path: `${BASE}/caisse`, icon: 'bi-cash-register', color: 'text-success' },
-  { label: 'État des entrées', path: `${BASE}/etatentrees`, icon: 'bi-arrow-down-circle-fill', color: 'text-success' },
-  { label: 'État des sorties', path: `${BASE}/etatsorties`, icon: 'bi-arrow-up-circle-fill', color: 'text-danger' },
-  { label: 'Bilan financier', path: `${BASE}/bilan`, icon: 'bi-bar-chart-fill', color: 'text-info' },
-  { label: 'Budget de trésorerie', path: `${BASE}/budgettresorerie`, icon: 'bi-piggy-bank-fill', color: 'text-warning' },
-  { label: 'Recette / Dépense', path: `${BASE}/recettedepense`, icon: 'bi-file-earmark-bar-graph-fill', color: 'text-primary' },
-  { label: 'Débiteurs', path: `${BASE}/debiteurs`, icon: 'bi-people-fill', color: 'text-warning' },
-  { label: 'Facturation assurances', path: `${BASE_FACTURE_ASSUR}`, icon: 'bi-shield-fill-check', color: 'text-danger' },
+  { label: 'Tableau de bord', path: `${BASE}/tfacturation`, icon: 'bi-speedometer2', color: 'text-primary' },
+  { label: 'Honoraires Médecins', path: `${BASE}/honoraires`, icon: 'bi-person-badge-fill', color: 'text-warning' },
+  { label: 'Facturation assurances', path: `${BASE}/factureassurance`, icon: 'bi-shield-fill-check', color: 'text-danger' },
   { label: 'Mot de passe', path: '#', icon: 'bi-key-fill', color: 'text-secondary', isMdp: true },
 ];
 
-export default function SidebarComptabilite() {
+export default function SidebarFacturation() {
   const pathname = usePathname();
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -76,6 +68,13 @@ export default function SidebarComptabilite() {
         </div>
 
         <hr className="sidebar-separator-medical" />
+
+        {/* Titre section */}
+        <div className="px-3 mb-2">
+          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.45)', textTransform: 'uppercase', letterSpacing: 2 }}>
+            Service Facturation
+          </span>
+        </div>
 
         <Nav className="flex-column px-3">
           {menu.map((item, index) => {

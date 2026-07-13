@@ -285,6 +285,51 @@ export default function FactureAssurancePage() {
     return 'secondary';
   };
 
+  const handleImprimerFacture = (f: FactureAssurHistorique) => {
+    const ref = encodeURIComponent(f.Reference);
+    const debut = encodeURIComponent(f.DebutF || '');
+    const fin = encodeURIComponent(f.FinF || '');
+    const assur = encodeURIComponent(f.Assurance || '');
+    const garant = optionImpression === 2 ? '1' : '0';
+    const id = encodeURIComponent(f._id);
+    let url = '';
+    switch (choixImpression) {
+      case 1:
+        url = `/pages/MesImpressions/impression-bordereau/consultation?numfacture=${ref}&debutF=${debut}&finF=${fin}&assurance=${assur}&parGarant=${garant}`;
+        break;
+      case 2:
+        url = `/pages/MesImpressions/impression-bordereau/soins-examens?idFactureAssur=${id}&parGarant=${garant}`;
+        break;
+      case 3:
+        url = `/pages/MesImpressions/impression-bordereau/pharmacies?numfacture=${ref}&debutF=${debut}&finF=${fin}&assurance=${assur}&parGarant=${garant}`;
+        break;
+      case 4:
+        url = `/pages/MesImpressions/impression-bordereau/consultations-soins-examens?idFactureAssur=${id}&parGarant=${garant}`;
+        break;
+      case 5:
+        url = `/pages/MesImpressions/impression-bordereau/consultations-pharmacies?idFactureAssur=${id}&parGarant=${garant}`;
+        break;
+      case 6:
+        url = `/pages/MesImpressions/impression-bordereau/soins-examens-pharmacies?idFactureAssur=${id}&parGarant=${garant}`;
+        break;
+      case 7:
+        url = `/pages/MesImpressions/impression-bordereau/tout-sauf-hospitalisation?idFactureAssur=${id}&parGarant=${garant}`;
+        break;
+      case 8:
+        url = `/pages/MesImpressions/impression-bordereau/hospitalisation?idFactureAssur=${id}&parGarant=${garant}`;
+        break;
+      default:
+        alert(`CAS ${choixImpression} — à implémenter`);
+        return;
+    }
+    window.open(url, '_blank');
+  };
+
+  const handleRecapFacture = (f: FactureAssurHistorique) => {
+    const id = encodeURIComponent(f._id);
+    window.open(`/pages/MesImpressions/impression-bordereau/facture-recap?idFactureAssur=${id}`, '_blank');
+  };
+
   return (
     <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '8px 10px' }}>
       {/* HEADER */}
@@ -604,25 +649,7 @@ export default function FactureAssurancePage() {
             <button
               onClick={() => {
                 if (!selectedFacture) { alert('Sélectionnez une ligne dans le tableau'); return; }
-                const ref = encodeURIComponent(selectedFacture.Reference);
-                const debut = encodeURIComponent(selectedFacture.DebutF || '');
-                const fin = encodeURIComponent(selectedFacture.FinF || '');
-                const assur = encodeURIComponent(selectedFacture.Assurance || '');
-                const garant = optionImpression === 2 ? '1' : '0';
-                let url = '';
-                const id = encodeURIComponent(selectedFacture._id);
-                switch (choixImpression) {
-                  case 1:
-                    url = `/pages/MesImpressions/impression-bordereau/consultation?numfacture=${ref}&debutF=${debut}&finF=${fin}&assurance=${assur}&parGarant=${garant}`;
-                    break;
-                  case 2:
-                    url = `/pages/MesImpressions/impression-bordereau/soins-examens?idFactureAssur=${id}&parGarant=${garant}`;
-                    break;
-                  default:
-                    alert(`CAS ${choixImpression} — à implémenter`);
-                    return;
-                }
-                window.open(url, '_blank');
+                handleImprimerFacture(selectedFacture);
               }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#e3f2fd', border: '2px solid #1565c0', borderRadius: 6, padding: '4px 14px', cursor: 'pointer', minWidth: 90, gap: 2 }}
             >
@@ -634,7 +661,7 @@ export default function FactureAssurancePage() {
             <button
               onClick={() => {
                 if (!selectedFacture) { alert('Sélectionnez une ligne dans le tableau'); return; }
-                alert(`FACTURE RECAP — à implémenter (Ref: ${selectedFacture.Reference})`);
+                handleRecapFacture(selectedFacture);
               }}
               style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#ede7f6', border: '2px solid #6a1b9a', borderRadius: 6, padding: '4px 14px', cursor: 'pointer', minWidth: 90, gap: 2 }}
             >
@@ -674,10 +701,10 @@ export default function FactureAssurancePage() {
                         style={{ background: selectedFacture?._id === f._id ? '#fff9c4' : (i % 2 === 0 ? '#fff' : '#e3f2fd'), borderLeft: `3px solid ${f.etat_facture ? '#2e7d32' : '#1565c0'}`, cursor: 'pointer' }}>
                         <td style={{ padding: '3px 6px', textAlign: 'center', borderRight: '1px solid #e0e0e0' }}>
                           <div style={{ display: 'flex', gap: 4, justifyContent: 'center', alignItems: 'center' }}>
-                            <button title="Imprimer facture" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+                            <button title="Imprimer facture" onClick={e => { e.stopPropagation(); handleImprimerFacture(f); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
                               <i className="bi bi-printer-fill" style={{ fontSize: '0.9rem', color: '#1565c0' }}></i>
                             </button>
-                            <button title="Facture récap" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+                            <button title="Facture récap" onClick={e => { e.stopPropagation(); handleRecapFacture(f); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
                               <i className="bi bi-file-earmark-bar-graph-fill" style={{ fontSize: '0.9rem', color: '#6a1b9a' }}></i>
                             </button>
                             <button title="Supprimer" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
