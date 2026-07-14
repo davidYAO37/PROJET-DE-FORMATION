@@ -225,6 +225,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                 selectedMedecin={selectedMedecin}
                 setSelectedMedecin={setSelectedMedecin}
                 assure={assure}
+                patient={patient}
             />
 
             <BlocAssurance

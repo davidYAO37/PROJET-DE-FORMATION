@@ -8,7 +8,6 @@ import { Patient } from '@/types/patient';
 import { BiSolidBookAdd } from 'react-icons/bi';
 import { CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
-import dayjs from 'dayjs';
 import ExamenHospitalisationModal from '../components/ExamenHospitModal';
 import ModifierPatient from './ModifierPatient';
 import FicheConsultation from '../components/ConsultationAdd/FicheConsultation';
@@ -35,7 +34,6 @@ export default function Page() {
   const [showPharmacieModalPharmAccueil, setShowPharmacieModalPharmAccueil] = useState(false);
   const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
   const [showConsultationModal, setShowConsultationModal] = useState(false);
-  const [consultationJour, setConsultationJour] = useState<string | null>(null);
 
   // États pour le modal PatientServiceModalAccueil
   const [showPatientServiceModal, setShowPatientServiceModal] = useState(false);
@@ -276,28 +274,8 @@ export default function Page() {
                         title="Nouvelle Consultation ou visite"
                         size="sm"
                         className="me-4"
-                        onClick={async () => {
+                        onClick={() => {
                           setSelectedPatient(patient);
-                          try {
-                            const res = await fetch(`/api/consultation?patientId=${patient._id}`);
-                            if (res.ok) {
-                              const consultations = await res.json();
-                              const today = dayjs().startOf('day');
-                              const found = consultations.find((c: any) => {
-                                const date = dayjs(c.Date_consulation);
-                                return date.isSame(today, 'day');
-                              });
-                              if (found && found.CodePrestation) {
-                                setConsultationJour(found.CodePrestation);
-                                setShowConsultationModal(true);
-                                return;
-                              }
-                            }
-                          } catch (e) {
-                            // console.error("Erreur vérification consultation", e);
-                          }
-                          // sinon -> pas de consultation aujourd'hui, ouvrir la fiche
-                          setConsultationJour(null);
                           setShowConsultationModal(true);
                         }}
                       >
@@ -431,14 +409,7 @@ export default function Page() {
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {consultationJour ? (
-            <div className="text-center p-4">
-              <h4 className="text-success">Ce patient a déjà une consultation aujourd'hui.</h4>
-              <p>Code Prestation : <b>{consultationJour}</b></p>
-            </div>
-          ) : (
-            <FicheConsultation patient={selectedPatient} />
-          )}
+          <FicheConsultation patient={selectedPatient} />
         </Modal.Body>
       </Modal>
     </Container>

@@ -116,6 +116,19 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         await consultation.save();
 
+        // Gestion de la caution du patient : déduire directement le montant encaissé du compte provision
+        if (consultation.Modepaiement === "Caution" && consultation.IdPatient) {
+            const patientCaution = await Patient.findById(
+                typeof consultation.IdPatient === "string" ? new mongoose.Types.ObjectId(consultation.IdPatient) : consultation.IdPatient
+            );
+            if (patientCaution) {
+                const montantCaution = consultation.Montantencaisse || 0;
+                patientCaution.ProvisionClient -= montantCaution;
+                patientCaution.DepenseProvision += montantCaution;
+                await patientCaution.save();
+            }
+        }
+
         // ✅ Réponse structurée pour React
         return NextResponse.json({
             success: true,

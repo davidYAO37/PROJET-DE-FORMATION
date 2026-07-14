@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 
 const menu = [
   { label: 'Tableau de bord', path: '/pages/servicecaisse/tcaisse', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
+  { label: 'Compte patient', path: '/pages/servicecaisse/comptePatient', icon: <i className="bi bi-wallet-fill me-2 text-success"></i> },
   { label: 'Factures en attente', path: '/pages/servicecaisse/listefactures', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
   { label: 'Saisir une Facture Exam-Hospit...', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i>, style: { cursor: 'pointer' } },
   { label: 'Facturer une pharmacie', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-warning"></i>, style: { cursor: 'pointer' } },

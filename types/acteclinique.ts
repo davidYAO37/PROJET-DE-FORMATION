@@ -18,6 +18,7 @@ export interface ActeClinique {
     TypeResultat?: number;
     Interpretation?: string;
     ORdonnacementAffichage?: number;
+    ActeNonFacturable?: boolean;
     // Champs ajoutés par MongoDB
     createdAt?: string;
     updatedAt?: string;
@@ -48,6 +49,7 @@ export interface ActeSelectionne {
     montantMedecin?: number;
     montantAnesthesiste?: number;
     montantAideOperatoire?: number;
+    ActeNonFacturable?: boolean;
 }
 
 // Fonction principale : ajoute un acte et calcule toutes les valeurs
@@ -87,6 +89,7 @@ export function ajouterActe(
         montantMedecin,
         montantAnesthesiste,
         montantAideOperatoire,
+        ActeNonFacturable: acte.ActeNonFacturable || false,
     };
 }
 

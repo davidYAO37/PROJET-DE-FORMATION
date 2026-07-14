@@ -25,6 +25,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
         MontantAideOperatoire: 0,
         IDFAMILLE_ACTE_BIOLOGIE: "",
         consultationviste: false,
+        ActeNonFacturable: false,
     });
     const [famillesActe, setFamillesActe] = useState<FamilleActe[]>([]);
     const [loading, setLoading] = useState(false);
@@ -61,6 +62,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 MontantAideOperatoire: acte.MontantAideOperatoire || 0,
                 IDFAMILLE_ACTE_BIOLOGIE: acte.IDFAMILLE_ACTE_BIOLOGIE || "",
                 consultationviste: acte.consultationviste || false,
+                ActeNonFacturable: acte.ActeNonFacturable || false,
             });
         }
     }, [acte]);
@@ -80,6 +82,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 MontantAideOperatoire: 0,
                 IDFAMILLE_ACTE_BIOLOGIE: "",
                 consultationviste: false,
+                ActeNonFacturable: false,
             });
             setError("");
         }
@@ -114,6 +117,7 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                 MontantAideOperatoire: Number(form.MontantAideOperatoire),
                 IDFAMILLE_ACTE_BIOLOGIE: form.IDFAMILLE_ACTE_BIOLOGIE || undefined,
                 consultationviste: Boolean(form.consultationviste),
+                ActeNonFacturable: Boolean(form.ActeNonFacturable),
             };
 
             // Utilise l'API acte-tarif-sync pour la modification (garantit la cohérence)
@@ -273,6 +277,15 @@ export default function ModifierActe({ show, onHide, acte, onSave }: Props) {
                             name="consultationviste"
                             checked={form.consultationviste}
                             onChange={(e) => setForm({ ...form, consultationviste: e.target.checked })}
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Check 
+                            type="checkbox" 
+                            label="Acte non facturable" 
+                            name="ActeNonFacturable"
+                            checked={form.ActeNonFacturable}
+                            onChange={(e) => setForm({ ...form, ActeNonFacturable: e.target.checked })}
                         />
                     </Form.Group>
                 </Modal.Body>

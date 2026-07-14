@@ -6,6 +6,7 @@ import PharmacieModalPharmAccueilMedecin from '../PharmacieMedecin/PharmacieModa
 import HospitalisationPageMedecin from '../examenhospitalisationMedecin/page';
 import PrintFichePrescription from '../MesImpressions/printFichePrescription';
 import AvisHospitModal from '../tmedecin/components/AvisHospit/AvisHospitModal';
+import SectionCard from '../components/SectionCard';
 
 interface Patient {
   _id: string;
@@ -836,7 +837,7 @@ export default function FichePrescriptionMedecinAsaisie() {
       }
 
       if (!consultationForm.ConclusionClinique.trim()) {
-        setError('La conclusion clinique est requise');
+        setError('La conclusion est requise');
         setTimeout(() => setError(''), 3000);
         return;
       }
@@ -1204,68 +1205,72 @@ export default function FichePrescriptionMedecinAsaisie() {
       {(patient || consultationLiee) ? (
         <>
           {/* En-tête patient - Design professionnel */}
-          <Card className="mb-4 shadow-sm border-0">
-            <Card.Header className="bg-gradient-primary text-dark">
-              <div className="d-flex align-items-center">
-                FICHE DE CONSULTATION
-                <div className="rounded-circle bg-white text-primary p-3 me-3">
-                  <i className="bi bi-person-fill fs-4"></i>
-                </div>
-                <div>
-                  <div className="d-flex align-items-center flex-wrap">
-                    <h4 className="mb-0 me-3">
-                      {(() => {
-                        const nom = patient?.Nom || consultationLiee?.IdPatient?.Nom || consultationLiee?.PatientP || 'Patient';
-                        const prenoms = patient?.Prenoms || consultationLiee?.IdPatient?.Prenoms || '';
-                        return `${nom} ${prenoms}`.trim();
-                      })()}
-                    </h4>
-                    <div className="text-muted small">
-                      <span className="me-3">
-                        <i className="bi bi-person-fill me-1"></i>
-                        {(() => {
-                          const sexe = patient?.sexe || consultationLiee?.IdPatient?.sexe;
-                          if (sexe) {
-                            return sexe.toUpperCase() === 'M' ? 'Homme' : sexe.toUpperCase() === 'F' ? 'Femme' : sexe;
-                          }
-                          return 'N/C';
-                        })()}
-                      </span>
-                      <span className="me-3">
-                        <i className="bi bi-calendar3 me-1"></i>
-                        {(() => {
-                          try {
-                            const dateNaiss = patient?.Date_naisse || consultationLiee?.IdPatient?.Date_naisse;
-                            if (dateNaiss) {
-                              return `${calculerAge(dateNaiss)} ans`;
-                            }
-                            return 'Âge N/C';
-                          } catch (error) {
-                            console.error('Erreur calcul âge:', error);
-                            return 'Âge err.';
-                          }
-                        })()}
-                      </span>
-                      <span className="me-3">
-                        <i className="bi bi-folder2-open me-1"></i>
-                        {(() => {
-                          const codeDossier = patient?.Code_dossier || consultationLiee?.IdPatient?.Code_dossier || consultationLiee?.Code_dossier;
-                          return codeDossier || 'N/C';
-                        })()}
-                      </span>
-                      <span>
-                        <i className="bi bi-telephone me-1"></i>
-                        {(() => {
-                          const tel = patient?.Contact || consultationLiee?.IdPatient?.Contact || consultationLiee?.IdPatient?.Telephone;
-                          return tel || 'N/C';
-                        })()}
-                      </span>
-                    </div>
-                  </div>
-
-                </div>
+          <Card className="mb-4 shadow-sm border-0 overflow-hidden">
+            <Card.Header className="bg-primary text-white py-3">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h5 className="mb-0 fw-bold">
+                  <i className="bi bi-clipboard2-pulse me-2"></i>
+                  Fiche de consultation
+                </h5>
+                <Badge bg="light" text="primary" className="fs-6">
+                  <i className="bi bi-folder2-open me-1"></i>
+                  {(() => {
+                    const codeDossier = patient?.Code_dossier || consultationLiee?.IdPatient?.Code_dossier || consultationLiee?.Code_dossier;
+                    return codeDossier || 'N/C';
+                  })()}
+                </Badge>
               </div>
             </Card.Header>
+            <Card.Body className="p-3">
+              <div className="d-flex align-items-center">
+                <div className="rounded-circle bg-primary bg-opacity-10 text-primary p-3 me-3 d-flex align-items-center justify-content-center" style={{ width: 64, height: 64 }}>
+                  <i className="bi bi-person-fill fs-2"></i>
+                </div>
+                <div className="flex-grow-1">
+                  <h4 className="mb-1 fw-bold text-dark">
+                    {(() => {
+                      const nom = patient?.Nom || consultationLiee?.IdPatient?.Nom || consultationLiee?.PatientP || 'Patient';
+                      const prenoms = patient?.Prenoms || consultationLiee?.IdPatient?.Prenoms || '';
+                      return `${nom} ${prenoms}`.trim();
+                    })()}
+                  </h4>
+                  <div className="d-flex flex-wrap gap-2">
+                    <Badge bg="light" text="dark" className="border">
+                      <i className="bi bi-person-fill me-1 text-primary"></i>
+                      {(() => {
+                        const sexe = patient?.sexe || consultationLiee?.IdPatient?.sexe;
+                        if (sexe) {
+                          return sexe.toUpperCase() === 'M' ? 'Homme' : sexe.toUpperCase() === 'F' ? 'Femme' : sexe;
+                        }
+                        return 'N/C';
+                      })()}
+                    </Badge>
+                    <Badge bg="light" text="dark" className="border">
+                      <i className="bi bi-calendar3 me-1 text-primary"></i>
+                      {(() => {
+                        try {
+                          const dateNaiss = patient?.Date_naisse || consultationLiee?.IdPatient?.Date_naisse;
+                          if (dateNaiss) {
+                            return `${calculerAge(dateNaiss)} ans`;
+                          }
+                          return 'Âge N/C';
+                        } catch (error) {
+                          console.error('Erreur calcul âge:', error);
+                          return 'Âge err.';
+                        }
+                      })()}
+                    </Badge>
+                    <Badge bg="light" text="dark" className="border">
+                      <i className="bi bi-telephone me-1 text-primary"></i>
+                      {(() => {
+                        const tel = patient?.Contact || consultationLiee?.IdPatient?.Contact || consultationLiee?.IdPatient?.Telephone;
+                        return tel || 'N/C';
+                      })()}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card.Body>
           </Card>
 
           {/* Section principale - Organisation en colonnes */}
@@ -1273,134 +1278,105 @@ export default function FichePrescriptionMedecinAsaisie() {
             {/* Colonne gauche - Antécédents et Constantes */}
             <Col lg={6}>
               {/* Antécédents - Carte dynamique */}
-              <Card className={`shadow-sm border-0 mb-4 ${antecedents.length > 0 ? 'border-success' : 'border-light'}`}>
-                <Card.Header className={`${antecedents.length > 0 ? 'bg-success' : 'bg-light'} ${antecedents.length > 0 ? 'text-white' : 'text-dark'} d-flex justify-content-between align-items-center py-3`}>
-                  <div className="d-flex align-items-center">
-                    <div className={`rounded-circle ${antecedents.length > 0 ? 'bg-white text-success' : 'bg-success text-white'} p-2 me-3`}>
-                      <i className={`bi ${antecedents.length > 0 ? 'bi-clock-history' : 'bi-clock'} fs-5`}></i>
-                    </div>
-                    <div>
-                      <h5 className="mb-0">Antécédents</h5>
-                      <small className={`${antecedents.length > 0 ? 'opacity-75' : 'opacity-100'}`}>
-                        {antecedents.length > 0 ? `${antecedents.length} enregistré${antecedents.length > 1 ? 's' : ''}` : 'Aucun antécédent'}
-                      </small>
-                    </div>
+              <SectionCard
+                title="Antécédents médicaux"
+                icon={antecedents.length > 0 ? 'bi-clock-history' : 'bi-clock'}
+                color="success"
+                isActive={antecedents.length > 0}
+                subtitle={antecedents.length > 0 ? `${antecedents.length} enregistré${antecedents.length > 1 ? 's' : ''}` : 'Aucun antécédent'}
+                actionLabel={antecedents.length > 0 ? 'Ajouter' : 'Commencer'}
+                actionIcon="bi-plus-circle"
+                onAction={() => setShowAntecedentModal(true)}
+              >
+                {antecedents.length === 0 ? (
+                  <div className="text-center py-4">
+                    <i className="bi bi-clock-history text-muted fs-1 mb-3"></i>
+                    <p className="text-muted mb-0">Aucun antécédent enregistré</p>
+                    <small className="text-muted">Cliquez sur "Commencer" pour ajouter le premier antécédent</small>
                   </div>
-                  <Button
-                    variant={antecedents.length > 0 ? "light" : "success"}
-                    size="sm"
-                    onClick={() => setShowAntecedentModal(true)}
-                    className="rounded-pill"
-                  >
-                    <i className="bi bi-plus-circle me-1"></i>
-                    {antecedents.length > 0 ? 'Ajouter' : 'Commencer'}
-                  </Button>
-                </Card.Header>
-                <Card.Body className="p-3">
-                  {antecedents.length === 0 ? (
-                    <div className="text-center py-4">
-                      <i className="bi bi-clock-history text-muted fs-1 mb-3"></i>
-                      <p className="text-muted mb-0">Aucun antécédent enregistré</p>
-                      <small className="text-muted">Cliquez sur "Commencer" pour ajouter le premier antécédent</small>
+                ) : (
+                  <>
+                    <div className="mb-3">
+                      <div className="d-flex justify-content-between align-items-center">
+                        <small className="text-muted">
+                          <i className="bi bi-info-circle me-1"></i>
+                          {antecedents.length} type{antecedents.length > 1 ? 's' : ''} d'antécédents
+                        </small>
+                        <Button
+                          variant="outline-success"
+                          size="sm"
+                          onClick={() => setShowAntecedentModal(true)}
+                        >
+                          <i className="bi bi-plus me-1"></i>
+                          Ajouter un type
+                        </Button>
+                      </div>
                     </div>
-                  ) : (
-                    <>
-                      <div className="mb-3">
-                        <div className="d-flex justify-content-between align-items-center">
-                          <small className="text-muted">
-                            <i className="bi bi-info-circle me-1"></i>
-                            {antecedents.length} type{antecedents.length > 1 ? 's' : ''} d'antécédents
-                          </small>
-                          <Button
-                            variant="outline-success"
-                            size="sm"
-                            onClick={() => setShowAntecedentModal(true)}
-                          >
-                            <i className="bi bi-plus me-1"></i>
-                            Ajouter un type
-                          </Button>
-                        </div>
-                      </div>
-                      <div className="table-responsive">
-                        <Table striped hover className="mb-0">
-                          <thead>
-                            <tr>
-                              <th className="border-0">Type</th>
-                              <th className="border-0">Description</th>
-                              <th className="border-0">Date</th>
-                              <th className="border-0 text-end">Actions</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {antecedents.map((antecedent, index) => (
-                              <tr key={antecedent._id} className={index === 0 ? 'table-success' : ''}>
-                                <td className="align-middle">{getAntecedentBadge(antecedent.type)}</td>
-                                <td className="align-middle">
-                                  <div>
-                                    <strong>{antecedent.description}</strong>
-                                    {antecedent.date && (
-                                      <small className="text-muted d-block mt-1">
-                                        <i className="bi bi-calendar3 me-1"></i>
-                                        {new Date(antecedent.date).toLocaleDateString('fr-FR')}
-                                      </small>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="align-middle">
-                                  {antecedent.date ? (
-                                    <Badge bg="light" text="dark">
+                    <div className="table-responsive">
+                      <Table striped hover className="mb-0">
+                        <thead>
+                          <tr>
+                            <th className="border-0">Type</th>
+                            <th className="border-0">Description</th>
+                            <th className="border-0">Date</th>
+                            <th className="border-0 text-end">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {antecedents.map((antecedent, index) => (
+                            <tr key={antecedent._id} className={index === 0 ? 'table-success' : ''}>
+                              <td className="align-middle">{getAntecedentBadge(antecedent.type)}</td>
+                              <td className="align-middle">
+                                <div>
+                                  <strong>{antecedent.description}</strong>
+                                  {antecedent.date && (
+                                    <small className="text-muted d-block mt-1">
+                                      <i className="bi bi-calendar3 me-1"></i>
                                       {new Date(antecedent.date).toLocaleDateString('fr-FR')}
-                                    </Badge>
-                                  ) : (
-                                    <Badge bg="secondary">N/A</Badge>
+                                    </small>
                                   )}
-                                </td>
-                                <td className="align-middle text-end">
-                                  <Button
-                                    variant="outline-danger"
-                                    size="sm"
-                                    onClick={() => supprimerAntecedent(antecedent._id)}
-                                    className="rounded-circle"
-                                    title="Supprimer cet antécédent"
-                                  >
-                                    <i className="bi bi-trash"></i>
-                                  </Button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </Table>
-                      </div>
-                    </>
-                  )}
-                </Card.Body>
-              </Card>
+                                </div>
+                              </td>
+                              <td className="align-middle">
+                                {antecedent.date ? (
+                                  <Badge bg="light" text="dark">
+                                    {new Date(antecedent.date).toLocaleDateString('fr-FR')}
+                                  </Badge>
+                                ) : (
+                                  <Badge bg="secondary">N/A</Badge>
+                                )}
+                              </td>
+                              <td className="align-middle text-end">
+                                <Button
+                                  variant="outline-danger"
+                                  size="sm"
+                                  onClick={() => supprimerAntecedent(antecedent._id)}
+                                  className="rounded-circle"
+                                  title="Supprimer cet antécédent"
+                                >
+                                  <i className="bi bi-trash"></i>
+                                </Button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </Table>
+                    </div>
+                  </>
+                )}
+              </SectionCard>
 
               {/* Consultation - Carte dynamique */}
-              <Card className={`mb-4 shadow-sm border-0 ${hasConsultationData() ? 'border-warning' : 'border-light'}`}>
-                <Card.Header className={`${hasConsultationData() ? 'bg-warning' : 'bg-light'} ${hasConsultationData() ? 'text-dark' : 'text-dark'} d-flex justify-content-between align-items-center py-3`}>
-                  <div className="d-flex align-items-center">
-                    <div className={`rounded-circle ${hasConsultationData() ? 'bg-dark text-warning' : 'bg-warning text-dark'} p-2 me-3`}>
-                      <i className={`bi ${hasConsultationData() ? 'bi-clipboard2-pulse-fill' : 'bi-clipboard2-pulse'} fs-5`}></i>
-                    </div>
-                    <div>
-                      <h5 className="mb-0">Consultation</h5>
-                      <small className={`${hasConsultationData() ? 'opacity-75' : 'opacity-100'}`}>
-                        {hasConsultationData() ? `${getConsultationCount()} champ${getConsultationCount() > 1 ? 's' : ''} rempli${getConsultationCount() > 1 ? 's' : ''}` : 'Consultation vide'}
-                      </small>
-                    </div>
-                  </div>
-                  <Button
-                    variant={hasConsultationData() ? "dark" : "warning"}
-                    size="sm"
-                    onClick={sauvegarderConsultation}
-                    className="rounded-pill"
-                  >
-                    <i className="bi bi-check-circle me-1"></i>
-                    {hasConsultationData() ? 'Mettre à jour' : 'Commencer'}
-                  </Button>
-                </Card.Header>
-                <Card.Body className="p-3">
+              <SectionCard
+                title="Consultation"
+                icon={hasConsultationData() ? 'bi-clipboard2-pulse-fill' : 'bi-clipboard2-pulse'}
+                color="warning"
+                isActive={hasConsultationData()}
+                subtitle={hasConsultationData() ? `${getConsultationCount()} champ${getConsultationCount() > 1 ? 's' : ''} rempli${getConsultationCount() > 1 ? 's' : ''}` : 'Consultation vide'}
+                actionLabel={hasConsultationData() ? 'Mettre à jour' : 'Commencer'}
+                actionIcon="bi-check-circle"
+                onAction={sauvegarderConsultation}
+              >
                   {hasConsultationData() ? (
                     <>
                       <div className="mb-3">
@@ -1418,7 +1394,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                       <Form.Group className="mb-3">
                         <Form.Label className={`${consultationForm.MotifConsultation.trim() ? 'text-dark' : 'text-muted'} small`}>
                           <i className="bi bi-chat-quote me-1"></i>
-                          Motif de Consultation
+                          Motif de consultation
                         </Form.Label>
                         <Form.Control
                           as="textarea"
@@ -1438,7 +1414,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                       <Form.Group className="mb-3">
                         <Form.Label className={`${consultationForm.examenClinique.trim() ? 'text-dark' : 'text-muted'} small`}>
                           <i className="bi bi-stethoscope me-1"></i>
-                          Examen Clinique
+                          Examen clinique
                         </Form.Label>
                         <Form.Control
                           as="textarea"
@@ -1496,11 +1472,11 @@ export default function FichePrescriptionMedecinAsaisie() {
                         )}
                       </Form.Group>
 
-                      {/* Conclusion Clinique */}
+                      {/* Conclusion */}
                       <Form.Group className="mb-3">
                         <Form.Label className={`${consultationForm.ConclusionClinique.trim() ? 'text-dark' : 'text-muted'} small`}>
                           <i className="bi bi-clipboard-check me-1"></i>
-                          Conclusion Clinique
+                          Conclusion
                           <span className="text-danger ms-1">*</span>
                         </Form.Label>
                         <Form.Control
@@ -1520,7 +1496,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                         {!consultationForm.ConclusionClinique.trim() && (
                           <small className="text-danger mt-1 d-block">
                             <i className="bi bi-exclamation-triangle me-1"></i>
-                            La conclusion clinique est obligatoire
+                            La conclusion est obligatoire
                           </small>
                         )}
                       </Form.Group>
@@ -1551,39 +1527,24 @@ export default function FichePrescriptionMedecinAsaisie() {
                       </Button>
                     </div>
                   )}
-                </Card.Body>
-              </Card>
+              </SectionCard>
 
 
             </Col>
 
             {/* Colonne droite - Consultation et Prescriptions */}
             <Col lg={6}>
-              {/* Constantes Vitales - Carte dynamique */}
-              <Card className={`shadow-sm border-0 ${hasConstantesData() ? 'border-info' : 'border-light'}`}>
-                <Card.Header className={`${hasConstantesData() ? 'bg-info' : 'bg-light'} ${hasConstantesData() ? 'text-white' : 'text-dark'} d-flex justify-content-between align-items-center py-3`}>
-                  <div className="d-flex align-items-center">
-                    <div className={`rounded-circle ${hasConstantesData() ? 'bg-white text-info' : 'bg-info text-white'} p-2 me-3`}>
-                      <i className={`bi ${hasConstantesData() ? 'bi-activity' : 'bi-activity'} fs-5`}></i>
-                    </div>
-                    <div>
-                      <h5 className="mb-0">Constantes Vitales</h5>
-                      <small className={`${hasConstantesData() ? 'opacity-75' : 'opacity-100'}`}>
-                        {hasConstantesData() ? `${getConstantesCount()} enregistrée${getConstantesCount() > 1 ? 's' : ''}` : 'Aucune constante'}
-                      </small>
-                    </div>
-                  </div>
-                  <Button
-                    variant={hasConstantesData() ? "light" : "info"}
-                    size="sm"
-                    onClick={sauvegarderConstantes}
-                    className="rounded-pill"
-                  >
-                    <i className="bi bi-check-circle me-1"></i>
-                    {hasConstantesData() ? 'Mettre à jour' : 'Commencer'}
-                  </Button>
-                </Card.Header>
-                <Card.Body className="p-3">
+              {/* Constantes vitales - Carte dynamique */}
+              <SectionCard
+                title="Constantes vitales"
+                icon="bi-activity"
+                color="info"
+                isActive={hasConstantesData()}
+                subtitle={hasConstantesData() ? `${getConstantesCount()} enregistrée${getConstantesCount() > 1 ? 's' : ''}` : 'Aucune constante'}
+                actionLabel={hasConstantesData() ? 'Mettre à jour' : 'Commencer'}
+                actionIcon="bi-check-circle"
+                onAction={sauvegarderConstantes}
+              >
                   {hasConstantesData() ? (
                     <Row className="g-3">
                       {renderConstanteField('Température (°C)', 'temperature', constantesForm.temperature, '37.5', 'thermometer-half')}
@@ -1616,26 +1577,15 @@ export default function FichePrescriptionMedecinAsaisie() {
                       </Button>
                     </div>
                   )}
-                </Card.Body>
-              </Card>
+              </SectionCard>
 
               {/* Actions de Prescription */}
-              <Card className="shadow-sm border-0">
-                <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center py-3">
-                  <div className="d-flex align-items-center">
-                    <div className="rounded-circle bg-white text-primary p-2 me-3">
-                      <i className="bi bi-capsule fs-5"></i>
-                    </div>
-                    <div>
-                      <h5 className="mb-0">Prescriptions</h5>
-                      <small className="opacity-75">Traitements et examens</small>
-                    </div>
-                  </div>
-                  <div className="d-flex align-items-center">
-
-                  </div>
-                </Card.Header>
-                <Card.Body className="p-3">
+              <SectionCard
+                title="Prescriptions"
+                icon="bi-capsule"
+                color="primary"
+                subtitle="Traitements et examens"
+              >
                   {/* Section Traitements Médicamenteux */}
                   <div className="mb-4">
                     <div className="d-flex align-items-center justify-content-between mb-3">
@@ -1853,8 +1803,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                       </div>
                     </div>
                   )}
-                </Card.Body>
-              </Card>
+              </SectionCard>
             </Col>
           </Row>
 

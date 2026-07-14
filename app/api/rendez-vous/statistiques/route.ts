@@ -8,10 +8,7 @@ export async function GET(request: NextRequest) {
     
     const { searchParams } = new URL(request.url);
     const medecinId = searchParams.get('medecinId');
-    
-    if (!medecinId) {
-      return NextResponse.json({ error: 'ID du médecin requis' }, { status: 400 });
-    }
+    const all = searchParams.get('all') === 'true';
     
     // Obtenir la date du jour au format YYYY-MM-DD
     const today = new Date();
@@ -20,15 +17,21 @@ export async function GET(request: NextRequest) {
     const endOfDay = new Date(todayStr);
     endOfDay.setHours(23, 59, 59, 999);
     
-    // Rendez-vous du jour (avec PatientR non vide)
-    const rendezVousDuJour = await RendezVous.countDocuments({
-      IDMEDECIN: medecinId,
+    // Construire la requête : soit tous les rendez-vous du jour, soit filtrés par médecin
+    const query: any = {
       DatePlanning: {
         $gte: startOfDay,
         $lte: endOfDay
       },
       PatientR: { $ne: '' }
-    });
+    };
+    
+    if (medecinId) {
+      query.IDMEDECIN = medecinId;
+    }
+    
+    // Rendez-vous du jour (avec PatientR non vide)
+    const rendezVousDuJour = await RendezVous.countDocuments(query);
     
     return NextResponse.json({
       rendezVousDuJour

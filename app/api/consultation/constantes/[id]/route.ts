@@ -1,3 +1,7 @@
+import { NextRequest, NextResponse } from "next/server";
+import { Consultation } from "@/models/consultation";
+import { db } from "@/db/mongoConnect";
+
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await db();
     try {
@@ -11,9 +15,6 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 }
-import { NextRequest, NextResponse } from "next/server";
-import { Consultation } from "@/models/consultation";
-import { db } from "@/db/mongoConnect";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     await db();

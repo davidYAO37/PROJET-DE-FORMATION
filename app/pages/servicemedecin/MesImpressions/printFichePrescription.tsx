@@ -1,6 +1,5 @@
 'use client';
-
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Row, Col, Card, Table, Button, Badge } from 'react-bootstrap';
 import { useEntreprise } from "@/hooks/useEntreprise";
@@ -34,6 +33,7 @@ interface LignePrestation {
   partAssurance: number;
   partAssure: number;
   prixTotal: number;
+  lettreCle?: string;
   resultatActe?: string;
   observationExamen?: string;
   familleActe?: string;
@@ -627,20 +627,26 @@ export default function PrintFichePrescription({ consultationId, patientId, pati
             backgroundColor: '#ffffff',
             fontSize: '11px'
           }}>
-            {consultation.lignesPrestation && consultation.lignesPrestation.length > 0 ? (
-              <div>
-                {consultation.lignesPrestation
-                  .sort((a, b) => (a.ordonnancementAffichage || 0) - (b.ordonnancementAffichage || 0))
-                  .map((ligne, index) => (
-                    <span key={ligne._id}>
-                      {ligne.prestation}
-                      {index < (consultation.lignesPrestation?.length || 0) - 1 && ' - '}
-                    </span>
-                  ))}
-              </div>
-            ) : (
-              <div style={{ color: '#666666' }}>Aucun examen paraclinique spécifié</div>
-            )}
+            {(() => {
+              const examensParacliniques = consultation.lignesPrestation?.filter((ligne) =>
+                !!ligne.lettreCle && ["K", "KC", "B", "Z", "D"].includes(ligne.lettreCle)
+              ) || [];
+
+              return examensParacliniques.length > 0 ? (
+                <div>
+                  {examensParacliniques
+                    .sort((a, b) => (a.ordonnancementAffichage || 0) - (b.ordonnancementAffichage || 0))
+                    .map((ligne, index) => (
+                      <span key={ligne._id}>
+                        {ligne.prestation}
+                        {index < examensParacliniques.length - 1 && ' - '}
+                      </span>
+                    ))}
+                </div>
+              ) : (
+                <div style={{ color: '#666666' }}>Aucun examen paraclinique spécifié</div>
+              );
+            })()}
           </div>
         </div>
 

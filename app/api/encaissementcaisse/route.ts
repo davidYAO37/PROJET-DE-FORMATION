@@ -4,6 +4,7 @@ import { EncaissementCaisseAnnule } from '@/models/EncaissementCaisseAnnule';
 import { db } from '@/db/mongoConnect';
 import { Facturation } from '@/models/Facturation';
 import { Consultation } from '@/models/consultation';
+import { Patient } from '@/models/patient';
 
 export const dynamic = 'force-dynamic';
 
@@ -61,6 +62,16 @@ export async function POST(req: NextRequest) {
         });
 
         await nouvelEncaissement.save();
+
+        // Gestion de la caution du patient : déduire directement le montant encaissé du compte provision
+        if (body.Modepaiement === "Caution" && consultation.IdPatient) {
+          const patientCaution = await Patient.findById(consultation.IdPatient);
+          if (patientCaution) {
+            patientCaution.ProvisionClient -= montantClient;
+            patientCaution.DepenseProvision += montantClient;
+            await patientCaution.save();
+          }
+        }
       }
     } else {
       // AUTRE CAS (facturation)
@@ -101,6 +112,16 @@ export async function POST(req: NextRequest) {
         });
 
         await nouvelEncaissement.save();
+
+        // Gestion de la caution du patient : déduire directement le montant encaissé du compte provision
+        if (body.Modepaiement === "Caution" && facturation.IdPatient) {
+          const patientCaution = await Patient.findById(facturation.IdPatient);
+          if (patientCaution) {
+            patientCaution.ProvisionClient -= body.Montantencaisse;
+            patientCaution.DepenseProvision += body.Montantencaisse;
+            await patientCaution.save();
+          }
+        }
 
         /*  // Mettre à jour la facturation pour réduire le reste à payer
          await Facturation.findByIdAndUpdate(body.IDFACTURATION, {

@@ -5,6 +5,7 @@ import { LignePrestation } from "@/models/lignePrestation";
 import mongoose, { Schema } from "mongoose";
 import { Assurance } from "@/models/assurance";
 import { Facturation } from "@/models/Facturation";
+import { Patient } from "@/models/patient";
 
 export async function GET(req: NextRequest) {
     try {
@@ -268,6 +269,20 @@ export async function POST(req: NextRequest) {
             if (consultation) {
                 patientId = consultation.IdPatient || consultation.IdPatient;
                 console.log("✅ IdPatient récupéré depuis la consultation:", patientId);
+            }
+        }
+
+        // Gestion de la caution du patient : déduire directement le montant reçu du compte provision
+        if (header.Modepaiement === "Caution" && (header.IdPatient || patientId)) {
+            const patientIdCaution = header.IdPatient || patientId;
+            const patientCaution = await Patient.findById(
+                typeof patientIdCaution === "string" ? new mongoose.Types.ObjectId(patientIdCaution) : patientIdCaution
+            );
+            if (patientCaution) {
+                const montantCaution = header.MontantRecu || header.CautionPatient || header.TotalapayerPatient || 0;
+                patientCaution.ProvisionClient -= montantCaution;
+                patientCaution.DepenseProvision += montantCaution;
+                await patientCaution.save();
             }
         }
 

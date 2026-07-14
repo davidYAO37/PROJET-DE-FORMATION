@@ -17,9 +17,10 @@ export interface IActeClinique extends Omit<Document, '_id'> {
     TypeResultat?: number;
     Interpretation?: string;
     ORdonnacementAffichage?: number;
-    consultationviste?: boolean
-    MontantAnesthesiste?: number
-    MontantAideOperatoire?: number
+    consultationviste?: boolean;
+    MontantAnesthesiste?: number;
+    MontantAideOperatoire?: number;
+    ActeNonFacturable?: boolean;
 
 }
 
@@ -42,6 +43,7 @@ const ActeCliniqueSchema: Schema<IActeClinique> = new Schema({
     ORdonnacementAffichage: { type: Number },
     consultationviste: { type: Boolean, default: false },
     MontantAnesthesiste: { type: Number },
-    MontantAideOperatoire: { type: Number }
+    MontantAideOperatoire: { type: Number },
+    ActeNonFacturable: { type: Boolean, default: false }
 }, { timestamps: true });
 export const ActeClinique: Model<IActeClinique> = mongoose.models.ActeClinique || mongoose.model<IActeClinique>("ActeClinique", ActeCliniqueSchema);

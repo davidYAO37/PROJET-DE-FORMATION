@@ -192,8 +192,8 @@ ConsultationSchema.pre<IConsultation>("save", async function (next) {
 
 
     // Générer les initiales du patient
-    const initialNom = patient.nom ? patient.nom.substring(0, 1).toUpperCase() : "X";
-    const initialPrenom = patient.prenoms ? patient.prenoms.substring(0, 1).toUpperCase() : "X";
+    const initialNom = patient.Nom ? patient.Nom.substring(0, 1).toUpperCase() : "X";
+    const initialPrenom = patient.Prenoms ? patient.Prenoms.substring(0, 1).toUpperCase() : "X";
     const initials = `${initialNom}${initialPrenom}`;
 
     // Générer le code prestation (ex: AB001)

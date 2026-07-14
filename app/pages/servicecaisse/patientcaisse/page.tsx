@@ -2,11 +2,12 @@
 
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList, FaLock } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList, FaLock, FaWallet } from 'react-icons/fa';
 
 import { Patient } from '@/types/patient';
 import { CgAbstract, CgUserList } from 'react-icons/cg';
 import { Modal } from 'react-bootstrap';
+import { useRouter } from 'next/navigation';
 import ModifierPatientCaisse from './ModifierPatientCaisse';
 import PatientServicesModal from '../components/PatientServicesModal';
 import FicheConsultationUpdateCaisse from '../components/factureAttenteConsult/FicheConsultationUpdateCaisse';
@@ -15,6 +16,7 @@ import FicheConsultationUpdateCaisse from '../components/factureAttenteConsult/F
 const ITEMS_PER_PAGE = 10;
 
 export default function Page() {
+  const router = useRouter();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,14 +199,16 @@ export default function Page() {
                 <th>Sexe</th>
                 <th>Contact</th>
                 <th>Code Dossier</th>
+                <th>Montant en cours</th>
                 <th>Liste Prestations</th>
                 <th>Gestion Patient</th>
+                <th>Compte</th>
               </tr>
             </thead>
             <tbody>
               {paginatedPatients.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="text-center">
+                  <td colSpan={11} className="text-center">
                     Aucun patient trouvé.
                   </td>
                 </tr>
@@ -218,6 +222,9 @@ export default function Page() {
                     <td>{patient.sexe}</td>
                     <td>{patient.Contact}</td>
                     <td>{patient.Code_dossier}</td>
+                    <td className="fw-bold text-primary">
+                      {(patient.ProvisionClient || 0).toLocaleString()} F CFA
+                    </td>
                     <td className="bg-secondary bg-opacity-10">
                       <Button
                         variant="outline-primary"
@@ -264,6 +271,18 @@ export default function Page() {
                             )}
                           </>
                         )}
+                      </Button>
+                    </td>
+
+                    <td className="bg-success bg-opacity-10">
+                      <Button
+                        variant="outline-success"
+                        size="sm"
+                        title="Gérer le compte patient"
+                        onClick={() => router.push('/pages/servicecaisse/comptePatient')}
+                      >
+                        <FaWallet className="me-1" />
+                        Compte
                       </Button>
                     </td>
 

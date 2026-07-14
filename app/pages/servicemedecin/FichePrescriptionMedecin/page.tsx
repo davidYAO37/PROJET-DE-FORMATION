@@ -7,11 +7,12 @@ import HospitalisationWrapperMedecin from "../examenhospitalisationMedecin/Hospi
 import PrintFichePrescription from "../MesImpressions/printFichePrescription";
 import EtatMetierFichePrescription from "../MesImpressions/etatMetierFichePrescription";
 import AvisHospitModal from "../tmedecin/components/AvisHospit/AvisHospitModal";
+import SectionCard from "../components/SectionCard";
 
 interface Patient {
   _id: string;
   Nom: string;
-  Prenons: string;
+  Prenoms: string;
   dateNaissance: string;
   sexe: string;
   telephone?: string;
@@ -1143,25 +1144,45 @@ export default function FichePrescriptionMedecin() {
       {patient && (
         <>
           {/* En-tête patient - Design professionnel */}
-          <Card className="mb-4 shadow-sm border-0">
-            <Card.Header className="bg-gradient-primary text-dark">
-              <div className="d-flex align-items-center">
-                FICHE DE CONSULTATION
-                <div className="rounded-circle bg-white text-primary p-3 me-3">
-                  <i className="bi bi-person-fill fs-4"></i>
-                </div>
-                <div>
-                  <h4 className="mb-1">
-                    {patient.Nom} {patient.Prenons}
-                  </h4>
-                  <p className="mb-0 opacity-75">
-                    <i className="bi bi-calendar3 me-2"></i>
-                    {calculerAge(patient.dateNaissance)} ans • {patient.sexe} •{" "}
-                    {patient.telephone || "N/A"}
-                  </p>
-                </div>
+          <Card className="mb-4 shadow-sm border-0 overflow-hidden">
+            <Card.Header className="bg-primary text-white py-3">
+              <div className="d-flex justify-content-between align-items-center mb-2">
+                <h5 className="mb-0 fw-bold">
+                  <i className="bi bi-clipboard2-pulse me-2"></i>
+                  Fiche de consultation
+                </h5>
+                <Badge bg="light" text="primary" className="fs-6">
+                  <i className="bi bi-folder2-open me-1"></i>
+                  {patient.Code_dossier || 'N/C'}
+                </Badge>
               </div>
             </Card.Header>
+            <Card.Body className="p-3">
+              <div className="d-flex align-items-center">
+                <div className="rounded-circle bg-primary bg-opacity-10 text-primary p-3 me-3 d-flex align-items-center justify-content-center" style={{ width: 64, height: 64 }}>
+                  <i className="bi bi-person-fill fs-2"></i>
+                </div>
+                <div className="flex-grow-1">
+                  <h4 className="mb-1 fw-bold text-dark">
+                    {patient.Nom} {patient.Prenoms}
+                  </h4>
+                  <div className="d-flex flex-wrap gap-2">
+                    <Badge bg="light" text="dark" className="border">
+                      <i className="bi bi-person-fill me-1 text-primary"></i>
+                      {patient.sexe || 'N/C'}
+                    </Badge>
+                    <Badge bg="light" text="dark" className="border">
+                      <i className="bi bi-calendar3 me-1 text-primary"></i>
+                      {calculerAge(patient.dateNaissance)} ans
+                    </Badge>
+                    <Badge bg="light" text="dark" className="border">
+                      <i className="bi bi-telephone me-1 text-primary"></i>
+                      {patient.telephone || 'N/C'}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+            </Card.Body>
           </Card>
 
           {/* Section principale - Organisation en colonnes */}
@@ -1169,42 +1190,16 @@ export default function FichePrescriptionMedecin() {
             {/* Colonne gauche - Antécédents et Constantes */}
             <Col lg={6}>
               {/* Antécédents - Carte dynamique */}
-              <Card
-                className={`shadow-sm border-0 mb-4 ${antecedents.length > 0 ? "border-success" : "border-light"}`}
+              <SectionCard
+                title="Antécédents médicaux"
+                icon={antecedents.length > 0 ? "bi-clock-history" : "bi-clock"}
+                color="success"
+                isActive={antecedents.length > 0}
+                subtitle={antecedents.length > 0 ? `${antecedents.length} enregistré${antecedents.length > 1 ? "s" : ""}` : "Aucun antécédent"}
+                actionLabel={antecedents.length > 0 ? "Ajouter" : "Commencer"}
+                actionIcon="bi-plus-circle"
+                onAction={() => setShowAntecedentModal(true)}
               >
-                <Card.Header
-                  className={`${antecedents.length > 0 ? "bg-success" : "bg-light"} ${antecedents.length > 0 ? "text-white" : "text-dark"} d-flex justify-content-between align-items-center py-3`}
-                >
-                  <div className="d-flex align-items-center">
-                    <div
-                      className={`rounded-circle ${antecedents.length > 0 ? "bg-white text-success" : "bg-success text-white"} p-2 me-3`}
-                    >
-                      <i
-                        className={`bi ${antecedents.length > 0 ? "bi-clock-history" : "bi-clock"} fs-5`}
-                      ></i>
-                    </div>
-                    <div>
-                      <h5 className="mb-0">Antécédents</h5>
-                      <small
-                        className={`${antecedents.length > 0 ? "opacity-75" : "opacity-100"}`}
-                      >
-                        {antecedents.length > 0
-                          ? `${antecedents.length} enregistré${antecedents.length > 1 ? "s" : ""}`
-                          : "Aucun antécédent"}
-                      </small>
-                    </div>
-                  </div>
-                  <Button
-                    variant={antecedents.length > 0 ? "light" : "success"}
-                    size="sm"
-                    onClick={() => setShowAntecedentModal(true)}
-                    className="rounded-pill"
-                  >
-                    <i className="bi bi-plus-circle me-1"></i>
-                    {antecedents.length > 0 ? "Ajouter" : "Commencer"}
-                  </Button>
-                </Card.Header>
-                <Card.Body className="p-3">
                   {antecedents.length === 0 ? (
                     <div className="text-center py-4">
                       <i className="bi bi-clock-history text-muted fs-1 mb-3"></i>
@@ -1298,46 +1293,19 @@ export default function FichePrescriptionMedecin() {
                       </div>
                     </>
                   )}
-                </Card.Body>
-              </Card>
+              </SectionCard>
 
               {/* Consultation - Carte dynamique */}
-              <Card
-                className={`mb-4 shadow-sm border-0 ${hasConsultationData() ? "border-warning" : "border-light"}`}
+              <SectionCard
+                title="Consultation"
+                icon={hasConsultationData() ? "bi-clipboard2-pulse-fill" : "bi-clipboard2-pulse"}
+                color="warning"
+                isActive={hasConsultationData()}
+                subtitle={hasConsultationData() ? `${getConsultationCount()} champ${getConsultationCount() > 1 ? "s" : ""} rempli${getConsultationCount() > 1 ? "s" : ""}` : "Consultation vide"}
+                actionLabel={hasConsultationData() ? "Mettre à jour" : "Commencer"}
+                actionIcon="bi-check-circle"
+                onAction={sauvegarderConsultation}
               >
-                <Card.Header
-                  className={`${hasConsultationData() ? "bg-warning" : "bg-light"} ${hasConsultationData() ? "text-dark" : "text-dark"} d-flex justify-content-between align-items-center py-3`}
-                >
-                  <div className="d-flex align-items-center">
-                    <div
-                      className={`rounded-circle ${hasConsultationData() ? "bg-dark text-warning" : "bg-warning text-dark"} p-2 me-3`}
-                    >
-                      <i
-                        className={`bi ${hasConsultationData() ? "bi-clipboard2-pulse-fill" : "bi-clipboard2-pulse"} fs-5`}
-                      ></i>
-                    </div>
-                    <div>
-                      <h5 className="mb-0">Consultation</h5>
-                      <small
-                        className={`${hasConsultationData() ? "opacity-75" : "opacity-100"}`}
-                      >
-                        {hasConsultationData()
-                          ? `${getConsultationCount()} champ${getConsultationCount() > 1 ? "s" : ""} rempli${getConsultationCount() > 1 ? "s" : ""}`
-                          : "Consultation vide"}
-                      </small>
-                    </div>
-                  </div>
-                  <Button
-                    variant={hasConsultationData() ? "dark" : "warning"}
-                    size="sm"
-                    onClick={sauvegarderConsultation}
-                    className="rounded-pill"
-                  >
-                    <i className="bi bi-check-circle me-1"></i>
-                    {hasConsultationData() ? "Mettre à jour" : "Commencer"}
-                  </Button>
-                </Card.Header>
-                <Card.Body className="p-3">
                   {hasConsultationData() ? (
                     <>
                       <div className="mb-3">
@@ -1359,7 +1327,7 @@ export default function FichePrescriptionMedecin() {
                           className={`${consultationForm.MotifConsultation.trim() ? "text-dark" : "text-muted"} small`}
                         >
                           <i className="bi bi-chat-quote me-1"></i>
-                          Motif de Consultation
+                          Motif de consultation
                         </Form.Label>
                         <Form.Control
                           as="textarea"
@@ -1391,7 +1359,7 @@ export default function FichePrescriptionMedecin() {
                           className={`${consultationForm.examenClinique.trim() ? "text-dark" : "text-muted"} small`}
                         >
                           <i className="bi bi-stethoscope me-1"></i>
-                          Examen Clinique
+                          Examen clinique
                         </Form.Label>
                         <Form.Control
                           as="textarea"
@@ -1472,7 +1440,7 @@ export default function FichePrescriptionMedecin() {
                           className={`${consultationForm.ConclusionClinique.trim() ? "text-dark" : "text-muted"} small`}
                         >
                           <i className="bi bi-clipboard-check me-1"></i>
-                          Conclusion Clinique
+                          Conclusion
                           <span className="text-danger ms-1">*</span>
                         </Form.Label>
                         <Form.Control
@@ -1502,7 +1470,7 @@ export default function FichePrescriptionMedecin() {
                         {!consultationForm.ConclusionClinique.trim() && (
                           <small className="text-danger mt-1 d-block">
                             <i className="bi bi-exclamation-triangle me-1"></i>
-                            La conclusion clinique est obligatoire
+                            La conclusion est obligatoire
                           </small>
                         )}
                       </Form.Group>
@@ -1537,49 +1505,22 @@ export default function FichePrescriptionMedecin() {
                       </Button>
                     </div>
                   )}
-                </Card.Body>
-              </Card>
+              </SectionCard>
             </Col>
 
             {/* Colonne droite - Consultation et Prescriptions */}
             <Col lg={6}>
               {/* Constantes Vitales - Carte dynamique */}
-              <Card
-                className={`shadow-sm border-0 ${hasConstantesData() ? "border-info" : "border-light"}`}
+              <SectionCard
+                title="Constantes vitales"
+                icon="bi-activity"
+                color="info"
+                isActive={hasConstantesData()}
+                subtitle={hasConstantesData() ? `${getConstantesCount()} enregistrée${getConstantesCount() > 1 ? "s" : ""}` : "Aucune constante"}
+                actionLabel={hasConstantesData() ? "Mettre à jour" : "Commencer"}
+                actionIcon="bi-check-circle"
+                onAction={sauvegarderConstantes}
               >
-                <Card.Header
-                  className={`${hasConstantesData() ? "bg-info" : "bg-light"} ${hasConstantesData() ? "text-white" : "text-dark"} d-flex justify-content-between align-items-center py-3`}
-                >
-                  <div className="d-flex align-items-center">
-                    <div
-                      className={`rounded-circle ${hasConstantesData() ? "bg-white text-info" : "bg-info text-white"} p-2 me-3`}
-                    >
-                      <i
-                        className={`bi ${hasConstantesData() ? "bi-activity" : "bi-activity"} fs-5`}
-                      ></i>
-                    </div>
-                    <div>
-                      <h5 className="mb-0">Constantes Vitales</h5>
-                      <small
-                        className={`${hasConstantesData() ? "opacity-75" : "opacity-100"}`}
-                      >
-                        {hasConstantesData()
-                          ? `${getConstantesCount()} enregistrée${getConstantesCount() > 1 ? "s" : ""}`
-                          : "Aucune constante"}
-                      </small>
-                    </div>
-                  </div>
-                  <Button
-                    variant={hasConstantesData() ? "light" : "info"}
-                    size="sm"
-                    onClick={sauvegarderConstantes}
-                    className="rounded-pill"
-                  >
-                    <i className="bi bi-check-circle me-1"></i>
-                    {hasConstantesData() ? "Mettre à jour" : "Commencer"}
-                  </Button>
-                </Card.Header>
-                <Card.Body className="p-3">
                   {hasConstantesData() ? (
                     <Row className="g-3">
                       {renderConstanteField(
@@ -1646,25 +1587,15 @@ export default function FichePrescriptionMedecin() {
                       </Button>
                     </div>
                   )}
-                </Card.Body>
-              </Card>
+              </SectionCard>
 
               {/* Actions de Prescription */}
-              <Card className="shadow-sm border-0">
-                <Card.Header className="bg-primary text-white d-flex justify-content-between align-items-center py-3">
-                  <div className="d-flex align-items-center">
-                    <div className="rounded-circle bg-white text-primary p-2 me-3">
-                      <i className="bi bi-capsule fs-5"></i>
-                    </div>
-                    <div>
-                      <h5 className="mb-0">Prescriptions</h5>
-                      <small className="opacity-75">
-                        Traitements et examens
-                      </small>
-                    </div>
-                  </div>                  
-                </Card.Header>
-                <Card.Body className="p-3">
+              <SectionCard
+                title="Prescriptions"
+                icon="bi-capsule"
+                color="primary"
+                subtitle="Traitements et examens"
+              >
                   {/* Section Traitements Médicamenteux */}
                   <div className="mb-4">
                     <div className="d-flex align-items-center justify-content-between mb-3">
@@ -1928,8 +1859,7 @@ export default function FichePrescriptionMedecin() {
                       </div>
                     </div>
                   )}
-                </Card.Body>
-              </Card>
+              </SectionCard>
             </Col>
           </Row>
 
@@ -2379,7 +2309,7 @@ export default function FichePrescriptionMedecin() {
             consultationId={consultation?._id}
             patientId={patient?._id}
             patientNom={patient?.Nom}
-            patientPrenoms={patient?.Prenons}
+            patientPrenoms={patient?.Prenoms}
             Code_dossier={patient?.Code_dossier}
           />
 
@@ -2400,7 +2330,7 @@ export default function FichePrescriptionMedecin() {
                   consultationId={consultation?.codePrestation}
                   patientId={patient?._id}
                   patientNom={patient?.Nom}
-                  patientPrenoms={patient?.Prenons}
+                  patientPrenoms={patient?.Prenoms}
                 />
               </Modal.Body>
             </Modal>

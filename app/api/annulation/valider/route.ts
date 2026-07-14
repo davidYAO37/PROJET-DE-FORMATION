@@ -66,6 +66,17 @@ export async function POST(req: NextRequest) {
                 return NextResponse.json({ error: "Facturation non trouvée" }, { status: 404 });
             }
 
+            // Restaurer la caution du patient si Modepaiement est "Caution"
+            if (facturation.Modepaiement === "Caution" && facturation.IdPatient) {
+                const patient = await Patient.findById(facturation.IdPatient);
+                if (patient) {
+                    const cautionAmount = facturation.CautionPatient || facturation.TotalapayerPatient || 0;
+                    patient.DepenseProvision -= cautionAmount;
+                    patient.ProvisionClient += cautionAmount;
+                    await patient.save();
+                }
+            }
+
             if (facturation.Designationtypeacte === "PHARMACIE") {
                 // Cas pharmacie - mettre à jour les prescriptions
                 const prescriptions = await PatientPrescription.find({ facturation: facturation._id });

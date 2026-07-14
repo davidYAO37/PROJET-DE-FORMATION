@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { Facturation } from "@/models/Facturation";
+import { Patient } from "@/models/patient";
+import mongoose from "mongoose";
 
 // GET /api/facturation?hospitalId=XXX
 // Récupère les facturations liées à une hospitalisation donnée
@@ -99,6 +101,19 @@ export async function POST(req: NextRequest) {
 
         // Créer la facturation
         const newFacturation = await Facturation.create(facturationData);
+
+        // Gestion de la caution du patient : déduire directement le montant reçu du compte provision
+        if (newFacturation.Modepaiement === "Caution" && newFacturation.IdPatient) {
+            const patientCaution = await Patient.findById(
+                typeof newFacturation.IdPatient === "string" ? new mongoose.Types.ObjectId(newFacturation.IdPatient) : newFacturation.IdPatient
+            );
+            if (patientCaution) {
+                const montantCaution = newFacturation.MontantRecu || newFacturation.TotalapayerPatient || 0;
+                patientCaution.ProvisionClient -= montantCaution;
+                patientCaution.DepenseProvision += montantCaution;
+                await patientCaution.save();
+            }
+        }
 
         return NextResponse.json({
             success: true,

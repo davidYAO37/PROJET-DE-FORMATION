@@ -20,6 +20,7 @@ interface RendezVous {
 export default function TpatientPage() {
   const router = useRouter();
   const [stats, setStats] = useState({ totalConsultations: 0, waitingRoomCount: 0 });
+  const [rdvCount, setRdvCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -28,10 +29,21 @@ export default function TpatientPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/consultation/date');
-        if (!response.ok) throw new Error('Erreur lors du chargement des statistiques');
-        const data = await response.json();
+        const [consultResponse, rdvResponse] = await Promise.all([
+          fetch('/api/consultation/date'),
+          fetch('/api/rendez-vous/statistiques?all=true')
+        ]);
+
+        if (!consultResponse.ok) throw new Error('Erreur lors du chargement des statistiques');
+        const data = await consultResponse.json();
         setStats(data);
+
+        if (rdvResponse.ok) {
+          const rdvData = await rdvResponse.json();
+          setRdvCount(rdvData.rendezVousDuJour || 0);
+        } else {
+          setRdvCount(0);
+        }
       } catch (err) {
         console.error('Erreur:', err);
         setError('Impossible de charger les statistiques');
@@ -149,7 +161,7 @@ export default function TpatientPage() {
                   <Spinner animation="border" variant="light" />
                 ) : (
                   <Badge bg="light" text="dark" className="fs-6">
-                    {stats.waitingRoomCount}
+                    {rdvCount}
                   </Badge>
                 )}
               </div>

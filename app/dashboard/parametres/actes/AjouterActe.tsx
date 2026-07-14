@@ -24,6 +24,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
         MontantAideOperatoire: 0,
         IDFAMILLE_ACTE_BIOLOGIE: "",
         consultationviste: false,
+        ActeNonFacturable: false,
     });
     const [famillesActe, setFamillesActe] = useState<FamilleActe[]>([]);
     const [loading, setLoading] = useState(false);
@@ -71,6 +72,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                 MontantAideOperatoire: Number(form.MontantAideOperatoire),
                 IDFAMILLE_ACTE_BIOLOGIE: form.IDFAMILLE_ACTE_BIOLOGIE || undefined,
                 consultationviste: Boolean(form.consultationviste),
+                ActeNonFacturable: Boolean(form.ActeNonFacturable),
             };
             
             // Utilise l'API standard pour ajouter un acte
@@ -105,9 +107,10 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                 TypeResultat: data.TypeResultat,
                 Interpretation: data.Interpretation,
                 ORdonnacementAffichage: data.ORdonnacementAffichage,
+                ActeNonFacturable: data.ActeNonFacturable,
             };
             onAdd(acteData);
-            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, MontantAnesthesiste: 0, MontantAideOperatoire: 0, IDFAMILLE_ACTE_BIOLOGIE: "", consultationviste: false });
+            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, MontantAnesthesiste: 0, MontantAideOperatoire: 0, IDFAMILLE_ACTE_BIOLOGIE: "", consultationviste: false, ActeNonFacturable: false });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -216,6 +219,15 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                             name="consultationviste"
                             checked={form.consultationviste}
                             onChange={(e) => setForm({ ...form, consultationviste: e.target.checked })}
+                        />
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Check 
+                            type="checkbox" 
+                            label="Acte non facturable" 
+                            name="ActeNonFacturable"
+                            checked={form.ActeNonFacturable}
+                            onChange={(e) => setForm({ ...form, ActeNonFacturable: e.target.checked })}
                         />
                     </Form.Group>
                 </Modal.Body>
