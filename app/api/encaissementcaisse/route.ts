@@ -67,8 +67,11 @@ export async function POST(req: NextRequest) {
         if (body.Modepaiement === "Caution" && consultation.IdPatient) {
           const patientCaution = await Patient.findById(consultation.IdPatient);
           if (patientCaution) {
-            patientCaution.ProvisionClient -= montantClient;
-            patientCaution.DepenseProvision += montantClient;
+            const montant = Number(montantClient) || 0;
+            const provisionActuelle = Number(patientCaution.ProvisionClient) || 0;
+            const depenseActuelle = Number(patientCaution.DepenseProvision) || 0;
+            patientCaution.ProvisionClient = provisionActuelle - montant;
+            patientCaution.DepenseProvision = depenseActuelle + montant;
             await patientCaution.save();
           }
         }
@@ -117,8 +120,11 @@ export async function POST(req: NextRequest) {
         if (body.Modepaiement === "Caution" && facturation.IdPatient) {
           const patientCaution = await Patient.findById(facturation.IdPatient);
           if (patientCaution) {
-            patientCaution.ProvisionClient -= body.Montantencaisse;
-            patientCaution.DepenseProvision += body.Montantencaisse;
+            const montant = Number(body.Montantencaisse) || 0;
+            const provisionActuelle = Number(patientCaution.ProvisionClient) || 0;
+            const depenseActuelle = Number(patientCaution.DepenseProvision) || 0;
+            patientCaution.ProvisionClient = provisionActuelle - montant;
+            patientCaution.DepenseProvision = depenseActuelle + montant;
             await patientCaution.save();
           }
         }

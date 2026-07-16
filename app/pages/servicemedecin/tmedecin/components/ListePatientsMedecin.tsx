@@ -5,7 +5,7 @@ import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast
 import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList } from 'react-icons/fa';
 import { Patient } from '@/types/patient';
 import DossiersPatientDropdown from './DossiersPatientDropdown';
-import DossierPatient from './DossierPatient';
+import DossierPatient from '@/app/servicemedecin/tmedecin/components/DossierPatient';
 import ArretTravailModal from './ArretTravailModal';
 import RapportHospitalisationModal from './RapportHospitalisationModal';
 import AvisHospitModal from './AvisHospit/AvisHospitModal';

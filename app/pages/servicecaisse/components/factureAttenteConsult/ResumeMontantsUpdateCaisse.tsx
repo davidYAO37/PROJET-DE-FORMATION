@@ -2,6 +2,7 @@
 import { Card, Row, Col, Form } from "react-bootstrap";
 import { ModeDePaiement } from "@/types/ModeDePaiement";
 import { useState, useEffect } from "react";
+import { useProvisionPatient, isCautionMode, isCautionAvailable } from "@/hooks/useProvisionPatient";
 
 type ResumeMontantsProps = {
     surplus: number;
@@ -12,6 +13,7 @@ type ResumeMontantsProps = {
     setMontantEncaisse?: (val: number) => void;
     modePaiement?: ModeDePaiement["Modepaiement"];
     setModePaiement?: React.Dispatch<React.SetStateAction<string>>;
+    patientId?: string;
 };
 
 export default function ResumeMontantsUpdateCaisse({
@@ -23,9 +25,12 @@ export default function ResumeMontantsUpdateCaisse({
     setMontantEncaisse,
     modePaiement = "Espèce",
     setModePaiement,
+    patientId,
 }: ResumeMontantsProps) {
     const [modesPaiement, setModesPaiement] = useState<ModeDePaiement[]>([]);
     const resteAPayer = Math.max(0, totalPatient - montantEncaisse);
+    const provision = useProvisionPatient(patientId);
+    const cautionDisponible = isCautionAvailable(provision, totalPatient);
 
     // Récupérer les modes de paiement depuis l'API
     useEffect(() => {
@@ -105,10 +110,22 @@ export default function ResumeMontantsUpdateCaisse({
                             className="border-info fw-bold text-info"
                             name="modePaiement"
                             value={modePaiement}
-                            onChange={(e) => setModePaiement?.(e.target.value)}
+                            onChange={(e) => {
+                                const selected = e.target.value;
+                                if (isCautionMode(selected) && !cautionDisponible) {
+                                    alert('Le patient n\'a pas de caution suffisante pour ce montant. Le mode Caution n\'est pas disponible.');
+                                    return;
+                                }
+                                setModePaiement?.(selected);
+                            }}
                         >
                             {modesPaiement.map((mode) => (
-                                <option key={mode._id} value={mode.Modepaiement}>
+                                <option
+                                    key={mode._id}
+                                    value={mode.Modepaiement}
+                                    disabled={isCautionMode(mode.Modepaiement) && !cautionDisponible}
+                                    title={isCautionMode(mode.Modepaiement) && !cautionDisponible ? 'Le patient n\'a pas de caution suffisante pour ce montant' : undefined}
+                                >
                                     {mode.Modepaiement}
                                 </option>
                             ))}

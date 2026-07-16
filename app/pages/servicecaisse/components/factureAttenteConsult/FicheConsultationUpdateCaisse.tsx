@@ -415,6 +415,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                 setMontantEncaisse={setMontantEncaisse}
                 modePaiement={modePaiement}
                 setModePaiement={setModePaiement}
+                patientId={patient?._id || currentConsultation?.IdPatient || ""}
             />
 
             {error && <div className="text-danger mb-2">{error}</div>}

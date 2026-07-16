@@ -108,9 +108,11 @@ export async function POST(req: NextRequest) {
                 typeof newFacturation.IdPatient === "string" ? new mongoose.Types.ObjectId(newFacturation.IdPatient) : newFacturation.IdPatient
             );
             if (patientCaution) {
-                const montantCaution = newFacturation.MontantRecu || newFacturation.TotalapayerPatient || 0;
-                patientCaution.ProvisionClient -= montantCaution;
-                patientCaution.DepenseProvision += montantCaution;
+                const montantCaution = Number(newFacturation.MontantRecu || newFacturation.TotalapayerPatient || 0);
+                const provisionActuelle = Number(patientCaution.ProvisionClient) || 0;
+                const depenseActuelle = Number(patientCaution.DepenseProvision) || 0;
+                patientCaution.ProvisionClient = provisionActuelle - montantCaution;
+                patientCaution.DepenseProvision = depenseActuelle + montantCaution;
                 await patientCaution.save();
             }
         }

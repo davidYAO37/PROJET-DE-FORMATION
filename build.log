@@ -2,17 +2,17 @@
 - Environments: .env
 
   Creating an optimized production build ...
-Ô£ô Compiled successfully in 24.0s
+Ô£ô Compiled successfully in 28.1s
   Running TypeScript ...
-  Finished TypeScript in 3.3min ...
+  Finished TypeScript in 4.3min ...
   Collecting page data using 7 workers ...
 Ô£à Connect├® ├á MongoDB
-  Generating static pages using 7 workers (0/275) ...
-  Generating static pages using 7 workers (68/275) 
+  Generating static pages using 7 workers (0/279) ...
+  Generating static pages using 7 workers (69/279) 
 Ô£à Connect├® ├á MongoDB
-  Generating static pages using 7 workers (137/275) 
-  Generating static pages using 7 workers (206/275) 
-Ô£ô Generating static pages using 7 workers (275/275) in 3.3s
+  Generating static pages using 7 workers (139/279) 
+  Generating static pages using 7 workers (209/279) 
+Ô£ô Generating static pages using 7 workers (279/279) in 4.5s
   Finalizing page optimization ...
 
 Route (app)
@@ -189,6 +189,8 @@ Route (app)
 Ôö£ ãÆ /api/ListeAutreActes/[id]
 Ôö£ ãÆ /api/ListePrescription
 Ôö£ ãÆ /api/login
+Ôö£ ãÆ /api/logout
+Ôö£ ãÆ /api/me
 Ôö£ ãÆ /api/medecins
 Ôö£ ãÆ /api/medecins/[id]
 Ôö£ ãÆ /api/medicaments
@@ -269,6 +271,7 @@ Route (app)
 Ôö£ ãÆ /api/test-arret
 Ôö£ ãÆ /api/test-dates
 Ôö£ ãÆ /api/test-db
+Ôö£ ãÆ /api/testimonials
 Ôö£ ãÆ /api/typeacte
 Ôö£ ãÆ /api/typeacte/[id]
 Ôö£ ãÆ /api/typeacte/hospitalisation
@@ -295,6 +298,7 @@ Route (app)
 Ôö£ Ôùï /dashboard/parametres/parametreCRendu
 Ôö£ Ôùï /dashboard/parametres/parametreLabo
 Ôö£ Ôùï /dashboard/parametres/SocietePartenaire
+Ôö£ Ôùï /dashboard/parametres/temoignages
 Ôö£ Ôùï /dashboard/parametres/Typeacte
 Ôö£ Ôùï /dashboard/signup
 Ôö£ Ôùï /dashboard/signupdev

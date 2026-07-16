@@ -122,9 +122,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 typeof consultation.IdPatient === "string" ? new mongoose.Types.ObjectId(consultation.IdPatient) : consultation.IdPatient
             );
             if (patientCaution) {
-                const montantCaution = consultation.Montantencaisse || 0;
-                patientCaution.ProvisionClient -= montantCaution;
-                patientCaution.DepenseProvision += montantCaution;
+                const montantCaution = Number(consultation.Montantencaisse) || 0;
+                const provisionActuelle = Number(patientCaution.ProvisionClient) || 0;
+                const depenseActuelle = Number(patientCaution.DepenseProvision) || 0;
+                patientCaution.ProvisionClient = provisionActuelle - montantCaution;
+                patientCaution.DepenseProvision = depenseActuelle + montantCaution;
                 await patientCaution.save();
             }
         }

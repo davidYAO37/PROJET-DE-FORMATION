@@ -33,8 +33,11 @@ export async function POST(req: NextRequest) {
 
             // Restaurer la caution du patient si Modepaiement est "Caution"
             if (consultation.Modepaiement === "Caution") {
-                patient.DepenseProvision -= (consultation.tiket_moderateur + consultation.ReliquatPatient);
-                patient.ProvisionClient += (consultation.tiket_moderateur + consultation.ReliquatPatient);
+                const montantRestitue = (Number(consultation.tiket_moderateur) || 0) + (Number(consultation.ReliquatPatient) || 0);
+                const depenseActuelle = Number(patient.DepenseProvision) || 0;
+                const provisionActuelle = Number(patient.ProvisionClient) || 0;
+                patient.DepenseProvision = depenseActuelle - montantRestitue;
+                patient.ProvisionClient = provisionActuelle + montantRestitue;
                 await patient.save();
             }
 
@@ -70,9 +73,11 @@ export async function POST(req: NextRequest) {
             if (facturation.Modepaiement === "Caution" && facturation.IdPatient) {
                 const patient = await Patient.findById(facturation.IdPatient);
                 if (patient) {
-                    const cautionAmount = facturation.CautionPatient || facturation.TotalapayerPatient || 0;
-                    patient.DepenseProvision -= cautionAmount;
-                    patient.ProvisionClient += cautionAmount;
+                    const cautionAmount = Number(facturation.CautionPatient || facturation.TotalapayerPatient || 0);
+                    const depenseActuelle = Number(patient.DepenseProvision) || 0;
+                    const provisionActuelle = Number(patient.ProvisionClient) || 0;
+                    patient.DepenseProvision = depenseActuelle - cautionAmount;
+                    patient.ProvisionClient = provisionActuelle + cautionAmount;
                     await patient.save();
                 }
             }

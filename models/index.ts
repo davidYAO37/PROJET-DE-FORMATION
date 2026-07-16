@@ -12,6 +12,7 @@ export * from './lignePrestation';
 export * from './AvisHospit';
 export * from './arretTravail';
 export * from './compteRenduOperatoire';
+export * from './Testimonial';
 // Add other model exports here as needed
 
 // This ensures all models are loaded and registered with Mongoose
@@ -28,3 +29,4 @@ import './lignePrestation';
 import './AvisHospit';
 import './arretTravail';
 import './compteRenduOperatoire';
+import './Testimonial';

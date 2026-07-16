@@ -59,6 +59,7 @@ export async function GET(req: NextRequest) {
                     return {
                         id: f._id?.toString() || "",
                         code: f.CodePrestation || "N/A",
+                        idPatient: f.IdPatient?._id?.toString() || f.IdPatient?.toString() || "",
                         patient: f.PatientP || (f.IdPatient ? `${f.IdPatient?.Nom || ''} ${f.IdPatient?.Prenoms || ''}`.trim() : "Patient inconnu"),
                         designation: f.Designationtypeacte || "Facturation",
                         montantRestant: Number(f.Restapayer || 0),
@@ -78,6 +79,7 @@ export async function GET(req: NextRequest) {
                     return {
                         id: c._id?.toString() || "",
                         code: c.CodePrestation || "N/A",
+                        idPatient: c.IdPatient?._id?.toString() || c.IdPatient?.toString() || "",
                         patient: c.PatientP || (c.IdPatient ? `${c.IdPatient?.Nom || ''} ${c.IdPatient?.Prenoms || ''}`.trim() : "Patient inconnu"),
                         designation: c.designationC || "Consultation",
                         montantRestant: Number(c.Restapayer || 0),

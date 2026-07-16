@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fiche Technique — Easy Medical</title>
+  <style>
+    :root {
+      --primary: #0d47a1;
+      --primary-light: #e3f2fd;
+      --accent: #00acc1;
+      --text: #212121;
+      --muted: #616161;
+      --bg: #ffffff;
+      --border: #e0e0e0;
+      --shadow: 0 4px 20px rgba(0, 0, 0, 0.07);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: var(--text);
+      background: #f5f7fa;
+      line-height: 1.55;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+
+    .page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 20px auto;
+      padding: 22mm 20mm;
+      background: var(--bg);
+      box-shadow: var(--shadow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    @media print {
+      body {
+        background: #fff;
+      }
+      .page {
+        margin: 0;
+        box-shadow: none;
+        page-break-after: always;
+      }
+      .no-print {
+        display: none !important;
+      }
+      a {
+        color: var(--text);
+        text-decoration: none;
+      }
+    }
+
+    .cover {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      min-height: 100%;
+    }
+
+    .cover-badge {
+      background: var(--primary);
+      color: #fff;
+      padding: 8px 22px;
+      border-radius: 999px;
+      font-size: 13px;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 24px;
+    }
+
+    .cover h1 {
+      font-size: 46px;
+      margin: 0 0 16px 0;
+      color: var(--primary);
+      letter-spacing: -1px;
+    }
+
+    .cover-subtitle {
+      font-size: 18px;
+      color: var(--muted);
+      max-width: 460px;
+      margin-bottom: 60px;
+    }
+
+    .cover-meta {
+      border-top: 1px solid var(--border);
+      padding-top: 28px;
+      width: 320px;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .cover-meta div {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .cover-meta span:first-child {
+      color: var(--muted);
+    }
+
+    .cover-footer {
+      position: absolute;
+      bottom: 22mm;
+      left: 20mm;
+      right: 20mm;
+      font-size: 12px;
+      color: var(--muted);
+      border-top: 1px solid var(--border);
+      padding-top: 14px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    h2 {
+      font-size: 22px;
+      color: var(--primary);
+      margin: 0 0 16px 0;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--primary-light);
+      page-break-after: avoid;
+    }
+
+    h3 {
+      font-size: 16px;
+      color: var(--accent);
+      margin: 26px 0 10px 0;
+      page-break-after: avoid;
+    }
+
+    p {
+      margin: 0 0 12px 0;
+    }
+
+    .intro {
+      background: var(--primary-light);
+      border-left: 4px solid var(--primary);
+      padding: 16px 20px;
+      border-radius: 6px;
+      margin-bottom: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+
+    th, td {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      background: var(--primary);
+      color: #fff;
+      font-weight: 600;
+    }
+
+    tr:nth-child(even) {
+      background: #fafafa;
+    }
+
+    ul {
+      margin: 0 0 16px 0;
+      padding-left: 22px;
+    }
+
+    li {
+      margin-bottom: 6px;
+    }
+
+    .badge {
+      display: inline-block;
+      background: var(--primary-light);
+      color: var(--primary);
+      padding: 4px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-right: 6px;
+    }
+
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .card {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      box-shadow: var(--shadow);
+    }
+
+    .card h4 {
+      margin: 0 0 10px 0;
+      color: var(--primary);
+      font-size: 14px;
+    }
+
+    .card p, .card ul {
+      font-size: 13px;
+      margin: 0;
+    }
+
+    .toc ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .toc li {
+      border-bottom: 1px dotted var(--border);
+      padding: 8px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .toc li span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .note {
+      background: #fff8e1;
+      border-left: 4px solid #ff8f00;
+      padding: 12px 16px;
+      border-radius: 4px;
+      font-size: 13px;
+      margin-top: 20px;
+    }
+
+    .page-number {
+      position: absolute;
+      bottom: 14mm;
+      right: 20mm;
+      font-size: 11px;
+      color: var(--muted);
+    }
+
+    .no-print {
+      text-align: center;
+      padding: 16px;
+    }
+
+    .no-print button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      padding: 12px 28px;
+      border-radius: 6px;
+      font-size: 14px;
+      cursor: pointer;
+    }
+
+    .no-print button:hover {
+      background: #093170;
+    }
+
+    .logo-placeholder {
+      width: 90px;
+      height: 90px;
+      background: var(--primary-light);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--primary);
+      font-weight: 700;
+      font-size: 24px;
+      margin-bottom: 30px;
+    }
+  </style>
+</head>
+<body>
+  <div class="no-print">
+    <button onclick="window.print()">Imprimer / Enregistrer en PDF</button>
+  </div>
+
+  <!-- Page de garde -->
+  <div class="page cover">
+    <div class="logo-placeholder">EM</div>
+    <div class="cover-badge">Fiche Technique</div>
+    <h1>Easy Medical</h1>
+    <p class="cover-subtitle">Application web de gestion médicale multi-services pour cliniques, cabinets et centres de santé.</p>
+    <div class="cover-meta">
+      <div><span>Version</span> <strong>0.1.0</strong></div>
+      <div><span>Date</span> <strong>14 juillet 2026</strong></div>
+      <div><span>Statut</span> <strong>Version initiale</strong></div>
+      <div><span>Architecture</span> <strong>Full-stack Next.js / MongoDB</strong></div>
+    </div>
+    <div class="cover-footer">
+      <span>Document confidentiel — Easy Medical</span>
+      <span>Page 1</span>
+    </div>
+  </div>
+
+  <!-- Sommaire -->
+  <div class="page">
+    <h2>Sommaire</h2>
+    <div class="toc">
+      <ul>
+        <li>1. Vue d'ensemble <span>3</span></li>
+        <li>2. Stack technique <span>3</span></li>
+        <li>3. Architecture générale <span>4</span></li>
+        <li>4. Modules fonctionnels <span>4</span></li>
+        <li>5. Modèle de données <span>5</span></li>
+        <li>6. Sécurité <span>6</span></li>
+        <li>7. Déploiement & prérequis <span>6</span></li>
+        <li>8. Points de vigilance <span>7</span></li>
+      </ul>
+    </div>
+    <div class="page-number">Page 2</div>
+  </div>
+
+  <!-- Contenu principal -->
+  <div class="page">
+    <h2>1. Vue d'ensemble</h2>
+    <div class="intro">
+      <strong>Easy Medical</strong> est une application web complète de gestion pour établissements de santé. Elle centralise l'accueil patient, les consultations, les examens, la pharmacie, la facturation, la caisse et la comptabilité dans une interface unique et moderne.
+    </div>
+
+    <div class="two-col">
+      <div class="card">
+        <h4>Type d'application</h4>
+        <p>Application web monolithique full-stack avec interface responsive et API internes.</p>
+      </div>
+      <div class="card">
+        <h4>Utilisateurs cibles</h4>
+        <p>Médecins, infirmiers, réceptionnistes, caissiers, comptables, biologistes, pharmaciens.</p>
+      </div>
+      <div class="card">
+        <h4>Base de données</h4>
+        <p>MongoDB via Mongoose, adaptée aux données médicales complexes et évolutives.</p>
+      </div>
+      <div class="card">
+        <h4>Technologies clés</h4>
+        <p>Next.js 16, React 19, TypeScript 5, Bootstrap 5, PDFKit, Puppeteer, JWT.</p>
+      </div>
+    </div>
+
+    <h2>2. Stack technique</h2>
+    <table>
+      <thead>
+        <tr><th>Domaine</th><th>Technologie</th><th>Justification</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Framework</td><td>Next.js 16</td><td>Performance, SEO, routes API intégrées</td></tr>
+        <tr><td>Interface</td><td>React 19 + TypeScript 5</td><td>Composants réactifs et typés</td></tr>
+        <tr><td>Style</td><td>Bootstrap 5 + React-Bootstrap</td><td>UI rapide, responsive et accessible</td></tr>
+        <tr><td>Base de données</td><td>MongoDB + Mongoose</td><td>Souplesse et modélisation documentaire</td></tr>
+        <tr><td>Authentification</td><td>JWT + bcryptjs</td><td>Sécurité des accès et des mots de passe</td></tr>
+        <tr><td>Documents</td><td>pdfkit, pdfmake, puppeteer</td><td>Factures, ordonnances, reçus, comptes-rendus</td></tr>
+        <tr><td>Export</td><td>xlsx</td><td>Exports Excel pour tableurs</td></tr>
+        <tr><td>Graphiques</td><td>recharts</td><td>Tableaux de bord et statistiques</td></tr>
+      </tbody>
+    </table>
+    <div class="page-number">Page 3</div>
+  </div>
+
+  <div class="page">
+    <h2>3. Architecture générale</h2>
+    <p>L'application repose sur une architecture monolithique Next.js répartie en couches claires :</p>
+    <ul>
+      <li><strong>Interface utilisateur</strong> : pages et composants React organisés par service métier.</li>
+      <li><strong>API interne</strong> : routes REST Next.js couvrant l'ensemble des domaines fonctionnels.</li>
+      <li><strong>Modèles de données</strong> : ~63 schémas Mongoose pour patients, actes, factures, stocks, etc.</li>
+      <li><strong>Services utilitaires</strong> : impression, calculs, génération de documents, authentification.</li>
+    </ul>
+
+    <h2>4. Modules fonctionnels</h2>
+    <table>
+      <thead>
+        <tr><th>Service</th><th>Fonctions principales</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Accueil</td><td>Enregistrement patient, orientation, dossiers numériques</td></tr>
+        <tr><td>Médecin</td><td>Consultations, prescriptions, examens, ordonnances</td></tr>
+        <tr><td>Infirmier</td><td>Soins, constantes, observations hospitalières</td></tr>
+        <tr><td>Caisse</td><td>Encaissements, comptes patients, provisions, point de caisse</td></tr>
+        <tr><td>Facturation</td><td>Factures, assurances, tiers payant, honoraires</td></tr>
+        <tr><td>Comptabilité</td><td>Journaux, états financiers, statistiques</td></tr>
+        <tr><td>Laboratoire</td><td>Résultats biologiques, validation, comptes-rendus</td></tr>
+        <tr><td>Radio</td><td>Demandes d'imagerie et comptes-rendus radiologiques</td></tr>
+        <tr><td>Pharmacie</td><td>Dispensation, stock, inventaire, commandes</td></tr>
+        <tr><td>Paramétrage</td><td>Actes, tarifs, utilisateurs, configuration établissement</td></tr>
+      </tbody>
+    </table>
+    <div class="page-number">Page 4</div>
+  </div>
+
+  <div class="page">
+    <h2>5. Modèle de données</h2>
+    <p>La base de données couvre les domaines métiers suivants :</p>
+    <ul>
+      <li><strong>Cœur</strong> : patients, utilisateurs, médecins, infirmiers, établissements.</li>
+      <li><strong>Soins</strong> : consultations, examens, prescriptions, hospitalisations, rendez-vous.</li>
+      <li><strong>Facturation</strong> : factures, lignes de facture, encaissements, annulations, honoraires.</li>
+      <li><strong>Pharmacie & stock</strong> : produits, entrées/sorties, inventaires, fournisseurs.</li>
+      <li><strong>Laboratoire</strong> : prestations, paramètres biologiques, résultats, automates.</li>
+      <li><strong>Assurances</strong> : assurances, sociétés, tarifs conventionnés, partenaires.</li>
+    </ul>
+
+    <h2>6. Sécurité</h2>
+    <table>
+      <thead>
+        <tr><th>Mesure</th><th>Description</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>Mots de passe</td><td>Hachage avec bcryptjs (12 rounds)</td></tr>
+        <tr><td>Authentification</td><td>Tokens JWT sécurisés</td></tr>
+        <tr><td>Anti-bruteforce</td><td>Verrouillage après échecs répétés</td></tr>
+        <tr><td>Traçabilité</td><td>UID utilisateur et timestamps sur les actions</td></tr>
+        <tr><td>Multi-établissement</td><td>Isolation possible par entrepriseId</td></tr>
+      </tbody>
+    </table>
+    <div class="page-number">Page 5</div>
+  </div>
+
+  <div class="page">
+    <h2>7. Déploiement & prérequis</h2>
+    <h3>Prérequis techniques</h3>
+    <ul>
+      <li>Serveur supportant Node.js (compatible Next.js 16 / React 19).</li>
+      <li>Base de données MongoDB dédiée.</li>
+      <li>Variables d'environnement : <code>MONGODB_URI</code>, <code>JWT_SECRET</code>.</li>
+      <li>Navigateur web moderne pour les utilisateurs finaux.</li>
+    </ul>
+
+    <h3>Commandes principales</h3>
+    <table>
+      <thead>
+        <tr><th>Commande</th><th>Usage</th></tr>
+      </thead>
+      <tbody>
+        <tr><td><code>npm install</code></td><td>Installation des dépendances</td></tr>
+        <tr><td><code>npm run dev</code></td><td>Démarrage en développement local</td></tr>
+        <tr><td><code>npm run build</code></td><td>Construction de l'application</td></tr>
+        <tr><td><code>npm run start</code></td><td>Lancement en production</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Recommandations de déploiement</h3>
+    <ul>
+      <li>Hébergement sur serveur dédié, VPS ou PaaS compatible Node.js.</li>
+      <li>Activation des sauvegardes automatiques MongoDB.</li>
+      <li>Configuration d'un reverse-proxy HTTPS (Nginx, Apache, ou service cloud).</li>
+      <li>Vérification des dépendances système pour Puppeteer si génération PDF activée.</li>
+    </ul>
+
+    <h2>8. Points de vigilance</h2>
+    <div class="note">
+      <strong>Note importante :</strong> l'application est en version initiale (0.1.0). Avant toute mise en production, il est recommandé de réaliser une phase de recette, de sécuriser les variables d'environnement, de mettre en place des sauvegardes et de formaliser les rôles/utilisateurs selon le contexte de l'établissement.
+    </div>
+    <ul>
+      <li>Créer un fichier <code>.env.local</code> avec les paramètres sensibles.</li>
+      <li>Harmoniser la gestion des erreurs API côté client.</li>
+      <li>Mettre en place un système d'audit des actions sensibles.</li>
+      <li>Prévoir des tests fonctionnels avant déploiement réel.</li>
+    </ul>
+    <div class="page-number">Page 6</div>
+  </div>
+
+  <div class="page">
+    <h2>9. Avantages pour l'établissement</h2>
+    <div class="two-col">
+      <div class="card">
+        <h4>Centralisation</h4>
+        <p>Un seul outil pour gérer les soins, la facturation, la caisse et la pharmacie.</p>
+      </div>
+      <div class="card">
+        <h4>Productivité</h4>
+        <p>Gain de temps à l'accueil, accès rapide au dossier patient, impression automatique.</p>
+      </div>
+      <div class="card">
+        <h4>Maîtrise financière</h4>
+        <p>Suivi des encaissements, provisions, factures et impayés en temps réel.</p>
+      </div>
+      <div class="card">
+        <h4>Pilotage</h4>
+        <p>Tableaux de bord et statistiques pour décider sur des données fiables.</p>
+      </div>
+    </div>
+
+    <h2>10. Contact & prochaines étapes</h2>
+    <p>Pour toute question ou demande de démonstration, merci de contacter l'équipe en charge du projet.</p>
+    <p>Les prochaines étapes suggérées :</p>
+    <ul>
+      <li>Présentation personnalisée aux parties prenantes.</li>
+      <li>Démonstration des modules prioritaires pour l'établissement.</li>
+      <li>Étude des besoins spécifiques et personnalisations éventuelles.</li>
+      <li>Planification du déploiement et de la formation des utilisateurs.</li>
+    </ul>
+
+    <div style="margin-top: 60px; padding-top: 20px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); display: flex; justify-content: space-between;">
+      <span>Easy Medical — Fiche Technique</span>
+      <span>Document confidentiel</span>
+    </div>
+    <div class="page-number">Page 7</div>
+  </div>
+</body>
+</html>

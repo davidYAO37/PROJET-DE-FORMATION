@@ -46,7 +46,8 @@ export const POST = async () => {
       console.log("🚀 Création automatique du super admin en local...");
       
       // Hasher le mot de passe et générer un UID local
-      const hashedPassword = await hashPassword("Yao2026!");
+      const defaultPassword = process.env.SUPER_ADMIN_PASSWORD || "Yao2026!";
+      const hashedPassword = await hashPassword(defaultPassword);
       const localUID = generateLocalUID();
       
       // Créer le super admin avec authentification locale

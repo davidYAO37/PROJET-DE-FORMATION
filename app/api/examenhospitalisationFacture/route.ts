@@ -279,9 +279,11 @@ export async function POST(req: NextRequest) {
                 typeof patientIdCaution === "string" ? new mongoose.Types.ObjectId(patientIdCaution) : patientIdCaution
             );
             if (patientCaution) {
-                const montantCaution = header.MontantRecu || header.CautionPatient || header.TotalapayerPatient || 0;
-                patientCaution.ProvisionClient -= montantCaution;
-                patientCaution.DepenseProvision += montantCaution;
+                const montantCaution = Number(header.MontantRecu || header.CautionPatient || header.TotalapayerPatient || 0);
+                const provisionActuelle = Number(patientCaution.ProvisionClient) || 0;
+                const depenseActuelle = Number(patientCaution.DepenseProvision) || 0;
+                patientCaution.ProvisionClient = provisionActuelle - montantCaution;
+                patientCaution.DepenseProvision = depenseActuelle + montantCaution;
                 await patientCaution.save();
             }
         }

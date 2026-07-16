@@ -1040,6 +1040,7 @@ export default function PharmacieCaisseModal({
                   montantEncaisse={montantEncaisse}
                   setMontantEncaisse={handleMontantEncaisseChange}
                   totaux={totaux}
+                  patientId={consultation.IdPatient || consultation.patientId || patient._id || ""}
                 />
 
                 {/* Bouton de validation */}

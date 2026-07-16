@@ -433,9 +433,9 @@ body {
     left: 0;
     width: 100%;
   }
+}
 
-
-  /* Style pour le dropdown de recherche  achat de medicament*/
+/* Style pour le dropdown de recherche achat de medicament */
 .position-relative {
   position: relative;
 }
@@ -467,5 +467,80 @@ body {
   border-color: #80bdff;
   box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
 }
-  
+
+/* Effets hover modernes pour les cartes de présentation */
+.hover-shadow {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hover-shadow:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 12px 32px rgba(13, 110, 253, 0.12) !important;
+}
+
+.hover-lift {
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+}
+.hover-lift:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 16px 40px rgba(13, 110, 253, 0.15) !important;
+}
+
+/* =============================
+   Hero page de présentation
+   ============================= */
+.hero-gradient-animated {
+  background: linear-gradient(135deg, #e0f7fa 0%, #ffffff 50%, #e0e7ff 100%);
+  background-size: 200% 200%;
+  animation: heroGradient 12s ease infinite;
+}
+
+@keyframes heroGradient {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.hero-blob {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.35;
+  z-index: 0;
+}
+
+.hero-blob-1 {
+  width: 500px;
+  height: 500px;
+  background: #0dcaf0;
+  top: -120px;
+  right: -120px;
+  animation: floatBlob 10s ease-in-out infinite;
+}
+
+.hero-blob-2 {
+  width: 400px;
+  height: 400px;
+  background: #0d6efd;
+  bottom: -100px;
+  left: -100px;
+  animation: floatBlob 12s ease-in-out infinite reverse;
+}
+
+@keyframes floatBlob {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -30px) scale(1.05); }
+}
+
+.hero-illustration svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.hero-floating-card {
+  animation: floatCard 4s ease-in-out infinite;
+}
+
+@keyframes floatCard {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
 }

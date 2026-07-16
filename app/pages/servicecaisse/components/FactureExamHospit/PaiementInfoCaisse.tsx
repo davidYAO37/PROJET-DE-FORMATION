@@ -4,6 +4,7 @@ import { ExamenHospitalisationForm } from "@/types/examenHospitalisation";
 import { Card, Form } from "react-bootstrap";
 import { ModeDePaiement } from "@/types/ModeDePaiement";
 import { useState, useEffect } from "react";
+import { useProvisionPatient, isCautionMode, isCautionAvailable } from "@/hooks/useProvisionPatient";
 
 type Props = {
     formData: ExamenHospitalisationForm;
@@ -23,6 +24,8 @@ export default function PaiementInfo({
     setMontantEncaisse,
 }: Props) {
     const [modesPaiement, setModesPaiement] = useState<ModeDePaiement[]>([]);
+    const provision = useProvisionPatient(formData.patientId);
+    const cautionDisponible = isCautionAvailable(provision, formData.TotalapayerPatient || 0);
 
     // Récupérer les modes de paiement depuis l'API
     useEffect(() => {
@@ -146,11 +149,23 @@ export default function PaiementInfo({
                                 size="lg"
                                 name="modePaiement"
                                 value={modePaiement}
-                                onChange={(e) => setModePaiement(e.target.value)}
+                                onChange={(e) => {
+                                    const selected = e.target.value;
+                                    if (isCautionMode(selected) && !cautionDisponible) {
+                                        alert('Le patient n\'a pas de caution suffisante pour ce montant. Le mode Caution n\'est pas disponible.');
+                                        return;
+                                    }
+                                    setModePaiement(selected);
+                                }}
                             >
                                 <option value="">-- Sélectionner --</option>
                                 {modesPaiement.map((mode) => (
-                                    <option key={mode._id} value={mode.Modepaiement}>
+                                    <option
+                                        key={mode._id}
+                                        value={mode.Modepaiement}
+                                        disabled={isCautionMode(mode.Modepaiement) && !cautionDisponible}
+                                        title={isCautionMode(mode.Modepaiement) && !cautionDisponible ? 'Le patient n\'a pas de caution suffisante pour ce montant' : undefined}
+                                    >
                                         {mode.Modepaiement}
                                     </option>
                                 ))}

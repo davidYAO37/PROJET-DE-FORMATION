@@ -2,6 +2,7 @@ import { db } from "@/db/mongoConnect";
 import { UserCollection } from "@/models/users.model";
 import { NextResponse } from "next/server";
 import { verifyPassword } from "@/utils/auth";
+import { signToken, setAuthCookie } from "@/lib/auth";
 
 export const POST = async (req: Request) => {
   try {
@@ -79,6 +80,17 @@ export const POST = async (req: Request) => {
       isLocked: false,
       lockedUntil: null
     });
+
+    // Créer le token JWT
+    const token = signToken({
+      userId: user._id.toString(),
+      email: user.email,
+      type: user.type,
+      entrepriseId: user.entrepriseId ? user.entrepriseId.toString() : undefined,
+    });
+
+    // Définir le cookie HTTP-only
+    await setAuthCookie(token);
 
     // Retourner les informations utilisateur (sans le mot de passe)
     const userResponse = {

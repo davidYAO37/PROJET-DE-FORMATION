@@ -26,7 +26,7 @@ export default function ConnexionPage() {
       const res = await axios.post('/api/login', {
         email: email,
         password: motDePasse,
-      });
+      }, { withCredentials: true });
 
       if (!res.data || !res.data.user) {
         setMessage('Email ou mot de passe incorrect');

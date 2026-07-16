@@ -647,16 +647,26 @@ export default function Sidebar() {
                   </Accordion.Body>
                 </Accordion.Item>
                 {!loading && user && user.type === "adminsuper" && (
-                  <li>
-                    <Link
-                      href="/dashboard/parametres/entreprise"
-                      className="sidebar-link-medical d-flex align-items-center"
-                    >
-                      <i className="bi bi-building me-2 text-primary"></i>{" "}
-                      Gestion entreprise
-                    </Link>
-                  </li>
-
+                  <>
+                    <li>
+                      <Link
+                        href="/dashboard/parametres/entreprise"
+                        className="sidebar-link-medical d-flex align-items-center"
+                      >
+                        <i className="bi bi-building me-2 text-primary"></i>{" "}
+                        Gestion entreprise
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/dashboard/parametres/temoignages"
+                        className="sidebar-link-medical d-flex align-items-center"
+                      >
+                        <i className="bi bi-chat-square-quote me-2 text-info"></i>{" "}
+                        Témoignages
+                      </Link>
+                    </li>
+                  </>
                 )}
               </ul>
             </Accordion.Body>
