@@ -161,7 +161,7 @@ export default function SidebarRadio() {
     <>
       {/* Bouton burger visible sur mobile */}
       <button
-        className="sidebar-burger-medical d-md-none"
+        className="sidebar-burger-medical d-lg-none"
         aria-label="Ouvrir le menu"
         onClick={() => setOpen(true)}
       >

@@ -21,6 +21,13 @@ const SignupForm = () => {
   const [unlockingUser, setUnlockingUser] = useState<any | null>(null);
   const [unlockMessage, setUnlockMessage] = useState("");
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editType, setEditType] = useState<string>("");
+  const [editMessage, setEditMessage] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [blockingUser, setBlockingUser] = useState<any | null>(null);
+  const [blockMessage, setBlockMessage] = useState("");
+  const [showBlockModal, setShowBlockModal] = useState(false);
 
   useEffect(() => {
     // Récupérer l'ID entreprise de l'utilisateur connecté
@@ -168,6 +175,112 @@ const SignupForm = () => {
     setShowUnlockModal(false);
   };
 
+  // Ouvrir la modification de rôle
+  const handleEditUser = (user: any) => {
+    setEditingUser(user);
+    setEditType(user.type || "");
+    setEditMessage("");
+    setShowEditModal(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditType("");
+    setEditMessage("");
+    setShowEditModal(false);
+  };
+
+  const handleConfirmEdit = async () => {
+    if (!editingUser || !editingUser._id) return;
+    if (!editType) {
+      setEditMessage("❌ Veuillez sélectionner un rôle.");
+      return;
+    }
+
+    setEditMessage("Mise à jour en cours...");
+
+    try {
+      const response = await axios.put(`/api/new-users/${editingUser._id}`, {
+        nom: editingUser.nom,
+        prenom: editingUser.prenom,
+        email: editingUser.email,
+        type: editType,
+      });
+
+      if (response.status === 200) {
+        setEditMessage("✅ Rôle mis à jour avec succès !");
+        setUsers(users.map(user =>
+          user._id === editingUser._id ? { ...user, type: editType } : user
+        ));
+
+        setTimeout(() => {
+          setShowEditModal(false);
+          setEditingUser(null);
+          setEditType("");
+          setEditMessage("");
+        }, 1500);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setEditMessage("❌ " + error.response.data.message);
+      } else {
+        setEditMessage("❌ Une erreur s'est produite lors de la mise à jour du rôle.");
+      }
+    }
+  };
+
+  // Bloquer un utilisateur
+  const handleBlockUser = (user: any) => {
+    setBlockingUser(user);
+    setBlockMessage("");
+    setShowBlockModal(true);
+  };
+
+  const handleCancelBlock = () => {
+    setBlockingUser(null);
+    setBlockMessage("");
+    setShowBlockModal(false);
+  };
+
+  const handleConfirmBlock = async () => {
+    if (!blockingUser || !blockingUser._id) return;
+
+    setBlockMessage("Blocage en cours...");
+
+    try {
+      const response = await axios.put(`/api/new-users/${blockingUser._id}`, {
+        nom: blockingUser.nom,
+        prenom: blockingUser.prenom,
+        email: blockingUser.email,
+        type: blockingUser.type,
+        isLocked: true,
+        failedAttempts: 4,
+        remainingAttempts: 0,
+      });
+
+      if (response.status === 200) {
+        setBlockMessage("✅ Compte bloqué avec succès !");
+        setUsers(users.map(user =>
+          user._id === blockingUser._id
+            ? { ...user, isLocked: true, failedAttempts: 4, remainingAttempts: 0 }
+            : user
+        ));
+
+        setTimeout(() => {
+          setShowBlockModal(false);
+          setBlockingUser(null);
+          setBlockMessage("");
+        }, 1500);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setBlockMessage("❌ " + error.response.data.message);
+      } else {
+        setBlockMessage("❌ Une erreur s'est produite lors du blocage du compte.");
+      }
+    }
+  };
+
   // Confirmer le déblocage
   const handleConfirmUnlock = async () => {
     if (!unlockingUser) return;
@@ -219,16 +332,23 @@ const SignupForm = () => {
         return;
       }
 
-      // Création utilisateur via API locale
-      const response = await axios.post("/api/new-users", {
+      // Préparer le payload sans envoyer d'entreprise vide
+      const payload: any = {
         ...form,
-        password: password
-      });
+        password: password,
+      };
+      if (entrepriseId) {
+        payload.entrepriseId = entrepriseId;
+      } else {
+        delete payload.entrepriseId;
+      }
+
+      const response = await axios.post("/api/new-users", payload);
 
       if (response.status === 201) {
         setMessage("✅ Compte créé avec succès. Vous pouvez maintenant vous connecter !");
-        // Réinitialiser le formulaire
-        setForm({ nom: "", prenom: "", email: "", type: "", entrepriseId: "" });
+        // Réinitialiser le formulaire tout en conservant l'entreprise courante
+        setForm({ nom: "", prenom: "", email: "", type: "", entrepriseId: entrepriseId });
         setPassword("");
         // Rafraîchir la liste des utilisateurs
         fetchUsers();
@@ -506,6 +626,32 @@ const SignupForm = () => {
                         </td>
                         <td>
                           <div className="btn-group" role="group">
+                            <button
+                              className="btn btn-sm btn-outline-warning me-1"
+                              onClick={() => handleEditUser(user)}
+                              title="Modifier le rôle de l'utilisateur"
+                              disabled={!user._id || user._id === "undefined"}
+                              style={{
+                                opacity: (!user._id || user._id === "undefined") ? 0.5 : 1,
+                                cursor: (!user._id || user._id === "undefined") ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              <i className="bi bi-pencil-square"></i>
+                            </button>
+                            {!user.isLocked && (
+                              <button
+                                className="btn btn-sm btn-outline-secondary me-1"
+                                onClick={() => handleBlockUser(user)}
+                                title="Bloquer l'utilisateur"
+                                disabled={!user._id || user._id === "undefined"}
+                                style={{
+                                  opacity: (!user._id || user._id === "undefined") ? 0.5 : 1,
+                                  cursor: (!user._id || user._id === "undefined") ? 'not-allowed' : 'pointer'
+                                }}
+                              >
+                                <i className="bi bi-lock-fill"></i>
+                              </button>
+                            )}
                             {user.isLocked && (
                               <button
                                 className="btn btn-sm btn-outline-success me-1"
@@ -691,6 +837,151 @@ const SignupForm = () => {
                   variant="success"
                   onClick={handleCancelDelete}
                 >
+                  <i className="bi bi-check me-1"></i>
+                  OK
+                </Button>
+              )}
+            </Modal.Footer>
+          </Modal>
+
+          {/* Modal de modification du rôle */}
+          <Modal
+            show={showEditModal}
+            onHide={handleCancelEdit}
+            centered
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>
+                <i className="bi bi-pencil-square me-2"></i>
+                Modifier le rôle de l'utilisateur
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {editMessage && (
+                <div className={`alert ${editMessage.includes('✅') ? 'alert-success' : 'alert-info'} mb-3`}>
+                  {editMessage}
+                </div>
+              )}
+
+              {!editMessage.includes('✅') && (
+                <>
+                  <div className="alert alert-info d-flex align-items-center">
+                    <i className="bi bi-info-circle-fill me-2"></i>
+                    <div>
+                      <strong>Modification du rôle</strong> : Changez le type de l'utilisateur.
+                    </div>
+                  </div>
+
+                  <p className="mb-3">
+                    Sélectionnez le nouveau rôle pour :
+                  </p>
+
+                  <div className="bg-light p-3 rounded mb-3">
+                    <strong>{editingUser?.nom} {editingUser?.prenom}</strong><br />
+                    <small className="text-muted">{editingUser?.email}</small><br />
+                    <span className="badge bg-primary">{editingUser?.type}</span>
+                  </div>
+
+                  <div className="mb-3">
+                    <label className="form-label">Nouveau rôle</label>
+                    <select
+                      className="form-select"
+                      value={editType}
+                      onChange={(e) => setEditType(e.target.value)}
+                    >
+                      <option value="">Sélectionnez un rôle</option>
+                      <option value="admin">Administrateur</option>
+                      <option value="accueil">Service Accueil</option>
+                      <option value="biologiste">Biologiste</option>
+                      <option value="caisse">Caisse</option>
+                      <option value="comptable">Comptable</option>
+                      <option value="infirmier">Infirmier</option>
+                      <option value="medecin">Médecin</option>
+                      <option value="pharmacien">Pharmacie</option>
+                      <option value="radiologue">Radiologue</option>
+                      <option value="technicienlabo">Technicien laboratoire</option>
+                    </select>
+                  </div>
+                </>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              {!editMessage.includes('✅') ? (
+                <>
+                  <Button variant="secondary" onClick={handleCancelEdit}>
+                    Annuler
+                  </Button>
+                  <Button variant="warning" onClick={handleConfirmEdit}>
+                    <i className="bi bi-pencil-square me-1"></i>
+                    Enregistrer
+                  </Button>
+                </>
+              ) : (
+                <Button variant="success" onClick={handleCancelEdit}>
+                  <i className="bi bi-check me-1"></i>
+                  OK
+                </Button>
+              )}
+            </Modal.Footer>
+          </Modal>
+
+          {/* Modal de blocage */}
+          <Modal
+            show={showBlockModal}
+            onHide={handleCancelBlock}
+            centered
+          >
+            <Modal.Header closeButton>
+              <Modal.Title>
+                <i className="bi bi-lock-fill text-warning me-2"></i>
+                Bloquer le compte utilisateur
+              </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+              {blockMessage && (
+                <div className={`alert ${blockMessage.includes('✅') ? 'alert-success' : 'alert-info'} mb-3`}>
+                  {blockMessage}
+                </div>
+              )}
+
+              {!blockMessage.includes('✅') && (
+                <>
+                  <div className="alert alert-warning d-flex align-items-center">
+                    <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                    <div>
+                      <strong>Blocage du compte</strong> : Cette action empêchera la connexion jusqu'au déblocage.
+                    </div>
+                  </div>
+
+                  <p className="mb-3">
+                    Êtes-vous sûr de vouloir bloquer le compte de :
+                  </p>
+
+                  <div className="bg-light p-3 rounded mb-3">
+                    <strong>{blockingUser?.nom} {blockingUser?.prenom}</strong><br />
+                    <small className="text-muted">{blockingUser?.email}</small><br />
+                    <span className="badge bg-primary">{blockingUser?.type}</span>
+                  </div>
+
+                  <p className="text-muted small mb-0">
+                    L'utilisateur sera bloqué immédiatement et ne pourra plus se connecter.
+                  </p>
+                </>
+              )}
+            </Modal.Body>
+            <Modal.Footer>
+              {!blockMessage.includes('✅') ? (
+                <>
+                  <Button variant="secondary" onClick={handleCancelBlock}>
+                    Annuler
+                  </Button>
+                  <Button variant="warning" onClick={handleConfirmBlock}>
+                    <i className="bi bi-lock-fill me-1"></i>
+                    Bloquer
+                  </Button>
+                </>
+              ) : (
+                <Button variant="success" onClick={handleCancelBlock}>
                   <i className="bi bi-check me-1"></i>
                   OK
                 </Button>

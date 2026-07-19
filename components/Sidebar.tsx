@@ -11,19 +11,13 @@ import ModifierMotDePasseModal from "@/components/ModifierMotDePasseModal";
 import GestionLienAutomate from "@/components/GestionLienAutomate";
 import GestionParametreNfs from "@/components/GestionParametreNfs";
 import { useRouter } from "next/navigation";
-// import ListeAnnulationFactureModal from "@/pages/servicecaisse/components/ListeAnnulationFactureModal";
-// import ListeAnnulationEncaissementModal from "@/pages/servicecaisse/components/ListeAnnulationEncaissementModal";
+import { ListeAnnulationEncaissementModal, ListeAnnulationFactureModal } from "@/app/pages/servicecaisse/components";
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
-  const [showListeAnnulationModal, setShowListeAnnulationModal] =
-    useState(false);
-  const [
-    showListeEncaissementAnnulationModal,
-    setShowListeEncaissementAnnulationModal,
-  ] = useState(false);
-  const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] =
-    useState(false);
+  const [showListeAnnulationModal, setShowListeAnnulationModal] = useState(false);
+  const [showListeEncaissementAnnulationModal, setShowListeEncaissementAnnulationModal] = useState(false);
+  const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [showListePlanningModal, setShowListePlanningModal] = useState(false);
   const [showDisponibiliteModal, setShowDisponibiliteModal] = useState(false);
   const [showLienAutomateModal, setShowLienAutomateModal] = useState(false);
@@ -50,7 +44,7 @@ export default function Sidebar() {
   return (
     <>
       {/* Toggle menu (mobile only) */}
-      <div className="d-md-none d-flex justify-content-between align-items-center bg-light p-2">
+      <div className="d-lg-none d-flex justify-content-between align-items-center bg-light p-2">
         <h5 className="m-0">Menu</h5>
         <Button
           variant="outline-primary"
@@ -279,7 +273,7 @@ export default function Sidebar() {
               <ul className="nav flex-column gap-2">
                 <li>
                   <Link
-                    href="/pages/servicepharmacie/tpharmacie"
+                    href="/pages/servicepharmacie"
                     className="sidebar-link-medical d-flex align-items-center"
                   >
                     <i className="bi bi-prescription2 me-2 text-danger"></i>{" "}
@@ -726,6 +720,18 @@ export default function Sidebar() {
       <DisponibiliteMedecinModal
         show={showDisponibiliteModal}
         onHide={() => setShowDisponibiliteModal(false)}
+      />
+      
+      {/* Modal pour la liste des annulations factures */}
+      <ListeAnnulationFactureModal
+        show={showListeAnnulationModal}
+        onHide={() => setShowListeAnnulationModal(false)}
+      />
+      
+      {/* Modal pour la liste des annulations encaissements */}
+      <ListeAnnulationEncaissementModal
+        show={showListeEncaissementAnnulationModal}
+        onHide={() => setShowListeEncaissementAnnulationModal(false)}
       />
     </>
   );

@@ -13,6 +13,9 @@ export * from './AvisHospit';
 export * from './arretTravail';
 export * from './compteRenduOperatoire';
 export * from './Testimonial';
+export * from './hospitalisation';
+export * from './chambre';
+export * from './lit';
 // Add other model exports here as needed
 
 // This ensures all models are loaded and registered with Mongoose
@@ -30,3 +33,6 @@ import './AvisHospit';
 import './arretTravail';
 import './compteRenduOperatoire';
 import './Testimonial';
+import './hospitalisation';
+import './chambre';
+import './lit';

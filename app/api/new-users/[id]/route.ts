@@ -10,38 +10,53 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
     // Validation des champs requis
     if (!body.nom || !body.prenom || !body.email || !body.type) {
-      return NextResponse.json({ 
-        message: "Tous les champs sont requis" 
+      return NextResponse.json({
+        message: "Tous les champs sont requis"
       }, { status: 400 });
     }
 
     // Vérifier si l'email existe déjà (pour un autre utilisateur)
-    const existingUser = await UserCollection.findOne({ 
-      email: body.email, 
-      _id: { $ne: id } 
+    const existingUser = await UserCollection.findOne({
+      email: body.email,
+      _id: { $ne: id }
     });
 
     if (existingUser) {
-      return NextResponse.json({ 
-        message: "Cet email est déjà utilisé par un autre utilisateur" 
+      return NextResponse.json({
+        message: "Cet email est déjà utilisé par un autre utilisateur"
       }, { status: 400 });
     }
 
     // Mettre à jour l'utilisateur
+    const updateData: any = {
+      nom: body.nom,
+      prenom: body.prenom,
+      email: body.email,
+      type: body.type
+    };
+
+    if (body.hasOwnProperty('isLocked')) {
+      updateData.isLocked = body.isLocked;
+    }
+    if (body.hasOwnProperty('failedAttempts')) {
+      updateData.failedAttempts = body.failedAttempts;
+    }
+    if (body.hasOwnProperty('remainingAttempts')) {
+      updateData.remainingAttempts = body.remainingAttempts;
+    }
+    if (body.hasOwnProperty('lockedUntil')) {
+      updateData.lockedUntil = body.lockedUntil;
+    }
+
     const updatedUser = await UserCollection.findByIdAndUpdate(
       id,
-      {
-        nom: body.nom,
-        prenom: body.prenom,
-        email: body.email,
-        type: body.type
-      },
+      updateData,
       { new: true, runValidators: true }
     );
 
     if (!updatedUser) {
-      return NextResponse.json({ 
-        message: "Utilisateur non trouvé" 
+      return NextResponse.json({
+        message: "Utilisateur non trouvé"
       }, { status: 404 });
     }
 
@@ -52,15 +67,15 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
 
   } catch (error: any) {
     console.error("Erreur lors de la mise à jour de l'utilisateur:", error);
-    
+
     if (error.code === 11000) {
-      return NextResponse.json({ 
-        message: "Cet email est déjà utilisé" 
+      return NextResponse.json({
+        message: "Cet email est déjà utilisé"
       }, { status: 400 });
     }
 
-    return NextResponse.json({ 
-      message: "Erreur serveur lors de la mise à jour" 
+    return NextResponse.json({
+      message: "Erreur serveur lors de la mise à jour"
     }, { status: 500 });
   }
 }
@@ -73,8 +88,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     const deletedUser = await UserCollection.findByIdAndDelete(id);
 
     if (!deletedUser) {
-      return NextResponse.json({ 
-        message: "Utilisateur non trouvé" 
+      return NextResponse.json({
+        message: "Utilisateur non trouvé"
       }, { status: 404 });
     }
 
@@ -84,8 +99,8 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
 
   } catch (error) {
     console.error("Erreur lors de la suppression de l'utilisateur:", error);
-    return NextResponse.json({ 
-      message: "Erreur serveur lors de la suppression" 
+    return NextResponse.json({
+      message: "Erreur serveur lors de la suppression"
     }, { status: 500 });
   }
 }

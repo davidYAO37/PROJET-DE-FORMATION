@@ -20,6 +20,13 @@ const SignupFormDev = () => {
   const [unlockingUser, setUnlockingUser] = useState<any | null>(null);
   const [unlockMessage, setUnlockMessage] = useState("");
   const [showUnlockModal, setShowUnlockModal] = useState(false);
+  const [editingUser, setEditingUser] = useState<any | null>(null);
+  const [editType, setEditType] = useState<string>("");
+  const [editMessage, setEditMessage] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [blockingUser, setBlockingUser] = useState<any | null>(null);
+  const [blockMessage, setBlockMessage] = useState("");
+  const [showBlockModal, setShowBlockModal] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -45,7 +52,7 @@ const SignupFormDev = () => {
   };
 
   // Filtrer les utilisateurs selon le terme de recherche
-  const filteredUsers = users.filter(user => 
+  const filteredUsers = users.filter(user =>
     user.nom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.prenom?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     user.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -76,7 +83,7 @@ const SignupFormDev = () => {
       setDeleteMessage("❌ Impossible de supprimer : ID utilisateur invalide");
       return;
     }
-    
+
     setDeletingUser(user);
     setDeleteMessage("");
     setShowDeleteModal(true);
@@ -105,7 +112,7 @@ const SignupFormDev = () => {
         setDeleteMessage("✅ Utilisateur supprimé avec succès !");
         // Mettre à jour la liste des utilisateurs
         setUsers(users.filter(user => user._id !== deletingUser._id));
-        
+
         // Fermer la modal après un délai
         setTimeout(() => {
           setShowDeleteModal(false);
@@ -143,19 +150,19 @@ const SignupFormDev = () => {
     setUnlockMessage("Déblocage en cours...");
 
     try {
-      const response = await axios.post("/api/unlock-user", { 
-        email: unlockingUser.email 
+      const response = await axios.post("/api/unlock-user", {
+        email: unlockingUser.email
       });
 
       if (response.status === 200) {
         setUnlockMessage("✅ Compte débloqué avec succès !");
         // Mettre à jour la liste des utilisateurs
-        setUsers(users.map(user => 
-          user._id === unlockingUser._id 
+        setUsers(users.map(user =>
+          user._id === unlockingUser._id
             ? { ...user, isLocked: false, failedAttempts: 0, remainingAttempts: 4 }
             : user
         ));
-        
+
         // Fermer la modal après un délai
         setTimeout(() => {
           setShowUnlockModal(false);
@@ -172,6 +179,110 @@ const SignupFormDev = () => {
     }
   };
 
+  const handleEditUser = (user: any) => {
+    setEditingUser(user);
+    setEditType(user.type || "");
+    setEditMessage("");
+    setShowEditModal(true);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+    setEditType("");
+    setEditMessage("");
+    setShowEditModal(false);
+  };
+
+  const handleConfirmEdit = async () => {
+    if (!editingUser || !editingUser._id) return;
+    if (!editType) {
+      setEditMessage("❌ Veuillez sélectionner un rôle.");
+      return;
+    }
+
+    setEditMessage("Mise à jour en cours...");
+
+    try {
+      const response = await axios.put(`/api/new-users/${editingUser._id}`, {
+        nom: editingUser.nom,
+        prenom: editingUser.prenom,
+        email: editingUser.email,
+        type: editType,
+      });
+
+      if (response.status === 200) {
+        setEditMessage("✅ Rôle mis à jour avec succès !");
+        setUsers(users.map(user =>
+          user._id === editingUser._id ? { ...user, type: editType } : user
+        ));
+
+        setTimeout(() => {
+          setShowEditModal(false);
+          setEditingUser(null);
+          setEditType("");
+          setEditMessage("");
+        }, 1500);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setEditMessage("❌ " + error.response.data.message);
+      } else {
+        setEditMessage("❌ Une erreur s'est produite lors de la mise à jour du rôle.");
+      }
+    }
+  };
+
+  const handleBlockUser = (user: any) => {
+    setBlockingUser(user);
+    setBlockMessage("");
+    setShowBlockModal(true);
+  };
+
+  const handleCancelBlock = () => {
+    setBlockingUser(null);
+    setBlockMessage("");
+    setShowBlockModal(false);
+  };
+
+  const handleConfirmBlock = async () => {
+    if (!blockingUser || !blockingUser._id) return;
+
+    setBlockMessage("Blocage en cours...");
+
+    try {
+      const response = await axios.put(`/api/new-users/${blockingUser._id}`, {
+        nom: blockingUser.nom,
+        prenom: blockingUser.prenom,
+        email: blockingUser.email,
+        type: blockingUser.type,
+        isLocked: true,
+        failedAttempts: 4,
+        remainingAttempts: 0,
+      });
+
+      if (response.status === 200) {
+        setBlockMessage("✅ Compte bloqué avec succès !");
+        setUsers(users.map(user =>
+          user._id === blockingUser._id
+            ? { ...user, isLocked: true, failedAttempts: 4, remainingAttempts: 0 }
+            : user
+        ));
+
+        setTimeout(() => {
+          setShowBlockModal(false);
+          setBlockingUser(null);
+          setBlockMessage("");
+        }, 1500);
+      }
+    } catch (error: any) {
+      if (error.response?.status === 400) {
+        setBlockMessage("❌ " + error.response.data.message);
+      } else {
+        setBlockMessage("❌ Une erreur s'est produite lors du blocage du compte.");
+      }
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage("Création du compte en cours...");
@@ -184,9 +295,9 @@ const SignupFormDev = () => {
       }
 
       // Création utilisateur via API locale
-      const response = await axios.post("/api/new-users", { 
-        ...form, 
-        password: password 
+      const response = await axios.post("/api/new-users", {
+        ...form,
+        password: password
       });
 
       if (response.status === 201) {
@@ -221,8 +332,8 @@ const SignupFormDev = () => {
               <i className="bi bi-people me-2"></i>
               Gestion des utilisateurs (Dev)
             </h3>
-            <Button 
-              variant="primary" 
+            <Button
+              variant="primary"
               onClick={() => setShowNewUserModal(true)}
               className="d-flex align-items-center"
             >
@@ -234,8 +345,8 @@ const SignupFormDev = () => {
       </div>
 
       {/* Modal Nouveau compte */}
-      <Modal 
-        show={showNewUserModal} 
+      <Modal
+        show={showNewUserModal}
         onHide={() => setShowNewUserModal(false)}
         centered
         size="lg"
@@ -248,63 +359,63 @@ const SignupFormDev = () => {
         </Modal.Header>
         <Modal.Body>
           {message && <div className="alert alert-info">{message}</div>}
-          
+
           <form onSubmit={handleSubmit}>
             <div className="row g-3">
               <div className="col-md-6">
                 <label className="form-label">Nom</label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  name="nom" 
-                  placeholder="Nom" 
-                  value={form.nom} 
-                  onChange={handleChange} 
-                  required 
+                <input
+                  type="text"
+                  className="form-control"
+                  name="nom"
+                  placeholder="Nom"
+                  value={form.nom}
+                  onChange={handleChange}
+                  required
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Prénom</label>
-                <input 
-                  type="text" 
-                  className="form-control" 
-                  name="prenom" 
-                  placeholder="Prénom" 
-                  value={form.prenom} 
-                  onChange={handleChange} 
-                  required 
+                <input
+                  type="text"
+                  className="form-control"
+                  name="prenom"
+                  placeholder="Prénom"
+                  value={form.prenom}
+                  onChange={handleChange}
+                  required
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Email</label>
-                <input 
-                  type="email" 
-                  className="form-control" 
-                  name="email" 
-                  placeholder="Email" 
-                  value={form.email} 
-                  onChange={handleChange} 
-                  required 
+                <input
+                  type="email"
+                  className="form-control"
+                  name="email"
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={handleChange}
+                  required
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Mot de passe</label>
-                <input 
-                  type="password" 
-                  className="form-control" 
-                  placeholder="Mot de passe" 
-                  value={password} 
-                  onChange={(e) => setPassword(e.target.value)} 
-                  required 
+                <input
+                  type="password"
+                  className="form-control"
+                  placeholder="Mot de passe"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
               </div>
               <div className="col-md-6">
                 <label className="form-label">Rôle</label>
-                <select 
-                  className="form-select" 
-                  name="type" 
-                  value={form.type} 
-                  onChange={handleChange} 
+                <select
+                  className="form-select"
+                  name="type"
+                  value={form.type}
+                  onChange={handleChange}
                   required
                 >
                   <option value="">Sélectionnez un rôle</option>
@@ -322,18 +433,18 @@ const SignupFormDev = () => {
               </div>
               <div className="col-md-6">
                 <label className="form-label">Entreprise</label>
-                <EntrepriseSelect 
-                  value={form.entrepriseId} 
-                  onChange={handleChange} 
-                  required 
+                <EntrepriseSelect
+                  value={form.entrepriseId}
+                  onChange={handleChange}
+                  required
                 />
               </div>
             </div>
 
             <div className="d-flex justify-content-end gap-2 mt-4">
-              <Button 
-                type="button" 
-                variant="secondary" 
+              <Button
+                type="button"
+                variant="secondary"
                 onClick={() => setShowNewUserModal(false)}
               >
                 Annuler
@@ -353,8 +464,8 @@ const SignupFormDev = () => {
           <div className="rounded bg-light p-4">
             <div className="d-flex justify-content-between align-items-center mb-3">
               <h5 className="mb-0">Utilisateurs existants</h5>
-              <button 
-                className="btn btn-sm btn-outline-primary" 
+              <button
+                className="btn btn-sm btn-outline-primary"
                 onClick={fetchUsers}
                 disabled={loadingUsers}
               >
@@ -386,8 +497,8 @@ const SignupFormDev = () => {
                   onChange={handleSearchChange}
                 />
                 {searchTerm && (
-                  <button 
-                    className="btn btn-outline-secondary" 
+                  <button
+                    className="btn btn-outline-secondary"
                     type="button"
                     onClick={() => {
                       setSearchTerm("");
@@ -462,13 +573,39 @@ const SignupFormDev = () => {
                         </td>
                         <td>
                           <div className="btn-group" role="group">
+                            <button
+                              className="btn btn-sm btn-outline-warning me-1"
+                              onClick={() => handleEditUser(user)}
+                              title="Modifier le rôle de l'utilisateur"
+                              disabled={!user._id || user._id === "undefined"}
+                              style={{
+                                opacity: (!user._id || user._id === "undefined") ? 0.5 : 1,
+                                cursor: (!user._id || user._id === "undefined") ? 'not-allowed' : 'pointer'
+                              }}
+                            >
+                              <i className="bi bi-pencil-square"></i>
+                            </button>
+                            {!user.isLocked && (
+                              <button
+                                className="btn btn-sm btn-outline-secondary me-1"
+                                onClick={() => handleBlockUser(user)}
+                                title="Bloquer l'utilisateur"
+                                disabled={!user._id || user._id === "undefined"}
+                                style={{
+                                  opacity: (!user._id || user._id === "undefined") ? 0.5 : 1,
+                                  cursor: (!user._id || user._id === "undefined") ? 'not-allowed' : 'pointer'
+                                }}
+                              >
+                                <i className="bi bi-lock-fill"></i>
+                              </button>
+                            )}
                             {user.isLocked && (
-                              <button 
+                              <button
                                 className="btn btn-sm btn-outline-success me-1"
                                 onClick={() => handleUnlockUser(user)}
                                 title="Débloquer l'utilisateur"
                                 disabled={!user._id || user._id === "undefined"}
-                                style={{ 
+                                style={{
                                   opacity: (!user._id || user._id === "undefined") ? 0.5 : 1,
                                   cursor: (!user._id || user._id === "undefined") ? 'not-allowed' : 'pointer'
                                 }}
@@ -476,12 +613,12 @@ const SignupFormDev = () => {
                                 <i className="bi bi-unlock"></i>
                               </button>
                             )}
-                            <button 
+                            <button
                               className="btn btn-sm btn-outline-danger"
                               onClick={() => handleDeleteUser(user)}
                               title="Supprimer l'utilisateur"
                               disabled={!user._id || user._id === "undefined"}
-                              style={{ 
+                              style={{
                                 opacity: (!user._id || user._id === "undefined") ? 0.5 : 1,
                                 cursor: (!user._id || user._id === "undefined") ? 'not-allowed' : 'pointer'
                               }}
@@ -508,24 +645,24 @@ const SignupFormDev = () => {
                 <nav>
                   <ul className="pagination pagination-sm mb-0">
                     <li className={`page-item ${currentPage === 1 ? 'disabled' : ''}`}>
-                      <button 
-                        className="page-link" 
+                      <button
+                        className="page-link"
                         onClick={() => paginate(currentPage - 1)}
                         disabled={currentPage === 1}
                       >
                         <i className="bi bi-chevron-left"></i>
                       </button>
                     </li>
-                    
+
                     {[...Array(totalPages)].map((_, index) => {
                       const pageNumber = index + 1;
                       return (
-                        <li 
-                          key={pageNumber} 
+                        <li
+                          key={pageNumber}
                           className={`page-item ${currentPage === pageNumber ? 'active' : ''}`}
                         >
-                          <button 
-                            className="page-link" 
+                          <button
+                            className="page-link"
                             onClick={() => paginate(pageNumber)}
                           >
                             {pageNumber}
@@ -533,10 +670,10 @@ const SignupFormDev = () => {
                         </li>
                       );
                     })}
-                    
+
                     <li className={`page-item ${currentPage === totalPages ? 'disabled' : ''}`}>
-                      <button 
-                        className="page-link" 
+                      <button
+                        className="page-link"
                         onClick={() => paginate(currentPage + 1)}
                         disabled={currentPage === totalPages}
                       >
@@ -570,8 +707,8 @@ const SignupFormDev = () => {
             </div>
 
             {/* Modal de suppression */}
-            <Modal 
-              show={showDeleteModal} 
+            <Modal
+              show={showDeleteModal}
               onHide={handleCancelDelete}
               centered
             >
@@ -602,9 +739,9 @@ const SignupFormDev = () => {
                     </p>
 
                     <div className="bg-light p-3 rounded mb-3">
-                      <strong>{deletingUser?.nom} {deletingUser?.prenom}</strong><br/>
-                      <small className="text-muted">{deletingUser?.email}</small><br/>
-                      <span className="badge bg-primary">{deletingUser?.type}</span><br/>
+                      <strong>{deletingUser?.nom} {deletingUser?.prenom}</strong><br />
+                      <small className="text-muted">{deletingUser?.email}</small><br />
+                      <span className="badge bg-primary">{deletingUser?.type}</span><br />
                       {deletingUser?.entrepriseId && (
                         <small className="text-muted">Entreprise: {deletingUser.entrepriseId}</small>
                       )}
@@ -619,13 +756,13 @@ const SignupFormDev = () => {
               <Modal.Footer>
                 {!deleteMessage.includes('✅') ? (
                   <>
-                    <Button 
+                    <Button
                       variant="secondary"
                       onClick={handleCancelDelete}
                     >
                       Annuler
                     </Button>
-                    <Button 
+                    <Button
                       variant="danger"
                       onClick={handleConfirmDelete}
                     >
@@ -634,7 +771,7 @@ const SignupFormDev = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button 
+                  <Button
                     variant="success"
                     onClick={handleCancelDelete}
                   >
@@ -645,9 +782,154 @@ const SignupFormDev = () => {
               </Modal.Footer>
             </Modal>
 
+            {/* Modal de modification du rôle */}
+            <Modal
+              show={showEditModal}
+              onHide={handleCancelEdit}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>
+                  <i className="bi bi-pencil-square me-2"></i>
+                  Modifier le rôle de l'utilisateur
+                </Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {editMessage && (
+                  <div className={`alert ${editMessage.includes('✅') ? 'alert-success' : 'alert-info'} mb-3`}>
+                    {editMessage}
+                  </div>
+                )}
+
+                {!editMessage.includes('✅') && (
+                  <>
+                    <div className="alert alert-info d-flex align-items-center">
+                      <i className="bi bi-info-circle-fill me-2"></i>
+                      <div>
+                        <strong>Modification du rôle</strong> : Changez le type de l'utilisateur.
+                      </div>
+                    </div>
+
+                    <p className="mb-3">
+                      Sélectionnez le nouveau rôle pour :
+                    </p>
+
+                    <div className="bg-light p-3 rounded mb-3">
+                      <strong>{editingUser?.nom} {editingUser?.prenom}</strong><br />
+                      <small className="text-muted">{editingUser?.email}</small><br />
+                      <span className="badge bg-primary">{editingUser?.type}</span>
+                    </div>
+
+                    <div className="mb-3">
+                      <label className="form-label">Nouveau rôle</label>
+                      <select
+                        className="form-select"
+                        value={editType}
+                        onChange={(e) => setEditType(e.target.value)}
+                      >
+                        <option value="">Sélectionnez un rôle</option>
+                        <option value="admin">Administrateur</option>
+                        <option value="accueil">Service Accueil</option>
+                        <option value="biologiste">Biologiste</option>
+                        <option value="caisse">Caisse</option>
+                        <option value="comptable">Comptable</option>
+                        <option value="infirmier">Infirmier</option>
+                        <option value="medecin">Médecin</option>
+                        <option value="pharmacien">Pharmacie</option>
+                        <option value="radiologue">Radiologue</option>
+                        <option value="technicienlabo">Technicien laboratoire</option>
+                      </select>
+                    </div>
+                  </>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                {!editMessage.includes('✅') ? (
+                  <>
+                    <Button variant="secondary" onClick={handleCancelEdit}>
+                      Annuler
+                    </Button>
+                    <Button variant="warning" onClick={handleConfirmEdit}>
+                      <i className="bi bi-pencil-square me-1"></i>
+                      Enregistrer
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="success" onClick={handleCancelEdit}>
+                    <i className="bi bi-check me-1"></i>
+                    OK
+                  </Button>
+                )}
+              </Modal.Footer>
+            </Modal>
+
+            {/* Modal de blocage */}
+            <Modal
+              show={showBlockModal}
+              onHide={handleCancelBlock}
+              centered
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>
+                  <i className="bi bi-lock-fill text-warning me-2"></i>
+                  Bloquer le compte utilisateur
+                </Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                {blockMessage && (
+                  <div className={`alert ${blockMessage.includes('✅') ? 'alert-success' : 'alert-info'} mb-3`}>
+                    {blockMessage}
+                  </div>
+                )}
+
+                {!blockMessage.includes('✅') && (
+                  <>
+                    <div className="alert alert-warning d-flex align-items-center">
+                      <i className="bi bi-exclamation-triangle-fill me-2"></i>
+                      <div>
+                        <strong>Blocage du compte</strong> : Cette action empêchera la connexion jusqu'au déblocage.
+                      </div>
+                    </div>
+
+                    <p className="mb-3">
+                      Êtes-vous sûr de vouloir bloquer le compte de :
+                    </p>
+
+                    <div className="bg-light p-3 rounded mb-3">
+                      <strong>{blockingUser?.nom} {blockingUser?.prenom}</strong><br />
+                      <small className="text-muted">{blockingUser?.email}</small><br />
+                      <span className="badge bg-primary">{blockingUser?.type}</span>
+                    </div>
+
+                    <p className="text-muted small mb-0">
+                      L'utilisateur sera bloqué immédiatement et ne pourra plus se connecter.
+                    </p>
+                  </>
+                )}
+              </Modal.Body>
+              <Modal.Footer>
+                {!blockMessage.includes('✅') ? (
+                  <>
+                    <Button variant="secondary" onClick={handleCancelBlock}>
+                      Annuler
+                    </Button>
+                    <Button variant="warning" onClick={handleConfirmBlock}>
+                      <i className="bi bi-lock-fill me-1"></i>
+                      Bloquer
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="success" onClick={handleCancelBlock}>
+                    <i className="bi bi-check me-1"></i>
+                    OK
+                  </Button>
+                )}
+              </Modal.Footer>
+            </Modal>
+
             {/* Modal de déblocage */}
-            <Modal 
-              show={showUnlockModal} 
+            <Modal
+              show={showUnlockModal}
               onHide={handleCancelUnlock}
               centered
             >
@@ -678,9 +960,9 @@ const SignupFormDev = () => {
                     </p>
 
                     <div className="bg-light p-3 rounded mb-3">
-                      <strong>{unlockingUser?.nom} {unlockingUser?.prenom}</strong><br/>
-                      <small className="text-muted">{unlockingUser?.email}</small><br/>
-                      <span className="badge bg-primary">{unlockingUser?.type}</span><br/>
+                      <strong>{unlockingUser?.nom} {unlockingUser?.prenom}</strong><br />
+                      <small className="text-muted">{unlockingUser?.email}</small><br />
+                      <span className="badge bg-primary">{unlockingUser?.type}</span><br />
                       {unlockingUser?.entrepriseId && (
                         <small className="text-muted">Entreprise: {unlockingUser.entrepriseId}</small>
                       )}
@@ -695,13 +977,13 @@ const SignupFormDev = () => {
               <Modal.Footer>
                 {!unlockMessage.includes('✅') ? (
                   <>
-                    <Button 
+                    <Button
                       variant="secondary"
                       onClick={handleCancelUnlock}
                     >
                       Annuler
                     </Button>
-                    <Button 
+                    <Button
                       variant="success"
                       onClick={handleConfirmUnlock}
                     >
@@ -710,7 +992,7 @@ const SignupFormDev = () => {
                     </Button>
                   </>
                 ) : (
-                  <Button 
+                  <Button
                     variant="success"
                     onClick={handleCancelUnlock}
                   >

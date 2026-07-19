@@ -56,7 +56,7 @@ export default function ConnexionPage() {
           if (profil?.type === 'admin') router.push('/dashboard');
           else if (profil?.type === 'medecin') router.push('/pages/servicemedecin/tmedecin');
           else if (profil?.type === 'infirmier') router.push('/pages/serviceinfirmier/tinfirmier');
-          else if (profil?.type === 'pharmacien') router.push('/pages/servicepharmacie/tpharmacie');
+          else if (profil?.type === 'pharmacien') router.push('/pages/servicepharmacie');
           else if (profil?.type === 'radiologue') router.push('/pages/serviceradio/tradio');
           else if (profil?.type === 'biologiste') router.push('/pages/servicebiologiste/tbiologiste');
           else if (profil?.type === 'technicienlabo') router.push('/pages/servicelaboratoire/tlaboratoire');
@@ -71,28 +71,27 @@ export default function ConnexionPage() {
         setMessageType('danger');
       }
     } catch (error: any) {
-      console.error(error);
-
       if (error.response?.status === 423) {
         // Compte bloqué
         setIsLocked(true);
-        setMessage(error.response.data.message || 'Compte temporairement bloqué');
+        setMessage(error.response.data?.message || "Compte bloqué. Contactez l'administrateur.");
         setMessageType('danger');
       } else if (error.response?.status === 401) {
         // Tentatives échouées
         const responseData = error.response.data;
-        if (responseData.remainingAttempts !== undefined) {
+        if (responseData?.remainingAttempts !== undefined) {
           setRemainingAttempts(responseData.remainingAttempts);
-          setMessage(responseData.message);
+          setMessage(responseData.message || 'Email ou mot de passe incorrect');
           setMessageType('warning');
         } else {
           setMessage('Email ou mot de passe incorrect');
           setMessageType('danger');
         }
       } else if (error.response?.status === 400) {
-        setMessage(error.response.data.message);
+        setMessage(error.response?.data?.message || 'Email et mot de passe requis');
         setMessageType('danger');
       } else {
+        console.error(error);
         setMessage('Erreur de connexion');
         setMessageType('danger');
       }

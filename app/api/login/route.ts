@@ -7,13 +7,13 @@ import { signToken, setAuthCookie } from "@/lib/auth";
 export const POST = async (req: Request) => {
   try {
     const { email, password } = await req.json();
-    
+
     if (!email || !password) {
       return NextResponse.json({ message: "Email et mot de passe requis" }, { status: 400 });
     }
 
     await db();
-    
+
     // Rechercher l'utilisateur par email
     const user = await UserCollection.findOne({ email });
     if (!user) {
@@ -21,13 +21,30 @@ export const POST = async (req: Request) => {
     }
 
     // Vérifier si le compte est verrouillé
-    if (user.isLocked && user.lockedUntil && user.lockedUntil > new Date()) {
-      const remainingTime = Math.ceil((user.lockedUntil.getTime() - new Date().getTime()) / (1000 * 60));
-      return NextResponse.json({ 
-        message: `Compte temporairement bloqué. Réessayez dans ${remainingTime} minutes.`,
-        isLocked: true,
-        lockedUntil: user.lockedUntil
-      }, { status: 423 });
+    if (user.isLocked) {
+      if (user.lockedUntil && user.lockedUntil > new Date()) {
+        const remainingTime = Math.ceil((user.lockedUntil.getTime() - new Date().getTime()) / (1000 * 60));
+        return NextResponse.json({
+          message: `Compte temporairement bloqué. Réessayez dans ${remainingTime} minutes.`,
+          isLocked: true,
+          lockedUntil: user.lockedUntil
+        }, { status: 423 });
+      }
+
+      if (!user.lockedUntil) {
+        return NextResponse.json({
+          message: "Compte bloqué par l'administrateur. Contactez l'administrateur pour le déverrouillage.",
+          isLocked: true
+        }, { status: 423 });
+      }
+
+      // Si le verrouillage temporaire est expiré, réinitialiser le compte
+      await UserCollection.findByIdAndUpdate(user._id, {
+        isLocked: false,
+        lockedUntil: null,
+        failedAttempts: 0,
+        remainingAttempts: 4
+      });
     }
 
     // Vérifier le mot de passe
@@ -36,12 +53,12 @@ export const POST = async (req: Request) => {
     }
 
     const isPasswordValid = await verifyPassword(password, user.password);
-    
+
     if (!isPasswordValid) {
       // Incrémenter le nombre de tentatives échouées
       const newFailedAttempts = (user.failedAttempts || 0) + 1;
       const remainingAttempts = 4 - newFailedAttempts;
-      
+
       // Mettre à jour l'utilisateur
       await UserCollection.findByIdAndUpdate(user._id, {
         failedAttempts: newFailedAttempts,
@@ -57,8 +74,8 @@ export const POST = async (req: Request) => {
           failedAttempts: newFailedAttempts,
           remainingAttempts: 0
         });
-        
-        return NextResponse.json({ 
+
+        return NextResponse.json({
           message: "Compte bloqué après 4 tentatives échouées. Contactez un administrateur.",
           isLocked: true,
           remainingAttempts: 0,
@@ -66,7 +83,7 @@ export const POST = async (req: Request) => {
         }, { status: 423 });
       }
 
-      return NextResponse.json({ 
+      return NextResponse.json({
         message: `Email ou mot de passe incorrect. ${remainingAttempts} tentative${remainingAttempts > 1 ? 's' : ''} restante${remainingAttempts > 1 ? 's' : ''}.`,
         remainingAttempts: remainingAttempts,
         maxAttempts: 4
@@ -106,11 +123,11 @@ export const POST = async (req: Request) => {
       remainingAttempts: 4
     };
 
-    return NextResponse.json({ 
-      message: "Connexion réussie", 
-      user: userResponse 
+    return NextResponse.json({
+      message: "Connexion réussie",
+      user: userResponse
     }, { status: 200 });
-    
+
   } catch (error) {
     console.error("Erreur lors de la connexion :", error);
     return NextResponse.json({ message: "Erreur serveur" }, { status: 500 });

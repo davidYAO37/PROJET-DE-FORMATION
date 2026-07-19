@@ -42,32 +42,20 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
   const [showPrintRecapAssuranceModal, setShowPrintRecapAssuranceModal] = useState(false);
   const [showPrintRecapPatientModal, setShowPrintRecapPatientModal] = useState(false);
   
-  const [consultationAssuranceData, setConsultationAssuranceData] =
-    useState<any>(null);
-  const [consultationPatientData, setConsultationPatientData] =
-    useState<any>(null);
-  const [consultationExamenData, setConsultationExamenData] =
-    useState<any>(null);
-  const [consultationDetailleAssuranceData, setConsultationDetailleAssuranceData] =
-    useState<any>(null);
-  const [consultationDetaillePatientData, setConsultationDetaillePatientData] =
-    useState<any>(null);
-  const [consultationExamenPatientData, setConsultationExamenPatientData] =
-    useState<any>(null);
-  const [consultationPharmacieAssuranceData, setConsultationPharmacieAssuranceData] =
-    useState<any>(null);
-  const [consultationPharmaciePatientData, setConsultationPharmaciePatientData] =
-    useState<any>(null);
-  const [consultationRecapAssuranceData, setConsultationRecapAssuranceData] =
-    useState<any>(null);
-  const [consultationRecapPatientData, setConsultationRecapPatientData] =
-    useState<any>(null);
+  const [consultationAssuranceData, setConsultationAssuranceData] = useState<any>(null);
+  const [consultationPatientData, setConsultationPatientData] = useState<any>(null);
+  const [consultationExamenData, setConsultationExamenData] = useState<any>(null);
+  const [consultationDetailleAssuranceData, setConsultationDetailleAssuranceData] = useState<any>(null);
+  const [consultationDetaillePatientData, setConsultationDetaillePatientData] = useState<any>(null);
+  const [consultationExamenPatientData, setConsultationExamenPatientData] = useState<any>(null);
+  const [consultationPharmacieAssuranceData, setConsultationPharmacieAssuranceData] = useState<any>(null);
+  const [consultationPharmaciePatientData, setConsultationPharmaciePatientData] = useState<any>(null);
+  const [consultationRecapAssuranceData, setConsultationRecapAssuranceData] = useState<any>(null);
+  const [consultationRecapPatientData, setConsultationRecapPatientData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState("");
   const [isSearching, setIsSearching] = useState(false);
-  const [hasFacturesNonSoldees, setHasFacturesNonSoldees] = useState<
-    boolean | null
-  >(null);
+  const [hasFacturesNonSoldees, setHasFacturesNonSoldees] = useState<boolean | null>(null);
   const [showButtons, setShowButtons] = useState(false);
   const [searchError, setSearchError] = useState("");
   const printRef = useRef<HTMLDivElement>(null);
