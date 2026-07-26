@@ -24,7 +24,11 @@ interface Prescription {
   administrePar?: string;
 }
 
-export default function PrescriptionsAExecuter() {
+interface Props {
+  codePrestation?: string;
+}
+
+export default function PrescriptionsAExecuter({ codePrestation }: Props = {}) {
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading]             = useState(true);
   const [searchTerm, setSearchTerm]       = useState('');
@@ -41,12 +45,15 @@ export default function PrescriptionsAExecuter() {
 
   useEffect(() => {
     fetchPrescriptions();
-  }, []);
+  }, [codePrestation]);
 
   const fetchPrescriptions = async () => {
     setLoading(true);
     try {
-      const res = await fetch('/api/patientprescription');
+      const url = codePrestation
+        ? `/api/patientprescription?CodePrestation=${encodeURIComponent(codePrestation)}`
+        : '/api/patientprescription';
+      const res = await fetch(url);
       if (res.ok) {
         const data = await res.json();
         setPrescriptions(Array.isArray(data) ? data : []);

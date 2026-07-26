@@ -80,6 +80,7 @@ export interface IConsultation extends Document {
   Ordonnerlannulation: number;
   AnnulOrdonnerPar: string;
   AnnulationOrdonneLe: Date;
+  StatutAnnulation?: 'en_cours' | 'refusee' | 'validee';
   MotifAnnulationFacture?: string;
   Annulerle?: Date;
   AnnulerPar?: string;
@@ -163,6 +164,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     Ordonnerlannulation: { type: Number, default: 0 },
     AnnulOrdonnerPar: { type: String },
     AnnulationOrdonneLe: { type: Date },
+    StatutAnnulation: { type: String, enum: ['en_cours', 'refusee', 'validee'] },
     MotifAnnulationFacture: { type: String },
     Annulerle: { type: Date },
     AnnulerPar: { type: String },
@@ -175,35 +177,34 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
 // 🔹 Génération automatique CodePrestation
 // ---------------------------
 ConsultationSchema.pre<IConsultation>("save", async function (next) {
-  if (!this.isNew) return next(); // Ne régénère pas en modification
+  if (!this.isNew) return next();
 
   try {
-    // Récupérer le patient lié
-    const PatientModel = mongoose.model("Patient");
-    const patient: any = await PatientModel.findById(this.IdPatient).lean();
+    const Model = this.constructor as mongoose.Model<IConsultation>;
+    const PatientModel = Model.db.model("Patient");
+    const patient = await PatientModel.findById(this.IdPatient).lean<{
+      Nom?: string;
+      Prenoms?: string;
+    }>();
 
     if (!patient) {
       return next(new Error("Patient introuvable pour générer le CodePrestation"));
     }
 
-    // Compter toutes les consultations déjà enregistrées pout tous les patients
-    const countConsultations = await mongoose.model("Consultation").countDocuments();
+    const ConsultationModel = Model.db.model("Consultation");
+    const countConsultations = await ConsultationModel.countDocuments();
 
-
-
-    // Générer les initiales du patient
     const initialNom = patient.Nom ? patient.Nom.substring(0, 1).toUpperCase() : "X";
     const initialPrenom = patient.Prenoms ? patient.Prenoms.substring(0, 1).toUpperCase() : "X";
     const initials = `${initialNom}${initialPrenom}`;
 
-    // Générer le code prestation (ex: AB001)
     const numero = (countConsultations + 1).toString().padStart(3, "0");
 
     this.CodePrestation = `${initials}${numero}`;
 
     next();
   } catch (err) {
-    next(err as any);
+    next(new Error(err instanceof Error ? err.message : String(err)));
   }
 });
 

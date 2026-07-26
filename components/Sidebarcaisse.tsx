@@ -9,6 +9,7 @@ import PharmacieCaisseModal from '@/app/pages/servicecaisse/components/Pharmacie
 import FacturesNonSoldesModal from '@/app/pages/servicecaisse/components/FacturesNonSoldesModal';
 import PointCaisseModal from '@/app/pages/servicecaisse/components/PointCaisseModal';
 import ListeEncaissementModal from '@/app/pages/servicecaisse/components/ListeEncaissementModal';
+import ListeFacturesAnnuleesModal from '@/app/pages/servicecaisse/components/ListeFacturesAnnuleesModal';
 import MenuImpressionFactureModal from '@/app/pages/servicecaisse/components/MenuImpressionFactureModal';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import { useRouter } from 'next/navigation';
@@ -23,6 +24,7 @@ const menu = [
   { label: 'Facture à solder', path: '#', isModal: true, icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i>, style: { cursor: 'pointer' } },
   { label: 'Point de caisse', path: '#', isModal: true, icon: <i className="bi bi-cash-stack me-2 text-success"></i>, style: { cursor: 'pointer' } },
   { label: 'Liste encaissement', path: '#', isModal: true, icon: <i className="bi bi-card-list me-2 text-info"></i>, style: { cursor: 'pointer' } },
+  { label: 'Liste Facture Annulée', path: '#', isModal: true, icon: <i className="bi bi-receipt-cutoff me-2 text-danger"></i>, style: { cursor: 'pointer' } },
   { label: 'Imprimer Facture', path: '#', isModal: true, icon: <i className="bi bi-printer-fill me-2 text-primary"></i>, style: { cursor: 'pointer' } },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-secondary"></i>, style: { cursor: 'pointer' } },
 ];
@@ -38,9 +40,40 @@ export default function Sidebarcaisse() {
   const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
   const [showPointCaisseModal, setShowPointCaisseModal] = useState(false);
   const [showListeEncaissementModal, setShowListeEncaissementModal] = useState(false);
+  const [showListeFacturesAnnuleesModal, setShowListeFacturesAnnuleesModal] = useState(false);
   const [showMenuImpressionModal, setShowMenuImpressionModal] = useState(false);
   const [showModifierMotDePasseModal, setShowModifierMotDePasseModal] = useState(false);
   const [facturesEnAttenteCount, setFacturesEnAttenteCount] = useState(0);
+  const [facturesASolderCount, setFacturesASolderCount] = useState(0);
+
+  const chargerFacturesASolder = async () => {
+    try {
+      const response = await fetch('/api/facturesnonsoldees', { cache: 'no-store' });
+      if (!response.ok) throw new Error('Erreur lors du chargement des factures à solder');
+
+      const data = await response.json();
+      const factures = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
+      const facturesASolder = await Promise.all(factures.map(async (facture: any) => {
+        if (Number(facture.montantRestant) <= 0 || !facture.id) return false;
+
+        const parametre = facture.type === 'consultation' ? 'idConsultation' : 'idFacturation';
+        const encaissementsResponse = await fetch(`/api/encaissementcaisse?${parametre}=${encodeURIComponent(String(facture.id))}`, { cache: 'no-store' });
+        if (!encaissementsResponse.ok) return true;
+
+        const encaissementsData = await encaissementsResponse.json();
+        const montantEncaisse = (encaissementsData.data || []).reduce(
+          (total: number, encaissement: any) => total + (Number(encaissement.Montantencaisse) || 0),
+          0
+        );
+        return Number(facture.montantRestant) - montantEncaisse > 0;
+      }));
+
+      setFacturesASolderCount(facturesASolder.filter(Boolean).length);
+    } catch (error) {
+      console.error('Erreur lors du chargement des factures à solder:', error);
+      setFacturesASolderCount(0);
+    }
+  };
 
 
   // Charger l'utilisateur connecté au montage
@@ -72,6 +105,7 @@ export default function Sidebarcaisse() {
           (Array.isArray(prescriptions) ? prescriptions.length : 0);
 
         setFacturesEnAttenteCount(totalCount);
+        await chargerFacturesASolder();
       } catch (error) {
         console.error('Erreur lors du chargement des factures en attente:', error);
         setFacturesEnAttenteCount(0);
@@ -108,6 +142,7 @@ export default function Sidebarcaisse() {
         (Array.isArray(prescriptions) ? prescriptions.length : 0);
 
       setFacturesEnAttenteCount(totalCount);
+      await chargerFacturesASolder();
 
       // Appeler la fonction globale si elle existe (pour la page tcaisse)
       if (typeof window !== 'undefined' && (window as any).rechargerCompteursCaisse) {
@@ -162,6 +197,11 @@ export default function Sidebarcaisse() {
     setOpen(false);
   };
 
+  const handleListeFacturesAnnuleesClick = () => {
+    setShowListeFacturesAnnuleesModal(true);
+    setOpen(false);
+  };
+
   // ouvre le modal Menu Impression Facture et ferme la sidebar en mobile
   const handleMenuImpressionClick = () => {
     setShowMenuImpressionModal(true);
@@ -213,7 +253,7 @@ export default function Sidebarcaisse() {
             <Nav.Item key={index} className="mb-2" style={{ cursor: 'pointer' }}>
               {item.isModal ? (
                 <div
-                  className={`sidebar-link-medical d-flex align-items-center ${pathname === item.path ? 'active' : ''} cursor-pointer`}
+                  className={`sidebar-link-medical d-flex align-items-center justify-content-between ${pathname === item.path ? 'active' : ''} cursor-pointer`}
                   onClick={
                     item.label === 'Saisir une Facture Exam-Hospit...'
                       ? handleFactureClick
@@ -225,13 +265,22 @@ export default function Sidebarcaisse() {
                             ? handlePointCaisseClick
                             : item.label === 'Liste encaissement'
                               ? handleListeEncaissementClick
-                              : item.label === 'Imprimer Facture'
+                              : item.label === 'Liste Facture Annulée'
+                                ? handleListeFacturesAnnuleesClick
+                                : item.label === 'Imprimer Facture'
                                 ? handleMenuImpressionClick
                                 : handleMotDePasseClick
                   }
                 >
-                  {item.icon}
-                  <span>{item.label}</span>
+                  <div className="d-flex align-items-center">
+                    {item.icon}
+                    <span>{item.label}</span>
+                  </div>
+                  {item.label === 'Facture à solder' && facturesASolderCount > 0 && (
+                    <span className="badge bg-danger text-white rounded-pill ms-2">
+                      {facturesASolderCount}
+                    </span>
+                  )}
                 </div>
               ) : (
                 <Link
@@ -269,18 +318,21 @@ export default function Sidebarcaisse() {
       <ExamenHospitalisationModalCaisse
         show={showFactureModal}
         onHide={() => setShowFactureModal(false)}
+        onPaiementSuccess={chargerFacturesASolder}
       />
 
       {/* Modal pour le paiement de pharmacie */}
       <PharmacieCaisseModal
         show={showPaiementPharmacieModal}
         onHide={() => setShowPaiementPharmacieModal(false)}
+        onPaiementSuccess={chargerFacturesASolder}
       />
 
       {/* Modal pour les factures non soldées */}
       <FacturesNonSoldesModal
         show={showFacturesNonSoldesModal}
         onHide={() => setShowFacturesNonSoldesModal(false)}
+        onPaiementSuccess={chargerFacturesASolder}
       />
 
       {/* Modal pour le point de caisse */}
@@ -293,6 +345,11 @@ export default function Sidebarcaisse() {
       <ListeEncaissementModal
         show={showListeEncaissementModal}
         onHide={() => setShowListeEncaissementModal(false)}
+      />
+
+      <ListeFacturesAnnuleesModal
+        show={showListeFacturesAnnuleesModal}
+        onHide={() => setShowListeFacturesAnnuleesModal(false)}
       />
 
       {/* Modal pour le menu impression facture */}

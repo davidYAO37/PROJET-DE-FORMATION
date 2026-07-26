@@ -5,6 +5,9 @@ export interface IEncaissementCaisseAnnule extends Document {
     DatePrest?: Date;
     Patient?: string;
     ACTE?: string;
+    Designation?: string;
+    typeAnnulation?: 'Facture' | 'Encaissement';
+    sourceId?: string;
     Taux?: number;
     Restapayer?: number;
     Medecin?: string;
@@ -41,8 +44,11 @@ const EncaissementCaisseAnnuleSchema = new Schema<IEncaissementCaisseAnnule>(
     {
         legacyId: { type: Number },
         DatePrest: { type: Date },
-        Patient: { type: String, maxlength: 60 },
+        Patient: { type: String, maxlength: 150 },
         ACTE: { type: String, maxlength: 100 },
+        Designation: { type: String, maxlength: 100 },
+        typeAnnulation: { type: String, enum: ['Facture', 'Encaissement'], required: true },
+        sourceId: { type: String, required: true },
         Taux: { type: Number },
         Restapayer: { type: Number },
         Medecin: { type: String, maxlength: 60 },

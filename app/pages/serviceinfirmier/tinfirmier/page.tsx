@@ -1,7 +1,7 @@
 'use client';
 
 import { FaClock, FaHeartbeat, FaUserNurse, FaClipboardList } from 'react-icons/fa';
-import ListePatientsInfirmier from './components/ListePatientsInfirmier';
+import AvisHospitalisationPeriode from '@/components/hospitalisation/AvisHospitalisationPeriode';
 import { Badge, Button, Card, Col, Row } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -144,9 +144,7 @@ export default function PageInfirmier() {
         </Row>
       </div>
 
-      <div>
-        <ListePatientsInfirmier />
-      </div>
+      <AvisHospitalisationPeriode />
     </>
   );
 }

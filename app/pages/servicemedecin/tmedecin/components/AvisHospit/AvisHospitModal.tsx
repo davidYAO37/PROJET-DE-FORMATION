@@ -16,7 +16,22 @@ interface AvisHospitModalProps {
   Code_dossier?: string;
   Assurance?: string
   SOCIETE_PATIENT?: string;
+  mode?: 'prescription' | 'consultation';
+  codePrestation?: string;
+}
 
+interface HospitalisationService {
+  _id: string;
+  Designation: string;
+}
+
+interface ConsultationPatient {
+  PatientP?: string;
+  IdPatient?: {
+    _id?: string;
+    Nom?: string;
+    Prenoms?: string;
+  };
 }
 
 interface AvisHospit {
@@ -33,19 +48,13 @@ interface AvisHospit {
   DatePrevue: string;
   assurance?: string;
   SocieteP?: string;
+  codePrestation?: string;
   Isolement?: boolean;
   HospitAnt?: boolean;
   sejourunjour?: boolean;
 }
 
-const services = [
-  { value: 'MED', label: 'Médecine', color: 'primary' },
-  { value: 'CHIR', label: 'Chirurgie', color: 'danger' },
-  { value: 'CHR.SP', label: 'Chirurgie Spécialisée', color: 'warning' },
-  { value: 'OBST', label: 'Obstétrique', color: 'info' },
-  { value: 'GYN', label: 'Gynécologie', color: 'success' },
-  { value: 'PED', label: 'Pédiatrie', color: 'secondary' }
-];
+const serviceColors = ['primary', 'danger', 'warning', 'info', 'success', 'secondary'];
 
 const etatsPatient = [
   { value: 'Urgent', label: 'Urgent', color: 'danger' },
@@ -62,20 +71,26 @@ export default function AvisHospitModal({
   patientPrenoms,
   Code_dossier,
   Assurance,
-  SOCIETE_PATIENT
+  SOCIETE_PATIENT,
+  mode = 'prescription',
+  codePrestation: codePrestationProp
 }: AvisHospitModalProps) {
+  const readOnly = mode === 'consultation';
   const [avisList, setAvisList] = useState<AvisHospit[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingAvis, setEditingAvis] = useState<AvisHospit | null>(null);
+  const [hospitalisationServices, setHospitalisationServices] = useState<HospitalisationService[]>([]);
+  const [resolvedPatientName, setResolvedPatientName] = useState('');
+  const [resolvedPatientId, setResolvedPatientId] = useState('');
 
   const Utilisateur = typeof window !== "undefined" ? localStorage.getItem("nom_utilisateur") : "";
 
   // Formulaire
   const [formData, setFormData] = useState<AvisHospit>({
-    serviceHospit: 'MED',
+    serviceHospit: '',
     etatPatient: 'Electif',
     DureHospit: '',
     Patient: patientNom && patientPrenoms ? `${patientNom} ${patientPrenoms}` : '',
@@ -87,10 +102,56 @@ export default function AvisHospitModal({
     DatePrevue: '',
     assurance: Assurance || '',
     SocieteP: SOCIETE_PATIENT || '',
+    codePrestation: codePrestationProp || '',
     Isolement: false,
     HospitAnt: false,
     sejourunjour: false
   });
+
+  const getPatientFullName = (nom?: string, prenoms?: string) =>
+    [nom, prenoms].filter(Boolean).join(' ');
+
+  useEffect(() => {
+    if (!Code_dossier) return;
+
+    setFormData(prev => ({
+      ...prev,
+      NumDoc: prev.NumDoc || Code_dossier
+    }));
+  }, [Code_dossier]);
+
+  const loadHospitalisationServices = async () => {
+    try {
+      const response = await fetch('/api/typeacte/hospitalisation');
+      if (!response.ok) throw new Error();
+
+      const data: HospitalisationService[] = await response.json();
+      setHospitalisationServices(data);
+    } catch {
+      setError('Erreur lors du chargement des services d’hospitalisation');
+      setHospitalisationServices([]);
+    }
+  };
+
+  const getPatientFromConsultation = async () => {
+    if (!consultationId) return { id: '', name: '' };
+
+    try {
+      const response = await fetch(`/api/consultation?consultationId=${consultationId}`);
+      if (!response.ok) throw new Error();
+
+      const consultations: ConsultationPatient[] = await response.json();
+      const consultation = consultations[0];
+      if (!consultation) return { id: '', name: '' };
+
+      return {
+        id: consultation.IdPatient?._id || '',
+        name: getPatientFullName(consultation.IdPatient?.Nom, consultation.IdPatient?.Prenoms) || consultation.PatientP || ''
+      };
+    } catch {
+      return { id: '', name: '' };
+    }
+  };
 
   // Charger la liste des avis
   const loadAvis = async () => {
@@ -123,18 +184,26 @@ export default function AvisHospitModal({
     const init = async () => {
       if (!show) return;
 
-      await loadAvis();
+      const patientFromProps = getPatientFullName(patientNom, patientPrenoms);
+      const promises: Promise<any>[] = [
+        loadAvis(),
+        patientFromProps ? Promise.resolve({ id: '', name: '' }) : getPatientFromConsultation(),
+      ];
+      if (!readOnly) promises.push(loadHospitalisationServices());
+
+      const [, patientFromConsultation] = await Promise.all(promises);
 
       if (mounted) {
+        const patientName = patientFromProps || patientFromConsultation.name;
+        setResolvedPatientName(patientName);
+        setResolvedPatientId(patientId || patientFromConsultation.id);
         setFormData(prev => ({
           ...prev,
-          Patient:
-            patientNom && patientPrenoms
-              ? `${patientNom} ${patientPrenoms}`
-              : '',
+          Patient: patientName,
           NumDoc: Code_dossier || '',
           assurance: Assurance || '',
-          SocieteP: SOCIETE_PATIENT || ''
+          SocieteP: SOCIETE_PATIENT || '',
+          codePrestation: codePrestationProp || prev.codePrestation || ''
         }));
       }
     };
@@ -150,10 +219,10 @@ export default function AvisHospitModal({
   // Réinitialiser le formulaire
   const resetForm = () => {
     setFormData({
-      serviceHospit: 'MED',
+      serviceHospit: '',
       etatPatient: 'Electif',
       DureHospit: '',
-      Patient: patientNom && patientPrenoms ? `${patientNom} ${patientPrenoms}` : '',
+      Patient: resolvedPatientName || getPatientFullName(patientNom, patientPrenoms),
       DateIntervention: '',
       HeureHospit: '',
       NumDoc: Code_dossier || '',
@@ -162,6 +231,7 @@ export default function AvisHospitModal({
       DatePrevue: '',
       assurance: Assurance || '',
       SocieteP: SOCIETE_PATIENT || '',
+      codePrestation: codePrestationProp || '',
       Isolement: false,
       HospitAnt: false,
       sejourunjour: false
@@ -193,7 +263,7 @@ export default function AvisHospitModal({
 
       const payload = {
         ...formData,
-        IDPARTIENT: patientId,
+        IDPARTIENT: patientId || resolvedPatientId,
         IDCONSULTATION: consultationId,
         ...(editingAvis && { _id: editingAvis._id })
       };
@@ -257,7 +327,11 @@ export default function AvisHospitModal({
   };
 
   const getServiceInfo = (service: string) => {
-    return services.find(s => s.value === service) || services[0];
+    const serviceIndex = hospitalisationServices.findIndex(item => item.Designation === service);
+    return {
+      label: service || 'Non renseigné',
+      color: serviceIndex >= 0 ? serviceColors[serviceIndex % serviceColors.length] : 'secondary'
+    };
   };
 
   const getEtatInfo = (etat: string) => {
@@ -295,6 +369,7 @@ export default function AvisHospitModal({
         <div class="info"><strong>Date prévue :</strong> ${avis.DatePrevue ? new Date(avis.DatePrevue).toLocaleDateString() : ''}</div>
         <div class="info"><strong>Médecin traitant :</strong> ${avis.MedecinTraitant || ''}</div>
         <div class="info"><strong>Numéro de document :</strong> ${avis.NumDoc || ''}</div>
+        <div class="info"><strong>Code prestation :</strong> ${avis.codePrestation || ''}</div>
         <div class="info"><strong>Assurance :</strong> ${avis.assurance || ''}</div>
         <div class="info"><strong>Société patient :</strong> ${avis.SocieteP || ''}</div>
         ${avis.Isolement ? '<div class="info"><strong>Isolement requis</strong></div>' : ''}
@@ -336,7 +411,7 @@ export default function AvisHospitModal({
         {error && <Alert variant="danger" dismissible onClose={() => setError('')}>{error}</Alert>}
         {success && <Alert variant="success" dismissible onClose={() => setSuccess('')}>{success}</Alert>}
 
-        {!showForm ? (
+        {(!showForm || readOnly) ? (
           <>
             {/* Liste des avis */}
             <div className="d-flex justify-content-between align-items-center mb-4">
@@ -344,11 +419,19 @@ export default function AvisHospitModal({
                 <FaNotesMedical className="me-2" />
                 Liste des avis d'hospitalisation
               </h5>
-              <Button variant="primary" onClick={() => setShowForm(true)}>
-                <i className="bi bi-plus-circle me-2"></i>
-                Nouvel avis
-              </Button>
+              {!readOnly && !(mode === 'prescription' && avisList.length > 0) && (
+                <Button variant="primary" onClick={() => setShowForm(true)}>
+                  <i className="bi bi-plus-circle me-2"></i>
+                  Nouvel avis
+                </Button>
+              )}
             </div>
+
+            {mode === 'prescription' && avisList.length > 0 && (
+              <Alert variant="info" className="mb-3">
+                Un seul avis d'hospitalisation est autorisé par consultation. Vous pouvez modifier l'avis existant.
+              </Alert>
+            )}
 
             {loading ? (
               <div className="text-center py-4">
@@ -401,18 +484,22 @@ export default function AvisHospitModal({
                               </span>
                             </div>
                             <div className="btn-group btn-group-sm">
-                              <Button variant="outline-primary" size="sm" onClick={() => handleEdit(avis)}>
-                                <i className="bi bi-pencil"></i>
-                              </Button>
+                              {!readOnly && (
+                                <Button variant="outline-primary" size="sm" onClick={() => handleEdit(avis)}>
+                                  <i className="bi bi-pencil"></i>
+                                </Button>
+                              )}
                               <Button variant="outline-success" size="sm" onClick={() => handlePrintWithHeader(avis)} title="Imprimer avec en-tête">
                                 <FaPrint />
                               </Button>
                               <Button variant="outline-info" size="sm" onClick={() => handlePrintWithoutHeader(avis)} title="Imprimer sans en-tête">
                                 <FaFileAlt />
                               </Button>
-                              <Button variant="outline-danger" size="sm" onClick={() => handleDelete(avis._id!)}>
-                                <i className="bi bi-trash"></i>
-                              </Button>
+                              {!readOnly && (
+                                <Button variant="outline-danger" size="sm" onClick={() => handleDelete(avis._id!)}>
+                                  <i className="bi bi-trash"></i>
+                                </Button>
+                              )}
                             </div>
                           </div>
 
@@ -425,6 +512,7 @@ export default function AvisHospitModal({
                             <div><strong>Heure:</strong> {avis.HeureHospit}</div>
                             <div><strong>Médecin traitant:</strong> {avis.MedecinTraitant}</div>
                             {avis.NumDoc && <div><strong>N° Document:</strong> {avis.NumDoc}</div>}
+                            {avis.codePrestation && <div><strong>Code prestation:</strong> {avis.codePrestation}</div>}
                           </div>
 
                           {avis.Isolement && (
@@ -489,9 +577,13 @@ export default function AvisHospitModal({
                     onChange={handleChange}
                     required
                   >
-                    {services.map(service => (
-                      <option key={service.value} value={service.value}>
-                        {service.label}
+                    <option value="">Sélectionner un service</option>
+                    {editingAvis && !hospitalisationServices.some(service => service.Designation === formData.serviceHospit) && (
+                      <option value={formData.serviceHospit}>{formData.serviceHospit}</option>
+                    )}
+                    {hospitalisationServices.map(service => (
+                      <option key={service._id} value={service.Designation}>
+                        {service.Designation}
                       </option>
                     ))}
                   </Form.Select>
@@ -523,7 +615,7 @@ export default function AvisHospitModal({
                     type="text"
                     name="Patient"
                     value={formData.Patient}
-                    onChange={handleChange}
+                    readOnly
                     required
                   />
                 </Form.Group>

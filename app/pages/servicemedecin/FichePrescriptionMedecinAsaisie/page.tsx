@@ -12,13 +12,14 @@ interface Patient {
   _id: string;
   Nom: string;
   Prenoms: string;
-  Date_naisse: Date;
+  Date_naisse: string | Date;
   sexe: string;
   Contact?: string;
   Code_dossier: string;
   Age_partient?: number;
   Situationgeo?: string;
   Assurance?: string;
+  SOCIETE_PATIENT?: string;
   Matricule?: string;
 }
 
@@ -195,6 +196,7 @@ export default function FichePrescriptionMedecinAsaisie() {
               Age_partient: data.IdPatient.Age_partient || 0,
               Situationgeo: data.IdPatient.Situationgeo || '',
               Assurance: data.IdPatient.Assurance || '',
+              SOCIETE_PATIENT: data.IdPatient.SOCIETE_PATIENT || data.IdPatient.SocieteP || '',
               Matricule: data.IdPatient.Matricule || ''
             };
             setPatient(patientData);
@@ -661,7 +663,7 @@ export default function FichePrescriptionMedecinAsaisie() {
     }
   }, [showCIM10Modal]);
 
-  const calculerAge = (dateNaissance: string) => {
+  const calculerAge = (dateNaissance: string | Date) => {
     const naissance = new Date(dateNaissance);
     const aujourdHui = new Date();
     const age = aujourdHui.getFullYear() - naissance.getFullYear();
@@ -2140,6 +2142,10 @@ export default function FichePrescriptionMedecinAsaisie() {
             patientNom={patient?.Nom}
             patientPrenoms={patient?.Prenoms}
             Code_dossier={patient?.Code_dossier}
+            Assurance={patient?.Assurance}
+            SOCIETE_PATIENT={patient?.SOCIETE_PATIENT}
+            mode="prescription"
+            codePrestation={consultation?.codePrestation}
           />
 
           {/* Modal Impression */}

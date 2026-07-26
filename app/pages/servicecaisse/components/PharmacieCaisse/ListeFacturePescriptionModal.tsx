@@ -22,6 +22,7 @@ export interface Facture {
     Ordonnerlannulation?: boolean;
     AnnulOrdonnerPar?: string;
     AnnulationOrdonneLe?: Date;
+    StatutAnnulation?: 'en_cours' | 'refusee' | 'validee';
 }
 
 interface ListeFactureModalProps {
@@ -141,6 +142,7 @@ export default function ListeFactureModal({
                 },
                 body: JSON.stringify({
                     Ordonnerlannulation: true,
+                    StatutAnnulation: 'en_cours',
                     AnnulOrdonnerPar: utilisateur,
                     AnnulationOrdonneLe: new Date(),
                 }),
@@ -156,6 +158,7 @@ export default function ListeFactureModal({
                             ? {
                                 ...f,
                                 Ordonnerlannulation: true,
+                                StatutAnnulation: 'en_cours',
                                 AnnulOrdonnerPar: utilisateur,
                                 AnnulationOrdonneLe: new Date()
                             }
@@ -168,6 +171,22 @@ export default function ListeFactureModal({
         } catch (error) {
             console.error('Erreur annulation:', error);
             alert("Erreur de connexion");
+        }
+    };
+
+    const handleAnnulerOrdonnancement = async (facture: Facture) => {
+        if (!window.confirm("Voulez-vous annuler l'ordonnancement de cette annulation ?")) return;
+        try {
+            const response = await fetch(`/api/facturation/${facture._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Ordonnerlannulation: false, StatutAnnulation: null, AnnulOrdonnerPar: '', AnnulationOrdonneLe: null })
+            });
+            if (!response.ok) throw new Error();
+            setFactures((previous) => previous.map((item) => item._id === facture._id ? { ...item, Ordonnerlannulation: false, StatutAnnulation: undefined, AnnulOrdonnerPar: '', AnnulationOrdonneLe: undefined } : item));
+        } catch (error) {
+            console.error('Erreur annulation ordonnancement:', error);
+            alert("Erreur lors de l'annulation de l'ordonnancement");
         }
     };
 
@@ -273,8 +292,8 @@ export default function ListeFactureModal({
                                                     </Button>
                                                 )}
                                                 {facture.Ordonnerlannulation ? (
-                                                    <Button variant="outline-secondary" size="sm" disabled>
-                                                        <i className="bi bi-x-circle"></i> Annuler
+                                                    <Button variant="outline-warning" size="sm" onClick={() => handleAnnulerOrdonnancement(facture)}>
+                                                        <i className="bi bi-arrow-counterclockwise"></i> Annuler l'ordre
                                                     </Button>
                                                 ) : (
                                                     <Button

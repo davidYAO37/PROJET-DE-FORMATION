@@ -9,13 +9,31 @@ import PatientsHospitalises from '../components/PatientsHospitalises';
 export default function PagePatientsHospitalises() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
+  const [stats, setStats] = useState({ litsOccupes: 0, patientsActifs: 0, surveillance: 0 });
 
   const infirmierConnecte = typeof window !== 'undefined'
     ? localStorage.getItem('nom_utilisateur')
     : null;
 
   useEffect(() => {
-    setLoading(false);
+    const fetchStats = async () => {
+      try {
+        const res = await fetch('/api/examenhospitalisation/hospitalises');
+        if (res.ok) {
+          const data = await res.json();
+          const hospits = Array.isArray(data) ? data : [];
+          const litsOccupes = new Set(hospits.map((h: any) => h.Chambre).filter(Boolean)).size;
+          const patientsActifs = hospits.length;
+          const surveillance = hospits.filter((h: any) => (h.nombreDeJours || 0) > 7).length;
+          setStats({ litsOccupes, patientsActifs, surveillance });
+        }
+      } catch (error) {
+        console.error('Erreur stats hospitalisation:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStats();
   }, []);
 
   const handleLogout = () => {
@@ -49,7 +67,7 @@ export default function PagePatientsHospitalises() {
             <Card.Body className="d-flex flex-column align-items-center py-4">
               <FaBed size={42} className="mb-2" />
               <Card.Title className="text-white mb-2">Lits occupés</Card.Title>
-              <div className="fs-4 fw-bold">--</div>
+              <div className="fs-4 fw-bold">{loading ? '...' : stats.litsOccupes}</div>
             </Card.Body>
           </Card>
         </Col>
@@ -65,7 +83,7 @@ export default function PagePatientsHospitalises() {
             <Card.Body className="d-flex flex-column align-items-center py-4">
               <FaUserInjured size={42} className="mb-2" />
               <Card.Title className="text-white mb-2">Patients actifs</Card.Title>
-              <div className="fs-4 fw-bold">--</div>
+              <div className="fs-4 fw-bold">{loading ? '...' : stats.patientsActifs}</div>
             </Card.Body>
           </Card>
         </Col>
@@ -81,7 +99,7 @@ export default function PagePatientsHospitalises() {
             <Card.Body className="d-flex flex-column align-items-center py-4">
               <FaHospital size={42} className="mb-2" />
               <Card.Title className="text-white mb-2">Surveillance</Card.Title>
-              <div className="fs-4 fw-bold">--</div>
+              <div className="fs-4 fw-bold">{loading ? '...' : stats.surveillance}</div>
             </Card.Body>
           </Card>
         </Col>

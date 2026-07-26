@@ -1,135 +1,236 @@
-import { db } from "@/db/mongoConnect";
-import { UserCollection } from "@/models/users.model";
-import { NextResponse } from "next/server";
+import { NextResponse, NextRequest } from "next/server";
 import { verifyPassword } from "@/utils/auth";
 import { signToken, setAuthCookie } from "@/lib/auth";
+import { db } from "@/db/mongoConnect";
+import { User } from "@/models/users.model";
+import { Entreprise } from "@/models/entreprise";
+import { JournalConnexion } from "@/models/journalConnexion";
 
-export const POST = async (req: Request) => {
+const MAX_ATTEMPTS = 4;
+const LOCK_DURATION_MINUTES = 30;
+
+export async function POST(req: NextRequest) {
   try {
+    await db();
     const { email, password } = await req.json();
 
     if (!email || !password) {
-      return NextResponse.json({ message: "Email et mot de passe requis" }, { status: 400 });
+      return NextResponse.json(
+        { message: "Email et mot de passe requis" },
+        { status: 400 }
+      );
     }
 
-    await db();
+    const user = await User.findOne({ email: email.toLowerCase().trim() }).lean();
 
-    // Rechercher l'utilisateur par email
-    const user = await UserCollection.findOne({ email });
+    const clientIp =
+      req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+    const userAgent = req.headers.get("user-agent") || "unknown";
+
+    const logConnexion = async (
+      statut: "success" | "failure" | "locked",
+      message?: string
+    ) => {
+      await JournalConnexion.create({
+        userId: user ? user._id : undefined,
+        entrepriseId: user ? user.entrepriseId : undefined,
+        email: email.toLowerCase().trim(),
+        ip: clientIp,
+        userAgent,
+        statut,
+        message,
+      });
+    };
+
     if (!user) {
-      return NextResponse.json({ message: "Email ou mot de passe incorrect" }, { status: 401 });
+      await logConnexion("failure", "Utilisateur introuvable");
+      return NextResponse.json(
+        { message: "Email ou mot de passe incorrect" },
+        { status: 401 }
+      );
     }
 
-    // Vérifier si le compte est verrouillé
     if (user.isLocked) {
       if (user.lockedUntil && user.lockedUntil > new Date()) {
-        const remainingTime = Math.ceil((user.lockedUntil.getTime() - new Date().getTime()) / (1000 * 60));
-        return NextResponse.json({
-          message: `Compte temporairement bloqué. Réessayez dans ${remainingTime} minutes.`,
-          isLocked: true,
-          lockedUntil: user.lockedUntil
-        }, { status: 423 });
+        const remainingTime = Math.ceil(
+          (user.lockedUntil.getTime() - Date.now()) / (1000 * 60)
+        );
+        await logConnexion(
+          "locked",
+          `Compte verrouillé - ${remainingTime} minutes restantes`
+        );
+        return NextResponse.json(
+          {
+            message: `Compte temporairement bloqué. Réessayez dans ${remainingTime} minutes.`,
+            isLocked: true,
+            lockedUntil: user.lockedUntil,
+          },
+          { status: 423 }
+        );
       }
 
       if (!user.lockedUntil) {
-        return NextResponse.json({
-          message: "Compte bloqué par l'administrateur. Contactez l'administrateur pour le déverrouillage.",
-          isLocked: true
-        }, { status: 423 });
+        await logConnexion("locked", "Compte bloqué par un administrateur");
+        return NextResponse.json(
+          {
+            message:
+              "Compte bloqué par l'administrateur. Contactez l'administrateur pour le déverrouillage.",
+            isLocked: true,
+          },
+          { status: 423 }
+        );
       }
 
-      // Si le verrouillage temporaire est expiré, réinitialiser le compte
-      await UserCollection.findByIdAndUpdate(user._id, {
+      await User.findByIdAndUpdate(user._id, {
         isLocked: false,
         lockedUntil: null,
         failedAttempts: 0,
-        remainingAttempts: 4
+        remainingAttempts: MAX_ATTEMPTS,
       });
     }
 
-    // Vérifier le mot de passe
     if (!user.password) {
-      return NextResponse.json({ message: "Compte non configuré pour la connexion locale" }, { status: 401 });
+      await logConnexion("failure", "Compte sans mot de passe");
+      return NextResponse.json(
+        { message: "Compte non configuré pour la connexion locale" },
+        { status: 401 }
+      );
     }
 
     const isPasswordValid = await verifyPassword(password, user.password);
 
     if (!isPasswordValid) {
-      // Incrémenter le nombre de tentatives échouées
       const newFailedAttempts = (user.failedAttempts || 0) + 1;
-      const remainingAttempts = 4 - newFailedAttempts;
+      const remainingAttempts = MAX_ATTEMPTS - newFailedAttempts;
 
-      // Mettre à jour l'utilisateur
-      await UserCollection.findByIdAndUpdate(user._id, {
+      await User.findByIdAndUpdate(user._id, {
         failedAttempts: newFailedAttempts,
-        remainingAttempts: remainingAttempts
+        remainingAttempts: Math.max(0, remainingAttempts),
       });
 
-      // Si c'est la 4ème tentative, bloquer le compte pour 30 minutes
-      if (newFailedAttempts >= 4) {
-        const lockedUntil = new Date(Date.now() + 30 * 60 * 1000); // 30 minutes
-        await UserCollection.findByIdAndUpdate(user._id, {
+      if (newFailedAttempts >= MAX_ATTEMPTS) {
+        const lockedUntil = new Date(
+          Date.now() + LOCK_DURATION_MINUTES * 60 * 1000
+        );
+        await User.findByIdAndUpdate(user._id, {
           isLocked: true,
-          lockedUntil: lockedUntil,
+          lockedUntil,
           failedAttempts: newFailedAttempts,
-          remainingAttempts: 0
-        });
-
-        return NextResponse.json({
-          message: "Compte bloqué après 4 tentatives échouées. Contactez un administrateur.",
-          isLocked: true,
           remainingAttempts: 0,
-          maxAttempts: 4
-        }, { status: 423 });
+        });
+        await logConnexion(
+          "locked",
+          "Compte bloqué après 4 tentatives échouées"
+        );
+        return NextResponse.json(
+          {
+            message:
+              "Compte bloqué après 4 tentatives échouées. Contactez un administrateur.",
+            isLocked: true,
+            remainingAttempts: 0,
+            maxAttempts: MAX_ATTEMPTS,
+          },
+          { status: 423 }
+        );
       }
 
-      return NextResponse.json({
-        message: `Email ou mot de passe incorrect. ${remainingAttempts} tentative${remainingAttempts > 1 ? 's' : ''} restante${remainingAttempts > 1 ? 's' : ''}.`,
-        remainingAttempts: remainingAttempts,
-        maxAttempts: 4
-      }, { status: 401 });
+      await logConnexion(
+        "failure",
+        `Mot de passe incorrect - ${remainingAttempts} tentatives restantes`
+      );
+      return NextResponse.json(
+        {
+          message: `Email ou mot de passe incorrect. ${remainingAttempts} tentative${
+            remainingAttempts > 1 ? "s" : ""
+          } restante${remainingAttempts > 1 ? "s" : ""}.`,
+          remainingAttempts,
+          maxAttempts: MAX_ATTEMPTS,
+        },
+        { status: 401 }
+      );
     }
 
-    // Réinitialiser les compteurs en cas de succès
-    await UserCollection.findByIdAndUpdate(user._id, {
+    await User.findByIdAndUpdate(user._id, {
       failedAttempts: 0,
-      remainingAttempts: 4,
+      remainingAttempts: MAX_ATTEMPTS,
       isLocked: false,
-      lockedUntil: null
+      lockedUntil: null,
     });
 
-    // Créer le token JWT
+    if (user.type !== "adminsuper") {
+      const entreprise = await Entreprise.findById(user.entrepriseId).lean();
+
+      if (!entreprise) {
+        await logConnexion("failure", "Entreprise introuvable");
+        return NextResponse.json(
+          { message: "Entreprise associée introuvable" },
+          { status: 403 }
+        );
+      }
+
+      if (!entreprise.isActive || entreprise.statut !== "active") {
+        await logConnexion("failure", "Entreprise inactive");
+        return NextResponse.json(
+          { message: "Entreprise inactive" },
+          { status: 403 }
+        );
+      }
+
+      if (
+        entreprise.dateExpiration &&
+        new Date(entreprise.dateExpiration) < new Date()
+      ) {
+        await logConnexion("failure", "Licence expirée");
+        return NextResponse.json(
+          { message: "Licence expirée" },
+          { status: 403 }
+        );
+      }
+
+      if (!user.entrepriseId) {
+        await logConnexion("failure", "Utilisateur sans entreprise associée");
+        return NextResponse.json(
+          { message: "Aucune entreprise associée à cet utilisateur" },
+          { status: 403 }
+        );
+      }
+    }
+
     const token = signToken({
       userId: user._id.toString(),
       email: user.email,
-      type: user.type,
-      entrepriseId: user.entrepriseId ? user.entrepriseId.toString() : undefined,
+      type: user.type || "user",
+      entrepriseId: user.entrepriseId ? user.entrepriseId.toString() : "",
     });
 
-    // Définir le cookie HTTP-only
-    await setAuthCookie(token);
+    await logConnexion("success");
 
-    // Retourner les informations utilisateur (sans le mot de passe)
     const userResponse = {
-      _id: user._id,
-      nom: user.nom,
-      prenom: user.prenom,
+      _id: user._id.toString(),
+      nom: user.nom || "",
+      prenom: user.prenom || "",
       email: user.email,
-      type: user.type,
-      entrepriseId: user.entrepriseId,
-      uid: user.uid,
-      isLocked: user.isLocked || false,
+      type: user.type || "user",
+      entrepriseId: user.entrepriseId ? user.entrepriseId.toString() : "",
+      uid: user.uid || "",
+      isLocked: false,
       failedAttempts: 0,
-      remainingAttempts: 4
+      remainingAttempts: MAX_ATTEMPTS,
     };
 
-    return NextResponse.json({
-      message: "Connexion réussie",
-      user: userResponse
-    }, { status: 200 });
-
+    const response = NextResponse.json(
+      { message: "Connexion réussie", user: userResponse },
+      { status: 200 }
+    );
+    await setAuthCookie(response, token);
+    return response;
   } catch (error) {
     console.error("Erreur lors de la connexion :", error);
-    return NextResponse.json({ message: "Erreur serveur" }, { status: 500 });
+    return NextResponse.json(
+      { message: "Erreur serveur" },
+      { status: 500 }
+    );
   }
 }

@@ -11,6 +11,7 @@ export interface IChambre extends Document {
     nombreLits: number;
     etat: 'libre' | 'occupee' | 'reservee' | 'maintenance' | 'fermee';
     observation?: string;
+    acteCliniqueId?: mongoose.Types.ObjectId;
 }
 
 const ChambreSchema = new Schema<IChambre>({
@@ -23,7 +24,8 @@ const ChambreSchema = new Schema<IChambre>({
     prixPreferentiel: { type: Number, default: 0 },
     nombreLits: { type: Number, default: 1 },
     etat: { type: String, enum: ['libre', 'occupee', 'reservee', 'maintenance', 'fermee'], default: 'libre' },
-    observation: { type: String }
+    observation: { type: String },
+    acteCliniqueId: { type: Schema.Types.ObjectId, ref: 'ActeClinique' }
 }, { timestamps: true });
 
 export const Chambre: Model<IChambre> = mongoose.models.Chambre || mongoose.model<IChambre>('Chambre', ChambreSchema);

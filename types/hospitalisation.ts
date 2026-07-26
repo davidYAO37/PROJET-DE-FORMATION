@@ -1,24 +1,25 @@
 export type HospitalisationStatus = 'en_cours' | 'sortie' | 'transfere' | 'decede';
 
+// Ce type correspond maintenant à ExamenHospitalisation avec les champs d'hospitalisation
 export interface HospitalisationRecord {
     _id?: string;
-    patientId: string;
+    IdPatient?: string;
     consultationId?: string;
-    medecinId?: string;
-    assuranceId?: string;
-    chambreId?: string;
+    idMedecin?: string;
+    IDASSURANCE?: string;
+    IDCHAMBRE?: string;
     litId?: string;
     avisHospitId?: string;
     sourceType?: 'avis_medecin' | 'manuel';
-    numeroDossier?: string;
-    diagnosticInitial?: string;
+    Code_dossier?: string;
+    Rclinique?: string;
     motifHospitalisation?: string;
     service?: string;
-    dateEntree: string;
+    Entrele?: string;
     heureEntree?: string;
-    dateSortie?: string;
+    SortieLe?: string;
     heureSortie?: string;
-    statut: HospitalisationStatus;
+    statutHospitalisation?: HospitalisationStatus;
     montantChambre?: number;
     montantActes?: number;
     montantExamens?: number;
@@ -26,10 +27,10 @@ export interface HospitalisationRecord {
     montantSoins?: number;
     montantHonoraires?: number;
     remise?: number;
-    partAssurance?: number;
-    partPatient?: number;
-    resteAPayer?: number;
-    observations?: string;
+    PartAssuranceP?: number;
+    TotalapayerPatient?: number;
+    Restapayer?: number;
+    ObservationHospitalisation?: string;
     createdAt?: string;
     updatedAt?: string;
 }

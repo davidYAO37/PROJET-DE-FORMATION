@@ -36,6 +36,17 @@ interface PatientItem {
     Code_dossier?: string;
 }
 
+interface TypeActeItem {
+    _id: string;
+    Designation: string;
+    Hospitalisation?: boolean;
+}
+
+interface AssuranceItem {
+    _id: string;
+    designationassurance?: string;
+}
+
 interface AvisHospitItem {
     _id: string;
     Patient?: string;
@@ -50,16 +61,20 @@ interface AvisHospitItem {
 
 interface HospitalisationItem {
     _id: string;
-    patientId: string;
+    IdPatient?: string | PatientItem;
     avisHospitId?: string;
-    chambreId?: string;
-    litId?: string;
-    diagnosticInitial?: string;
+    IDCHAMBRE?: string | ChambreItem;
+    litId?: string | LitItem;
+    Designationtypeacte?: string;
+    IDASSURANCE?: string | AssuranceItem;
+    typeVisiteur?: 'assure' | 'non_assure' | 'compte_client';
+    Rclinique?: string;
     motifHospitalisation?: string;
     service?: string;
-    statut: string;
-    dateEntree: string;
-    dateSortie?: string;
+    statutHospitalisation?: string;
+    Entrele?: string;
+    heureEntree?: string;
+    SortieLe?: string;
     montantChambre?: number;
     montantActes?: number;
     montantExamens?: number;
@@ -67,15 +82,17 @@ interface HospitalisationItem {
     montantSoins?: number;
     montantHonoraires?: number;
     remise?: number;
-    partAssurance?: number;
-    partPatient?: number;
-    resteAPayer?: number;
+    PartAssuranceP?: number;
+    TotalapayerPatient?: number;
+    Restapayer?: number;
 }
 
 export default function HospitalisationPage() {
     const [chambres, setChambres] = useState<ChambreItem[]>([]);
     const [lits, setLits] = useState<LitItem[]>([]);
     const [patients, setPatients] = useState<PatientItem[]>([]);
+    const [typeActes, setTypeActes] = useState<TypeActeItem[]>([]);
+    const [assurances, setAssurances] = useState<AssuranceItem[]>([]);
     const [avisHospit, setAvisHospit] = useState<AvisHospitItem[]>([]);
     const [hospitalisations, setHospitalisations] = useState<HospitalisationItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -93,6 +110,11 @@ export default function HospitalisationPage() {
         service: 'Hospitalisation',
         chambreId: '',
         litId: '',
+        natureActeId: '',
+        typeVisiteur: 'non_assure' as 'assure' | 'non_assure' | 'compte_client',
+        assuranceId: '',
+        dateEntree: '',
+        heureEntree: '',
         montantChambre: '0',
     });
     const [roomForm, setRoomForm] = useState({
@@ -115,27 +137,33 @@ export default function HospitalisationPage() {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [resChambres, resLits, resHosp, resPatients, resAvis] = await Promise.all([
+            const [resChambres, resLits, resHosp, resPatients, resAvis, resTypeActes, resAssurances] = await Promise.all([
                 fetch('/api/chambres'),
                 fetch('/api/lits'),
                 fetch('/api/hospitalisations'),
                 fetch('/api/patients'),
                 fetch('/api/avishospit'),
+                fetch('/api/typeacte/hospitalisation'),
+                fetch('/api/assurance'),
             ]);
 
-            const [dataChambres, dataLits, dataHosp, dataPatients, dataAvis] = await Promise.all([
+            const [dataChambres, dataLits, dataHosp, dataPatients, dataAvis, dataTypeActes, dataAssurances] = await Promise.all([
                 resChambres.ok ? resChambres.json() : [],
                 resLits.ok ? resLits.json() : [],
                 resHosp.ok ? resHosp.json() : [],
                 resPatients.ok ? resPatients.json() : [],
                 resAvis.ok ? resAvis.json() : { data: [] },
+                resTypeActes.ok ? resTypeActes.json() : [],
+                resAssurances.ok ? resAssurances.json() : [],
             ]);
 
-            setChambres(dataChambres);
-            setLits(dataLits);
-            setHospitalisations(dataHosp);
+            setChambres(Array.isArray(dataChambres) ? dataChambres : dataChambres.data || []);
+            setLits(Array.isArray(dataLits) ? dataLits : dataLits.data || []);
+            setHospitalisations(Array.isArray(dataHosp) ? dataHosp : dataHosp.data || []);
             setPatients(Array.isArray(dataPatients) ? dataPatients : []);
-            setAvisHospit(Array.isArray(dataAvis?.data) ? dataAvis.data : []);
+            setAvisHospit(Array.isArray(dataAvis?.data) ? dataAvis.data : Array.isArray(dataAvis) ? dataAvis : []);
+            setTypeActes(Array.isArray(dataTypeActes) ? dataTypeActes : dataTypeActes.data || []);
+            setAssurances(Array.isArray(dataAssurances) ? dataAssurances : dataAssurances.data || []);
         } catch (error) {
             console.error(error);
             setMessage('Erreur lors du chargement du module hospitalisation');
@@ -151,19 +179,24 @@ export default function HospitalisationPage() {
     const stats = useMemo(() => ({
         chambres: chambres.length,
         lits: lits.length,
-        enCours: hospitalisations.filter((item) => item.statut === 'en_cours').length,
-        sorties: hospitalisations.filter((item) => item.statut === 'sortie').length,
+        enCours: hospitalisations.filter((item) => item.statutHospitalisation === 'en_cours').length,
+        sorties: hospitalisations.filter((item) => item.statutHospitalisation === 'sortie').length,
         libres: lits.filter((item) => item.etat === 'libre').length,
         occupes: lits.filter((item) => item.etat === 'occupe').length,
     }), [chambres, lits, hospitalisations]);
 
-    const currentAdmissions = useMemo(() => hospitalisations.filter((item) => item.statut === 'en_cours'), [hospitalisations]);
-    const historyAdmissions = useMemo(() => hospitalisations.filter((item) => item.statut !== 'en_cours'), [hospitalisations]);
+    const getEntityId = (value: string | { _id?: string } | undefined): string => {
+        if (!value) return '';
+        return typeof value === 'string' ? value : value._id || '';
+    };
+
+    const currentAdmissions = useMemo(() => hospitalisations.filter((item) => item.statutHospitalisation === 'en_cours'), [hospitalisations]);
+    const historyAdmissions = useMemo(() => hospitalisations.filter((item) => item.statutHospitalisation && item.statutHospitalisation !== 'en_cours'), [hospitalisations]);
     const roomOverview = useMemo(() => chambres.map((chambre) => {
-        const roomLits = lits.filter((lit) => lit.chambreId === chambre._id);
+        const roomLits = lits.filter((lit) => getEntityId(lit.chambreId) === chambre._id);
         const occupiedBeds = roomLits.filter((lit) => lit.etat === 'occupe').length;
         const freeBeds = roomLits.length - occupiedBeds;
-        const activeAdmission = hospitalisations.find((item) => item.chambreId === chambre._id && item.statut === 'en_cours');
+        const activeAdmission = hospitalisations.find((item) => getEntityId(item.IDCHAMBRE) === chambre._id && item.statutHospitalisation === 'en_cours');
 
         return {
             ...chambre,
@@ -188,20 +221,28 @@ export default function HospitalisationPage() {
         }));
     }, [selectedAvis]);
 
-    const getPatientLabel = (patientId: string) => {
-        const patient = patients.find((item) => item._id === patientId);
-        if (!patient) return patientId;
-        const fullName = [patient.Nom, patient.Prenoms].filter(Boolean).join(' ').trim();
-        return fullName || patient.Code_dossier || patientId;
+    const getPatientId = (value: string | PatientItem | undefined): string => {
+        if (!value) return '';
+        return typeof value === 'string' ? value : value._id || '';
     };
 
-    const getChambreLabel = (chambreId?: string) => {
-        const chambre = chambres.find((item) => item._id === chambreId);
+    const getPatientLabel = (value: string | PatientItem | undefined) => {
+        const id = getPatientId(value);
+        const patient = patients.find((item) => item._id === id);
+        if (!patient) return id;
+        const fullName = [patient.Nom, patient.Prenoms].filter(Boolean).join(' ').trim();
+        return fullName || patient.Code_dossier || id;
+    };
+
+    const getChambreLabel = (value?: string | ChambreItem) => {
+        const id = typeof value === 'string' ? value : value?._id;
+        const chambre = chambres.find((item) => item._id === id);
         return chambre ? `${chambre.numero} (${chambre.type})` : '—';
     };
 
-    const getLitLabel = (litId?: string) => {
-        const lit = lits.find((item) => item._id === litId);
+    const getLitLabel = (value?: string | LitItem) => {
+        const id = typeof value === 'string' ? value : value?._id;
+        const lit = lits.find((item) => item._id === id);
         return lit ? `${lit.numero}` : '—';
     };
 
@@ -242,6 +283,10 @@ export default function HospitalisationPage() {
                 body: JSON.stringify({
                     ...form,
                     avisHospitId: form.avisHospitId || undefined,
+                    natureActeId: form.natureActeId || undefined,
+                    assuranceId: form.assuranceId || undefined,
+                    dateEntree: form.dateEntree || new Date().toISOString(),
+                    heureEntree: form.heureEntree || new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
                     montantChambre: Number(form.montantChambre || 0),
                     montantActes: 0,
                     montantExamens: 0,
@@ -265,6 +310,11 @@ export default function HospitalisationPage() {
                 service: 'Hospitalisation',
                 chambreId: '',
                 litId: '',
+                natureActeId: '',
+                typeVisiteur: 'non_assure',
+                assuranceId: '',
+                dateEntree: '',
+                heureEntree: '',
                 montantChambre: '0',
             });
             await fetchData();
@@ -373,13 +423,14 @@ export default function HospitalisationPage() {
     const handleDischarge = async (hospitalisationId: string) => {
         setMessage('Sortie en cours...');
         try {
-            const response = await fetch(`/api/hospitalisations/${hospitalisationId}`, {
-                method: 'PUT',
+            const response = await fetch(`/api/hospitalisations/${hospitalisationId}/sortie`, {
+                method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ statut: 'sortie', dateSortie: new Date().toISOString() }),
+                body: JSON.stringify({ dateSortie: new Date().toISOString() }),
             });
             if (!response.ok) throw new Error('Échec de la sortie');
-            setMessage('Sortie enregistrée');
+            const data = await response.json();
+            setMessage(`Sortie facturée - Reste à payer : ${data?.hospitalisation?.resteAPayer || 0} FCFA`);
             await fetchData();
         } catch (error) {
             console.error(error);
@@ -477,8 +528,44 @@ export default function HospitalisationPage() {
                                             <Form.Control value={form.service} onChange={(e) => setForm({ ...form, service: e.target.value })} />
                                         </Form.Group>
                                         <Form.Group className="mb-3">
+                                            <Form.Label>Date d’entrée</Form.Label>
+                                            <Form.Control type="date" value={form.dateEntree} onChange={(e) => setForm({ ...form, dateEntree: e.target.value })} />
+                                        </Form.Group>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>Heure d’entrée</Form.Label>
+                                            <Form.Control type="time" value={form.heureEntree} onChange={(e) => setForm({ ...form, heureEntree: e.target.value })} />
+                                        </Form.Group>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>Nature d’acte</Form.Label>
+                                            <Form.Select value={form.natureActeId} onChange={(e) => setForm({ ...form, natureActeId: e.target.value })}>
+                                                <option value="">Sélectionner une nature d’acte</option>
+                                                {typeActes.map((ta) => (
+                                                    <option key={ta._id} value={ta._id}>{ta.Designation}</option>
+                                                ))}
+                                            </Form.Select>
+                                        </Form.Group>
+                                        <Form.Group className="mb-3">
+                                            <Form.Label>Type de visiteur</Form.Label>
+                                            <Form.Select value={form.typeVisiteur} onChange={(e) => setForm({ ...form, typeVisiteur: e.target.value as typeof form.typeVisiteur, assuranceId: e.target.value === 'assure' ? form.assuranceId : '' })}>
+                                                <option value="non_assure">Non assuré</option>
+                                                <option value="assure">Assuré</option>
+                                                <option value="compte_client">Compte client</option>
+                                            </Form.Select>
+                                        </Form.Group>
+                                        {form.typeVisiteur === 'assure' && (
+                                            <Form.Group className="mb-3">
+                                                <Form.Label>Assurance</Form.Label>
+                                                <Form.Select value={form.assuranceId} onChange={(e) => setForm({ ...form, assuranceId: e.target.value })}>
+                                                    <option value="">Sélectionner une assurance</option>
+                                                    {assurances.map((ass) => (
+                                                        <option key={ass._id} value={ass._id}>{ass.designationassurance}</option>
+                                                    ))}
+                                                </Form.Select>
+                                            </Form.Group>
+                                        )}
+                                        <Form.Group className="mb-3">
                                             <Form.Label>Chambre</Form.Label>
-                                            <Form.Select value={form.chambreId} onChange={(e) => setForm({ ...form, chambreId: e.target.value })}>
+                                            <Form.Select value={form.chambreId} onChange={(e) => setForm({ ...form, chambreId: e.target.value, litId: '' })}>
                                                 <option value="">Sélectionner</option>
                                                 {chambres.map((chambre) => <option key={chambre._id} value={chambre._id}>{chambre.numero} - {chambre.type}</option>)}
                                             </Form.Select>
@@ -487,7 +574,7 @@ export default function HospitalisationPage() {
                                             <Form.Label>Lit</Form.Label>
                                             <Form.Select value={form.litId} onChange={(e) => setForm({ ...form, litId: e.target.value })}>
                                                 <option value="">Sélectionner</option>
-                                                {lits.filter((lit) => !form.chambreId || lit.chambreId === form.chambreId).map((lit) => <option key={lit._id} value={lit._id}>{lit.numero} - {lit.etat}</option>)}
+                                                {lits.filter((lit) => !form.chambreId || getEntityId(lit.chambreId) === form.chambreId).map((lit) => <option key={lit._id} value={lit._id}>{lit.numero} - {lit.etat}</option>)}
                                             </Form.Select>
                                         </Form.Group>
                                         <Form.Group className="mb-3">
@@ -507,8 +594,8 @@ export default function HospitalisationPage() {
                                             <Form.Label>Admission</Form.Label>
                                             <Form.Select value={transferHospitalisationId} onChange={(e) => setTransferHospitalisationId(e.target.value)}>
                                                 <option value="">Sélectionner</option>
-                                                {hospitalisations.filter((item) => item.statut === 'en_cours').map((item) => (
-                                                    <option key={item._id} value={item._id}>{getPatientLabel(item.patientId)} • {item.service || 'Service'}</option>
+                                                {hospitalisations.filter((item) => item.statutHospitalisation === 'en_cours').map((item) => (
+                                                    <option key={item._id} value={item._id}>{getPatientLabel(item.IdPatient)} • {item.service || 'Service'}</option>
                                                 ))}
                                             </Form.Select>
                                         </Form.Group>
@@ -660,7 +747,7 @@ export default function HospitalisationPage() {
                                                         </div>
                                                         {chambre.activeAdmission && (
                                                             <div className="mt-2 small text-muted">
-                                                                Patient : {getPatientLabel(chambre.activeAdmission.patientId)}
+                                                                Patient : {getPatientLabel(chambre.activeAdmission.IdPatient)}
                                                             </div>
                                                         )}
                                                     </Card.Body>
@@ -687,10 +774,10 @@ export default function HospitalisationPage() {
                                         <tbody>
                                             {currentAdmissions.map((item) => (
                                                 <tr key={item._id}>
-                                                    <td>{getPatientLabel(item.patientId)}{item.avisHospitId ? <><br /><Badge bg="info">Avis médecin</Badge></> : null}</td>
-                                                    <td>{getChambreLabel(item.chambreId)} / {getLitLabel(item.litId)}</td>
+                                                    <td>{getPatientLabel(item.IdPatient)}{item.avisHospitId ? <><br /><Badge bg="info">Avis médecin</Badge></> : null}</td>
+                                                    <td>{getChambreLabel(item.IDCHAMBRE)} / {getLitLabel(item.litId)}</td>
                                                     <td>{item.service || '—'}</td>
-                                                    <td>{new Date(item.dateEntree).toLocaleDateString('fr-FR')}</td>
+                                                    <td>{item.Entrele ? new Date(item.Entrele).toLocaleDateString('fr-FR') : '—'}</td>
                                                     <td><Button size="sm" variant="outline-danger" onClick={() => handleDischarge(item._id)}>Sortie</Button></td>
                                                 </tr>
                                             ))}
@@ -716,12 +803,12 @@ export default function HospitalisationPage() {
                                         <tbody>
                                             {historyAdmissions.map((item) => (
                                                 <tr key={item._id}>
-                                                    <td>{getPatientLabel(item.patientId)}</td>
-                                                    <td>{getChambreLabel(item.chambreId)} / {getLitLabel(item.litId)}</td>
-                                                    <td><Badge bg={item.statut === 'sortie' ? 'secondary' : item.statut === 'transfere' ? 'warning' : 'dark'}>{item.statut}</Badge></td>
-                                                    <td>{new Date(item.dateEntree).toLocaleDateString('fr-FR')}</td>
-                                                    <td>{item.dateSortie ? new Date(item.dateSortie).toLocaleDateString('fr-FR') : '—'}</td>
-                                                    <td>{(item.resteAPayer || 0).toFixed(0)} FCFA</td>
+                                                    <td>{getPatientLabel(item.IdPatient)}</td>
+                                                    <td>{getChambreLabel(item.IDCHAMBRE)} / {getLitLabel(item.litId)}</td>
+                                                    <td><Badge bg={item.statutHospitalisation === 'sortie' ? 'secondary' : item.statutHospitalisation === 'transfere' ? 'warning' : 'dark'}>{item.statutHospitalisation}</Badge></td>
+                                                    <td>{item.Entrele ? new Date(item.Entrele).toLocaleDateString('fr-FR') : '—'}</td>
+                                                    <td>{item.SortieLe ? new Date(item.SortieLe).toLocaleDateString('fr-FR') : '—'}</td>
+                                                    <td>{(item.Restapayer || 0).toFixed(0)} FCFA</td>
                                                 </tr>
                                             ))}
                                         </tbody>

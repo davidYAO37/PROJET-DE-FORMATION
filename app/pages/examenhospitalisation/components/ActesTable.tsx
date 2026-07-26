@@ -433,7 +433,6 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
 
         // Case 2 (Mutualiste)
         if (selAssure === 2) {
-            // plusieurs cas comparant TARIF_ASSURANCE.PrixMutualiste et ACTE.PrixMutualiste*ACTE.CoefficientActe
             const tPrix = tarif.PrixMutualiste ?? 0;
             const aPrix = acte.PrixMutualiste ?? 0;
             const aCoef = acte.CoefficientActe ?? 1;

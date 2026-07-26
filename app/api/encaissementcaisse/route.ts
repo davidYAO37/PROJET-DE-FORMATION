@@ -238,27 +238,35 @@ export async function PATCH(request: NextRequest) {
     // ENCAISSEMENT_CAISSE.AnnulationOrdonneLe=DateSys()
     // HModifie(ENCAISSEMENT_CAISSE)
     
-    // Gestion du refus d'annulation
-    if (body?.Ordonnerlannulation === false) {
-      // Réinitialiser les champs d'annulation
+    if (body?.action === 'cancel-order') {
       encaissement.annulationOrdonnepar = "";
       encaissement.AnnulationOrdonneLe = undefined;
       encaissement.Ordonnerlannulation = false;
-      encaissement.StatutOrdonner = 1; // Statut 1 = Annulation refusée
+      encaissement.StatutOrdonner = 0;
+      encaissement.StatutAnnulation = undefined;
+    } else if (body?.action === 'reject' || body?.Ordonnerlannulation === false) {
+      encaissement.annulationOrdonnepar = "";
+      encaissement.AnnulationOrdonneLe = undefined;
+      encaissement.Ordonnerlannulation = false;
+      encaissement.StatutOrdonner = 1;
+      encaissement.StatutAnnulation = 'refusee';
     } else {
-      // Ordonner l'annulation
       encaissement.annulationOrdonnepar = body?.utilisateur || 'Utilisateur inconnu';
       encaissement.AnnulationOrdonneLe = new Date();
       encaissement.Ordonnerlannulation = true;
-      encaissement.StatutOrdonner = 1; // Statut 1 = Demande d'annulation
+      encaissement.StatutOrdonner = 1;
+      encaissement.StatutAnnulation = 'en_cours';
     }
-    
 
-    await encaissement.save(); // Équivalent de HModifie()
+    await encaissement.save();
 
     return NextResponse.json({ 
       success: true, 
-      message: body?.Ordonnerlannulation === false ? 'Annulation refusée avec succès' : 'Annulation ordonnée avec succès',
+      message: body?.action === 'cancel-order'
+        ? 'Ordonnancement d’annulation annulé avec succès'
+        : body?.action === 'reject' || body?.Ordonnerlannulation === false
+          ? 'Annulation refusée avec succès'
+          : 'Annulation ordonnée avec succès',
       data: encaissement
     });
   } catch (error) {
@@ -297,14 +305,31 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Encaissement introuvable' }, { status: 404 });
     }
 
-    // Créer l'enregistrement dans la table d'annulation
     const annuler = new EncaissementCaisseAnnule({
-      ...encaissement.toObject(),
+      DatePrest: encaissement.DatePrest,
+      Patient: encaissement.Patient,
+      ACTE: encaissement.Designation,
+      Designation: encaissement.Designation,
+      typeAnnulation: 'Encaissement',
+      sourceId: String(encaissement._id),
+      Taux: encaissement.Taux,
+      Restapayer: encaissement.Restapayer,
+      Medecin: encaissement.Medecin,
+      Utilisateur: encaissement.Utilisateur,
+      DateEncaissement: encaissement.DateEncaissement,
+      Montantencaisse: encaissement.Montantencaisse,
+      HeureEncaissement: encaissement.HeureEncaissement,
+      Modepaiement: encaissement.Modepaiement,
+      Facturation: encaissement.IDFACTURATION,
+      Consultation: encaissement.IDCONSULTATION,
+      restapayerBilan: encaissement.restapayerBilan,
+      TotalapayerPatient: encaissement.TotalapayerPatient,
       Annulerle: new Date(),
       AnnulerPar: body?.utilisateur || 'Utilisateur inconnu',
       motifAnnulation: body?.motifAnnulation || 'Annulé depuis Liste encaissement',
       AnnulationOrdonneLe: new Date(),
-      annulationOrdonnepar: body?.utilisateur || 'Utilisateur inconnu'
+      annulationOrdonnepar: body?.utilisateur || 'Utilisateur inconnu',
+      entrepriseId: encaissement.entrepriseId
     });
 
     await annuler.save();

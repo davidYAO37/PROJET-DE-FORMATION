@@ -21,9 +21,10 @@ interface FactureNonSoldee {
 interface FacturesNonSoldesModalProps {
   show: boolean;
   onHide: () => void;
+  onPaiementSuccess?: () => void;
 }
 
-export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSoldesModalProps) {
+export default function FacturesNonSoldesModal({ show, onHide, onPaiementSuccess }: FacturesNonSoldesModalProps) {
   const [factures, setFactures] = useState<FactureNonSoldee[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -240,6 +241,7 @@ export default function FacturesNonSoldesModal({ show, onHide }: FacturesNonSold
           retryIfSuspiciousEmpty: true,
           countBefore: countAvantRefresh,
         });
+        onPaiementSuccess?.();
       } else {
         alert('Erreur lors de l\'enregistrement du paiement');
       }

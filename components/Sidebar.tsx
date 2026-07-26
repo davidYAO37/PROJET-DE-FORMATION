@@ -486,6 +486,19 @@ export default function Sidebar() {
                           </Link>
                         )}
                       </li>
+                      {/* gestion des chambres */}
+                      <li>
+                        <Link
+                          href="/dashboard/parametres/chambres"
+                          className="sidebar-link-medical d-flex align-items-center"
+                        >
+                          <i className="bi bi-door-closed-fill me-2 text-info"></i>{" "}
+                          Gestion Chambres
+                        </Link>
+                      </li>
+
+
+
                       <li>
                         <Link
                           href="/dashboard/parametres/medecin"

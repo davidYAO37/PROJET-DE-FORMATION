@@ -151,7 +151,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
         setPartAssurance(partAssur);
         setPartassure(partPat);
         setTotalPatient(partPat + surplusCalc);
-    }, [montantClinique, montantAssurance, taux]);
+    }, [montantClinique, montantAssurance, taux, selectedAssurance, assurances]);
 
     const handleSave = async () => {
         setError("");

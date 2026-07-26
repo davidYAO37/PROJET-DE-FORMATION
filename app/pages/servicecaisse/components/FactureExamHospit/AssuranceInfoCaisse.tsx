@@ -194,7 +194,11 @@ export default function AssuranceInfoCaisse({ formData, setFormData, currentLign
 
                                 setFormData({
                                     ...formData,
-                                    assurance: { ...formData.assurance, assuranceId: newAssuranceId, designationassurance },
+                                    assurance: {
+                                        ...formData.assurance,
+                                        assuranceId: newAssuranceId,
+                                        designationassurance,
+                                    },
                                 });
                                 previousAssuranceId.current = newAssuranceId;
 

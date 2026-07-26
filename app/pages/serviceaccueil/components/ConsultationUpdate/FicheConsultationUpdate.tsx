@@ -204,7 +204,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         setPartAssurance(partAssur);
         setPartassure(partPat);
         setTotalPatient(partPat + surplusCalc);
-    }, [montantClinique, montantAssurance, taux]);
+    }, [montantClinique, montantAssurance, taux, selectedAssurance, assurances]);
 
     // Fonction pour charger une consultation par son CodePrestation
     const loadConsultationByCode = async () => {

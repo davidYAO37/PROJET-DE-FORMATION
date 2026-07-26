@@ -1,6 +1,6 @@
 import mongoose, { Model, Schema } from "mongoose";
 
-export interface ILigneInventaire {
+export interface ILigneInventaireHistorique {
     IDMEDICAMENT?: string;
     Medicament?: string;
     Reference?: string;
@@ -15,12 +15,12 @@ export interface IHistoriqueInventaire {
     SaisiPar?: string;
     Observations?: string;
     NbLignes?: number;
-    Lignes?: ILigneInventaire[];
+    Lignes?: ILigneInventaireHistorique[];
     entrepriseId?: string;
     createdAt?: Date;
 }
 
-const LigneSchema = new Schema<ILigneInventaire>({
+const LigneSchema = new Schema<ILigneInventaireHistorique>({
     IDMEDICAMENT: { type: String },
     Medicament:   { type: String },
     Reference:    { type: String },

@@ -2,14 +2,14 @@ import mongoose, { Model, Schema, Types } from "mongoose";
 
 export type StatutCommande = "BROUILLON" | "ENVOYEE" | "RECEPTION_PARTIELLE" | "SOLDEE" | "ANNULEE";
 
-export type TypeArticle = "PHARMACIE" | "LABORATOIRE";
+export type TypeArticleCommande = "PHARMACIE" | "LABORATOIRE";
 
 export interface ILigneCommande {
     _id?: string;
     IDMEDICAMENT?: Types.ObjectId | string;
     Medicament?: string;
     Reference?: string;
-    TypeArticle?: TypeArticle;
+    TypeArticle?: TypeArticleCommande;
     QteCommandee: number;
     QteRecue: number;
     PrixAchat: number;

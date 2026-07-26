@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { Form, Card, Alert, InputGroup, Button } from "react-bootstrap";
+import { useState, useEffect } from "react";
+import { Form, Card, Alert } from "react-bootstrap";
 
 // Types pour les données
 interface Patient {
@@ -82,16 +82,15 @@ export default function InfoPatientPharmAccueilMedecin({
     const [loading, setLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
-    
-    // Ref pour le debounce
-    const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-    // Effet pour réinitialiser quand le code est vide
+    // Recherche automatique à chaque changement du code (comme PatientInfo d'examenhospitalisation)
     useEffect(() => {
         if (codePrestation.trim() === "") {
             resetForm();
             return;
         }
+        loadConsultationData(codePrestation);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [codePrestation]);
 
     // Effet pour notifier le parent des changements
@@ -112,12 +111,6 @@ export default function InfoPatientPharmAccueilMedecin({
             onPrescriptionChange(prescription);
         }
     }, [prescription]); // Retirer onPrescriptionChange des dépendances
-
-    useEffect(() => {
-        if (onCodePrestationChange && codePrestation !== initialCodePrestation) {
-            onCodePrestationChange(codePrestation);
-        }
-    }, [codePrestation, onCodePrestationChange, initialCodePrestation]);
 
     const resetForm = () => {
         setPatient({});
@@ -174,7 +167,6 @@ export default function InfoPatientPharmAccueilMedecin({
             const consultationRes = await fetch(consultationUrl);
             
             if (!consultationRes.ok) {
-                console.error("❌ Code non valide - aucune consultation trouvée");
                 setErrorMessage("Code non valide");
                 resetForm();
                 return;
@@ -185,7 +177,6 @@ export default function InfoPatientPharmAccueilMedecin({
 
             // SI HTrouve(CONSULTATION)=Vrai ALORS
             if (!consultationData) {
-                console.error("❌ Code non valide");
                 setErrorMessage("Code non valide");
                 resetForm();
                 return;
@@ -316,79 +307,25 @@ export default function InfoPatientPharmAccueilMedecin({
         }
     };
 
-    const handleCodePrestationChange = (value: string) => {
-        const oldValue = codePrestation;
-        setCodePrestation(value);
-        
-        // Si le code change et qu'il y avait déjà un patient trouvé,
-        // on réinitialise pour permettre une nouvelle recherche
-        if (value !== oldValue && patient && Object.keys(patient).length > 0) {
-            console.log("🔄 Code modifié, réinitialisation pour nouvelle recherche");
-            resetForm();
-        }
-        
-        // Réinitialiser seulement si le champ est complètement vide
-        if (value.trim() === "") {
-            resetForm();
-        }
-    };
 
     return (
         <Card className="mb-2 shadow-sm">
             <Card.Header className="bg-light">Information Patient</Card.Header>
             <Card.Body>
                 {/* N° Prestation */}
-                <Form.Group className="mb-3">
+                <Form.Group className="mb-1">
                     <Form.Label>N° Prestation</Form.Label>
-                    <InputGroup>
-                        <Form.Control
-                            value={codePrestation}
-                            onChange={(e) => handleCodePrestationChange(e.target.value)}
-                            placeholder="Saisir le code prestation"
-                            isInvalid={!!errorMessage}
-                            disabled={loading}
-                            className={codePrestation && !loading && !errorMessage ? "border-success" : ""}
-                        />
-                        <Button 
-                            variant={patient && Object.keys(patient).length > 0 ? "success" : "outline-primary"}
-                            onClick={() => {                             
-                                    if (codePrestation.trim() === "") {    
-                                    setErrorMessage("Veuillez saisir un code prestation");
-                                } else {
-                                    loadConsultationData(codePrestation);
-                                }
-                            }}
-                            disabled={loading || !codePrestation.trim() || (patient && Object.keys(patient).length > 0)}
-                            title={patient && Object.keys(patient).length > 0 ? "Code trouvé" : "Rechercher le code prestation"}
-                        >
-                            {loading ? (
-                                <span className="spinner-border spinner-border-sm" role="status">
-                                    <span className="visually-hidden">Recherche...</span>
-                                </span>
-                            ) : patient && Object.keys(patient).length > 0 ? (
-                                <i className="bi bi-check-circle"></i>
-                            ) : (
-                                <i className="bi bi-search"></i>
-                            )}
-                        </Button>
-                    </InputGroup>
-                    {errorMessage && (
-                        <Form.Control.Feedback type="invalid">
-                            {errorMessage}
-                        </Form.Control.Feedback>
-                    )}
-                    {loading && (
-                        <div className="text-muted mt-1">
-                            <small>Recherche en cours...</small>
-                        </div>
-                    )}
-                    
-                    {/* Indicateur de saisie en cours */}
-                    {codePrestation && !loading && !errorMessage && (!patient || Object.keys(patient).length === 0) && (
-                        <div className="text-info mt-1">
-                            <small>🔍 Code saisi, cliquez sur le bouton recherche</small>
-                        </div>
-                    )}
+                    <Form.Control
+                        value={codePrestation}
+                        onChange={(e) => {
+                            const v = e.target.value;
+                            setCodePrestation(v);
+                            if (onCodePrestationChange) onCodePrestationChange(v);
+                        }}
+                        placeholder="Saisir le code prestation"
+                        isInvalid={!!errorMessage}
+                    />
+                    {errorMessage && <div className="invalid-feedback d-block">{errorMessage}</div>}
                 </Form.Group>
 
                 {/* Message info */}

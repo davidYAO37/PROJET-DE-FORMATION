@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Card, Row, Col, Button, Spinner, Badge } from 'react-bootstrap';
 import { FaUserCheck, FaClock, FaCalendarCheck, FaSignOutAlt } from 'react-icons/fa';
 import PlanningRdvMed from '@/components/PlanningRdvMed';
+import AvisHospitalisationPeriode from '@/components/hospitalisation/AvisHospitalisationPeriode';
 
 // Interface pour les rendez-vous
 interface RendezVous {
@@ -169,6 +170,8 @@ export default function TpatientPage() {
           </Card>
         </Col>
       </Row>
+
+      <AvisHospitalisationPeriode />
 
       {/* Section Planning des Rendez-vous */}
       <Row className="g-4 my-1">

@@ -1,17 +1,15 @@
 'use client';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Nav } from 'react-bootstrap';
+import { Nav, Badge } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import { useRouter } from 'next/navigation';
 
 const menu = [
   { label: 'Tableau de bord',      path: '/pages/serviceinfirmier/tinfirmier',                    icon: <i className="bi bi-speedometer2 me-2 text-info"></i> },
-  { label: 'Liste des patients',   path: '/pages/serviceinfirmier/tinfirmier',                    icon: <i className="bi bi-people-fill me-2 text-primary"></i> },
+  { label: 'Liste des patients',   path: '/pages/serviceinfirmier/tinfirmier/patients',           icon: <i className="bi bi-people-fill me-2 text-primary"></i> },
   { label: 'Patients hospitalisés', path: '/pages/serviceinfirmier/tinfirmier/patientsHospitalises', icon: <i className="bi bi-hospital me-2 text-warning"></i> },
-  { label: 'Prescriptions',        path: '/pages/serviceinfirmier/tinfirmier/prescriptions',        icon: <i className="bi bi-capsule me-2 text-success"></i> },
-  { label: 'Planning des soins',   path: '/pages/serviceinfirmier/tinfirmier/planning-soins',      icon: <i className="bi bi-calendar-check me-2 text-info"></i> },
   { label: 'Mot de passe',         path: '#', isModal: true,                                      icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
@@ -21,10 +19,17 @@ export default function SidebarInfirmier() {
   const [open, setOpen]   = useState(false);
   const [user, setUser]   = useState('');
   const [showMotDePasseModal, setShowMotDePasseModal] = useState(false);
+  const [patientsActifs, setPatientsActifs] = useState(0);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('nom_utilisateur') || '';
     setUser(storedUser);
+
+    // Charger le nombre de patients actifs
+    fetch('/api/examenhospitalisation/hospitalises')
+      .then(res => res.ok ? res.json() : [])
+      .then(data => setPatientsActifs(Array.isArray(data) ? data.length : 0))
+      .catch(() => {});
   }, []);
 
   const handleLinkClick = () => setOpen(false);
@@ -101,6 +106,9 @@ export default function SidebarInfirmier() {
                 >
                   {item.icon}
                   <span>{item.label}</span>
+                  {item.label === 'Patients hospitalisés' && patientsActifs > 0 && (
+                    <Badge bg="danger" pill className="ms-auto">{patientsActifs}</Badge>
+                  )}
                 </Link>
               )}
             </Nav.Item>

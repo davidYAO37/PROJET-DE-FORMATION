@@ -166,6 +166,7 @@ export default function ListeAnnulationFactureModal({ show, onHide }: ListeAnnul
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     Ordonnerlannulation: false,
+                    StatutAnnulation: 'refusee',
                     AnnulOrdonnerPar: "",
                     AnnulationOrdonneLe: "",
                 }),

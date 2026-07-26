@@ -223,9 +223,9 @@ const PrintFactureDetailleAssurance = forwardRef<HTMLDivElement, PrintFactureDet
                                     </tbody>
                                     <tfoot>
                                         <tr style={{ backgroundColor: '#f8f9fa', fontWeight: 'bold' }}>
-                                            <td colSpan={4} style={{ border: '1px solid #dee2e6', padding: '8px', textAlign: 'right', fontSize: '11px' }}>Total:</td>
+                                            <td colSpan={3} style={{ border: '1px solid #dee2e6', padding: '8px', textAlign: 'right', fontSize: '11px' }}>Total Assurance:</td>
                                             <td style={{ border: '1px solid #dee2e6', padding: '8px', textAlign: 'right', fontSize: '11px' }}>
-                                                {consultation.consultation?.Prix_consultation || '0'} FCFA
+                                                {consultation.consultation?.PartAssurance || '0'} FCFA
                                             </td>
                                         </tr>
                                     </tfoot>

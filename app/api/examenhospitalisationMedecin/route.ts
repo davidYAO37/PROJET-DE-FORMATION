@@ -157,7 +157,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Mise à jour ou insertion des lignes de prestation
-        console.log("📋 Nombre de lignes à enregistrer:", lignes.length);
+        //console.log("📋 Nombre de lignes à enregistrer:", lignes.length);
 
         const results = await Promise.allSettled(
             lignes.map(async (l: any, index: number) => {

@@ -11,10 +11,18 @@ type Props = {
 };
 
 export default function PatientInfoUpdate({ formData, setFormData, onCodePrestationChange }: Props) {
-    const [CodePrestation, setCodePrestation] = useState("");
+    const [CodePrestation, setCodePrestation] = useState(formData.CodePrestation || "");
     const [patientNom, setPatientNom] = useState("");
     const [infoMessage, setInfoMessage] = useState<string | null>(null);
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+    // Synchroniser si le parent change le CodePrestation (ex: ouverture depuis un modal)
+    useEffect(() => {
+        if (formData.CodePrestation && formData.CodePrestation !== CodePrestation) {
+            setCodePrestation(formData.CodePrestation);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [formData.CodePrestation]);
 
     // Fonction pour vider complètement le formulaire
     const resetForm = () => {
@@ -62,7 +70,7 @@ export default function PatientInfoUpdate({ formData, setFormData, onCodePrestat
                     patientId: data.patient._id || prev.patientId,
                     Assure: data.Assure || data.assure || prev.Assure,
                     medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
-                    Rclinique: prev.Rclinique,
+                    Rclinique: data.Rclinique || prev.Rclinique,
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
                     assurance: {
                         assuranceId: data.idAssurance || prev.assurance.assuranceId,

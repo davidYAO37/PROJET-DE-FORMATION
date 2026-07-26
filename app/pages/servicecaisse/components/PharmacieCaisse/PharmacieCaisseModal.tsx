@@ -74,12 +74,14 @@ type Props = {
   show: boolean;
   onHide: () => void;
   codePrestation?: string;
+  onPaiementSuccess?: () => void;
 };
 
 export default function PharmacieCaisseModal({
   show,
   onHide,
   codePrestation: initialCodePrestation,
+  onPaiementSuccess,
 }: Props) {
   const [medicaments, setMedicaments] = useState<IMedicament[]>([]);
   const [loading, setLoading] = useState(false);
@@ -919,13 +921,14 @@ export default function PharmacieCaisseModal({
       const { facturationId, prescriptionId } = await handlePaiementValide();
       console.log("✅ Paiement terminé. Prescription:", prescriptionId, "Facturation:", facturationId);
       afficherRecuPharmacie(facturationId);
+      onPaiementSuccess?.();
       return { success: true };
     } catch (e: any) {
       const msg = e?.message || "Erreur lors du traitement du paiement";
       setErrorMessage(msg);
       return { success: false, message: msg };
     }
-  }, [codePrestation, validerPaiement, handlePaiementValide]);
+  }, [codePrestation, validerPaiement, handlePaiementValide, onPaiementSuccess]);
 
   const handleHide = useCallback(() => {
     // Réinitialiser les états à la fermeture

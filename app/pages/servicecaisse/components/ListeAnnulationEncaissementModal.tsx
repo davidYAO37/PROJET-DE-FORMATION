@@ -75,6 +75,7 @@ export default function ListeAnnulationEncaissementModal({ show, onHide }: Liste
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
+                    action: 'reject',
                     Ordonnerlannulation: false,
                     annulationOrdonnepar: "",
                     AnnulationOrdonneLe: "",

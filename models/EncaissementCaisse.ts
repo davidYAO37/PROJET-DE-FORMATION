@@ -28,6 +28,7 @@ export interface IEncaissementCaisse extends Document {
     annulationOrdonnepar?: string;
     Ordonnerlannulation?: boolean;
     StatutOrdonner?: number;
+    StatutAnnulation?: 'en_cours' | 'refusee';
     entrepriseId?: string;
 }
 
@@ -59,6 +60,7 @@ const EncaissementCaisseSchema: Schema = new Schema({
     annulationOrdonnepar: { type: String, maxlength: 50 },
     Ordonnerlannulation: { type: Boolean, default: false },
     StatutOrdonner: { type: Number, default: 0 },
+    StatutAnnulation: { type: String, enum: ['en_cours', 'refusee'] },
     entrepriseId: { type: String },
 });
 export const EncaissementCaisse: Model<IEncaissementCaisse> = mongoose.models.EncaissementCaisse || mongoose.model<IEncaissementCaisse>('EncaissementCaisse', EncaissementCaisseSchema);

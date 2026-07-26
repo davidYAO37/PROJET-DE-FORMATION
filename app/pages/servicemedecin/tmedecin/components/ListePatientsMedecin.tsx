@@ -1,8 +1,7 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList } from 'react-icons/fa';
+import { Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
 import { Patient } from '@/types/patient';
 import DossiersPatientDropdown from './DossiersPatientDropdown';
 import DossierPatient from '@/app/servicemedecin/tmedecin/components/DossierPatient';
@@ -297,6 +296,7 @@ export default function ListePatientMedecin() {
           Code_dossier={selectedPatientForModals.Code_dossier}
           Assurance={selectedPatientForModals.assurance}
           SOCIETE_PATIENT={selectedPatientForModals.SOCIETE_PATIENT}
+          mode="consultation"
         />
       )}
 

@@ -6,6 +6,7 @@ interface ExamenHospitalisationModalProps {
     show: boolean;
     onHide: () => void;
     onSuccess?: () => void;
+    onPaiementSuccess?: () => void;
     CodePrestation?: string;
     Designationtypeacte?: string;
     PatientP?: string;
@@ -20,6 +21,7 @@ export default function ExamenHospitalisationModalCaisse({
     show,
     onHide,
     onSuccess,
+    onPaiementSuccess,
     CodePrestation = "",
     Designationtypeacte = "",
     PatientP = "",
@@ -37,6 +39,7 @@ export default function ExamenHospitalisationModalCaisse({
         if (onSuccess) {
             onSuccess();
         }
+        onPaiementSuccess?.();
         setKey(prevKey => prevKey + 1);
         onHide();
     };

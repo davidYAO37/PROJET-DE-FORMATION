@@ -93,6 +93,28 @@ export default function ListeEncaissementModal({ show, onHide }: ListeEncaisseme
         }
     };
 
+    const handleAnnulerOrdonnancement = async (encaissement: any) => {
+        if (!window.confirm("Voulez-vous annuler l'ordonnancement de cette annulation ?")) return;
+
+        try {
+            setLoading(true);
+            const response = await fetch(`/api/encaissementcaisse?id=${encaissement._id || encaissement.id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'cancel-order' })
+            });
+            const data = await response.json();
+            if (!response.ok || !data.success) throw new Error(data.message || "Impossible d'annuler l'ordonnancement");
+            alert("Ordonnancement d'annulation annulé avec succès");
+            await chargerEncaissements();
+        } catch (err) {
+            console.error(err);
+            setError(err instanceof Error ? err.message : 'Erreur inconnue');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
         if (show) {
             void chargerEncaissements();
@@ -291,13 +313,13 @@ export default function ListeEncaissementModal({ show, onHide }: ListeEncaisseme
                                                 <td>{encaissement.Modepaiement || '-'}</td>
                                                 <td>
                                                     {hasAnnulationDemande ? (
-                                                        <div className="d-flex align-items-center">
-                                                            <span className="text-muted small me-2">
-                                                                Demandé par {encaissement.annulationOrdonnepar}
-                                                            </span>
+                                                        <div className="d-flex align-items-center gap-2">
                                                             <span className="text-muted small">
-                                                                le {new Date(encaissement.AnnulationOrdonneLe).toLocaleDateString()}
+                                                                Demandé par {encaissement.annulationOrdonnepar} le {new Date(encaissement.AnnulationOrdonneLe).toLocaleDateString()}
                                                             </span>
+                                                            <Button size="sm" variant="outline-warning" className="rounded-pill" onClick={() => void handleAnnulerOrdonnancement(encaissement)}>
+                                                                Annuler l'ordre
+                                                            </Button>
                                                         </div>
                                                     ) : isAnnulationRefusee ? (
                                                         <div className="d-flex align-items-center">

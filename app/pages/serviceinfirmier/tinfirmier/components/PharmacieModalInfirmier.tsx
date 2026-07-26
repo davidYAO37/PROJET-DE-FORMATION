@@ -856,12 +856,13 @@ const isGeneratedId = (id: string): boolean => {
             {/* Colonne de gauche : Informations patient */}
             <Col md={4}>
               <InfoPatientPharmAccueil
+                key={`info-${show}`}
                 onPatientChange={handlePatientChange}
                 onConsultationChange={handleConsultationChange}
                 onPrescriptionChange={handlePrescriptionChange}
                 onMedicamentsPrescritsChange={handleMedicamentsPrescritsChange}
                 onCodePrestationChange={handleCodePrestationChange}
-                initialCodePrestation={codePrestation}
+                initialCodePrestation={initialCodePrestation || ""}
               />
             </Col>
 

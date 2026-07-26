@@ -16,10 +16,14 @@ export async function GET() {
     const designationActes = actesHospitalisation.map(acte => acte.Designation);
     
     // Récupérer les ExamenHospitalisation avec ces Designationtypeacte
+    // Inclure aussi ceux avec statutHospitalisation='en_cours' (nouveau flux)
     const hospitalisations = await ExamenHospitalisation.find({
       Designationtypeacte: { $in: designationActes },
       Entrele: { $exists: true },
-      SortieLe: { $exists: true, $gte: new Date() } 
+      $or: [
+        { statutHospitalisation: 'en_cours' },
+        { SortieLe: { $exists: true, $gte: new Date() } },
+      ],
     })
     .populate('IdPatient', 'Nom Prenoms Code_dossier')
     .populate('idMedecin', 'nom')

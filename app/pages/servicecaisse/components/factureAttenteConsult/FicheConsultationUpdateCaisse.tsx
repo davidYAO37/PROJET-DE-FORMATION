@@ -217,7 +217,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
         setPartAssurance(partAssur);
         setPartassure(partPat);
         setTotalPatient(partPat + surplusCalc);
-    }, [montantClinique, montantAssurance, taux]);
+    }, [montantClinique, montantAssurance, taux, selectedAssurance, assurances]);
 
     const loadConsultationByCode = async () => {
         if (!CodePrestation.trim()) {

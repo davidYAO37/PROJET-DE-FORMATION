@@ -169,9 +169,13 @@ export default function AssuranceInfoMedecin({ formData, setFormData, currentLig
                                      return;
                                  } */
 
+                                const selectedAssurance = assurances.find(a => a._id === newAssuranceId);
                                 setFormData({
                                     ...formData,
-                                    assurance: { ...formData.assurance, assuranceId: newAssuranceId },
+                                    assurance: {
+                                        ...formData.assurance,
+                                        assuranceId: newAssuranceId,
+                                    },
                                 });
                                 previousAssuranceId.current = newAssuranceId;
 

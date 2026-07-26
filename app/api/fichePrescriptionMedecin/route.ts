@@ -32,21 +32,27 @@ export async function GET(request: NextRequest) {
     }
     
     if (!consultation) {
-      return NextResponse.json({ 
-        error: consultationId ? 'Consultation non trouvée' : 'Consultation avec ce Code Prestation non trouvée', 
-        status: 404 
-      });
+      return NextResponse.json(
+        { error: consultationId ? 'Consultation non trouvée' : 'Consultation avec ce Code Prestation non trouvée' },
+        { status: 404 }
+      );
     }
     
     // Récupérer les antécédents du patient
     const patient = await Patient.findById(consultation.IdPatient);
     
     // Récupérer les prescriptions associées à cette consultation
-    const prescriptions = await PatientPrescription.find({ 
+    const consultationDate = new Date(consultation.Date_consulation);
+    const debutJour = new Date(consultationDate);
+    debutJour.setHours(0, 0, 0, 0);
+    const finJour = new Date(consultationDate);
+    finJour.setHours(23, 59, 59, 999);
+    const prescriptions = await PatientPrescription.find({
       IdPatient: consultation.IdPatient,
-      DatePres: { 
-        $gte: new Date(consultation.Date_consulation.setHours(0,0,0,0)),
-        $lt: new Date(consultation.Date_consulation.setHours(23,59,59,999))
+      CodePrestation: consultation.CodePrestation,
+      DatePres: {
+        $gte: debutJour,
+        $lt: finJour
       }
     }).populate('medicament');
     
@@ -54,6 +60,16 @@ export async function GET(request: NextRequest) {
     const responseData = {
       patient: patient ? {
         _id: patient._id,
+        Nom: patient.Nom,
+        Prenoms: patient.Prenoms,
+        Date_naisse: patient.Date_naisse,
+        Contact: patient.Contact,
+        Code_dossier: patient.Code_dossier,
+        Age_partient: patient.Age_partient,
+        Situationgeo: patient.Situationgeo,
+        Assurance: patient.Assurance,
+        SOCIETE_PATIENT: patient.SOCIETE_PATIENT || patient.SocieteP,
+        Matricule: patient.Matricule,
         nom: patient.Nom,
         prenoms: patient.Prenoms,
         dateNaissance: patient.Date_naisse,
@@ -67,6 +83,23 @@ export async function GET(request: NextRequest) {
       } : null,
       consultation: {
         _id: consultation._id,
+        CodePrestation: consultation.CodePrestation,
+        Code_dossier: consultation.Code_dossier,
+        Date_consulation: consultation.Date_consulation,
+        Heure_Consultation: consultation.Heure_Consultation,
+        Temperature: consultation.Temperature,
+        Poids: consultation.Poids,
+        Tension: consultation.Tension,
+        Glycemie: consultation.Glycemie,
+        TailleCons: consultation.TailleCons,
+        ExamenClinique: consultation.ExamenClinique || '',
+        CodeAffection: consultation.CodeAffection || '',
+        Diagnostic: consultation.Diagnostic,
+        Medecin: consultation.Medecin,
+        NumBon: consultation.NumBon,
+        StatutPaiement: consultation.StatutPaiement,
+        Modepaiement: consultation.Modepaiement,
+        montantapayer: consultation.montantapayer,
         codePrestation: consultation.CodePrestation,
         codeDossier: consultation.Code_dossier,
         dateConsultation: consultation.Date_consulation,
@@ -93,23 +126,33 @@ export async function GET(request: NextRequest) {
         anteChirurgico: patient.AnteChirurgico,
         anteFamille: patient.AnteFamille,
         autreAnte: patient.AutreAnte,
-        AlergiePatient: patient.AlergiePatient
+        AlergiePatient: patient.AlergiePatient,
+        allergies: patient.AlergiePatient
       } : {},
-      prescriptions: prescriptions.map(presc => ({
-        _id: presc._id,
-        idPrescription: presc.IDPRESCRIPTION,
-        nomMedicament: presc.nomMedicament,
-        qteP: presc.QteP,
-        posologie: presc.posologie,
-        //prixUnitaire: presc.prixUnitaire,
-       // prixTotal: presc.prixTotal,
-        datePres: presc.DatePres,
-        heure: presc.heure,
-        statutPrescription: presc.StatutPrescriptionMedecin,
-        partAssurance: presc.partAssurance,
-        partAssure: presc.partAssure,
-        medicament: presc.medicament
-      }))
+      prescriptions: prescriptions.map(presc => {
+        const designation = presc.nomMedicament || '';
+
+        return {
+          _id: presc._id,
+          type: 'medicament',
+          designation,
+          posologie: presc.posologie,
+          duree: '',
+          instructions: '',
+          Designation: designation,
+          DatePres: presc.DatePres,
+          Montanttotal: presc.prixTotal,
+          idPrescription: presc.IDPRESCRIPTION,
+          nomMedicament: presc.nomMedicament,
+          qteP: presc.QteP,
+          datePres: presc.DatePres,
+          heure: presc.heure,
+          statutPrescription: presc.StatutPrescriptionMedecin,
+          partAssurance: presc.partAssurance,
+          partAssure: presc.partAssure,
+          medicament: presc.medicament
+        };
+      })
     };
     
     return NextResponse.json(responseData);

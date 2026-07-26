@@ -5,10 +5,12 @@ import {
   Container, Row, Col, Table, Form, InputGroup,
   Spinner, Badge, Button, Pagination,
 } from 'react-bootstrap';
-import { FaHospital, FaHeartbeat, FaClipboard, FaPrescription } from 'react-icons/fa';
+import { FaHospital, FaHeartbeat, FaClipboard, FaPrescription, FaSignOutAlt } from 'react-icons/fa';
+import { Modal, Alert } from 'react-bootstrap';
 import ConstantesVitalesModal from './ConstantesVitalesModal';
 import ExamenHospitModalInfirmier from './ExamenHospitModalInfirmier';
 import PharmacieModalInfirmier from './PharmacieModalInfirmier';
+import PrescriptionsAExecuter from './PrescriptionsAExecuter';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -25,6 +27,7 @@ interface Hospit {
   NomMed?: string;             // Nom du médecin
   ObservationHospitalisation?: string; // Observation
   Designationtypeacte?: string; // Type d'acte d'hospitalisation
+  hospitalisationId?: string;  // ID de l'hospitalisation liée
   // Champs peuplés depuis les populations
   patientInfo?: {
     Nom?: string;
@@ -46,6 +49,17 @@ export default function PatientsHospitalises() {
   const [showConstantes, setShowConstantes]        = useState(false);
   const [showActes, setShowActes] = useState(false);
   const [showPharmacie, setShowPharmacie] = useState(false);
+  const [showPrescriptions, setShowPrescriptions] = useState(false);
+  const [showSortieModal, setShowSortieModal] = useState(false);
+  const [sortieLoading, setSortieLoading] = useState(false);
+  const [sortieError, setSortieError] = useState('');
+  const [sortieSuccess, setSortieSuccess] = useState('');
+  const [sortieData, setSortieData] = useState({
+    dateSortie: new Date().toISOString().split('T')[0],
+    heureSortie: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+    observations: '',
+  });
+
   useEffect(() => {
     const fetchHospits = async () => {
       try {
@@ -64,6 +78,48 @@ export default function PatientsHospitalises() {
     };
     fetchHospits();
   }, []);
+
+  const fetchHospits = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch('/api/examenhospitalisation/hospitalises');
+      if (res.ok) {
+        const data = await res.json();
+        setHospits(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Erreur chargement hospitalisés:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSortie = async () => {
+    if (!selectedHospit?._id) {
+      setSortieError('Aucune hospitalisation liée à cet enregistrement.');
+      return;
+    }
+    setSortieLoading(true);
+    setSortieError('');
+    try {
+      const res = await fetch(`/api/hospitalisations/${selectedHospit._id}/sortie`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(sortieData),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Échec de la sortie');
+      setSortieSuccess(`Sortie enregistrée pour ${selectedHospit.PatientP || 'le patient'}`);
+      setShowSortieModal(false);
+      // Rafraîchir la liste
+      await fetchHospits();
+      setTimeout(() => setSortieSuccess(''), 5000);
+    } catch (err) {
+      setSortieError(err instanceof Error ? err.message : 'Erreur lors de la sortie');
+    } finally {
+      setSortieLoading(false);
+    }
+  };
 
   const formatDate = (d?: string) => {
     if (!d) return '—';
@@ -115,6 +171,8 @@ export default function PatientsHospitalises() {
         </Col>
       </Row>
 
+      {sortieSuccess && <Alert variant="success" dismissible onClose={() => setSortieSuccess('')}>{sortieSuccess}</Alert>}
+
       {loading ? (
         <div className="text-center py-5"><Spinner animation="border" /> Chargement...</div>
       ) : (
@@ -129,7 +187,7 @@ export default function PatientsHospitalises() {
                 <th>Entrée le</th>
                 <th>Durée</th>
                 <th>Médecin</th>
-                <th>Observation</th>
+                <th>Service</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -146,7 +204,12 @@ export default function PatientsHospitalises() {
                   return (
                     <tr key={h._id}>
                       <td>{idx + 1 + (currentPage - 1) * ITEMS_PER_PAGE}</td>
-                      <td className="fw-bold">{patientName}</td>
+                      <td
+                        className="fw-bold text-primary"
+                        style={{ cursor: 'pointer' }}
+                        title="Voir les prescriptions"
+                        onClick={() => { setSelectedHospit(h); setShowPrescriptions(true); }}
+                      >{patientName}</td>
                       <td><Badge bg="secondary">{h.CodePrestation || '—'}</Badge></td>
                       <td><Badge bg="success">{h.Chambre || '—'}</Badge></td>
                       <td>{formatDate(h.Entrele)}</td>
@@ -191,6 +254,25 @@ export default function PatientsHospitalises() {
                         >
                           <FaPrescription />
                         </Button>
+                        {h._id && (
+                          <Button
+                            variant="outline-danger"
+                            size="sm"
+                            title="Sortie du patient"
+                            onClick={() => {
+                              setSelectedHospit(h);
+                              setSortieData({
+                                dateSortie: new Date().toISOString().split('T')[0],
+                                heureSortie: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+                                observations: '',
+                              });
+                              setSortieError('');
+                              setShowSortieModal(true);
+                            }}
+                          >
+                            <FaSignOutAlt />
+                          </Button>
+                        )}
                       </td>
                     </tr>
                   );
@@ -233,6 +315,7 @@ export default function PatientsHospitalises() {
           show={showActes}
           onHide={() => setShowActes(false)}
           CodePrestation={selectedHospit.CodePrestation || ''}
+          Designationtypeacte={selectedHospit.Designationtypeacte || ''}
           examenHospitId={selectedHospit._id}
           PatientP={selectedHospit.PatientP || ''}
           onSuccess={() => {
@@ -248,6 +331,76 @@ export default function PatientsHospitalises() {
           codePrestation={selectedHospit.CodePrestation || ''}
         />
       )}
+
+      {/* Modal Prescriptions à exécuter */}
+      {selectedHospit && (
+        <Modal show={showPrescriptions} onHide={() => setShowPrescriptions(false)} size="xl" centered>
+          <Modal.Header closeButton className="bg-success text-white">
+            <Modal.Title>
+              <FaPrescription className="me-2" />
+              Prescriptions - {selectedHospit.PatientP || selectedHospit.patientInfo?.Nom || ''}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <PrescriptionsAExecuter codePrestation={selectedHospit.CodePrestation || ''} />
+          </Modal.Body>
+        </Modal>
+      )}
+      {/* Modal de confirmation de sortie */}
+      <Modal show={showSortieModal} onHide={() => setShowSortieModal(false)} centered>
+        <Modal.Header closeButton className="bg-danger text-white">
+          <Modal.Title>
+            <FaSignOutAlt className="me-2" />
+            Sortie du patient
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {sortieError && <Alert variant="danger">{sortieError}</Alert>}
+          <p className="fw-bold mb-3">
+            Confirmer la sortie de <span className="text-primary">{selectedHospit?.PatientP || '—'}</span> ?
+          </p>
+          <Row className="mb-3">
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label className="fw-semibold">Date de sortie</Form.Label>
+                <Form.Control
+                  type="date"
+                  value={sortieData.dateSortie}
+                  onChange={(e) => setSortieData(prev => ({ ...prev, dateSortie: e.target.value }))}
+                />
+              </Form.Group>
+            </Col>
+            <Col md={6}>
+              <Form.Group>
+                <Form.Label className="fw-semibold">Heure de sortie</Form.Label>
+                <Form.Control
+                  type="time"
+                  value={sortieData.heureSortie}
+                  onChange={(e) => setSortieData(prev => ({ ...prev, heureSortie: e.target.value }))}
+                />
+              </Form.Group>
+            </Col>
+          </Row>
+          <Form.Group>
+            <Form.Label className="fw-semibold">Observations</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={2}
+              placeholder="Observations de sortie..."
+              value={sortieData.observations}
+              onChange={(e) => setSortieData(prev => ({ ...prev, observations: e.target.value }))}
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowSortieModal(false)} disabled={sortieLoading}>
+            Annuler
+          </Button>
+          <Button variant="danger" onClick={handleSortie} disabled={sortieLoading}>
+            {sortieLoading ? 'Sortie en cours...' : 'Confirmer la sortie'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Container>
   );
 }

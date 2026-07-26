@@ -34,4 +34,4 @@ const LigneInventaireSchema = new Schema<ILigneInventaire>(
     },
     { timestamps: true }
 );
-export const LigneInventaire: Model<IInventaire> = mongoose.models.LigneInventaireModel || mongoose.model<ILigneInventaire>("LigneInventaire", LigneInventaireSchema);
+export const LigneInventaire: Model<ILigneInventaire> = mongoose.models.LigneInventaire || mongoose.model<ILigneInventaire>("LigneInventaire", LigneInventaireSchema);

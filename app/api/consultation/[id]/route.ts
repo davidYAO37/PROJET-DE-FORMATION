@@ -94,6 +94,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         if ((data.montantClinique || 0) > montantActe) {
             surplus = (data.montantClinique || 0) - montantActe;
         }
+
         partAssurance = (tauxNum * montantActe) / 100;
         Partassure = montantActe - partAssurance;
         const totalPatient = Partassure + surplus;

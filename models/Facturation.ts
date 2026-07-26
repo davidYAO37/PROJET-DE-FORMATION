@@ -86,6 +86,7 @@ export interface IFacturation extends Omit<Document, '_id'> {
     AnnulerPar?: string;
     Annulerle?: Date;
     Ordonnerlannulation?: boolean;
+    StatutAnnulation?: 'en_cours' | 'refusee' | 'validee';
     StatutPaiement?: string;
     MotifRetour?: string;
     MotifAnnulationFacture?: string;
@@ -186,6 +187,7 @@ const FacturationSchema = new Schema<IFacturation>(
         AnnulerPar: { type: String, maxlength: 50 },
         Annulerle: { type: Date },
         Ordonnerlannulation: { type: Boolean, default: false },
+        StatutAnnulation: { type: String, enum: ['en_cours', 'refusee', 'validee'] },
         StatutPaiement: { type: String, maxlength: 50 },
         MotifRetour: { type: String, maxlength: 500 },
         MotifAnnulationFacture: { type: String, maxlength: 500 },

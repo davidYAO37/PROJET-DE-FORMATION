@@ -924,21 +924,17 @@ function onFieldChangeAndRecalc(lineId: string, field: keyof ILignePrestation, v
         prev.map((l) => {
             if (l.IDLignePrestation !== lineId) return l;
             const copy = { ...l, [field]: value };
-            
-            // Si l'acte est sélectionné, recalculer avec prixActe
-            if (l.IDACTE) {
-                const acte = findActeById(l.IDACTE);
-                if (acte) {
-                    prixActe(copy, acte);
+            const acte = findActeById(copy.IDACTE);
+            if (acte) {
+                if (assuranceId === 1) {
+                    tarifActeClinique(copy, acte, 1);
                 } else {
-                    // pas d'acte sélectionné -> recalcul simple
-                    copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
+                    tarifActeAssurance(copy, acte, assuranceId);
                 }
+                prixActe(copy, acte);
             } else {
-                // pas d'acte sélectionné -> recalcul simple
                 copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
             }
-            
             return copy;
         })
     );

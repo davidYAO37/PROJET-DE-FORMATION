@@ -16,7 +16,14 @@ export interface IAvisHospit extends Document {
   SocieteP: string;
   IDPARTIENT: mongoose.Types.ObjectId;
   IDCONSULTATION?: mongoose.Types.ObjectId; // Lien avec la consultation
-  
+  codePrestation?: string;
+
+  // Lien vers l'admission effective
+  hospitalisationId?: mongoose.Types.ObjectId;
+  medecinId?: mongoose.Types.ObjectId;
+  createdBy?: mongoose.Types.ObjectId;
+  statut?: 'en_attente' | 'admis' | 'annule' | 'reporte';
+
   // Flags de service (un seul true à la fois)
   MED: boolean;
   CHR: boolean;
@@ -24,17 +31,17 @@ export interface IAvisHospit extends Document {
   OBST: boolean;
   GYN: boolean;
   PED: boolean;
-  
+
   // Flags d'état patient (un seul true à la fois)
   URGENT: boolean;
   SEMIURGENT: boolean;
   ELECTIF: boolean;
-  
+
   // Autres champs
   Isolement: boolean;
   HospitAnt: boolean;
   sejourunjour: boolean;
-  
+
   // Métadonnées
   entrepriseId?: string;
   createdAt: Date;
@@ -43,7 +50,7 @@ export interface IAvisHospit extends Document {
 
 const AvisHospitSchema = new Schema<IAvisHospit>({
   // Informations principales
-  serviceHospit: { type: String, required: true, enum: ['MED', 'CHIR', 'CHR.SP', 'OBST', 'GYN', 'PED'] },
+  serviceHospit: { type: String, required: true },
   etatPatient: { type: String, required: true, enum: ['Urgent', 'Semi-Urgent', 'Electif'] },
   DureHospit: { type: String, required: true },
   Patient: { type: String, required: true },
@@ -57,7 +64,14 @@ const AvisHospitSchema = new Schema<IAvisHospit>({
   SocieteP: { type: String },
   IDPARTIENT: { type: Schema.Types.ObjectId, ref: 'Patient', required: true },
   IDCONSULTATION: { type: Schema.Types.ObjectId, ref: 'Consultation' },
-  
+  codePrestation: { type: String, index: true },
+
+  // Lien vers l'admission effective
+  hospitalisationId: { type: Schema.Types.ObjectId, ref: 'Hospitalisation' },
+  medecinId: { type: Schema.Types.ObjectId, ref: 'Medecin' },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+  statut: { type: String, enum: ['en_attente', 'admis', 'annule', 'reporte'], default: 'en_attente' },
+
   // Flags de service
   MED: { type: Boolean, default: false },
   CHR: { type: Boolean, default: false },
@@ -65,17 +79,17 @@ const AvisHospitSchema = new Schema<IAvisHospit>({
   OBST: { type: Boolean, default: false },
   GYN: { type: Boolean, default: false },
   PED: { type: Boolean, default: false },
-  
+
   // Flags d'état patient
   URGENT: { type: Boolean, default: false },
   SEMIURGENT: { type: Boolean, default: false },
   ELECTIF: { type: Boolean, default: false },
-  
+
   // Autres champs
   Isolement: { type: Boolean, default: false },
   HospitAnt: { type: Boolean, default: false },
   sejourunjour: { type: Boolean, default: false },
-  
+
   // Métadonnées
   entrepriseId: { type: String }
 }, { 

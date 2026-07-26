@@ -11,6 +11,7 @@ export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url);
         const patientId = searchParams.get("patientId");
+        const consultationId = searchParams.get("consultationId");
         const codePrestation = searchParams.get("codePrestation");
 
         let query: any = {};
@@ -19,6 +20,10 @@ export async function GET(req: NextRequest) {
             query = { $or: [{ IdPatient: patientId }, { PatientP: patientId }] };
         }
         
+        if (consultationId) {
+            query._id = consultationId;
+        }
+
         if (codePrestation) {
             query.CodePrestation = codePrestation;
         }

@@ -14,8 +14,8 @@ interface ExamenHospitModalInfirmierProps {
 }
 
 // Chargement dynamique du wrapper pour éviter les erreurs de SSR
-const HospitalisationWrapper = dynamic(
-    () => import("@/app/pages/examenhospitalisation/HospitalisationWrapper"),
+const HospitalisationWrapperUpdate = dynamic(
+    () => import("@/app/pages/ExamenHospitUpdate/HospitalisationWrapperUpdate"),
     { ssr: false }
 );
 
@@ -23,6 +23,8 @@ export default function ExamenHospitModalInfirmier({
     show, 
     onHide, 
     CodePrestation = "", 
+    Designationtypeacte = "",
+    PatientP = "",
     examenHospitId = "",
     onSuccess
 }: ExamenHospitModalInfirmierProps) {
@@ -35,16 +37,30 @@ export default function ExamenHospitModalInfirmier({
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl" centered scrollable>
+        <Modal show={show} onHide={onHide} size="xl" centered scrollable
+            dialogClassName="modal-xxl"
+            backdrop="static"
+            keyboard={false}
+            style={{ maxWidth: '98vw', width: '98vw', margin: 'auto', height: '95vh' }}
+            contentClassName="h-100"
+        >
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>
-                    {examenHospitId ? 'Modifier la prestation' : 'Nouvelle prestation'}
+                    {CodePrestation
+                        ? `SAISIE ACTES - ${Designationtypeacte || 'Prestation'}`
+                        : 'Nouvelle prestation'}
+                    {examenHospitId && (
+                        <span className="ms-2 small fst-italic text-light">
+                            (CODE PRESTATION: {CodePrestation})
+                        </span>
+                    )}
                 </Modal.Title>
             </Modal.Header>
-            <Modal.Body>
-                <HospitalisationWrapper 
+            <Modal.Body style={{ padding: '0.5rem', maxHeight: 'calc(95vh - 120px)', overflow: 'auto' }}>
+                <HospitalisationWrapperUpdate 
                     codePrestation={CodePrestation}
                     examenHospitId={examenHospitId}
+                    Designationtypeacte={Designationtypeacte}
                     onSuccess={handleSuccess}
                 />
             </Modal.Body>

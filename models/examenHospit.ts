@@ -90,6 +90,24 @@ export interface IExamenHospitalisation extends Omit<Document, '_id'> {
     IDSOCIETEASSURANCE?: Types.ObjectId;
     SOCIETE_PATIENT?: string;
     statutPrescriptionMedecin?: number;
+    hospitalisationId?: Types.ObjectId | string;
+    consultationId?: Types.ObjectId | string;
+    litId?: Types.ObjectId | string;
+    avisHospitId?: Types.ObjectId | string;
+    sourceType?: 'avis_medecin' | 'manuel';
+    motifHospitalisation?: string;
+    service?: string;
+    typeVisiteur?: 'assure' | 'non_assure' | 'compte_client';
+    heureEntree?: string;
+    heureSortie?: string;
+    statutHospitalisation?: 'en_cours' | 'sortie' | 'transfere' | 'decede';
+    montantChambre?: number;
+    montantActes?: number;
+    montantExamens?: number;
+    montantMedicaments?: number;
+    montantSoins?: number;
+    montantHonoraires?: number;
+    remise?: number;
     entrepriseId?: string;
     resultatSaisiePar?: string;
     dateSaisieResultat?: Date;
@@ -185,6 +203,24 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         IDSOCIETEASSURANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
         statutPrescriptionMedecin: { type: Number },
+        hospitalisationId: { type: Schema.Types.ObjectId, index: true },
+        consultationId: { type: Schema.Types.ObjectId, ref: 'Consultation', index: true },
+        litId: { type: Schema.Types.ObjectId, ref: 'Lit', index: true },
+        avisHospitId: { type: Schema.Types.ObjectId, ref: 'AvisHospit', index: true },
+        sourceType: { type: String, enum: ['avis_medecin', 'manuel'] },
+        motifHospitalisation: { type: String },
+        service: { type: String },
+        typeVisiteur: { type: String, enum: ['assure', 'non_assure', 'compte_client'] },
+        heureEntree: { type: String, maxlength: 10 },
+        heureSortie: { type: String, maxlength: 10 },
+        statutHospitalisation: { type: String, enum: ['en_cours', 'sortie', 'transfere', 'decede'] },
+        montantChambre: { type: Number, default: 0 },
+        montantActes: { type: Number, default: 0 },
+        montantExamens: { type: Number, default: 0 },
+        montantMedicaments: { type: Number, default: 0 },
+        montantSoins: { type: Number, default: 0 },
+        montantHonoraires: { type: Number, default: 0 },
+        remise: { type: Number, default: 0 },
         entrepriseId: { type: String },
         resultatSaisiePar: { type: String, maxlength: 60 },
         dateSaisieResultat: { type: Date },

@@ -10,7 +10,19 @@ import CliniqueInfoUpdate from "./component/CliniqueInfoUpdate";
 import PaiementInfoUpdate from "./component/PaiementInfoUpdate";
 import ActionsButtonsUpdate from "./component/ActionsButtonsUpdate";
 
-export default function HospitalisationPage() {
+interface HospitalisationPageProps {
+    initialCodePrestation?: string;
+    initialExamenHospitId?: string;
+    initialDesignationtypeacte?: string;
+    onSuccess?: () => void;
+}
+
+export default function HospitalisationPage({
+    initialCodePrestation = '',
+    initialExamenHospitId = '',
+    initialDesignationtypeacte = '',
+    onSuccess,
+}: HospitalisationPageProps = {}) {
     const [formData, setFormData] = useState<ExamenHospitalisationForm>(defaultFormData);
 
     const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -25,12 +37,12 @@ export default function HospitalisationPage() {
         montantARegler: 0,
     });
     const [resetKey, setResetKey] = useState(0);
-    const [CodePrestation, setCodePrestation] = useState("");
+    const [CodePrestation, setCodePrestation] = useState(initialCodePrestation);
     const [presetLines, setPresetLines] = useState<any[] | undefined>(undefined);
     const [currentLignes, setCurrentLignes] = useState<any[]>([]);
     const [triggerRecalculation, setTriggerRecalculation] = useState(0);
     const [modeModification, setModeModification] = useState(false);
-    const [examenHospitId, setExamenHospitId] = useState<string | undefined>(undefined);
+    const [examenHospitId, setExamenHospitId] = useState<string | undefined>(initialExamenHospitId || undefined);
     const [recuPar, setRecuPar] = useState("");
     const [initialHydrated, setInitialHydrated] = useState(false);
 
@@ -159,15 +171,16 @@ export default function HospitalisationPage() {
         setResetKey((k) => k + 1);
     };
 
-    const hydrateFromExistingExamen = async (typeActeValue: string) => {
-        if (!CodePrestation) {
+    const hydrateFromExistingExamen = async (typeActeValue: string, codePrestationOverride?: string) => {
+        const code = codePrestationOverride || CodePrestation;
+        if (!code) {
             resetCreationState(typeActeValue);
             return;
         }
 
         const res = await fetch(
             `/api/examenhospitalisation?CodePrestation=${encodeURIComponent(
-                CodePrestation
+                code
             )}&typeActe=${encodeURIComponent(typeActeValue)}`
         );
 
@@ -230,7 +243,7 @@ export default function HospitalisationPage() {
         // Charger les lignes liées à cet examen
         const resLignes = await fetch(
             `/api/ligneprestation?CodePrestation=${encodeURIComponent(
-                CodePrestation
+                code
             )}&idHospitalisation=${encodeURIComponent(data._id)}`
         );
 
@@ -281,6 +294,17 @@ export default function HospitalisationPage() {
         }
     };
 
+    // Auto-hydration quand les props initiales sont fournies (ouverture depuis un modal)
+    useEffect(() => {
+        if (initialCodePrestation && initialDesignationtypeacte && !initialHydrated) {
+            setCodePrestation(initialCodePrestation);
+            setFormData((prev) => ({ ...prev, CodePrestation: initialCodePrestation, typeacte: initialDesignationtypeacte }));
+            setInitialHydrated(true);
+            hydrateFromExistingExamen(initialDesignationtypeacte, initialCodePrestation);
+        }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [initialCodePrestation, initialDesignationtypeacte, typesActe]);
+
     return (
         <Container fluid className="p-3">
             <h3 className={`text-center mb-3 ${modeModification ? 'text-warning' : 'text-primary'}`}>
@@ -294,10 +318,34 @@ export default function HospitalisationPage() {
                         setFormData={setFormData}
                         onCodePrestationChange={(code) => {
                             setCodePrestation(code);
-                            // Contexte neutre : on laisse hydrateFromExistingExamen décider
+
+                            // 1. Initialiser les dates à aujourd'hui
+                            const today = new Date().toISOString().split('T')[0];
+                            setFormData((prev) => ({
+                                ...prev,
+                                dateEntree: today,
+                                dateSortie: today,
+                                nombreDeJours: 1,
+                            }));
+
+                            // 2. Réinitialiser le mode modification
+                            setModeModification(false);
+                            setExamenHospitId(undefined);
                             setInitialHydrated(false);
+
+                            // 3. Vider la table et les totaux
                             setPresetLines([]);
                             setCurrentLignes([]);
+                            setTotaux({
+                                montantTotal: 0,
+                                partAssurance: 0,
+                                partAssure: 0,
+                                totalTaxe: 0,
+                                totalSurplus: 0,
+                                montantExecutant: 0,
+                                montantARegler: 0,
+                            });
+                            setResetKey((k) => k + 1);
                         }}
                     />
                     <AssuranceInfoUpdate

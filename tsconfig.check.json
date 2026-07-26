@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "skipLibCheck": true,
+    "types": []
+  },
+  "include": [
+    "lib/**/*.ts",
+    "db/**/*.ts",
+    "models/**/*.ts",
+    "app/api/**/*.ts",
+    "app/hospitalisation/page.tsx"
+  ]
+}

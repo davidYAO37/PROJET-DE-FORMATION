@@ -18,6 +18,8 @@ interface Patient {
   telephone?: string;
   email?: string;
   Code_dossier?: string;
+  Assurance?: string;
+  SOCIETE_PATIENT?: string;
 }
 
 interface Antecedent {
@@ -2311,6 +2313,10 @@ export default function FichePrescriptionMedecin() {
             patientNom={patient?.Nom}
             patientPrenoms={patient?.Prenoms}
             Code_dossier={patient?.Code_dossier}
+            Assurance={patient?.Assurance}
+            SOCIETE_PATIENT={patient?.SOCIETE_PATIENT}
+            mode="prescription"
+            codePrestation={consultation?.codePrestation}
           />
 
           {/* Modal Impression */}

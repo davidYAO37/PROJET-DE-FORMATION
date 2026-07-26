@@ -28,9 +28,10 @@ interface Consultation {
     StatutC?: boolean;
     IdPatient?: string;
     Statutfacturation?: boolean; // Ajout du champ pour vérifier si la consultation est facturée
-    Ordonnerlannulation?: boolean; // Champ pour indiquer si l'annulation est ordonnée
+    Ordonnerlannulation?: boolean | number; // Champ pour indiquer si l'annulation est ordonnée
     AnnulOrdonnerPar?: string; // Utilisateur qui a ordonné l'annulation
     AnnulationOrdonneLe?: Date; // Date de l'annulation
+    StatutAnnulation?: 'en_cours' | 'refusee' | 'validee';
 }
 
 interface Prescription {
@@ -253,7 +254,8 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    Ordonnerlannulation: true,
+                    Ordonnerlannulation: 1,
+                    StatutAnnulation: 'en_cours',
                     AnnulOrdonnerPar: utilisateur,
                     AnnulationOrdonneLe: new Date(),
                 }),
@@ -270,6 +272,37 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
             console.error('Erreur annulation:', error);
             alert("Erreur de connexion");
         }
+    };
+
+    const handleAnnulerOrdonnancementConsultation = async (consultation: Consultation) => {
+        if (!window.confirm("Voulez-vous annuler l'ordonnancement de cette annulation ?")) return;
+
+        try {
+            const response = await fetch(`/api/consultation/${consultation._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    Ordonnerlannulation: 0,
+                    StatutAnnulation: null,
+                    AnnulOrdonnerPar: '',
+                    AnnulationOrdonneLe: null,
+                }),
+            });
+
+            if (!response.ok) throw new Error();
+            alert("Ordonnancement d'annulation annulé avec succès");
+            loadConsultations();
+        } catch (error) {
+            console.error('Erreur annulation ordonnancement:', error);
+            alert("Erreur lors de l'annulation de l'ordonnancement");
+        }
+    };
+
+    const getStatutAnnulation = (consultation: Consultation) => {
+        if (consultation.StatutAnnulation === 'validee' || consultation.Ordonnerlannulation === 2) return 'validee';
+        if (consultation.StatutAnnulation === 'refusee') return 'refusee';
+        if (consultation.StatutAnnulation === 'en_cours' || consultation.Ordonnerlannulation === 1 || consultation.Ordonnerlannulation === true) return 'en_cours';
+        return undefined;
     };
 
     // Fonctions de gestion des actions pour les prescriptions
@@ -409,8 +442,8 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                                             <tr
                                                 key={consult._id}
                                                 style={{
-                                                    backgroundColor: consult.Ordonnerlannulation ? '#ffe6e6' : 'inherit',
-                                                    borderLeft: consult.Ordonnerlannulation ? '4px solid #dc3545' : 'none'
+                                                    backgroundColor: getStatutAnnulation(consult) === 'en_cours' ? '#fff3cd' : getStatutAnnulation(consult) === 'refusee' ? '#f1f3f5' : getStatutAnnulation(consult) === 'validee' ? '#d1e7dd' : 'inherit',
+                                                    borderLeft: getStatutAnnulation(consult) === 'en_cours' ? '4px solid #ffc107' : getStatutAnnulation(consult) === 'refusee' ? '4px solid #6c757d' : getStatutAnnulation(consult) === 'validee' ? '4px solid #198754' : 'none'
                                                 }}
                                             >
                                                 <td><code>{consult.CodePrestation}</code></td>
@@ -420,21 +453,10 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                                                 <td>{consult.Recupar || '-'}</td>
                                                 <td>{consult.Medecin || '-'}</td>
                                                 <td>
-                                                    {consult.Ordonnerlannulation ? (
-                                                        <span
-                                                            style={{
-                                                                fontSize: '0.75rem',
-                                                                padding: '0.25rem 0.5rem',
-                                                                backgroundColor: '#dc3545',
-                                                                color: 'white',
-                                                                borderRadius: '0.375rem',
-                                                                display: 'inline-block',
-                                                                fontWeight: 500
-                                                            }}
-                                                        >
-                                                            <i className="bi bi-x-circle-fill me-1"></i>
-                                                            Annulation en cours
-                                                        </span>
+                                                    {getStatutAnnulation(consult) ? (
+                                                        <Badge bg={getStatutAnnulation(consult) === 'en_cours' ? 'warning' : getStatutAnnulation(consult) === 'refusee' ? 'secondary' : 'success'} text={getStatutAnnulation(consult) === 'en_cours' ? 'dark' : undefined}>
+                                                            {getStatutAnnulation(consult) === 'en_cours' ? 'Annulation en cours' : getStatutAnnulation(consult) === 'refusee' ? 'Annulation refusée' : 'Annulation validée'}
+                                                        </Badge>
                                                     ) : (
                                                         <span
                                                             style={{
@@ -497,22 +519,19 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                                                                 <FaPencilAlt />
                                                             </Button>
                                                         )}
-                                                        {consult.Ordonnerlannulation ? (
-                                                            <OverlayTrigger
-                                                                placement="top"
-                                                                overlay={<Tooltip>Cette consultation est en cours d'annulation</Tooltip>}
+                                                        {getStatutAnnulation(consult) === 'en_cours' ? (
+                                                            <Button
+                                                                size="sm"
+                                                                variant="outline-warning"
+                                                                onClick={() => handleAnnulerOrdonnancementConsultation(consult)}
+                                                                title="Annuler l'ordonnancement"
                                                             >
-                                                                <span className="d-inline-block">
-                                                                    <Button
-                                                                        size="sm"
-                                                                        variant="outline-secondary"
-                                                                        disabled
-                                                                        style={{ pointerEvents: 'none' }}
-                                                                    >
-                                                                        <i className="bi bi-x-circle"></i>
-                                                                    </Button>
-                                                                </span>
-                                                            </OverlayTrigger>
+                                                                <i className="bi bi-arrow-counterclockwise"></i>
+                                                            </Button>
+                                                        ) : getStatutAnnulation(consult) === 'validee' ? (
+                                                            <Button size="sm" variant="outline-secondary" disabled title="Annulation validée">
+                                                                <i className="bi bi-check-circle"></i>
+                                                            </Button>
                                                         ) : (
                                                             <Button
                                                                 size="sm"

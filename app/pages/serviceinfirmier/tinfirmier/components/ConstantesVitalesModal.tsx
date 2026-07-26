@@ -358,7 +358,7 @@ export default function ConstantesVitalesModal({
                   <Form.Label className="fw-bold">Patient</Form.Label>
                   <Form.Control
                     type="text"
-                    value={getPatientName(patientNom, patientPrenoms)}
+                    value={getPatientName(patientNom)}
                     readOnly
                     className="bg-light"
                   />
