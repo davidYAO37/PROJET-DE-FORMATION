@@ -47,6 +47,14 @@ export async function GET(request: NextRequest) {
       decaissMap[libelle][moisIdx] += montant;
     };
 
+    const facturationDateFilter = (d: Date, f: Date) => ({
+      $or: [
+        { DateModif: { $gte: d, $lte: f } },
+        { DatePres: { $gte: d, $lte: f } },
+        { DateFacturation: { $gte: d, $lte: f } },
+      ],
+    });
+
     // ── CAS 1 : TOUS (Consultation PrixClinique + Facturation Montanttotal) ──
     if (optionPart === 1) {
       const consultations = await Consultation.find({
@@ -60,11 +68,10 @@ export async function GET(request: NextRequest) {
         addLigne((c.designationC as string) || 'CONSULTATION', m, montant);
       }
 
-      const facturations = await Facturation.find({
-        DateModif: { $gte: debut, $lte: fin },
-      }).lean();
+      const factDate = facturationDateFilter(debut, fin);
+      const facturations = await Facturation.find(factDate as any).lean();
       for (const f of facturations) {
-        const m = new Date(f.DateModif as Date).getMonth();
+        const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
         const montant = (f.Montanttotal as number) || 0;
         if (montant === 0) continue;
         addLigne((f.Designationtypeacte as string) || 'PRESTATION', m, montant);
@@ -73,22 +80,46 @@ export async function GET(request: NextRequest) {
 
     // ── CAS 2 : PART ASSURANCE (Consultation.PartAssurance + Facturation.PartAssuranceP) ──
     if (optionPart === 2) {
+      const isNonAssure = assurance && assurance.toUpperCase() === 'NON ASSURE';
+
       const qConsult: any = { Date_consulation: { $gte: debut, $lte: fin }, StatutC: true };
-      if (assurance && assurance !== 'TOUTES LES ASSURANCES') qConsult['assurance'] = assurance;
+      if (assurance && assurance !== 'TOUTES LES ASSURANCES') {
+        if (isNonAssure) {
+          qConsult['$or'] = [
+            { assurance: 'NON ASSURE' },
+            { assurance: null },
+            { assurance: { $exists: false } },
+            { assurance: '' },
+          ];
+        } else {
+          qConsult['assurance'] = assurance;
+        }
+      }
       const consultations = await Consultation.find(qConsult).lean();
       for (const c of consultations) {
         const m = new Date(c.Date_consulation as Date).getMonth();
-        const montant = (c.PartAssurance as number) || 0;
+        // NON ASSURE : pas de part assurance, on prend le montant total (clinique)
+        const montant = isNonAssure
+          ? ((c.PrixClinique as number) || 0)
+          : ((c.PartAssurance as number) || 0);
         if (montant === 0) continue;
         addLigne((c.designationC as string) || 'CONSULTATION', m, montant);
       }
 
-      const qFact: any = { DateModif: { $gte: debut, $lte: fin } };
-      if (assurance && assurance !== 'TOUTES LES ASSURANCES') qFact['Assurance'] = assurance;
+      const factDate = facturationDateFilter(debut, fin);
+      const factAssuranceClause = assurance && assurance !== 'TOUTES LES ASSURANCES'
+        ? (isNonAssure
+            ? { $or: [{ Assurance: 'NON ASSURE' }, { Assurance: null }, { Assurance: { $exists: false } }, { Assurance: '' }] }
+            : { Assurance: assurance })
+        : null;
+      const qFact = factAssuranceClause ? { $and: [factDate, factAssuranceClause] } as any : factDate;
       const facturations = await Facturation.find(qFact).lean();
       for (const f of facturations) {
-        const m = new Date(f.DateModif as Date).getMonth();
-        const montant = (f.PartAssuranceP as number) || 0;
+        const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
+        // NON ASSURE : pas de part assurance, on prend le montant total de l'acte
+        const montant = isNonAssure
+          ? ((f.Montanttotal as number) || 0)
+          : ((f.PartAssuranceP as number) || 0);
         if (montant === 0) continue;
         addLigne((f.Designationtypeacte as string) || 'PRESTATION', m, montant);
       }
@@ -107,11 +138,10 @@ export async function GET(request: NextRequest) {
         addLigne((c.designationC as string) || 'CONSULTATION', m, montant);
       }
 
-      const facturations = await Facturation.find({
-        DateModif: { $gte: debut, $lte: fin },
-      }).lean();
+      const factDate = facturationDateFilter(debut, fin);
+      const facturations = await Facturation.find(factDate as any).lean();
       for (const f of facturations) {
-        const m = new Date(f.DateModif as Date).getMonth();
+        const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
         const montant = (f.TotalapayerPatient as number) || (f.Montanttotal as number) || 0;
         if (montant === 0) continue;
         addLigne((f.Designationtypeacte as string) || 'PRESTATION', m, montant);
@@ -145,11 +175,13 @@ export async function GET(request: NextRequest) {
       }
 
       // 3) Facturation.TotalPaye (filtré par modePaiement si précisé)
-      const qC4Fact: any = { DateModif: { $gte: debut, $lte: fin } };
-      if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qC4Fact['Modepaiement'] = modePaiement;
-      const facturations = await Facturation.find(qC4Fact).lean();
+      const factDateC4 = facturationDateFilter(debut, fin);
+      const qC4Fact: any = modePaiement && modePaiement !== 'TOUS LES PAIEMENTS'
+        ? { $and: [factDateC4, { Modepaiement: modePaiement }] }
+        : factDateC4;
+      const facturations = await Facturation.find(qC4Fact as any).lean();
       for (const f of facturations) {
-        const m = new Date(f.DateModif as Date).getMonth();
+        const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
         const montant = (f.TotalPaye as number) || 0;
         if (montant === 0) continue;
         addLigne((f.Designationtypeacte as string) || 'PRESTATION', m, montant);
@@ -205,9 +237,11 @@ export async function GET(request: NextRequest) {
         if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qN1C['Modepaiement'] = modePaiement;
         const consultN1 = await Consultation.find(qN1C).lean();
         for (const c of consultN1) soldeOuvertureBase += (c.Montantencaisse as number) || 0;
-        const qN1F: any = { DateModif: { $gte: debutN1, $lte: finN1 } };
-        if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qN1F['Modepaiement'] = modePaiement;
-        const factN1 = await Facturation.find(qN1F).lean();
+        const factDateN1 = facturationDateFilter(debutN1, finN1);
+        const qN1F: any = modePaiement && modePaiement !== 'TOUS LES PAIEMENTS'
+          ? { $and: [factDateN1, { Modepaiement: modePaiement }] }
+          : factDateN1;
+        const factN1 = await Facturation.find(qN1F as any).lean();
         for (const f of factN1) soldeOuvertureBase += (f.TotalPaye as number) || 0;
         const qN1E: any = { DateEncaissement: { $gte: debutN1, $lte: finN1 } };
         if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qN1E['Modepaiement'] = modePaiement;
@@ -224,9 +258,8 @@ export async function GET(request: NextRequest) {
             ? ((c.montantapayer as number) || 0)
             : ((c.PrixClinique as number) || 0);
         }
-        const factN1 = await Facturation.find({
-          DateModif: { $gte: debutN1, $lte: finN1 },
-        }).lean();
+        const factDateN1 = facturationDateFilter(debutN1, finN1);
+        const factN1 = await Facturation.find(factDateN1 as any).lean();
         for (const f of factN1) {
           // CAS 3 : TotalapayerPatient ; CAS 1 : Montanttotal
           soldeOuvertureBase += optionPart === 3

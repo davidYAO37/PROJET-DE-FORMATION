@@ -64,6 +64,7 @@ interface HospitalisationsPatientModalProps {
   patientId: string;
   patientNom?: string;
   patientPrenoms?: string;
+  initialHospitalisationId?: string;
 }
 
 const formatDate = (d?: string) => {
@@ -84,6 +85,7 @@ export default function HospitalisationsPatientModal({
   patientId,
   patientNom,
   patientPrenoms,
+  initialHospitalisationId,
 }: HospitalisationsPatientModalProps) {
   const { entreprise } = useEntreprise();
   const [hospits, setHospits] = useState<Hospit[]>([]);
@@ -107,6 +109,15 @@ export default function HospitalisationsPatientModal({
     setActeGroups([]);
     chargerHospitalisations();
   }, [show, patientId]);
+
+  useEffect(() => {
+    if (hospits.length > 0 && initialHospitalisationId) {
+      const initial = hospits.find((h) => h._id === initialHospitalisationId);
+      if (initial) {
+        chargerDetails(initial);
+      }
+    }
+  }, [hospits, initialHospitalisationId]);
 
   const chargerHospitalisations = async () => {
     setLoading(true);

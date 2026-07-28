@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
 import { ExamenHospitalisation, LignePrestation, Patient } from "@/models";
 import { ResultatLignePrestation } from "@/models/resultatLignePrestation";
 import { Entreprise } from "@/models/entreprise";
@@ -10,6 +11,9 @@ export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ idhospitalisation: string }> }
 ) {
+    const { context, response: authResponse } = await withTenant(req);
+    if (!context) return authResponse;
+
     try {
         await db();
 
@@ -86,10 +90,11 @@ export async function GET(
         }
 
         let entreprisePdf: EntreprisePdf | undefined = undefined;
-        const entrepriseId = examen.entrepriseId;
+        const entrepriseId = examen.entrepriseId || context.user.entrepriseId;
         const entreprise = entrepriseId
             ? await Entreprise.findOne({ _id: entrepriseId }).lean()
             : await Entreprise.findOne().lean();
+
 
         if (entreprise) {
             entreprisePdf = {

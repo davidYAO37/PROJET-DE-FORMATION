@@ -58,6 +58,7 @@ export async function GET(request: NextRequest) {
 
     // Étape 4 : Formater les données (équivalent TableAjouteLigne)
     const formattedPrestations = lignePrestations.map(ligne => ({
+      _id: ligne._id,
       // Correspond exactement aux champs du code WinDev :
       // LIGNE_PRESTATION.Date_ligne_prestaion,
       // LIGNE_PRESTATION.Nompatient,

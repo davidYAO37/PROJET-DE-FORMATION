@@ -44,6 +44,20 @@ export async function GET(request: NextRequest) {
         $unwind: '$patientInfo'
       },
       {
+        $lookup: {
+          from: 'examenhospitalisations',
+          localField: 'CodePrestation',
+          foreignField: 'CodePrestation',
+          as: 'examenHospitInfo'
+        }
+      },
+      {
+        $unwind: {
+          path: '$examenHospitInfo',
+          preserveNullAndEmptyArrays: true
+        }
+      },
+      {
         $project: {
           // Champs CONSULTATION - champs exacts du modèle MongoDB
           _id: 1,
@@ -65,6 +79,7 @@ export async function GET(request: NextRequest) {
           Code_dossier: 1,
           Medecin: 1,
           CodeAffection: 1,
+          Rclinique: { $ifNull: ['$examenHospitInfo.Rclinique', ''] },
           
           // Champs PATIENT - champs exacts du modèle MongoDB
           'patientInfo.Nom': 1,

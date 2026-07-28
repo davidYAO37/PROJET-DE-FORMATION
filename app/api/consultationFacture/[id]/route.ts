@@ -81,7 +81,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.Prix_Assurance = montantActe;
         consultation.PrixClinique = data.montantClinique || 0;
 
-        consultation.montantapayer = Partassure;
+        consultation.montantapayer = totalPatient; // Partassure + surplus = tiket_moderateur + ReliquatPatient
         consultation.ReliquatPatient = surplus;
 
         consultation.Code_dossier = data.Code_dossier;

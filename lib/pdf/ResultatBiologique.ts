@@ -302,7 +302,12 @@ export function getLogoPath(
 
     logoUrl?: string
 
-) {
+): string {
+
+    // URL externe (http/https) : retournée telle quelle (PDFKit ne la chargera pas nativement)
+    if (logoUrl && /^https?:\/\//i.test(logoUrl)) {
+        return logoUrl;
+    }
 
     if (logoUrl) {
 
@@ -896,24 +901,69 @@ export function separateur(
 // DESSINE LE LOGO
 // ============================================================================
 
+const LOGO_MAX_WIDTH = 120;
+const LOGO_MAX_HEIGHT = 80;
+
 export function dessinerLogo(
     doc: PDFDocumentType,
     entreprise?: EntreprisePdf
 ) {
 
-    const logo = getLogoPath(entreprise?.LogoE);
+    const logoUrl = entreprise?.LogoE;
+
+    console.log("[ResultatBiologique] LogoE brut:", logoUrl);
+
+    if (!logoUrl) {
+        console.log("[ResultatBiologique] Aucun LogoE fourni");
+        return;
+    }
+
+    const options: { fit: [number, number] } = {
+        fit: [LOGO_MAX_WIDTH, LOGO_MAX_HEIGHT]
+    };
+
+    // 1. Data URI base64
+    const dataUriMatch = logoUrl.match(/^data:image\/(\w+);base64,(.+)$/i);
+    if (dataUriMatch) {
+        try {
+            const buffer = Buffer.from(dataUriMatch[2], "base64");
+            doc.image(
+                buffer,
+                PAGE_MARGIN,
+                PAGE_MARGIN,
+                options
+            );
+            console.log("[ResultatBiologique] Logo dessiné depuis data URI");
+            return;
+        } catch (err: any) {
+            console.error("[ResultatBiologique] Erreur logo data URI:", err?.message || err);
+            return;
+        }
+    }
+
+    // 2. URL externe — non supportée nativement par PDFKit
+    if (/^https?:\/\//i.test(logoUrl)) {
+        console.log("[ResultatBiologique] Logo URL externe non supportée dans le PDF:", logoUrl);
+        return;
+    }
+
+    // 3. Chemin local
+    const logo = getLogoPath(logoUrl);
+    console.log("[ResultatBiologique] Chemin logo résolu:", logo);
+    console.log("[ResultatBiologique] Logo existe:", imageExiste(logo));
 
     if (imageExiste(logo)) {
-
-        doc.image(
-            logo,
-            PAGE_MARGIN,
-            PAGE_MARGIN,
-            {
-                width: 75
-            }
-        );
-
+        try {
+            doc.image(
+                logo,
+                PAGE_MARGIN,
+                PAGE_MARGIN,
+                options
+            );
+            console.log("[ResultatBiologique] Logo dessiné avec succès");
+        } catch (err: any) {
+            console.error("[ResultatBiologique] Erreur lors du dessin du logo:", err?.message || err);
+        }
     }
 
 }
@@ -949,37 +999,61 @@ export function extraireLignesEntete(
 // ENTETE CLINIQUE
 // ============================================================================
 
+function logoSeraAffiche(entreprise?: EntreprisePdf): boolean {
+    const logoUrl = entreprise?.LogoE;
+    if (!logoUrl) return false;
+    if (/^data:image\/\w+;base64,/i.test(logoUrl)) return true;
+    if (/^https?:\/\//i.test(logoUrl)) return false;
+    return imageExiste(getLogoPath(logoUrl));
+}
+
+function extraireCouleurEntete(enteteHtml?: string): string | undefined {
+    if (!enteteHtml) return undefined;
+
+    // style="color: ..." ou style='color: ...'
+    const styleMatch = enteteHtml.match(/color\s*:\s*([^;"'}]+)/i);
+    if (styleMatch) return styleMatch[1].trim();
+
+    // <font color="...">
+    const fontMatch = enteteHtml.match(/<font[^>]+color=["']?([^"'>\s]+)["']?/i);
+    if (fontMatch) return fontMatch[1].trim();
+
+    return undefined;
+}
+
 export function dessinerEnteteClinique(
     doc: PDFDocumentType,
     entreprise?: EntreprisePdf
 ) {
 
     const toutesLignesEntete = extraireLignesEntete(entreprise?.EnteteSociete);
-    const nomSociete = texte(entreprise?.NomSociete) || "CLINIQUE";
-    const lignesEntete = toutesLignesEntete.filter(
-        l => l.trim().toLowerCase() !== nomSociete.trim().toLowerCase()
-    );
+    const lignesEntete = toutesLignesEntete;
     const largeurPage = doc.page.width - PAGE_MARGIN * 2;
-    const logoW = 90;
-    const xTexte = PAGE_MARGIN + logoW + 10;
-    const largeurTexte = largeurPage - logoW - 10;
 
-    // Nom de la clinique — grand, cyan, centré
-    doc.font(FONT_BOLD).fontSize(20).fillColor(COLORS.cyan)
-        .text(nomSociete.toUpperCase(), xTexte, PAGE_MARGIN, { width: largeurTexte, align: "center" });
+    const logoExiste = logoSeraAffiche(entreprise);
+    const logoW = logoExiste ? 130 : 0; // 120px logo + 10px marge
+    const xTexte = PAGE_MARGIN + logoW;
+    const largeurTexte = largeurPage - logoW;
 
-    let y = PAGE_MARGIN + 26;
+    // Centrer verticalement le bloc d'entête par rapport au logo
+    const hauteurZoneLogo = 80;
+    const hauteurLigne = 22;
+    const hauteurTexte = lignesEntete.length * hauteurLigne;
+    let y = PAGE_MARGIN + Math.max(0, (hauteurZoneLogo - hauteurTexte) / 2);
 
-    // Lignes de l'entête (adresse, téléphone, etc.)
+    const couleurEntete = extraireCouleurEntete(entreprise?.EnteteSociete) || COLORS.cyan;
+
+    // Lignes de l'entête (adresse, téléphone, etc.) centrées à droite du logo
     if (lignesEntete.length > 0) {
-        doc.font(FONT_BOLD).fontSize(16).fillColor(COLORS.cyan);
+        doc.font(FONT_BOLD).fontSize(16).fillColor(couleurEntete);
         for (const ligne of lignesEntete) {
             doc.text(ligne, xTexte, y, { width: largeurTexte, align: "center" });
-            y += 22;
+            y += hauteurLigne;
         }
     }
 
-    doc.y = Math.max(doc.y, y + 8);
+    const hauteurLogo = logoExiste ? hauteurZoneLogo : 0;
+    doc.y = Math.max(doc.y, PAGE_MARGIN + hauteurLogo, y + 4);
 
 }
 
@@ -1204,7 +1278,7 @@ export function dessinerEntete(
         dessinerEnteteClinique(doc, data.entreprise);
 
         // 1.5 cm de marge entre le bas du logo/entête et le bandeau titre
-        doc.y += 43;
+        doc.y += 20;
 
     } else {
 

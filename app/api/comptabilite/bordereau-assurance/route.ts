@@ -60,14 +60,25 @@ export async function GET(request: NextRequest) {
 
     const lignes: LigneBordereau[] = [];
 
+    // Déterminer si c'est "NON ASSURE" pour adapter le filtre
+    const isNonAssure = (assurance as any).designationassurance?.toUpperCase() === 'NON ASSURE';
+
     // 1. FACTURATION : hospitalisation, autres prestations et pharmacie (via IDPRESCRIPTION)
-    const facturations = await Facturation.find({
-      IDASSURANCE: new mongoose.Types.ObjectId(assuranceId),
-      $or: [
-        { DateModif: { $gte: debut, $lte: fin } },
-        { DateFacturation: { $gte: debut, $lte: fin } },
-      ],
-    }).lean();
+    const facturationQuery = isNonAssure
+      ? {
+          $and: [
+            { $or: [{ IDASSURANCE: null }, { IDASSURANCE: { $exists: false } }] },
+            { $or: [{ DateModif: { $gte: debut, $lte: fin } }, { DateFacturation: { $gte: debut, $lte: fin } }] },
+          ],
+        }
+      : {
+          IDASSURANCE: new mongoose.Types.ObjectId(assuranceId),
+          $or: [
+            { DateModif: { $gte: debut, $lte: fin } },
+            { DateFacturation: { $gte: debut, $lte: fin } },
+          ],
+        };
+    const facturations = await Facturation.find(facturationQuery as any).lean();
 
     for (const f of facturations) {
       if (f.StatutFacture) continue;
@@ -99,11 +110,19 @@ export async function GET(request: NextRequest) {
     }
 
     // 2. CONSULTATION
-    const consultations = await Consultation.find({
-      IDASSURANCE: new mongoose.Types.ObjectId(assuranceId),
-      DateFacturation: { $gte: debut, $lte: fin },
-      statutPrescriptionMedecin: 3,
-    }).lean();
+    const consultationQuery = isNonAssure
+      ? {
+          $or: [{ IDASSURANCE: null }, { IDASSURANCE: { $exists: false } }],
+          DateFacturation: { $gte: debut, $lte: fin },
+          statutPrescriptionMedecin: 3,
+        }
+      : {
+          IDASSURANCE: new mongoose.Types.ObjectId(assuranceId),
+          DateFacturation: { $gte: debut, $lte: fin },
+          statutPrescriptionMedecin: 3,
+        };
+
+    const consultations = await Consultation.find(consultationQuery as any).lean();
 
     for (const c of consultations) {
       if (c.StatutFacture) continue;
