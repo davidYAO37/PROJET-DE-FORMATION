@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Fournisseur } from "@/models/Fournisseur";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IFournisseur } from "@/models/Fournisseur";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Fournisseur = getTenantModel<IFournisseur>(context.connection, "Fournisseur");
     try {
         const { id } = await params;
         const body = await req.json();
@@ -16,7 +21,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Fournisseur = getTenantModel<IFournisseur>(context.connection, "Fournisseur");
     try {
         const { id } = await params;
         await Fournisseur.findByIdAndUpdate(id, { Actif: false });

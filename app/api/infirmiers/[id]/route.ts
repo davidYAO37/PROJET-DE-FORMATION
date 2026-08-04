@@ -1,9 +1,14 @@
-import { db } from "@/db/mongoConnect";
-import { Infirmier } from "@/models/infirmier";
-import { NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IInfirmier } from "@/models/infirmier";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Infirmier = getTenantModel<IInfirmier>(context.connection, 'Infirmier');
   const { id } = await params;
   try {
     const infirmier = await Infirmier.findById(id);
@@ -14,8 +19,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   }
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Infirmier = getTenantModel<IInfirmier>(context.connection, 'Infirmier');
   const { id } = await params;
   try {
     const body = await req.json();
@@ -28,8 +35,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Infirmier = getTenantModel<IInfirmier>(context.connection, 'Infirmier');
   const { id } = await params;
   try {
     await Infirmier.findByIdAndDelete(id);

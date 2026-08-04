@@ -7,6 +7,7 @@ import { IExamenHospitalisation } from "@/models/examenHospit";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IFactureHospitalisation } from "@/models/hospitalisation/FactureHospitalisation";
 import { IMouvementHospitalisation } from "@/models/hospitalisation/MouvementHospitalisation";
+import { IRapportHospitalisation } from "@/models/rapportHospitalisation";
 
 const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
@@ -205,6 +206,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       motif: body.orientation || body.motif,
       observation: body.observations,
     });
+
+    try {
+      const RapportHospitalisation = getTenantModel<IRapportHospitalisation>(connection, "RapportHospitalisation");
+      await RapportHospitalisation.updateMany(
+        { hospitalisationId: String(hospitalisation._id), statut: "brouillon" },
+        { $set: { statut: "a_completer", dateSortie } }
+      );
+    } catch (rapportError) {
+      console.error("Erreur lors de la mise à jour du rapport d'hospitalisation à la sortie:", rapportError);
+    }
 
     const updatedHospitalisation = await ExamenHospitalisation.findById(id).lean();
 

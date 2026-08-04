@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { EntreeStock } from "@/models/EntreeStock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IEntreeStock } from "@/models/EntreeStock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
     try {
         const { searchParams } = new URL(req.url);
         const idappro = searchParams.get('idappro');
@@ -21,7 +26,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
     const body = await req.json();
     
     // Logs de débogage

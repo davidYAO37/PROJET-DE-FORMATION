@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { CommandeFournisseur } from "@/models/CommandeFournisseur";
-import { Approvisionnement } from "@/models/Approvisionnement";
-import { EntreeStock } from "@/models/EntreeStock";
-import { Stock } from "@/models/Stock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ICommandeFournisseur } from "@/models/CommandeFournisseur";
+import { IApprovisionnement } from "@/models/Approvisionnement";
+import { IEntreeStock } from "@/models/EntreeStock";
+import { IStock } from "@/models/Stock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 /**
  * POST /api/commande-fournisseur/[id]/reception
@@ -19,7 +22,14 @@ import { Stock } from "@/models/Stock";
  * - Met à jour le statut : RECEPTION_PARTIELLE ou SOLDEE (tout reçu)
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const { connection } = context;
+    const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(connection, "CommandeFournisseur");
+    const Approvisionnement = getTenantModel<IApprovisionnement>(connection, "Approvisionnement");
+    const EntreeStock = getTenantModel<IEntreeStock>(connection, "EntreeStock");
+    const Stock = getTenantModel<IStock>(connection, "Stock");
+
     const { id } = await params;
     const body = await req.json();
 

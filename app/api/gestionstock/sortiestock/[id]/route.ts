@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { SortieStock } from "@/models/SortieStock";
-import { Stock } from "@/models/Stock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ISortieStock } from "@/models/SortieStock";
+import { IStock } from "@/models/Stock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
     try {
         const { id } = await params;
         const body = await req.json();
@@ -31,7 +37,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
     try {
         const { id } = await params;
         const sortie = await SortieStock.findById(id);

@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
-import { Facturation } from '@/models/Facturation';
-import { EncaissementCaisse } from '@/models/EncaissementCaisse';
-import { caisse } from '@/models/caisse';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IFacturation } from '@/models/Facturation';
+import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
+import { ICaisse } from '@/models/caisse';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 const MOIS_LABELS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const MODES_EXCLUS = ['chèque', 'carte de crédit'];
@@ -19,8 +22,15 @@ function addMois(a: number[], b: number[]): number[] {
 }
 
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(connection, 'EncaissementCaisse');
+  const caisse = getTenantModel<ICaisse>(connection, 'Caisse');
+
   try {
-    await db();
     const { searchParams } = new URL(request.url);
     const annee = parseInt(searchParams.get('annee') || String(new Date().getFullYear()));
     const optionPart = parseInt(searchParams.get('optionPart') || '1'); // 1=TOUS, 2=ASSURANCE, 3=PART PATIENT, 4=ENCAISSEMENT

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { Facturation } from "@/models/Facturation";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IFacturation } from "@/models/Facturation";
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
 
     try {
         const { id } = await params;
@@ -27,7 +32,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
 
     try {
         const { id } = await params;
@@ -54,7 +61,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
 
     try {
         const { id } = await params;

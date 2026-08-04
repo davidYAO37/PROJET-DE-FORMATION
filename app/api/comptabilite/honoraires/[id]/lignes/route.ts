@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { LigneHonoraireMed } from '@/models/LigneHonoraireMed';
-import { HonoraireMed } from '@/models/HonoraireMed';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
+import { IHonoraireMed } from '@/models/HonoraireMed';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const LigneHonoraireMed = getTenantModel<ILigneHonoraireMed>(connection, 'LigneHonoraireMed');
+  const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
+
   try {
-    await db();
     const { id } = await params;
 
     const honoraire = await HonoraireMed.findById(id).lean();

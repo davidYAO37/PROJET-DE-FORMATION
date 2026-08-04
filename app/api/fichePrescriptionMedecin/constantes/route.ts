@@ -1,19 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Consultation = getTenantModel<IConsultation>(context.connection, 'Consultation');
+
   try {
-    await db();
-    
     const { searchParams } = new URL(request.url);
     const consultationId = searchParams.get('consultationId');
     
     if (!consultationId) {
       return NextResponse.json({ error: 'ID de consultation requis' }, { status: 400 });
     }
-    
-    // Importer dynamiquement pour éviter les dépendances circulaires
-    const { Consultation } = await import('@/models/consultation');
     
     // Récupérer la consultation pour obtenir les constantes
     const consultation = await Consultation.findById(consultationId);
@@ -42,18 +45,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Consultation = getTenantModel<IConsultation>(context.connection, 'Consultation');
+
   try {
-    await db();
-    
     const body = await request.json();
     const { consultationId, constantes } = body;
     
     if (!consultationId || !constantes) {
       return NextResponse.json({ error: 'ID de consultation et constantes requis' }, { status: 400 });
     }
-    
-    // Importer dynamiquement pour éviter les dépendances circulaires
-    const { Consultation } = await import('@/models/consultation');
     
     // Mettre à jour les constantes de la consultation
     const consultation = await Consultation.findByIdAndUpdate(

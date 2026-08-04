@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import { Patient } from '@/models/patient';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IPatient } from '@/models/patient';
 import { COMPTE_RENDU_OPERATOIRE_TYPES, COMPTE_RENDU_OPERATOIRE_STATUTS } from '@/types/compteRenduOperatoire';
-import { CompteRenduOperatoire } from '@/models/compteRenduOperatoire';
-import { db } from '@/db/mongoConnect';
+import { ICompteRenduOperatoire } from '@/models/compteRenduOperatoire';
 
-
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 // GET - Récupérer les comptes rendus opératoires
 export async function GET(request: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+    if (!context) return tenantErrorResponse;
+    const CompteRenduOperatoire = getTenantModel<ICompteRenduOperatoire>(context.connection, 'CompteRenduOperatoire');
+    getTenantModel(context.connection, 'Patient');
+    getTenantModel(context.connection, 'Medecin');
+
     try {
-        await db();
 
         const { searchParams } = new URL(request.url);
         const patientId = searchParams.get('patientId');
@@ -75,9 +81,13 @@ export async function GET(request: NextRequest) {
 
 // POST - Créer un nouveau compte rendu opératoire
 export async function POST(request: NextRequest) {
-    try {
-        await db();
+    const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+    if (!context) return tenantErrorResponse;
+    const CompteRenduOperatoire = getTenantModel<ICompteRenduOperatoire>(context.connection, 'CompteRenduOperatoire');
+    const Patient = getTenantModel<IPatient>(context.connection, 'Patient');
+    getTenantModel(context.connection, 'Medecin');
 
+    try {
         const body = await request.json();
 
         // Validation des champs requis

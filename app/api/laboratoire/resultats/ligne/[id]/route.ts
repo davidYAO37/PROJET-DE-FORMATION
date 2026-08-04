@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ResultatLignePrestation } from "@/models/resultatLignePrestation";
-import { LignePrestation } from "@/models/lignePrestation";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IResultatLignePrestation } from "@/models/resultatLignePrestation";
+import { ILignePrestation } from "@/models/lignePrestation";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ResultatLignePrestation = getTenantModel<IResultatLignePrestation>(context.connection, "ResultatLignePrestation");
+
     try {
-        await db();
         const { id } = await params;
 
         if (!id || !/^[a-fA-F0-9]{24}$/.test(id)) {
@@ -31,8 +37,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ResultatLignePrestation = getTenantModel<IResultatLignePrestation>(context.connection, "ResultatLignePrestation");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+
     try {
-        await db();
         const { id } = await params;
 
         // Supprimer tous les résultats de la ligne de prestation

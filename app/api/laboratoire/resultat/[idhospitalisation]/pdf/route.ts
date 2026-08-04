@@ -1,10 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
 import { withTenant } from "@/lib/withTenant";
-import { ExamenHospitalisation, LignePrestation, Patient } from "@/models";
-import { ResultatLignePrestation } from "@/models/resultatLignePrestation";
-import { Entreprise } from "@/models/entreprise";
-import { FamilleActe } from "@/models/familleActe";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+import { ILignePrestation } from "@/models/lignePrestation";
+import { IPatient } from "@/models/patient";
+import { IResultatLignePrestation } from "@/models/resultatLignePrestation";
+import { IEntreprise } from "@/models/entreprise";
+import { IFamilleActe } from "@/models/familleActe";
 import { genererResultatBiologique, DonneesPdf, EntreprisePdf } from "@/lib/pdf/ResultatBiologique";
 
 export async function GET(
@@ -13,10 +15,15 @@ export async function GET(
 ) {
     const { context, response: authResponse } = await withTenant(req);
     if (!context) return authResponse;
+    const { connection } = context;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, "ExamenHospitalisation");
+    const LignePrestation = getTenantModel<ILignePrestation>(connection, "LignePrestation");
+    const Patient = getTenantModel<IPatient>(connection, "Patient");
+    const ResultatLignePrestation = getTenantModel<IResultatLignePrestation>(connection, "ResultatLignePrestation");
+    const Entreprise = getTenantModel<IEntreprise>(connection, "Entreprise");
+    const FamilleActe = getTenantModel<IFamilleActe>(connection, "FamilleActe");
 
     try {
-        await db();
-
         const { idhospitalisation: idHospitalisation } = await params;
         const searchParams = req.nextUrl.searchParams;
         const avecEntete = searchParams.get("avecEntete") !== "false";

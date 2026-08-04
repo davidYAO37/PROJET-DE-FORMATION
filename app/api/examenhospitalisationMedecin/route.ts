@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ExamenHospitalisation } from "@/models/examenHospit";
-import { LignePrestation } from "@/models/lignePrestation";
-import mongoose, { Schema } from "mongoose";
-import { Assurance } from "@/models/assurance";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+import { ILignePrestation } from "@/models/lignePrestation";
+import { IAssurance } from "@/models/assurance";
+import { IConsultation } from "@/models/consultation";
+import mongoose from "mongoose";
+
+const ROLES = ["admin", "medecin", "accueil"];
 
 export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
     try {
-        await db();
         const { searchParams } = new URL(req.url);
         const CodePrestation = searchParams.get("CodePrestation");
         const typeActe = searchParams.get("typeActe");
@@ -44,8 +50,15 @@ export async function GET(req: NextRequest) {
 // enregistrement ou modification de l'examen
 
 export async function POST(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const { connection } = context;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, "ExamenHospitalisation");
+    const LignePrestation = getTenantModel<ILignePrestation>(connection, "LignePrestation");
+    const Assurance = getTenantModel<IAssurance>(connection, "Assurance");
+    const Consultation = getTenantModel<IConsultation>(connection, "Consultation");
+
     try {
-        await db();
         const body = await req.json();
         const { header, lignes, Recupar } = body || {};
 
@@ -88,7 +101,6 @@ export async function POST(req: NextRequest) {
         // Récupérer les informations de la consultation si disponible
         let consultationData: any = {};
         if (header.CodePrestation) {
-            const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
             consultationData = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean() || {};
             console.log("📋 Données de la consultation récupérées:", {
                 IdPatient: consultationData.IdPatient,
@@ -148,7 +160,6 @@ export async function POST(req: NextRequest) {
         // Récupérer l'IdPatient depuis la consultation s'il n'est pas fourni
         let patientId = header.IdPatient;
         if (!patientId && header.CodePrestation) {
-            const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
             const consultation: any = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean();
             if (consultation) {
                 patientId = consultation.IdPatient || consultation.IdPatient;

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { EntreeStock } from "@/models/EntreeStock";
-import { SortieStock } from "@/models/SortieStock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IEntreeStock } from "@/models/EntreeStock";
+import { ISortieStock } from "@/models/SortieStock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // GET /api/mouvementsstock?IDMEDICAMENT=xxx&reference=xxx
 // Retourne l'historique unifié entrées + sorties triées par date
 export async function GET(request: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
 
     try {
         const { searchParams } = new URL(request.url);

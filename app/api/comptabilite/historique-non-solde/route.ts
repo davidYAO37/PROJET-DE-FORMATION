@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models';
-import { Facturation } from '@/models/Facturation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IFacturation } from '@/models/Facturation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
-  try {
-    await db();
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
 
+  try {
     const { searchParams } = new URL(request.url);
     const dateDebut = searchParams.get('dateDebut');
     const dateFin = searchParams.get('dateFin');

@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Container, Card, Row, Col, Table, Button, Modal, Nav, Tab, Alert, Form, Spinner } from 'react-bootstrap';
 import { FaUserInjured, FaHistory, FaNotesMedical, FaHospital, FaMicroscope, FaPills, FaFileAlt, FaThermometerHalf, FaWeight, FaHeartbeat, FaStethoscope, FaChevronDown, FaChevronRight, FaFileMedical, FaBriefcaseMedical, FaEdit, FaSave, FaPrint, FaImages, FaCheckCircle, FaClock, FaEye, FaClipboardList } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
+import { DocumentPatient } from '@/types/DocumentPatient';
 
 const PrintFichePrescription = dynamic(
   () => import('@/app/pages/servicemedecin/MesImpressions/printFichePrescription'),
@@ -16,6 +17,21 @@ const PrintCompteRendu = dynamic(
 
 const HospitalisationsPatientModal = dynamic(
   () => import('@/app/pages/serviceinfirmier/tinfirmier/components/HospitalisationsPatientModal'),
+  { ssr: false }
+);
+
+const ListeDocument = dynamic(
+  () => import('./ListeDocument'),
+  { ssr: false }
+);
+
+const AjouteDocument = dynamic(
+  () => import('./AjouteDocument'),
+  { ssr: false }
+);
+
+const ModifieDocument = dynamic(
+  () => import('./ModifieDocument'),
   { ssr: false }
 );
 
@@ -266,6 +282,9 @@ export default function DossierPatient({
   const [showExamenHospitModal, setShowExamenHospitModal] = useState(false);
   const [expandedPrescriptionId, setExpandedPrescriptionId] = useState<string | null>(null);
   const [prescriptionLinesMap, setPrescriptionLinesMap] = useState<Record<string, PatientPrescriptionLine[]>>({});
+  const [showDocumentModal, setShowDocumentModal] = useState(false);
+  const [documentToEdit, setDocumentToEdit] = useState<DocumentPatient | null>(null);
+  const [refreshDocuments, setRefreshDocuments] = useState(0);
   const [lignesPrestationsMap, setLignesPrestationsMap] = useState<Record<string, LignePrestation[]>>({});
   const [consultationDetails, setConsultationDetails] = useState<Record<string, {
     TraitementClinique?: string;
@@ -567,48 +586,7 @@ export default function DossierPatient({
     fetchRadioPrintData();
   }, [selectedRadioId]);
 
-  // Fonction d'impression du dossier patient
-  const handlePrint = () => {
-    const printContent = document.getElementById('dossier-patient-printable');
-    if (!printContent) {
-      window.print();
-      return;
-    }
-    const printWindow = window.open('', '_blank', 'width=1024,height=768');
-    if (!printWindow) {
-      window.print();
-      return;
-    }
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Dossier Patient - ${patient?.Nom || ''} ${patient?.Prenoms || ''}</title>
-          <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
-          <style>
-            body { padding: 20px; font-family: Arial, sans-serif; }
-            .print-header { text-align: center; margin-bottom: 20px; }
-            table { width: 100%; margin-bottom: 1rem; }
-            th, td { border: 1px solid #dee2e6; padding: 8px; }
-            .d-none { display: none !important; }
-          </style>
-        </head>
-        <body>
-          <div class="print-header">
-            <h2>Dossier Patient Complet</h2>
-            <h4>${patient?.Nom || ''} ${patient?.Prenoms || ''}</h4>
-            <p>Code dossier : ${patient?.Code_dossier || ''}</p>
-          </div>
-          ${printContent.innerHTML}
-        </body>
-      </html>
-    `);
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => {
-      printWindow.print();
-      printWindow.close();
-    }, 500);
-  };
+  
 
   // Fonction pour calculer l'âge
   const calculateAge = (dateOfBirth: Date, ageProvided?: number) => {
@@ -792,7 +770,7 @@ export default function DossierPatient({
             <Nav.Item>
               <Nav.Link eventKey="documents">
                 <FaFileMedical className="me-1" />
-                Documents ({arretsTravail.length})
+                Documents
               </Nav.Link>
             </Nav.Item>
             <Nav.Item>
@@ -1428,91 +1406,33 @@ export default function DossierPatient({
               </Card>
             </Tab.Pane>
 
-            {/* Documents / Arrêts de travail */}
+            {/* Documents */}
             <Tab.Pane eventKey="documents">
               <Card>
                 <Card.Header className="bg-secondary text-white">
-                  <h6 className="mb-0"><FaBriefcaseMedical className="me-2" />Arrêts de Travail et Certificats</h6>
+                  <h6 className="mb-0"><FaFileMedical className="me-2" />Documents du Patient</h6>
                 </Card.Header>
                 <Card.Body>
-                  {arretsTravail.length > 0 ? (
-                    <div>
-                      {arretsTravail.map((arret) => (
-                        <div key={arret._id} className="mb-4 p-3 border rounded">
-                          <div className="d-flex justify-content-between align-items-start mb-2">
-                            <h6 className="text-secondary mb-0">{arret.typeArret || 'Arrêt de travail'}</h6>
-                            <span className={`d-inline-flex align-items-center px-2 py-1 rounded-pill small fw-semibold ${
-                              arret.statut === 'en_cours' ? 'bg-warning bg-opacity-10 text-warning' :
-                              arret.statut === 'termine' ? 'bg-success bg-opacity-10 text-success' :
-                              'bg-danger bg-opacity-10 text-danger'
-                            }`}>
-                              {getStatutArretLibelle(arret.statut)}
-                            </span>
-                          </div>
-                          <Row>
-                            <Col md={6}>
-                              <Table striped hover size="sm">
-                                <tbody>
-                                  <tr>
-                                    <td className="fw-bold">N° document:</td>
-                                    <td>{arret.numeroDocument}</td>
-                                  </tr>
-                                  <tr>
-                                    <td className="fw-bold">Date début:</td>
-                                    <td>{new Date(arret.dateDebut).toLocaleDateString('fr-FR')}</td>
-                                  </tr>
-                                  <tr>
-                                    <td className="fw-bold">Date fin:</td>
-                                    <td>{new Date(arret.dateFin).toLocaleDateString('fr-FR')}</td>
-                                  </tr>
-                                  <tr>
-                                    <td className="fw-bold">Durée:</td>
-                                    <td>{arret.dureeJours ? `${arret.dureeJours} jour(s)` : 'N/A'}</td>
-                                  </tr>
-                                </tbody>
-                              </Table>
-                            </Col>
-                            <Col md={6}>
-                              <Table striped hover size="sm">
-                                <tbody>
-                                  <tr>
-                                    <td className="fw-bold">Médecin:</td>
-                                    <td>{arret.medecinTraitant}</td>
-                                  </tr>
-                                  <tr>
-                                    <td className="fw-bold">Motif:</td>
-                                    <td>{arret.motif}</td>
-                                  </tr>
-                                  {arret.dateReprise && (
-                                    <tr>
-                                      <td className="fw-bold">Reprise:</td>
-                                      <td>{new Date(arret.dateReprise).toLocaleDateString('fr-FR')}</td>
-                                    </tr>
-                                  )}
-                                  {arret.numeroCertificat && (
-                                    <tr>
-                                      <td className="fw-bold">N° certificat:</td>
-                                      <td>{arret.numeroCertificat}</td>
-                                    </tr>
-                                  )}
-                                </tbody>
-                              </Table>
-                            </Col>
-                          </Row>
-                          {arret.observations && (
-                            <div className="p-2 bg-light rounded mt-2">
-                              <strong>Observations:</strong> {arret.observations}
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-4">
-                      <FaFileMedical className="text-muted fs-1 mb-3" />
-                      <p className="text-muted">Aucun arrêt de travail ou certificat trouvé</p>
-                    </div>
-                  )}
+                  <ListeDocument
+                    patientId={patientId}
+                    refreshKey={refreshDocuments}
+                    onAdd={() => {
+                      setDocumentToEdit(null);
+                      setShowDocumentModal(true);
+                    }}
+                    onEdit={(doc) => {
+                      setDocumentToEdit(doc);
+                      setShowDocumentModal(true);
+                    }}
+                    onDelete={(doc) => {
+                      if (confirm('Voulez-vous supprimer ce document ?')) {
+                        fetch(`/api/documents/patient/${doc._id}`, { method: 'DELETE' })
+                          .then((res) => {
+                            if (res.ok) setRefreshDocuments((n) => n + 1);
+                          });
+                      }
+                    }}
+                  />
                 </Card.Body>
               </Card>
             </Tab.Pane>
@@ -1558,7 +1478,8 @@ export default function DossierPatient({
                                 <Button
                                   variant="outline-success"
                                   size="sm"
-                                  onClick={() => setPrintConsultationId(prescription._id)}
+                                  onClick={() => setPrintConsultationId(prescription.codePrestation)}
+                                  disabled={!prescription.codePrestation}
                                 >
                                   <FaPrint className="me-1" /> Imprimer
                                 </Button>
@@ -1619,10 +1540,6 @@ export default function DossierPatient({
       <Modal.Footer>
         <Button variant="secondary" onClick={onHide}>
           Fermer
-        </Button>
-        <Button variant="primary" onClick={handlePrint}>
-          <FaFileAlt className="me-1" />
-          Imprimer le Dossier
         </Button>
       </Modal.Footer>
     </Modal>
@@ -1772,5 +1689,26 @@ export default function DossierPatient({
         initialHospitalisationId={selectedExamenHospit._id}
       />
     )}
+
+    <AjouteDocument
+      show={showDocumentModal && !documentToEdit}
+      onHide={() => setShowDocumentModal(false)}
+      onSave={() => setRefreshDocuments((n) => n + 1)}
+      patientId={patientId}
+      patientNom={patientNom}
+      patientPrenoms={patientPrenoms}
+      codeDossier={patient?.Code_dossier}
+    />
+
+    <ModifieDocument
+      show={showDocumentModal && !!documentToEdit}
+      onHide={() => setShowDocumentModal(false)}
+      onSave={() => setRefreshDocuments((n) => n + 1)}
+      document={documentToEdit}
+      patientId={patientId}
+      patientNom={patientNom}
+      patientPrenoms={patientPrenoms}
+      codeDossier={patient?.Code_dossier}
+    />
   </>);
 }

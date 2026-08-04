@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { PatientPrescription } from "@/models/PatientPrescription";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IPatientPrescription } from "@/models/PatientPrescription";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // PUT /api/patientprescription/[id] - Mettre à jour une prescription patient
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
 
     try {
         const { id } = await params;
@@ -38,7 +43,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 // DELETE /api/patientprescription/[id] - Supprimer une prescription patient
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
 
     try {
         const { id } = await params;

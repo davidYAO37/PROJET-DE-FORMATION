@@ -1,0 +1,1247 @@
+
+"use client";
+
+import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
+import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
+
+type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
+
+// Type du document ActeClinique (adapté depuis ton modèle mongoose)
+export interface IActeClinique {
+    _id: string;
+    Designation?: string;
+    LettreCle?: string;
+    IDTYPE_ACTE?: string;
+    CoefficientActe?: number;
+    Prix?: number;
+    PrixMutualiste?: number;
+    PrixAssure?: number;
+    MontantAuMed?: string | number; // "1" ou 1
+    MontantAnesthesiste?: string | number; // "1" ou 1
+    MontantAideOperatoire?: string | number; // "1" ou 1
+    IDFAMILLE_ACTE_BIOLOGIE?: string;
+    ORdonnacementAffichage?: number;
+    // ... autres champs si besoin
+}
+
+// Type TarifAssurance (approximation basée sur tes procédures)
+export interface ITarifAssurance {
+    _id?: string;
+    Designation: string;
+    IDASSURANCE: number;
+    PrixMutualiste?: number;
+    PrixAssure?: number;
+    CoefficientActe?: number;
+    Prix?: number;
+    // ... autres champs si besoin
+}
+
+export interface IActeSocietePartenaireRaw {
+    _id: string;
+    IDSOCIETEPARTENAIRE?: string;
+    IDACTEP?: string;
+    LettreCle?: string;
+    Prix?: number;
+    CoefficientActe?: number;
+    PrixTotal?: number;
+    IDFAMILLE_ACTE_BIOLOGIE?: string;
+    OrdonnacementAffichage?: number;
+}
+
+export interface ILignePrestation {
+    DATE: string;
+    Acte: string; // affichage (Designation)
+    Lettre_Cle: string;
+    Coefficient: number;
+    QteP: number;
+    Coef_ASSUR: number;
+    SURPLUS: number;
+    Prixunitaire: number;
+    TAXE: number;
+    PrixTotal: number;
+    PartAssurance: number;
+    PartAssure: number;
+    IDTYPE: string;
+    Reliquat: number;
+    TotalRelicatCoefAssur: number;
+    Montant_MedExecutant: number;
+    StatutMedecinActe: string;
+    StatutMedecinAnesthesiste: string; // "NON" ou "OUI"
+    StatutMedecinAideOperatoire: string; // "NON" ou "OUI"
+    IDACTE: string; // _id de l'acte
+    Exclusion: "Accepter" | "Refuser";
+    COEFFICIENT_ASSURANCE: number;
+    TARIF_ASSURANCE: number;
+    IDHOSPO: string | number;
+    IDFAMILLE: string;
+    Refuser: number;
+    Accepter: number;
+    IDLignePrestation: string;
+    Statutprescription: number;
+    CoefClinique: number;
+    forfaitclinique: number;
+    ordonnancementAffichage?: number;
+    Action?: string;
+}
+// utilise Assurance et le taux de assurance info
+
+// Composant de sélection d'acte avec recherche
+interface ActeSelectProps {
+    actes: IActeClinique[];
+    selectedId: string;
+    onSelect: (acte: IActeClinique) => void;
+}
+
+const ActeSelect = memo(function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
+    const [searchTerm, setSearchTerm] = useState("");
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+
+    const filteredActes = useMemo(() => {
+        if (!searchTerm) return actes;
+        const lower = searchTerm.toLowerCase();
+        return actes.filter(a =>
+            a.Designation?.toLowerCase().includes(lower) ||
+            a.LettreCle?.toLowerCase().includes(lower)
+        );
+    }, [searchTerm, actes]);
+
+    useEffect(() => {
+        if (showDropdown && inputRef.current) {
+            const rect = inputRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + 5,
+                left: rect.left,
+                width: rect.width
+            });
+        }
+    }, [showDropdown]);
+
+    const handleClickOutside = useCallback((event: MouseEvent) => {
+        if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
+            inputRef.current && !inputRef.current.contains(event.target as Node)) {
+            setShowDropdown(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [handleClickOutside]);
+
+    const handleSelect = useCallback((acte: IActeClinique) => {
+        onSelect(acte);
+        setSearchTerm("");
+        setShowDropdown(false);
+    }, [onSelect]);
+
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        setShowDropdown(true);
+    }, []);
+
+    const selectedActe = useMemo(() => actes.find(a => a._id === selectedId), [actes, selectedId]);
+
+    return (
+        <div style={{ position: 'relative' }}>
+            <Form.Control
+                ref={inputRef}
+                type="text"
+                size="sm"
+                placeholder="Rechercher un acte..."
+                value={searchTerm || (selectedActe?.Designation || "")}
+                onChange={handleInputChange}
+                onFocus={() => setShowDropdown(true)}
+                style={{ fontSize: '13px' }}
+            />
+            {showDropdown && (
+                <div
+                    ref={dropdownRef}
+                    style={{
+                        position: 'fixed',
+                        top: `${dropdownPosition.top}px`,
+                        left: `${dropdownPosition.left}px`,
+                        width: `${dropdownPosition.width}px`,
+                        maxHeight: '200px',
+                        overflow: 'auto',
+                        backgroundColor: 'white',
+                        border: '1px solid #dee2e6',
+                        borderRadius: '0.375rem',
+                        boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
+                        zIndex: 1000
+                    }}
+                >
+                    {filteredActes.length === 0 ? (
+                        <div style={{ padding: '8px', color: '#6c757d', fontSize: '13px' }}>
+                            Aucun acte trouvé
+                        </div>
+                    ) : (
+                        filteredActes.map((acte) => (
+                            <div
+                                key={acte._id}
+                                onClick={() => handleSelect(acte)}
+                                style={{
+                                    padding: '8px',
+                                    cursor: 'pointer',
+                                    fontSize: '13px',
+                                    borderBottom: '1px solid #f8f9fa',
+                                    backgroundColor: acte._id === selectedId ? '#e3f2fd' : 'white'
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = '#f8f9fa';
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor = acte._id === selectedId ? '#e3f2fd' : 'white';
+                                }}
+                            >
+                                <div>
+                                    <strong>{acte.Designation}</strong>
+                                </div>
+                                {acte.LettreCle && (
+                                    <div style={{ fontSize: '11px', color: '#6c757d' }}>
+                                        🔑 {acte.LettreCle}
+                                    </div>
+                                )}
+                                {acte.Prix && (
+                                    <div style={{ fontSize: '11px', color: '#28a745' }}>
+                                        💰 {acte.Prix} FCFA
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
+
+interface Props {
+    assuranceId?: AssuranceId; // Sélection (1=Sans,2=Mutualiste,3=Préférentiel)
+    saiTaux?: number; // Taux (%)
+    assuranceDbId?: string; // ObjectId de l'assurance en base pour charger les tarifs
+    societePartenaireId?: string; // ObjectId de la société partenaire sélectionnée (mode exclusif)
+    onTotalsChange?: (totaux: {
+        montantTotal: number;
+        partAssurance: number;
+        partAssure: number;
+        totalTaxe: number;
+        totalSurplus: number;
+        montantExecutant: number;
+        montantARegler: number;
+    }) => void;
+    externalResetKey?: number; // modifie pour réinitialiser la table depuis l'extérieur
+    presetLines?: ILignePrestation[]; // lignes à charger (optionnel)
+    onLinesChange?: (lignes: ILignePrestation[]) => void;
+}
+
+function generateLineId(): string {
+    try {
+        // @ts-ignore - crypto dispo côté client
+        if (typeof crypto !== "undefined" && crypto.randomUUID) {
+            // @ts-ignore
+            return crypto.randomUUID();
+        }
+    } catch { }
+    return `lp_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+const emptyLigne = (): ILignePrestation => ({
+    DATE: new Date().toISOString().split("T")[0],
+    Acte: "",
+    Lettre_Cle: "",
+    Coefficient: 1,
+    QteP: 1,
+    Coef_ASSUR: 0,
+    SURPLUS: 0,
+    Prixunitaire: 0,
+    TAXE: 0,
+    PrixTotal: 0,
+    PartAssurance: 0,
+    PartAssure: 0,
+    IDTYPE: "",
+    Reliquat: 0,
+    TotalRelicatCoefAssur: 0,
+    Montant_MedExecutant: 0,
+    StatutMedecinActe: "NON",
+    StatutMedecinAnesthesiste: "NON", // "NON" par défaut
+    StatutMedecinAideOperatoire: "NON", // "NON" par défaut
+    IDACTE: "",
+    Exclusion: "Accepter",
+    COEFFICIENT_ASSURANCE: 0,
+    TARIF_ASSURANCE: 0,
+    IDHOSPO: 0,
+    IDFAMILLE: "",
+    Refuser: 0,
+    Accepter: 0,
+    IDLignePrestation: generateLineId(),
+    Statutprescription: 2,
+    CoefClinique: 1,
+    forfaitclinique: 0,
+    ordonnancementAffichage: 0,
+    Action: ""
+});
+
+export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, assuranceDbId, societePartenaireId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
+    const [actes, setActes] = useState<IActeClinique[]>([]);
+    const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
+    const [actesSocietePartenaire, setActesSocietePartenaire] = useState<IActeSocietePartenaireRaw[]>([]);
+    const actesRef = useRef<IActeClinique[]>([]);
+    const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
+    const [errorMsg, setErrorMsg] = useState<string | null>(null);
+    const [totaux, setTotaux] = useState({
+        montantTotal: 0,
+        partAssurance: 0,
+        partAssure: 0,
+        totalTaxe: 0,
+        totalSurplus: 0,
+        montantExecutant: 0,
+        montantARegler: 0
+    });
+
+    useEffect(() => {
+        // Charger actes cliniques depuis /api/actesclinique (paginé)
+        fetch("/api/actesclinique?limit=1000")
+            .then((r) => r.json())
+            .then((payload) => {
+                const list = Array.isArray(payload?.data) ? payload.data : [];
+                // map backend -> modèle interne
+                const mapped: IActeClinique[] = list.map((a: any) => ({
+                    _id: a._id,
+                    Designation: a.designationacte,
+                    LettreCle: a.lettreCle,
+                    IDTYPE_ACTE: a.IDTYPE_ACTE,
+                    CoefficientActe: a.coefficient,
+                    Prix: a.prixClinique,
+                    PrixMutualiste: a.prixMutuel,
+                    PrixAssure: a.prixPreferentiel,
+                    MontantAuMed: a.MontantAuMed,
+                    MontantAnesthesiste: a.MontantAnesthesiste,
+                    MontantAideOperatoire: a.MontantAideOperatoire,
+                    IDFAMILLE_ACTE_BIOLOGIE: a.IDFAMILLE_ACTE_BIOLOGIE,
+                    ORdonnacementAffichage: a.ORdonnacementAffichage,
+                }));
+                setActes(mapped);
+            })
+            .catch(() => setActes([]));
+    }, []);
+
+    useEffect(() => {
+        actesRef.current = actes;
+    }, [actes]);
+
+    useEffect(() => {
+        // Charger tarifs de l'assurance sélectionnée si disponible
+        if (!assuranceDbId) {
+            setTarifsAssurance([]);
+            return;
+        }
+        fetch(`/api/tarifs/${assuranceDbId}`)
+            .then((r) => {
+                if (!r.ok) throw new Error("no tarifs for assurance");
+                return r.json();
+            })
+            .then((list) => {
+                // map backend -> modèle interne des tarifs utilisés localement
+                const mapped: ITarifAssurance[] = (Array.isArray(list) ? list : []).map((t: any) => ({
+                    _id: String(t._id),
+                    Designation: t.acte,
+                    IDASSURANCE: 0, // non utilisé car déjà filtré par assurance
+                    PrixMutualiste: t.prixmutuel,
+                    PrixAssure: t.prixpreferenciel,
+                    CoefficientActe: t.coefficient,
+                    Prix: undefined,
+                }));
+                setTarifsAssurance(mapped);
+            })
+            .catch(() => setTarifsAssurance([]));
+    }, [assuranceDbId]);
+
+    useEffect(() => {
+        // Charger les actes de la société partenaire sélectionnée (mode exclusif)
+        if (!societePartenaireId) {
+            setActesSocietePartenaire([]);
+            return;
+        }
+        fetch(`/api/ActeSocietePartenaire?societeId=${societePartenaireId}`)
+            .then((r) => (r.ok ? r.json() : []))
+            .then((list) => {
+                const arr: IActeSocietePartenaireRaw[] = Array.isArray(list) ? list : [];
+                setActesSocietePartenaire(arr);
+
+                // POUR TOUT ACTE_SOCIETE_PARTENAIRE AVEC IDSOCIETEPARTENAIRE=MoiMême : on peuple
+                // automatiquement TABLE_PRESTATION avec chacun de ses actes (prix/coefficient
+                // exclusivement issus de l'ActeSocietePartenaire).
+                const nouvellesLignes: ILignePrestation[] = arr.map((ap) => {
+                    const acteBase = actesRef.current.find((a) => a._id === String(ap.IDACTEP));
+                    const coefficient = ap.CoefficientActe && ap.CoefficientActe !== 0 ? ap.CoefficientActe : 1;
+                    const prix = ap.Prix ?? 0;
+                    const prixTotal = prix * coefficient;
+
+                    const ligne = emptyLigne();
+                    ligne.DATE = new Date().toISOString().split("T")[0];
+                    ligne.Acte = acteBase?.Designation || "";
+                    ligne.Lettre_Cle = ap.LettreCle || acteBase?.LettreCle || "";
+                    ligne.Coefficient = coefficient;
+                    ligne.CoefClinique = coefficient;
+                    ligne.QteP = 1;
+                    ligne.Prixunitaire = prix;
+                    ligne.PrixTotal = prixTotal;
+                    ligne.PartAssurance = 0;
+                    ligne.PartAssure = prixTotal;
+                    ligne.IDTYPE = acteBase?.IDTYPE_ACTE || "";
+                    ligne.IDACTE = acteBase?._id || String(ap.IDACTEP || "");
+                    ligne.Exclusion = "Accepter";
+                    ligne.IDFAMILLE = acteBase?.IDFAMILLE_ACTE_BIOLOGIE || String(ap.IDFAMILLE_ACTE_BIOLOGIE || "");
+                    ligne.Refuser = prix;
+                    ligne.Accepter = prix;
+                    ligne.ordonnancementAffichage = acteBase?.ORdonnacementAffichage || ap.OrdonnacementAffichage || 0;
+                    return ligne;
+                });
+
+                setLignes(nouvellesLignes.length > 0 ? nouvellesLignes : [emptyLigne()]);
+            })
+            .catch(() => setActesSocietePartenaire([]));
+    }, [societePartenaireId]);
+
+    useEffect(() => {
+        // recalculer totaux à chaque modification de lignes
+        facturePharmacie();
+        if (onLinesChange) onLinesChange(lignes);
+    }, [lignes]);
+
+    // Réinitialisation/chargement externe des lignes
+    useEffect(() => {
+        if (externalResetKey === undefined) return;
+        if (Array.isArray(presetLines) && presetLines.length > 0) {
+            setLignes(presetLines);
+        } else {
+            // Toujours garder au moins une ligne vide pour permettre l'ajout
+            setLignes([emptyLigne()]);
+        }
+        // Effacer message d'erreur éventuel
+        setErrorMsg(null);
+    }, [externalResetKey]);
+
+    // ---------- Helpers pour rechercher objets -------------
+    const findActeById = useCallback((id: string) => actes.find((a) => a._id === id), [actes]);
+    function findTarifByActeDesignationAndAssurance(designation: string, _assurance: AssuranceId) {
+        // Les tarifs sont déjà filtrés par assurance via l'endpoint /api/tarifs/{assuranceDbId}
+        return tarifsAssurance.find((t) => t.Designation === designation);
+    }
+
+    // Mode exclusif société partenaire : true dès qu'une société partenaire est sélectionnée
+    const isSocietePartenaireMode = !!societePartenaireId;
+
+    // Liste des actes proposés à la sélection : exclusivement les actes de la société
+    // partenaire (avec leur propre coefficient/prix) si une société est sélectionnée,
+    // sinon la liste normale des actes cliniques.
+    const actesPourSelection: IActeClinique[] = useMemo(() => {
+        if (!isSocietePartenaireMode) return actes;
+        return actesSocietePartenaire.map((ap) => {
+            const acteBase = actes.find((a) => a._id === String(ap.IDACTEP));
+            return {
+                _id: String(ap.IDACTEP || ap._id), // clé de sélection = ActeClinique._id (cohérent avec ligne.IDACTE)
+                Designation: acteBase?.Designation || "Acte inconnu",
+                LettreCle: ap.LettreCle || acteBase?.LettreCle,
+                CoefficientActe: ap.CoefficientActe && ap.CoefficientActe !== 0 ? ap.CoefficientActe : 1,
+                Prix: ap.Prix ?? 0,
+            } as IActeClinique;
+        });
+    }, [isSocietePartenaireMode, actesSocietePartenaire, actes]);
+
+    const findActeSocietePartenaireById = useCallback(
+        (idActeClinique: string) => actesSocietePartenaire.find((a) => String(a.IDACTEP) === idActeClinique),
+        [actesSocietePartenaire]
+    );
+
+    // ---------- Traduction des procédures WLangage ----------
+    function tarifActeClinique(ligne: ILignePrestation, acte: IActeClinique, selAssure: number) {
+        // SI ACTE.CoefficientActe=0 ALORS => coefficient = 1 sinon acte.CoefficientActe
+        ligne.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
+
+        switch (selAssure) {
+            case 1: // NON ASSURE
+                ligne.Accepter = acte.Prix || 0;
+                ligne.SURPLUS = 0;
+                break;
+            case 2: // Tarif Mutualiste
+                ligne.Accepter = acte.PrixMutualiste || acte.Prix || 0;
+                ligne.SURPLUS = 0;
+                break;
+            case 3: // Tarif Preferentiel
+                ligne.Accepter = acte.PrixAssure || acte.Prix || 0;
+                ligne.SURPLUS = 0;
+                break;
+            default:
+                ligne.Accepter = acte.Prix || 0;
+                ligne.SURPLUS = 0;
+        }
+    }
+
+    function tarifActeAssurance(ligne: ILignePrestation, acte: IActeClinique, selAssure: number) {
+        // Vérifier si tarif assurance existe pour cet acte (déjà filtré par assurance en amont)
+        const tarifMatchedList = tarifsAssurance.filter((t) => t.Designation === (acte.Designation || ""));
+        if (tarifMatchedList.length === 0) {
+            // équivalent Erreur(...) et suppression tableau => on déclenche une erreur visible
+            setErrorMsg(
+                `Merci d'ajouter cet acte (${acte.Designation}) à la liste des actes de l'assurance avant cette opération.`
+            );
+            // on vide les lignes (comme TableSupprime)
+            setLignes([]);
+            return;
+        }
+        // sinon on parcourt les tarifs correspondants (tous pour cette assurance)
+        for (const tarif of tarifMatchedList) {
+            if (tarif.CoefficientActe === 1 && acte.CoefficientActe !== 1) {
+                montantForfaitAssurance(ligne, acte, tarif, selAssure);
+            } else if (tarif.CoefficientActe !== 1 && acte.CoefficientActe === 1) {
+                montantForfaitClinique(ligne, acte, tarif, selAssure);
+            } else {
+                montantSansForfait(ligne, acte, tarif, selAssure);
+            }
+        }
+    }
+
+    function montantForfaitAssurance(
+        ligne: ILignePrestation,
+        acte: IActeClinique,
+        tarif: ITarifAssurance,
+        selAssure: number
+    ) {
+        // CAS OU COEF ASSURANCE EST UN FORFAIT  ON PREND LE COEFFICIENT DE L'ASSURANCE
+        ligne.Coefficient = acte.CoefficientActe || 1;
+        ligne.Coef_ASSUR = 0;
+        ligne.CoefClinique = ligne.Coefficient;
+
+        // selon SEL_Assure(selAssure)
+        if (selAssure === 1) {
+            tarifActeClinique(ligne, acte, selAssure);
+            return;
+        }
+
+        // Case 2 (Mutualiste)
+        if (selAssure === 2) {
+            const tPrix = tarif.PrixMutualiste ?? 0;
+            const aPrix = acte.PrixMutualiste ?? 0;
+            const aCoef = acte.CoefficientActe ?? 1;
+            if (tPrix < aPrix * aCoef) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix * aCoef - tPrix;
+                ligne.TotalRelicatCoefAssur = ligne.Coef_ASSUR * aPrix * ligne.QteP;
+                ligne.Reliquat = ligne.SURPLUS * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix === aPrix * aCoef) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                // tPrix > aPrix * coef
+                ligne.CoefClinique = tarif.CoefficientActe || ligne.CoefClinique;
+                ligne.Accepter = tarif.PrixMutualiste || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixMutualiste || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+
+        // Case 3 (Assuré)
+        if (selAssure === 3) {
+            const tPrix = tarif.PrixAssure ?? 0;
+            const aPrix = acte.PrixAssure ?? 0;
+            const aCoef = acte.CoefficientActe ?? 1;
+            if (tPrix < aPrix * aCoef) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix * aCoef - tPrix;
+                ligne.TotalRelicatCoefAssur = ligne.Coef_ASSUR * aPrix * ligne.QteP;
+                ligne.Reliquat = ligne.SURPLUS * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix === aPrix * aCoef) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                // tPrix > aPrix * coef
+                ligne.CoefClinique = tarif.CoefficientActe || ligne.CoefClinique;
+                ligne.Accepter = tarif.PrixAssure || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixAssure || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+    }
+
+    function montantForfaitClinique(
+        ligne: ILignePrestation,
+        acte: IActeClinique,
+        tarif: ITarifAssurance,
+        selAssure: number
+    ) {
+        // CAS OU COEF ASSURANCE EST UN FORFAIT  ON PREND LE COEFFICIENT DE L'ASSURANCE
+        ligne.Coefficient = acte.CoefficientActe || 1;
+        ligne.Coef_ASSUR = 0;
+        ligne.CoefClinique = ligne.Coefficient;
+        ligne.forfaitclinique = 0;
+
+        if (selAssure === 1) {
+            tarifActeClinique(ligne, acte, selAssure);
+            return;
+        }
+
+        // Case 2 (Mutualiste)
+        if (selAssure === 2) {
+            const tPrix = tarif.PrixMutualiste ?? 0;
+            const aPrix = acte.PrixMutualiste ?? 0;
+            const tCoef = tarif.CoefficientActe ?? 1;
+            if (tPrix * tCoef < aPrix) {
+                ligne.forfaitclinique = 1;
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix - tPrix * tCoef;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Reliquat = ligne.SURPLUS * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix * tCoef === aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                ligne.CoefClinique = tarif.CoefficientActe || ligne.CoefClinique;
+                ligne.Accepter = tarif.PrixMutualiste || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixMutualiste || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+
+        // Case 3 (Assuré)
+        if (selAssure === 3) {
+            const tPrix = tarif.PrixAssure ?? 0;
+            const aPrix = acte.PrixAssure ?? 0;
+            const tCoef = tarif.CoefficientActe ?? 1;
+            if (tPrix * tCoef < aPrix) {
+                ligne.forfaitclinique = 1;
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix - tPrix * tCoef;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Reliquat = ligne.SURPLUS * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix * tCoef === aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                ligne.CoefClinique = tarif.CoefficientActe || ligne.CoefClinique;
+                ligne.Accepter = tarif.PrixAssure || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixAssure || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+    }
+
+    function montantSansForfait(
+        ligne: ILignePrestation,
+        acte: IActeClinique,
+        tarif: ITarifAssurance,
+        selAssure: number
+    ) {
+        // CAS OU COEF ASSURANCE < COEF CLINIQUE
+        const tCoef = tarif.CoefficientActe ?? 0;
+        const aCoef = acte.CoefficientActe ?? 0;
+        if (tCoef < aCoef) {
+            ligne.Coef_ASSUR = aCoef - tCoef;
+        } else if (tCoef === aCoef) {
+            ligne.Coef_ASSUR = 0;
+        } else {
+            // tCoef > aCoef
+            ligne.Coefficient = tCoef;
+            ligne.Coef_ASSUR = 0;
+        }
+
+        ligne.CoefClinique = ligne.Coefficient;
+
+        // selon selAssure
+        if (selAssure === 1) {
+            tarifActeClinique(ligne, acte, selAssure);
+            return;
+        }
+
+        if (selAssure === 2) {
+            const tPrix = tarif.PrixMutualiste ?? 0;
+            const aPrix = acte.PrixMutualiste ?? 0;
+            if (tPrix < aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix - tPrix;
+                ligne.TotalRelicatCoefAssur = ligne.Coef_ASSUR * aPrix * ligne.QteP;
+                ligne.Reliquat = ligne.SURPLUS * (tarif.CoefficientActe ?? 0) * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix === aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                ligne.Accepter = tarif.PrixMutualiste || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixMutualiste || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+
+        // selAssure === 3
+        if (selAssure === 3) {
+            const tPrix = tarif.PrixAssure ?? 0;
+            const aPrix = acte.PrixAssure ?? 0;
+            if (tPrix < aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix - tPrix;
+                ligne.TotalRelicatCoefAssur = ligne.Coef_ASSUR * aPrix * ligne.QteP;
+                ligne.Reliquat = ligne.SURPLUS * (tarif.CoefficientActe ?? 0) * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix === aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixAssure || tPrix;
+                ligne.Accepter = tarif.PrixAssure || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+    }
+
+    function prixActe(ligne: ILignePrestation, acte?: IActeClinique) {
+        // TABLE_PRESTATION.Prixunitaire = TABLE_PRESTATION.Accepter
+        ligne.Prixunitaire = ligne.Accepter || ligne.Prixunitaire || 0;
+        // initial PrixTotal
+        ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP; // + taxe si besoin
+
+        if (assuranceId !== 1) {
+            // Avec assurance
+            if (ligne.Exclusion === "Accepter") {
+                //On actualise le coefficient acte
+                ligne.Coefficient = ligne.CoefClinique || ligne.Coefficient;
+                ligne.PrixTotal = ligne.Coefficient * ligne.Prixunitaire * ligne.QteP;
+
+                if (ligne.TARIF_ASSURANCE === 0) {
+                    // TARIF_ASSURANCE non paramétré
+                    ligne.PartAssurance = (saiTaux * ligne.Prixunitaire * ligne.Coefficient * ligne.QteP) / 100;
+                    ligne.PartAssure = ligne.PrixTotal - ligne.PartAssurance;
+                    ligne.Reliquat = 0;
+                    ligne.Coef_ASSUR = 0;
+                    ligne.SURPLUS = 0;
+                    ligne.TotalRelicatCoefAssur = 0;
+                } else {
+                    ligne.PartAssurance =
+                        (saiTaux * ligne.TARIF_ASSURANCE * ligne.COEFFICIENT_ASSURANCE * ligne.QteP) / 100;
+                    ligne.PartAssure =
+                        ligne.TARIF_ASSURANCE * ligne.COEFFICIENT_ASSURANCE * ligne.QteP - ligne.PartAssurance;
+                    ligne.Reliquat = ligne.SURPLUS * ligne.COEFFICIENT_ASSURANCE * ligne.QteP;
+                    ligne.TotalRelicatCoefAssur =
+                        ligne.Coef_ASSUR * ligne.Prixunitaire * ligne.QteP;
+                }
+            } else {
+                // Exclusion = Refuser
+                ligne.Coefficient = acte?.CoefficientActe ?? ligne.Coefficient;
+                ligne.PartAssurance = 0;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Reliquat = 0;
+                ligne.Prixunitaire = ligne.Refuser || ligne.Prixunitaire;
+                ligne.PrixTotal = ligne.Coefficient * ligne.Prixunitaire * ligne.QteP;
+                ligne.PartAssure = ligne.PrixTotal;
+            }
+        } else {
+            // Sans assurance
+            ligne.PartAssurance = 0;
+            ligne.TotalRelicatCoefAssur = 0;
+            ligne.COEFFICIENT_ASSURANCE = 0;
+            ligne.TARIF_ASSURANCE = 0;
+            ligne.Reliquat = 0;
+            ligne.Coef_ASSUR = 0;
+            ligne.SURPLUS = 0;
+            ligne.PartAssure = ligne.PrixTotal;
+        }
+
+        // On cherche le cas ou le montant est pour le médecin
+        if (acte && (acte.MontantAuMed === 1 || acte.MontantAuMed === "1")) {
+            ligne.StatutMedecinActe = "OUI";
+            ligne.Montant_MedExecutant = ligne.PrixTotal;
+        } else {
+            ligne.StatutMedecinActe = "NON";
+            ligne.Montant_MedExecutant = 0;
+        }
+    }
+
+    function facturePharmacie() {
+        // calcule les totaux
+        const s = {
+            montantTotal: 0,
+            partAssurance: 0,
+            partAssure: 0,
+            totalTaxe: 0,
+            totalSurplus: 0,
+            montantExecutant: 0,
+            montantARegler: 0
+        };
+
+        for (const l of lignes) {
+            s.montantTotal += Number(l.PrixTotal || 0);
+            s.partAssurance += Number(l.PartAssurance || 0);
+            s.partAssure += Number(l.PartAssure || 0);
+            s.totalTaxe += Number(l.TAXE || 0);
+            s.totalSurplus += Number((l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0));
+            s.montantExecutant += Number(l.Montant_MedExecutant || 0);
+        }
+
+        s.montantARegler = s.totalSurplus + s.partAssure;
+        // SAI_Reste_à_payer = SAI_Montant_a_régler
+        setTotaux(s);
+        if (onTotalsChange) onTotalsChange(s);
+    }
+
+    // ---------- Actions utilisateur ----------
+    function addLigne() {
+        setLignes((prev) => [...prev, emptyLigne()]);
+    }
+
+    async function removeLigne(id: string) {
+        // SI OuiNon(0,"voulez-vous retirer cet acte ?")=Vrai ALORS
+        const confirmation = window.confirm("Voulez-vous retirer cet acte ?");
+        if (!confirmation) {
+            return;
+        }
+
+        // Retirer_Ligne_Prestation()
+        // Trouver la ligne dans l'état local
+        const ligne = lignes.find(l => l.IDLignePrestation === id);
+        if (!ligne) {
+            return;
+        }
+
+        // Vérifier si c'est un ObjectId MongoDB valide (24 caractères hexadécimaux)
+        const isValidObjectId = id && id.length === 24 && /^[0-9a-fA-F]{24}$/.test(id);
+
+        // HLitRecherche(LIGNE_PRESTATION,IDLIGNE_PRESTATION,TABLE_PRESTATION.COL_IDLignePrestation)
+        // SI HTrouve(LIGNE_PRESTATION)=Vrai ALORS
+        if (isValidObjectId) {
+            try {
+                // Vérifier si la ligne existe en base de données
+                const checkRes = await fetch(`/api/ligneprestation?id=${encodeURIComponent(id)}`);
+
+                if (checkRes.ok) {
+                    const data = await checkRes.json();
+                    const ligneDB = data.data;
+
+                    // SI LIGNE_PRESTATION.statutPrescriptionMedecin=3 ALORS
+                    if (ligneDB && ligneDB.statutPrescriptionMedecin === 3) {
+                        alert("Acte déjà facturé");
+                        return;
+                    }
+
+                    // SINON HSupprime(LIGNE_PRESTATION)
+                    const deleteRes = await fetch(`/api/ligneprestation?id=${encodeURIComponent(id)}`, {
+                        method: 'DELETE'
+                    });
+
+                    if (!deleteRes.ok) {
+                        const error = await deleteRes.json();
+                        alert(`Erreur lors de la suppression: ${error.message || 'Erreur inconnue'}`);
+                        return;
+                    }
+
+                    // TableSupprime(TABLE_PRESTATION)
+                    setLignes((prev) => prev.filter((p) => p.IDLignePrestation !== id));
+                    alert("Acte retiré avec succès");
+                } else {
+                    // Ligne non trouvée en base, supprimer uniquement de la table locale
+                    setLignes((prev) => prev.filter((p) => p.IDLignePrestation !== id));
+                    alert("Acte retiré avec succès");
+                }
+            } catch (error) {
+                console.error("Erreur lors de la suppression:", error);
+                alert("Erreur lors de la suppression de l'acte");
+                return;
+            }
+        } else {
+            // SINON (pas d'ID valide en base)
+            // HSupprime(LIGNE_PRESTATION) - pas nécessaire car pas en base
+            // TableSupprime(TABLE_PRESTATION)
+            setLignes((prev) => prev.filter((p) => p.IDLignePrestation !== id));
+            alert("Acte retiré avec succès");
+        }
+
+        // Facture_Pharmacie() - Recalculer les totaux après suppression
+        // Le useEffect se chargera du recalcul automatiquement
+    }
+
+    const onChangeField = useCallback((lineId: string, field: keyof ILignePrestation, value: any) => {
+        setErrorMsg(null);
+        setLignes((prev) =>
+            prev.map((l) => {
+                if (l.IDLignePrestation !== lineId) return l;
+                return { ...l, [field]: value };
+            })
+        );
+    }, []);
+
+    // Quand on sélectionne un acte
+    const onSelectActe = useCallback(async (lineId: string, acteId: string) => {
+        setErrorMsg(null);
+
+        // Mode exclusif société partenaire : on ignore toute la logique
+        // tarifActeClinique/tarifActeAssurance/montantForfait*/prixActe et on
+        // utilise exclusivement les données de l'ActeSocietePartenaire.
+        if (isSocietePartenaireMode) {
+            const ap = findActeSocietePartenaireById(acteId);
+            if (!ap) return;
+            const acteBase = actes.find((a) => a._id === String(ap.IDACTEP));
+
+            setLignes((prev) =>
+                prev.map((l) => {
+                    if (l.IDLignePrestation !== lineId) return l;
+                    const copy = { ...l };
+
+                    copy.Acte = acteBase?.Designation || "";
+                    copy.Lettre_Cle = ap.LettreCle || acteBase?.LettreCle || "";
+                    copy.DATE = new Date().toISOString().split("T")[0];
+                    copy.IDACTE = acteBase?._id || String(ap.IDACTEP || "");
+                    copy.IDTYPE = acteBase?.IDTYPE_ACTE || "";
+                    copy.IDFAMILLE = String(ap.IDFAMILLE_ACTE_BIOLOGIE || acteBase?.IDFAMILLE_ACTE_BIOLOGIE || "");
+                    copy.Exclusion = "Accepter";
+                    copy.Coefficient = ap.CoefficientActe && ap.CoefficientActe !== 0 ? ap.CoefficientActe : 1;
+                    copy.CoefClinique = copy.Coefficient;
+                    if (!copy.QteP || copy.QteP === 0) copy.QteP = 1;
+                    copy.Statutprescription = 2;
+                    copy.ordonnancementAffichage = ap.OrdonnacementAffichage || 0;
+
+                    copy.Prixunitaire = ap.Prix ?? 0;
+                    copy.Refuser = ap.Prix ?? 0;
+                    copy.Accepter = ap.Prix ?? 0;
+                    copy.PrixTotal = copy.Prixunitaire * copy.Coefficient * copy.QteP;
+
+                    // Pas d'assurance dans ce mode : le montant est intégralement à la charge du patient
+                    copy.PartAssurance = 0;
+                    copy.PartAssure = copy.PrixTotal;
+                    copy.COEFFICIENT_ASSURANCE = 0;
+                    copy.TARIF_ASSURANCE = 0;
+                    copy.Coef_ASSUR = 0;
+                    copy.SURPLUS = 0;
+                    copy.Reliquat = 0;
+                    copy.TotalRelicatCoefAssur = 0;
+                    copy.forfaitclinique = 0;
+                    copy.StatutMedecinActe = "NON";
+                    copy.StatutMedecinAnesthesiste = "NON";
+                    copy.StatutMedecinAideOperatoire = "NON";
+                    copy.Montant_MedExecutant = 0;
+
+                    return copy;
+                })
+            );
+            return;
+        }
+
+        const acte = findActeById(acteId);
+        if (!acte) return;
+
+        setLignes((prev) =>
+            prev.map((l) => {
+                if (l.IDLignePrestation !== lineId) return l;
+                const copy = { ...l };
+
+                copy.Acte = acte.Designation || "";
+                copy.Lettre_Cle = acte.LettreCle || "";
+                copy.DATE = new Date().toISOString().split("T")[0];
+                copy.IDACTE = acte._id;
+                copy.IDTYPE = acte.IDTYPE_ACTE || "";
+                copy.IDFAMILLE = acte.IDFAMILLE_ACTE_BIOLOGIE || "";
+                copy.Exclusion = "Accepter";
+                copy.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
+                if (!copy.QteP || copy.QteP === 0) copy.QteP = 1;
+                copy.Statutprescription = 2;
+                copy.Refuser = acte.Prix || 0;
+                copy.ordonnancementAffichage = acte.ORdonnacementAffichage || 0;
+
+                if (assuranceId === 1) {
+                    tarifActeClinique(copy, acte, 1);
+                } else {
+                    tarifActeAssurance(copy, acte, assuranceId);
+                }
+
+                if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
+                    copy.StatutMedecinActe = "OUI";
+                } else {
+                    copy.StatutMedecinActe = "NON";
+                    copy.Montant_MedExecutant = 0;
+                }
+
+                // Logique pour MontantAnesthesiste
+                if (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1") {
+                    copy.StatutMedecinAnesthesiste = "OUI"; // "OUI" pour anesthésiste
+                } else {
+                    copy.StatutMedecinAnesthesiste = "NON"; // "NON" pour anesthésiste
+                }
+
+                // Logique pour MontantAideOperatoire
+                if (acte.MontantAideOperatoire === 1 || acte.MontantAideOperatoire === "1") {
+                    copy.StatutMedecinAideOperatoire = "OUI"; // "OUI" pour aide opératoire
+                } else {
+                    copy.StatutMedecinAideOperatoire = "NON"; // "NON" pour aide opératoire
+                }
+
+                prixActe(copy, acte);
+
+                if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
+                    copy.Montant_MedExecutant = copy.PrixTotal;
+                }
+
+                return copy;
+            })
+        );
+    }, [assuranceId, findActeById, isSocietePartenaireMode, findActeSocietePartenaireById, actes]);
+
+    // Quand un champ clé change et nécessité recalcul
+    const onFieldChangeAndRecalc = useCallback((lineId: string, field: keyof ILignePrestation, value: any) => {
+        setErrorMsg(null);
+        setLignes((prev) =>
+            prev.map((l) => {
+                if (l.IDLignePrestation !== lineId) return l;
+                const copy = { ...l, [field]: value };
+
+                // Mode exclusif société partenaire : recalcul direct, sans les
+                // fonctions de tarification assurance/clinique.
+                if (isSocietePartenaireMode) {
+                    copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
+                    copy.PartAssurance = 0;
+                    copy.PartAssure = copy.PrixTotal;
+                    return copy;
+                }
+
+                const acte = findActeById(copy.IDACTE);
+                if (acte) {
+                    if (assuranceId === 1) {
+                        tarifActeClinique(copy, acte, 1);
+                    } else {
+                        tarifActeAssurance(copy, acte, assuranceId);
+                    }
+                    prixActe(copy, acte);
+                } else {
+                    copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
+                }
+                return copy;
+            })
+        );
+    }, [assuranceId, findActeById, isSocietePartenaireMode]);
+
+    // ---------- UI ----------
+    return (
+        <div>
+            <Row className="mb-2">
+
+                <Col className="text-end">
+                    <Button variant="primary" size="sm" onClick={addLigne}>
+                        + Ajouter Ligne
+                    </Button>
+                </Col>
+            </Row>
+
+            {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
+
+            <div className="table-responsive" style={{ maxHeight: "60vh", overflow: "auto" }}>
+                <Table bordered hover size="sm" className="mb-0">
+                    <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
+                        <tr>
+                            {/* Colonnes visibles */}
+                            <th style={{ width: '120px' }}>Date</th>
+                            <th style={{ minWidth: '220px' }}>Acte</th>
+                            <th style={{ width: '80px' }}>Coef</th>
+                            <th style={{ width: '70px' }}>Qté</th>
+                            <th style={{ width: '120px' }}>Prix unitaire</th>
+                            <th style={{ width: '120px' }}>Prix Total</th>
+                            <th style={{ width: '120px' }}>Exclusion</th>
+                            <th style={{ width: '60px', textAlign: 'center' }}>🗑️</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {lignes.map((l) => {
+                            // Vérifier si la ligne est modifiable (statutPrescriptionMedecin < 3)
+                            const isEditable = (l.Statutprescription ?? 2) < 3;
+                            const rowStyle = !isEditable ? { backgroundColor: '#f8f9fa', opacity: 0.7 } : {};
+
+                            return (
+                                <tr key={l.IDLignePrestation} style={rowStyle}>
+                                    {/* Date */}
+                                    <td style={{ padding: '4px' }}>
+                                        <Form.Control
+                                            size="sm"
+                                            type="date"
+                                            value={l.DATE}
+                                            onChange={(e) => onChangeField(l.IDLignePrestation, "DATE", e.target.value)}
+                                            style={{ fontSize: '13px' }}
+                                            disabled={!isEditable}
+                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                        />
+                                    </td>
+
+                                    {/* Acte */}
+                                    <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
+                                        {isEditable ? (
+                                            <ActeSelect
+                                                actes={actesPourSelection}
+                                                selectedId={l.IDACTE || ""}
+                                                onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
+                                            />
+                                        ) : (
+                                            <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">
+                                                {l.Acte}
+                                            </div>
+                                        )}
+                                    </td>
+
+                                    {/* Coefficient */}
+                                    <td style={{ padding: '4px' }}>
+                                        <Form.Control
+                                            size="sm"
+                                            type="number"
+                                            step="1"
+                                            value={l.Coefficient}
+                                            onChange={(e) =>
+                                                onFieldChangeAndRecalc(l.IDLignePrestation, "Coefficient", parseInt(e.target.value) || 0)
+                                            }
+                                            style={{ fontSize: '13px', textAlign: 'center' }}
+                                            disabled={!isEditable}
+                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                        />
+                                    </td>
+
+                                    {/* QtéP */}
+                                    <td style={{ padding: '4px' }}>
+                                        <Form.Control
+                                            size="sm"
+                                            type="number"
+                                            step="1"
+                                            value={l.QteP}
+                                            onChange={(e) =>
+                                                onFieldChangeAndRecalc(l.IDLignePrestation, "QteP", parseInt(e.target.value) || 0)
+                                            }
+                                            style={{ fontSize: '13px', textAlign: 'center' }}
+                                            disabled={!isEditable}
+                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                        />
+                                    </td>
+
+                                    {/* Prixunitaire */}
+                                    <td style={{ padding: '4px' }}>
+                                        <InputGroup size="sm">
+                                            <Form.Control
+                                                type="number"
+                                                step="1"
+                                                value={l.Prixunitaire}
+                                                onChange={(e) =>
+                                                    onFieldChangeAndRecalc(l.IDLignePrestation, "Prixunitaire", parseInt(e.target.value) || 0)
+                                                }
+                                                style={{ fontSize: '13px', textAlign: 'right' }}
+                                                disabled={!isEditable}
+                                                title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                            />
+                                        </InputGroup>
+                                    </td>
+
+                                    {/* PrixTotal */}
+                                    <td style={{ textAlign: 'right', fontWeight: 'bold', padding: '8px', fontSize: '13px' }}>
+                                        {Math.round(Number(l.PrixTotal || 0)).toLocaleString('fr-FR')}
+                                    </td>
+
+                                    {/* Exclusion */}
+                                    <td style={{ padding: '4px' }}>
+                                        <Form.Select
+                                            size="sm"
+                                            value={l.Exclusion}
+                                            onChange={(e) =>
+                                                onFieldChangeAndRecalc(
+                                                    l.IDLignePrestation,
+                                                    "Exclusion",
+                                                    e.target.value === "Accepter" ? "Accepter" : "Refuser"
+                                                )
+                                            }
+                                            style={{ fontSize: '13px' }}
+                                            disabled={!isEditable}
+                                            title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
+                                        >
+                                            <option value="Accepter">✓Accepter</option>
+                                            <option value="Refuser">✗Refuser</option>
+                                        </Form.Select>
+                                    </td>
+
+                                    {/* Action */}
+                                    <td style={{ textAlign: 'center', padding: '4px' }}>
+                                        <Button
+                                            variant="outline-danger"
+                                            size="sm"
+                                            onClick={() => removeLigne(l.IDLignePrestation)}
+                                            style={{ padding: '4px 8px', border: 'none' }}
+                                            title={!isEditable ? "Acte déjà facturé - suppression impossible" : "Supprimer cette ligne"}
+                                            disabled={!isEditable}
+                                        >
+                                            🗑️
+                                        </Button>
+                                    </td>
+                                </tr>
+                            );
+                        })}
+                    </tbody>
+                </Table>
+            </div>
+
+        </div>
+    );
+}

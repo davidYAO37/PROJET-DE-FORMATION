@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Stock } from "@/models/Stock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IStock } from "@/models/Stock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // GET /api/stock?reference=xxx&IDMEDICAMENT=xxx
-export async function GET(request: Request) {
-    await db();
-    
+export async function GET(request: NextRequest) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
+
     try {
         const { searchParams } = new URL(request.url);
         const reference = searchParams.get("reference");
@@ -43,9 +48,11 @@ export async function GET(request: Request) {
 }
 
 // POST /api/stock - Créer un nouveau stock
-export async function POST(request: Request) {
-    await db();
-    
+export async function POST(request: NextRequest) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
+
     try {
         const body = await request.json();
         

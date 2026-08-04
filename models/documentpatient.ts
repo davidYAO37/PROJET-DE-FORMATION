@@ -6,12 +6,17 @@ export interface IDocumentPatient extends Document {
     date: Date;
     heure: string;
     patient: mongoose.Types.ObjectId;
+    idPatient?: string;
+    patientP?: string;
     typeDoc: string;
     ajouterPar: string;
     codeDossier: string;
     nPrestation: string;
     medecin?: mongoose.Types.ObjectId;
+    idMedecin?: string;
+    medecinNom?: string;
     prestationId?: number;
+    idprestation?: string;
     extensionF?: string;
     interpretation?: string;
     consultation?: mongoose.Types.ObjectId;
@@ -19,19 +24,24 @@ export interface IDocumentPatient extends Document {
 }
 
 const DocumentPatientSchema = new Schema<IDocumentPatient>({
-    libeleDocument: String,
-    document: Buffer,
-    date: Date,
-    heure: String,
+    libeleDocument: { type: String, required: true },
+    document: { type: Buffer },
+    date: { type: Date, default: Date.now },
+    heure: { type: String },
     patient: { type: Schema.Types.ObjectId, ref: "Patient" },
-    typeDoc: String,
-    ajouterPar: String,
-    codeDossier: String,
-    nPrestation: String,
+    idPatient: { type: String },
+    patientP: { type: String },
+    typeDoc: { type: String },
+    ajouterPar: { type: String },
+    codeDossier: { type: String },
+    nPrestation: { type: String },
     medecin: { type: Schema.Types.ObjectId, ref: "Medecin" },
-    prestationId: Number,
-    extensionF: String,
-    interpretation: String,
+    idMedecin: { type: String },
+    medecinNom: { type: String },
+    prestationId: { type: Number },
+    idprestation: { type: String, index: true },
+    extensionF: { type: String },
+    interpretation: { type: String },
     consultation: { type: Schema.Types.ObjectId, ref: "Consultation" },
     entrepriseId: { type: String },
 });

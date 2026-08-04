@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Pharmacie } from "@/models/Pharmacie";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IPharmacie } from "@/models/Pharmacie";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // -------------------- MODIFICATION D'UN Medicament --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     try {
         const { id } = await params;
         const body = await req.json();
@@ -23,7 +28,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN MEDICAMENT  --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     try {
         const { id } = await params;
 

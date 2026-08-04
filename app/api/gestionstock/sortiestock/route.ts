@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { SortieStock } from "@/models/SortieStock";
-import { Stock } from "@/models/Stock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ISortieStock } from "@/models/SortieStock";
+import { IStock } from "@/models/Stock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
     try {
         const { searchParams } = new URL(req.url);
         const IDMEDICAMENT = searchParams.get("IDMEDICAMENT");
@@ -20,7 +25,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
     try {
         const body = await req.json();
         const sortie = await SortieStock.create(body);

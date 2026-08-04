@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ResultatLignePrestation } from "@/models/resultatLignePrestation";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IResultatLignePrestation } from "@/models/resultatLignePrestation";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ResultatLignePrestation = getTenantModel<IResultatLignePrestation>(context.connection, "ResultatLignePrestation");
+
     try {
-        await db();
         const { id } = await params;
 
         const resultat = await ResultatLignePrestation.findById(id);

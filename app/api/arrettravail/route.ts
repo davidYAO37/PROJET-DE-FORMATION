@@ -1,20 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import ArretTravail from '@/models/arretTravail';
-import { Patient } from '@/models/patient';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IArretTravail } from '@/models/arretTravail';
+import { IPatient } from '@/models/patient';
 import { isTypeArretTravail, ARRET_TRAVAIL_STATUTS } from '@/types/arretTravail';
 
-// Connexion à la base de données
-async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bd_esaymed');
-  }
-}
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 // GET - Récupérer les arrêts de travail
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const ArretTravail = getTenantModel<IArretTravail>(context.connection, 'ArretTravail');
+  getTenantModel(context.connection, 'Patient');
+  getTenantModel(context.connection, 'Medecin');
+
   try {
-    await connectDB();
     await ArretTravail.updateMany(
       { statut: 'en_cours', dateFin: { $lt: new Date() } },
       { statut: 'termine' }
@@ -83,9 +85,13 @@ export async function GET(request: NextRequest) {
 
 // POST - Créer un nouvel arrêt de travail
 export async function POST(request: NextRequest) {
-  try {
-    await connectDB();
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const ArretTravail = getTenantModel<IArretTravail>(context.connection, 'ArretTravail');
+  const Patient = getTenantModel<IPatient>(context.connection, 'Patient');
+  getTenantModel(context.connection, 'Medecin');
 
+  try {
     const body = await request.json();
 
     // Validation des champs requis

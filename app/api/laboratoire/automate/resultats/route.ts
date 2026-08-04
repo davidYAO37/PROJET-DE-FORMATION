@@ -1,16 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { NfsTraitement } from "@/models/nfsTraitement";
-import { VitesseTraitement } from "@/models/VitesseTraitement";
-import { BiochimieTraitement } from "@/models/BiochimieTraitement";
-import { ActeParamBiochimie } from "@/models/acteParamBiochimie";
-import { ActeParamLabo } from "@/models/acteParamLabo";
-import { LignePrestation } from "@/models/lignePrestation";
-import { HormoneTraitement } from "@/models/HormoneTraitement";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { INfsTraitement } from "@/models/nfsTraitement";
+import { IVitesseTraitement } from "@/models/VitesseTraitement";
+import { IBiochimieTraitement } from "@/models/BiochimieTraitement";
+import { IActeParamBiochimie } from "@/models/acteParamBiochimie";
+import { IActeParamLabo } from "@/models/acteParamLabo";
+import { IHormoneTraitement } from "@/models/HormoneTraitement";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function POST(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const { connection } = context;
+    const NfsTraitement = getTenantModel<INfsTraitement>(connection, "NfsTraitement");
+    const VitesseTraitement = getTenantModel<IVitesseTraitement>(connection, "VitesseTraitement");
+    const BiochimieTraitement = getTenantModel<IBiochimieTraitement>(connection, "BiochimieTraitement");
+    const ActeParamBiochimie = getTenantModel<IActeParamBiochimie>(connection, "ActeParamBiochimie");
+    const ActeParamLabo = getTenantModel<IActeParamLabo>(connection, "ActeParamLabo");
+    const HormoneTraitement = getTenantModel<IHormoneTraitement>(connection, "HormoneTraitement");
+
     try {
-        await db();
         const body = await req.json();
         const { lignePrestationId, prestation, idActe, idHospitalisation, age, sexe } = body;
 

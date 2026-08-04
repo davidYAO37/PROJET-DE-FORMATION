@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { CommandeFournisseur } from "@/models/CommandeFournisseur";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ICommandeFournisseur } from "@/models/CommandeFournisseur";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(context.connection, "CommandeFournisseur");
     const { searchParams } = new URL(req.url);
     const statut       = searchParams.get("statut");
     const idFournisseur = searchParams.get("IDFournisseur");
@@ -17,7 +22,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(context.connection, "CommandeFournisseur");
     const body = await req.json();
     try {
         // Générer un numéro de commande automatique si absent

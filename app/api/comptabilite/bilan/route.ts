@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { EncaissementCaisse } from '@/models/EncaissementCaisse';
-import { Facturation } from '@/models/Facturation';
-import { Consultation } from '@/models/consultation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
+import { IFacturation } from '@/models/Facturation';
+import { IConsultation } from '@/models/consultation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
-  try {
-    await db();
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(connection, 'EncaissementCaisse');
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
 
+  try {
     const { searchParams } = new URL(request.url);
     const dateDebut = searchParams.get('dateDebut');
     const dateFin = searchParams.get('dateFin');

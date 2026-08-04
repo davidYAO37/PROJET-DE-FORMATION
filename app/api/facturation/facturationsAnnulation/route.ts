@@ -1,12 +1,18 @@
-import { db } from "@/db/mongoConnect";
-import { Facturation } from "@/models/Facturation";
+import { NextRequest } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IFacturation } from "@/models/Facturation";
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: Request) {
-    try {
-        await db();
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
+export async function GET(request: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
+
+    try {
         // Récupérer toutes les facturations avec demande d'annulation
         const facturations = await Facturation.find({
             Ordonnerlannulation: true

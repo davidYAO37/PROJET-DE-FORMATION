@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Consultation } from "@/models/consultation";
-import { Patient } from "@/models/patient";
-import { Assurance } from "@/models/assurance";
-import { Medecin } from "@/models/medecin";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IConsultation } from "@/models/consultation";
+import { IPatient } from "@/models/patient";
+import { IAssurance } from "@/models/assurance";
+import { IMedecin } from "@/models/medecin";
 
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
     try {
         const { searchParams } = new URL(req.url);
         const patientId = searchParams.get("patientId");
@@ -41,7 +45,12 @@ export async function GET(req: NextRequest) {
 
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+    const Assurance = getTenantModel<IAssurance>(context.connection, "Assurance");
+    const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
 
     try {
         const data = await req.json();

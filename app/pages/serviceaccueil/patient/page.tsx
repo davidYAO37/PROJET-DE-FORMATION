@@ -13,6 +13,7 @@ import ModifierPatient from './ModifierPatient';
 import FicheConsultation from '../components/ConsultationAdd/FicheConsultation';
 import PharmacieModalPharmAccueil from '../../PharmacieAccueil/PharmacieModalPharmAccueil';
 import PatientServiceModalAccueil from '../components/PatientServiceModalAccueil';
+import ExamenHospitalisationModalBilan from '../components/ExamenHospitModalBilan';
 
 const ITEMS_PER_PAGE = 10;
 
@@ -34,7 +35,7 @@ export default function Page() {
   const [showPharmacieModalPharmAccueil, setShowPharmacieModalPharmAccueil] = useState(false);
   const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
   const [showConsultationModal, setShowConsultationModal] = useState(false);
-
+  const [showExamenHospitalisationModalBilan, setShowExamenHospitalisationModalBilan] = useState(false);
   // États pour le modal PatientServiceModalAccueil
   const [showPatientServiceModal, setShowPatientServiceModal] = useState(false);
   const [patientIdServiceModal, setPatientIdServiceModal] = useState<string | null>(null);
@@ -177,7 +178,7 @@ export default function Page() {
 
       {/* Barre de recherche et bouton ajout */}
       <Row className="mb-3 align-items-center">
-        <Col xs={12} md={6}>
+        <Col xs={12} md={4}>
           <InputGroup>
             <Form.Control
               placeholder="Rechercher par nom ou prénoms..."
@@ -189,11 +190,12 @@ export default function Page() {
             />
           </InputGroup>
         </Col>
-        <Col xs={12} md={2}>
+        <Col xs={12} md={2} className="mt-2 mt-md-0">
           <Button
             variant="outline-warning"
             title="Ajouter examens ou hospitalisation"
             size="sm"
+            className="w-100"
             onClick={() => setShowExamenHospitalisationModal(true)}
           >
             Ajouter examens ou hospitalisation
@@ -205,23 +207,41 @@ export default function Page() {
           />
         </Col>
         {/* Bouton pour ouvrir PharmacieAccueil */}
-        <Col xs={12} md={2}>
+        <Col xs={12} md={2} className="mt-2 mt-md-0">
           <Button
             variant="outline-warning"
             title="Ajouter une ordonnance"
             size="sm"
+            className="w-100"
             onClick={() => setShowPharmacieModalPharmAccueil(true)}
           >
             Ajouter une ordonnance
           </Button>
-          {/* Modal ajouter examens*hospit ... */}
+          {/* Modal ajouter pharmacie ... */}
           <PharmacieModalPharmAccueil
             show={showPharmacieModalPharmAccueil}
             onHide={() => setShowPharmacieModalPharmAccueil(false)}
           />
         </Col>
+        {/* Bouton pour ajouter un bilan */}
+        <Col xs={12} md={2} className="mt-2 mt-md-0">
+          <Button
+            variant="outline-warning"
+            title="Ajouter un bilan"
+            size="sm"
+            className="w-100"
+            onClick={() => setShowExamenHospitalisationModalBilan(true)}
+          >
+            Ajouter un bilan
+          </Button>
+          {/* Modal ajouter bilan ... */}
+          <ExamenHospitalisationModalBilan
+            show={showExamenHospitalisationModalBilan}
+            onHide={() => setShowExamenHospitalisationModalBilan(false)}
+          />
+        </Col>
         <Col xs={12} md={2} className="mt-2 mt-md-0 text-md-end text-start">
-          <Button variant="success" onClick={() => setShowAddModal(true)}>
+          <Button variant="success" className="w-100" onClick={() => setShowAddModal(true)}>
             <FaPlus className="me-2" />
             Ajouter un Patient
           </Button>

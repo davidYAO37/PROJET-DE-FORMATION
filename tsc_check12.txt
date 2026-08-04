@@ -1,0 +1,25 @@
+app/pages/serviceaccueil/components/PatientServiceModalAccueil.tsx(163,27): error TS2339: Property 'statutPrescriptionMedecin' does not exist on type 'Consultation'.
+app/pages/serviceaccueil/components/PatientServiceModalAccueil.tsx(225,76): error TS2339: Property 'statutPrescriptionMedecin' does not exist on type 'Consultation'.
+app/pages/serviceaccueil/components/PatientServiceModalAccueil.tsx(227,73): error TS2339: Property 'statutPrescriptionMedecin' does not exist on type 'Consultation'.
+app/servicemedecin/tmedecin/components/RapportHospitalisationModal.tsx(150,28): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+app/servicemedecin/tmedecin/components/RapportHospitalisationModal.tsx(251,33): error TS2769: No overload matches this call.
+  Overload 1 of 4, '(value: string | number | Date): Date', gave the following error.
+    Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | number | Date'.
+      Type 'undefined' is not assignable to type 'string | number | Date'.
+  Overload 2 of 4, '(value: string | number): Date', gave the following error.
+    Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | number'.
+      Type 'undefined' is not assignable to type 'string | number'.
+app/servicemedecin/tmedecin/components/RapportHospitalisationModal.tsx(275,41): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/servicemedecin/tmedecin/components/RapportHospitalisationModal.tsx(367,42): error TS2345: Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | Date'.
+  Type 'undefined' is not assignable to type 'string | Date'.
+app/servicemedecin/tmedecin/components/RapportHospitalisationModal.tsx(368,42): error TS2345: Argument of type 'string | undefined' is not assignable to parameter of type 'string'.
+  Type 'undefined' is not assignable to type 'string'.
+app/servicemedecin/tmedecin/components/RapportHospitalisationModal.tsx(431,48): error TS2345: Argument of type 'string | Date | undefined' is not assignable to parameter of type 'string | Date'.
+  Type 'undefined' is not assignable to type 'string | Date'.

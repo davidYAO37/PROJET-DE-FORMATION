@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     await db();
     const { searchParams } = new URL(req.url);
     const patientId = searchParams.get("patientId");
+    const entrepriseId = searchParams.get("entrepriseId");
 
     if (!patientId) {
       return NextResponse.json(
@@ -30,6 +31,10 @@ export async function GET(req: NextRequest) {
       Designationtypeacte: { $in: designationActes },
       Entrele: { $exists: true },
     };
+
+    if (entrepriseId) {
+      query.entrepriseId = entrepriseId;
+    }
 
     if (Types.ObjectId.isValid(patientId)) {
       query.IdPatient = new Types.ObjectId(patientId);

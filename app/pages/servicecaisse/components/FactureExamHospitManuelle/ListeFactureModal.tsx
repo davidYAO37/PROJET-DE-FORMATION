@@ -1,0 +1,330 @@
+import React, { useState, useEffect } from 'react';
+import { Modal, Table, Button, Spinner } from 'react-bootstrap';
+import { FaPrint, FaFilePdf } from 'react-icons/fa';
+import dynamic from 'next/dynamic';
+
+// Dynamically import RecuExamenPrint with SSR disabled
+const RecuExamenPrint = dynamic(
+    () => import('@/app/pages/MesImpressions/recusacte/RecuExamenPrint'),
+    { ssr: false }
+);
+
+export interface Facture {
+    _id: string;
+    CodePrestation?: string;
+    DatePres?: string | Date;
+    PatientP?: string;
+    Designationtypeacte?: string;
+    Montanttotal?: number;
+    PartAssuranceP?: number;
+    Partassure?: number;
+    TotalPaye?: number;
+    reduction?: number;
+    Restapayer?: number;
+    SaisiPar?: string;
+    StatutFacture?: boolean;
+    Ordonnerlannulation?: boolean;
+    AnnulOrdonnerPar?: string;
+    AnnulationOrdonneLe?: Date;
+    StatutAnnulation?: 'en_cours' | 'refusee' | 'validee';
+}
+
+interface ListeFactureModalProps {
+    show: boolean;
+    onHide: () => void;
+    idHospitalisation: string;
+}
+
+export default function ListeFactureModal({
+    show,
+    onHide,
+    idHospitalisation
+}: ListeFactureModalProps) {
+    const [factures, setFactures] = useState<Facture[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [showRecuModal, setShowRecuModal] = useState(false);
+    const [selectedFactureId, setSelectedFactureId] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!show || !idHospitalisation) return;
+
+        const fetchFactures = async () => {
+            setLoading(true);
+            try {
+                const response = await fetch(`/api/facturesListe?idHospitalisation=${idHospitalisation}`);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Erreur lors du chargement des factures');
+                }
+
+                const responseData = await response.json();
+
+                // Gérer différents formats de réponse
+                const facturesData = Array.isArray(responseData)
+                    ? responseData
+                    : (responseData.data && Array.isArray(responseData.data)
+                        ? responseData.data
+                        : []);
+                setFactures(facturesData);
+            } catch (error) {
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchFactures();
+    }, [show, idHospitalisation]);
+
+    // Fonction pour convertir l'ID MongoDB en format court
+    const formatFactureId = (id?: string) => {
+        if (!id) return '';
+        try {
+            // Prendre les 6 derniers caractères de l'ID et convertir en nombre
+            const lastChars = id.slice(-6);
+            const num = parseInt(lastChars, 16); // Convertir hexadécimal en décimal
+            return (num % 10000).toString(); // Limiter à 4 chiffres max
+        } catch (error) {
+            console.error('Erreur formatFactureId:', error, 'ID:', id);
+            return id.slice(-4); // Fallback: prendre les 4 derniers caractères
+        }
+    };
+
+    const handlePrintFacture = (factureId: string) => {
+        setSelectedFactureId(factureId);
+        setShowRecuModal(true);
+    };
+
+    const handleCloseRecuModal = () => {
+        setShowRecuModal(false);
+        setSelectedFactureId(null);
+    };
+
+    const handleAnnulerFacture = async (facture: Facture) => {
+        // Vérifier si la facture du mois est fermée
+        if (facture.StatutFacture) {
+            alert("Impossible d'ordonner cette annulation\nFacture du mois fermé pour cette prestation");
+            return;
+        }
+
+        // Demander confirmation
+        const confirmAnnulation = window.confirm("Voulez-vous ordonner l'annulation de cette facture ?");
+        if (!confirmAnnulation) return;
+
+        // Confirmer à nouveau
+        const confirmFinal = window.confirm("Voulez-vous confirmer cette annulation ?");
+        if (!confirmFinal) return;
+
+        try {
+            const utilisateur = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || 'Utilisateur inconnu';
+
+            const response = await fetch(`/api/facturation/${facture._id}`, {
+                method: 'PATCH',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    Ordonnerlannulation: true,
+                    StatutAnnulation: 'en_cours',
+                    AnnulOrdonnerPar: utilisateur,
+                    AnnulationOrdonneLe: new Date(),
+                }),
+            });
+
+            if (response.ok) {
+                alert("Annulation ordonnée avec succès");
+                // Mettre à jour l'état local immédiatement pour la surbrillance
+                const utilisateur = localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || 'Utilisateur inconnu';
+                setFactures(prevFactures =>
+                    prevFactures.map(f =>
+                        f._id === facture._id
+                            ? {
+                                ...f,
+                                Ordonnerlannulation: true,
+                                StatutAnnulation: 'en_cours',
+                                AnnulOrdonnerPar: utilisateur,
+                                AnnulationOrdonneLe: new Date()
+                            }
+                            : f
+                    )
+                );
+            } else {
+                alert("Erreur lors de l'annulation");
+            }
+        } catch (error) {
+            console.error('Erreur annulation:', error);
+            alert("Erreur de connexion");
+        }
+    };
+
+    const handleAnnulerOrdonnancement = async (facture: Facture) => {
+        if (!window.confirm("Voulez-vous annuler l'ordonnancement de cette annulation ?")) return;
+        try {
+            const response = await fetch(`/api/facturation/${facture._id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ Ordonnerlannulation: false, StatutAnnulation: null, AnnulOrdonnerPar: '', AnnulationOrdonneLe: null })
+            });
+            if (!response.ok) throw new Error();
+            setFactures((previous) => previous.map((item) => item._id === facture._id ? { ...item, Ordonnerlannulation: false, StatutAnnulation: undefined, AnnulOrdonnerPar: '', AnnulationOrdonneLe: undefined } : item));
+        } catch (error) {
+            console.error('Erreur annulation ordonnancement:', error);
+            alert("Erreur lors de l'annulation de l'ordonnancement");
+        }
+    };
+
+    return (
+        <Modal
+            show={show}
+            onHide={onHide}
+            size="xl"
+            centered
+            dialogClassName="modal-fullscreen-lg-down"
+            style={{ maxWidth: '95vw', margin: 'auto' }}
+        >
+            <Modal.Header closeButton className="bg-primary text-white">
+                <Modal.Title>Liste des factures</Modal.Title>
+            </Modal.Header>
+
+            <Modal.Body className="p-0">
+                <div className="table-responsive" style={{ maxHeight: '70vh', overflowY: 'auto' }}>
+                    {loading ? (
+                        <div className="text-center my-4">
+                            <Spinner animation="border" variant="primary" />
+                            <p className="mt-2">Chargement des factures...</p>
+                        </div>
+                    ) : factures.length === 0 ? (
+                        <div className="text-center my-4">
+                            <p>Aucune facture trouvée pour cette hospitalisation.</p>
+                            <p className="text-muted small">ID d'hospitalisation: {idHospitalisation}</p>
+                            <button
+                                className="btn btn-sm btn-outline-secondary mt-2"
+                                onClick={() => console.log('État actuel:', { factures, idHospitalisation })}
+                            >
+                                Afficher les détails de débogage
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="table-responsive">
+                            <Table striped bordered hover className="mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>N° Facture</th>
+                                        <th>Date</th>
+                                        <th>Patient</th>
+                                        <th>Designation</th>
+                                        <th>Total Facture</th>
+                                        <th>Part Assurance</th>
+                                        <th>Part Patient</th>
+                                        <th>Total Payer</th>
+                                        <th>Reduction</th>
+                                        <th>Reste a payer</th>
+                                        <th>Facturé par</th>
+                                        <th style={{ position: 'sticky', right: 0, background: 'white', zIndex: 1 }}>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {factures.map((facture) => (
+                                        <tr
+                                            key={facture._id}
+                                            style={{
+                                                backgroundColor: facture.Ordonnerlannulation ? '#ffe6e6' : 'inherit',
+                                                borderLeft: facture.Ordonnerlannulation ? '4px solid #dc3545' : 'none'
+                                            }}
+                                        >
+                                            <td>{formatFactureId(facture._id)}</td>
+                                            <td>{facture.DatePres ? new Date(facture.DatePres).toLocaleDateString() : 'N/A'}</td>
+                                            <td>{facture.PatientP}</td>
+                                            <td>{facture.Designationtypeacte}</td>
+                                            <td>{facture.Montanttotal !== undefined ? `${facture.Montanttotal.toLocaleString()} FCFA` : 'N/A'}</td>
+                                            <td>{facture.PartAssuranceP}</td>
+                                            <td>{facture.Partassure}</td>
+                                            <td>{facture.TotalPaye}</td>
+                                            <td>{facture.reduction}</td>
+                                            <td>{facture.Restapayer}</td>
+                                            <td>
+                                                {facture.Ordonnerlannulation ? (
+                                                    <span style={{
+                                                        fontSize: '0.75rem',
+                                                        padding: '0.25rem 0.5rem',
+                                                        backgroundColor: '#dc3545',
+                                                        color: 'white',
+                                                        borderRadius: '0.375rem',
+                                                        display: 'inline-block',
+                                                        fontWeight: 500
+                                                    }}>
+                                                        <i className="bi bi-x-circle-fill me-1"></i>Annulation en cours
+                                                    </span>
+                                                ) : (
+                                                    facture.SaisiPar
+                                                )}
+                                            </td>
+                                            <td style={{ position: 'sticky', right: 0, background: 'white', zIndex: 1 }}>
+                                                {facture.Ordonnerlannulation ? (
+                                                    <Button variant="outline-secondary" size="sm" disabled className="me-2">
+                                                        <FaPrint className="me-1" /> PDF
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        className="me-2"
+                                                        onClick={() => handlePrintFacture(facture._id)}
+                                                    >
+                                                        <FaPrint className="me-1" /> PDF
+                                                    </Button>
+                                                )}
+                                                {facture.Ordonnerlannulation ? (
+                                                    <Button variant="outline-warning" size="sm" onClick={() => handleAnnulerOrdonnancement(facture)}>
+                                                        <i className="bi bi-arrow-counterclockwise"></i> Annuler l'ordre
+                                                    </Button>
+                                                ) : (
+                                                    <Button
+                                                        variant="outline-danger"
+                                                        size="sm"
+                                                        onClick={() => handleAnnulerFacture(facture)}
+                                                    >
+                                                        <i className="bi bi-x-circle"></i> Annuler
+                                                    </Button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </div>
+                    )}
+                </div>
+            </Modal.Body>
+
+            <Modal.Footer>
+                <Button variant="secondary" onClick={onHide}>
+                    Fermer
+                </Button>
+            </Modal.Footer>
+
+            {/* Modal pour l'aperçu du reçu */}
+            <Modal
+                show={showRecuModal}
+                onHide={handleCloseRecuModal}
+                size="xl"
+                centered
+                fullscreen="lg-down"
+            >
+                <Modal.Header closeButton>
+                    <Modal.Title>Reçu d'examen</Modal.Title>
+                </Modal.Header>
+                <Modal.Body style={{ minHeight: '80vh' }}>
+                    {selectedFactureId && (
+                        <RecuExamenPrint params={{ id: selectedFactureId }} />
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={handleCloseRecuModal}>
+                        Fermer
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+        </Modal>
+    );
+}

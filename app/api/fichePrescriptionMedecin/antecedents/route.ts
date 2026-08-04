@@ -1,10 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IPatient } from '@/models/patient';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Patient = getTenantModel<IPatient>(connection, 'Patient');
+
   try {
-    await db();
-    
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
     const consultationId = searchParams.get('consultationId');
@@ -12,8 +21,6 @@ export async function GET(request: NextRequest) {
     // Si on a consultationId, récupérer le patientId depuis la consultation
     let finalPatientId = patientId;
     if (consultationId && !patientId) {
-      // Importer dynamiquement pour éviter les dépendances circulaires
-      const { Consultation } = await import('@/models/consultation');
       const consultation = await Consultation.findById(consultationId);
       if (consultation && consultation.IdPatient) {
         finalPatientId = consultation.IdPatient.toString();
@@ -23,9 +30,6 @@ export async function GET(request: NextRequest) {
     if (!finalPatientId) {
       return NextResponse.json({ error: 'ID de patient requis' }, { status: 400 });
     }
-    
-    // Importer dynamiquement pour éviter les dépendances circulaires
-    const { Patient } = await import('@/models/patient');
     
     // Récupérer les antécédents du patient
     const patient = await Patient.findById(finalPatientId);
@@ -52,17 +56,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Patient = getTenantModel<IPatient>(connection, 'Patient');
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+
   try {
-    await db();
-    
     const body = await request.json();
     const { patientId, consultationId, antecedents, type } = body;
     
     console.log('POST antecedents - Body:', body);
-    
-    // Importer dynamiquement pour éviter les dépendances circulaires
-    const { Patient } = await import('@/models/patient');
-    const { Consultation } = await import('@/models/consultation');
     
     let finalPatientId = patientId;
     

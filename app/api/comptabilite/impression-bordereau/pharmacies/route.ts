@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Facturation } from '@/models/Facturation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IFacturation } from '@/models/Facturation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
+
   try {
-    await db();
     const { searchParams } = new URL(request.url);
     const numfacture = searchParams.get('numfacture') || '';
 

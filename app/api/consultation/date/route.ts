@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function POST(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+
     try {
-        await db(); // ✅ Connexion à MongoDB
 
         // 🔸 Définir le jour courant (de minuit à minuit)
         const today = new Date();
@@ -42,9 +48,12 @@ export async function POST(req: NextRequest) {
 }
 
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+
     try {
-        await db();
 
         // Aujourd'hui à minuit
         const today = new Date();

@@ -1,16 +1,21 @@
-import { NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 import mongoose from "mongoose";
-import { Patient } from "@/models/patient";
-import { Consultation } from "@/models/consultation";
+import { IPatient } from "@/models/patient";
+import { IConsultation } from "@/models/consultation";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(
-  req: Request,
-  context: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  routeContext: { params: Promise<{ id: string }> }
 ) {
-  await db();
-  const { id } = await context.params;
-  
+  const { context, response } = await withTenant(req, ROLES);
+  if (!context) return response;
+  const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+  const { id } = await routeContext.params;
+
   try {
     const patient = await Patient.findById(id);
     if (!patient) {
@@ -24,11 +29,14 @@ export async function GET(
 }
 
 export async function DELETE(
-  req: Request,
-  context: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  routeContext: { params: Promise<{ id: string }> }
 ) {
-  await db();
-  const { id } = await context.params;
+  const { context, response } = await withTenant(req, ROLES);
+  if (!context) return response;
+  const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+  const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+  const { id } = await routeContext.params;
   try {
     // Vérifier si le patient existe
     const patient = await Patient.findById(id);
@@ -61,11 +69,13 @@ export async function DELETE(
 }
 
 export async function PUT(
-  req: Request,
-  context: { params: Promise<{ id: string }> }
+  req: NextRequest,
+  routeContext: { params: Promise<{ id: string }> }
 ) {
-  await db();
-  const { id } = await context.params;
+  const { context, response } = await withTenant(req, ROLES);
+  if (!context) return response;
+  const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+  const { id } = await routeContext.params;
 
   try {
     const body = await req.json();

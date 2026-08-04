@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Facturation } from "@/models/Facturation";
-import { Patient } from "@/models/patient";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IFacturation } from "@/models/Facturation";
+import { IPatient } from "@/models/patient";
 import mongoose from "mongoose";
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 // GET /api/facturation?hospitalId=XXX
 // Récupère les facturations liées à une hospitalisation donnée
 export async function GET(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
+
     try {
-        await db();
         const { searchParams } = new URL(req.url);
         const hospitalId = searchParams.get("hospitalId") || searchParams.get("idHospitalisation");
         const id = searchParams.get("id");
@@ -58,9 +64,12 @@ export async function GET(req: NextRequest) {
 
 // POST /api/facturation - Créer une nouvelle facturation
 export async function POST(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
+    const Patient = getTenantModel<IPatient>(context.connection, 'Patient');
 
     try {
-        await db();
         const body = await req.json();
 
         // Mapper les champs et gérer les ObjectId
@@ -133,9 +142,11 @@ export async function POST(req: NextRequest) {
 
 // PUT /api/facturation - Mettre à jour une facturation
 export async function PUT(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
 
     try {
-        await db();
         const body = await req.json();
         const { _id, ...updateData } = body;
 
@@ -171,8 +182,11 @@ export async function PUT(req: NextRequest) {
 
 // DELETE /api/facturation?id=XXX - Supprimer une facturation
 export async function DELETE(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
+
     try {
-        await db();
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
 

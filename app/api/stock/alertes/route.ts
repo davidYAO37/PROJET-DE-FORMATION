@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Stock } from "@/models/Stock";
-import { EntreeStock } from "@/models/EntreeStock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IStock } from "@/models/Stock";
+import { IEntreeStock } from "@/models/EntreeStock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // GET /api/stock/alertes
 // Retourne: ruptures, seuils min dépassés, lots proches péremption (30 jours)
 export async function GET(request: NextRequest) {
-    await db();
+    const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
+    const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
 
     try {
         const { searchParams } = new URL(request.url);

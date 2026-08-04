@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Operation } from '@/models/operation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IOperation } from '@/models/operation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
+  const { context, response } = await withTenant(request, ROLES);
+  if (!context) return response;
+  const Operation = getTenantModel<IOperation>(context.connection, 'Operation');
+
   try {
-    await db();
     const { searchParams } = new URL(request.url);
     const entrepriseId = searchParams.get('entrepriseId') || '';
 
@@ -20,8 +26,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response } = await withTenant(request, ROLES);
+  if (!context) return response;
+  const Operation = getTenantModel<IOperation>(context.connection, 'Operation');
+
   try {
-    await db();
     const body = await request.json();
     const { action, Libeleo, TYPEOP, entrepriseId, id } = body;
 

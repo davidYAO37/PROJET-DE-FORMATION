@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { LignePrestation } from '@/models/lignePrestation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { ILignePrestation } from '@/models/lignePrestation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const LignePrestation = getTenantModel<ILignePrestation>(context.connection, 'LignePrestation');
+
   try {
-    await db();
-    
     const { id } = await params;
     
     if (!id) {

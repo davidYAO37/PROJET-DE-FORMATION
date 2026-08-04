@@ -12,6 +12,8 @@ import { IMouvementHospitalisation } from '@/models/hospitalisation/MouvementHos
 import { IExamenHospitalisation } from '@/models/examenHospit';
 import { ILignePrestation } from '@/models/lignePrestation';
 import { IActeClinique } from '@/models/acteclinique';
+import { IPatientPrescription } from '@/models/PatientPrescription';
+import { IRapportHospitalisation } from '@/models/rapportHospitalisation';
 
 const ADMISSION_ROLES = ['admin', 'accueil', 'infirmier'];
 
@@ -394,6 +396,55 @@ export async function POST(req: NextRequest) {
       motif: body.motif,
       observation: body.observations,
     });
+
+    // Création automatique d'un brouillon de rapport d'hospitalisation, pré-rempli
+    // avec les données déjà disponibles au moment de l'admission (mêmes sources que
+    // PrintFichePrescription : la consultation liée et ses lignes de prestation /
+    // prescriptions). Le reste (évolution, traitement pendant le séjour, diagnostic
+    // final, recommandations...) sera complété par le médecin pendant/à la fin du séjour.
+    try {
+      let examensParacliniquesText = '';
+      let traitementAdministreText = '';
+
+      if (admissionData.codePrestation) {
+        const [lignesConsultation, prescriptionsConsultation] = await Promise.all([
+          LignePrestation.find({ CodePrestation: admissionData.codePrestation }).lean(),
+          getTenantModel<IPatientPrescription>(connection, 'PatientPrescription')
+            .find({ CodePrestation: admissionData.codePrestation })
+            .lean(),
+        ]);
+
+        const examensParacliniques = lignesConsultation
+          .filter((ligne: any) => !!ligne.lettreCle && ['K', 'KC', 'B', 'Z', 'D'].includes(ligne.lettreCle))
+          .sort((a: any, b: any) => (a.ordonnancementAffichage || 0) - (b.ordonnancementAffichage || 0));
+        examensParacliniquesText = examensParacliniques.map((l: any) => l.prestation).join(' - ');
+
+        traitementAdministreText = prescriptionsConsultation
+          .map((p: any) => `- ${p.nomMedicament} ${p.posologie || ''} qté:${p.QteP}`)
+          .join('\n');
+      }
+
+      const RapportHospitalisation = getTenantModel<IRapportHospitalisation>(connection, 'RapportHospitalisation');
+      await RapportHospitalisation.create({
+        patientId: admissionData.patientId,
+        hospitalisationId: String(examenHospit._id),
+        patientNom: patient.Nom,
+        patientPrenoms: patient.Prenoms,
+        dateEntree,
+        dateSortie,
+        service: admissionData.service || natureActeDesignation,
+        motifHospitalisation: admissionData.motifHospitalisation || '',
+        diagnosticAdmission: admissionData.diagnosticInitial || consultationData.Diagnostic || '',
+        examenClinique: consultationData.ExamenClinique || '',
+        examensParacliniques: examensParacliniquesText,
+        traitementAdministre: traitementAdministreText,
+        medecinTraitant: nomMedecin || '',
+        dateRapport: dateEntree,
+        statut: 'brouillon',
+      });
+    } catch (rapportError) {
+      console.error('Erreur lors de la création du brouillon de rapport d\'hospitalisation:', rapportError);
+    }
 
     return NextResponse.json(examenHospit, { status: 201 });
   } catch (error) {

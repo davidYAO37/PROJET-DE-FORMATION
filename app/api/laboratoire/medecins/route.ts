@@ -1,11 +1,16 @@
-import { NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Medecin } from "@/models/medecin";
-export async function GET() {
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IMedecin } from "@/models/medecin";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+
+export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
 
     try {
-
-        await db();
 
         const medecins =
             await Medecin

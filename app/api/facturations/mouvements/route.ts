@@ -1,11 +1,19 @@
-import { Consultation } from '@/models';
-import { Facturation } from '@/models/Facturation';
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IFacturation } from '@/models/Facturation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const { connection } = context;
+    const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+    const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+
     try {
-        await db();
     console.log('API mouvements prestations appelée');
     
     const { searchParams } = new URL(req.url);

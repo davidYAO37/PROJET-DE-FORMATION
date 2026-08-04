@@ -2,6 +2,29 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db/mongoConnect';
 import { RapportHospitalisation } from '@/models/rapportHospitalisation';
 
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  await db();
+  try {
+    const { id } = await params;
+    const rapport = await RapportHospitalisation.findById(id);
+
+    if (!rapport) {
+      return NextResponse.json(
+        { success: false, error: 'Rapport d\'hospitalisation non trouvé' },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data: rapport });
+  } catch (error: any) {
+    console.error('Erreur lors de la récupération du rapport d\'hospitalisation:', error);
+    return NextResponse.json(
+      { success: false, error: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   await db();
   try {
@@ -24,10 +47,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
-    if (rapport.medecinTraitant?.trim() !== userName.trim()) {
+    if (rapport.statut === 'valide') {
       return NextResponse.json(
-        { success: false, error: 'Seul le médecin traitant ayant saisi le rapport peut le modifier' },
-        { status: 403 }
+        { success: false, error: 'Ce rapport est validé et ne peut plus être modifié' },
+        { status: 409 }
       );
     }
 
@@ -93,10 +116,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       );
     }
 
-    if (rapport.medecinTraitant?.trim() !== userName.trim()) {
+    if (rapport.statut === 'valide') {
       return NextResponse.json(
-        { success: false, error: 'Seul le médecin traitant ayant saisi le rapport peut le supprimer' },
-        { status: 403 }
+        { success: false, error: 'Ce rapport est validé et ne peut plus être supprimé' },
+        { status: 409 }
       );
     }
 

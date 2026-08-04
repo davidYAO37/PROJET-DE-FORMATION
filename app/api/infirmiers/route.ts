@@ -1,11 +1,17 @@
-import { db } from "@/db/mongoConnect";
-import { Infirmier } from "@/models/infirmier";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IInfirmier } from "@/models/infirmier";
 import { UserCollection } from "@/models/users.model";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { hashPassword } from "@/utils/auth";
 
-export async function GET(req: Request) {
-  await db();
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+
+export async function GET(req: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Infirmier = getTenantModel<IInfirmier>(context.connection, 'Infirmier');
+
   try {
     const { searchParams } = new URL(req.url);
     const entrepriseId = searchParams.get("entrepriseId");
@@ -21,8 +27,11 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
-  await db();
+export async function POST(req: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Infirmier = getTenantModel<IInfirmier>(context.connection, 'Infirmier');
+
   try {
     const body = await req.json();
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IConstanteHospitalisation } from "@/models/hospitalisation/ConstanteHospitalisation";
+import { refreshRapportHospitalisation } from "@/lib/rapportHospitalisation";
 
 const ROLES = ["admin", "medecin", "infirmier"];
 
@@ -54,6 +55,12 @@ export async function POST(req: NextRequest) {
       createdBy: userObjectId,
       date: body.date ? new Date(body.date) : new Date(),
     });
+
+    try {
+      await refreshRapportHospitalisation(connection, body.hospitalisationId);
+    } catch (refreshError) {
+      console.error("Erreur lors de l'actualisation du rapport d'hospitalisation:", refreshError);
+    }
 
     return NextResponse.json({ success: true, data: constante }, { status: 201 });
   } catch (error) {

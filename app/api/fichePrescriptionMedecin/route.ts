@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Consultation } from '@/models/consultation';
-import { Patient } from '@/models/patient';
-import { Prescription } from '@/models/Prescription';
-import { PatientPrescription } from '@/models/PatientPrescription';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IPatient } from '@/models/patient';
+import { IPatientPrescription } from '@/models/PatientPrescription';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Patient = getTenantModel<IPatient>(connection, 'Patient');
+  const PatientPrescription = getTenantModel<IPatientPrescription>(connection, 'PatientPrescription');
+
   try {
-    await db();
     
     const { searchParams } = new URL(request.url);
     const consultationId = searchParams.get('consultationId');
@@ -164,9 +172,12 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+
   try {
-    await db();
-    
     const body = await request.json();
     const { 
       consultationId,
@@ -184,9 +195,6 @@ export async function POST(request: NextRequest) {
     if (!consultationId && !codePrestation) {
       return NextResponse.json({ error: 'ID de consultation ou Code Prestation requis' }, { status: 400 });
     }
-    
-    // Importer dynamiquement pour éviter les dépendances circulaires
-    const { Consultation } = await import('@/models/consultation');
     
     let consultation;
     

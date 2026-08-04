@@ -1,7 +1,15 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ["pdfkit", "fontkit", "linebreak", "unicode-properties", "brotli"],
+  output: "standalone",
+
+  serverExternalPackages: [
+    "pdfkit",
+    "fontkit",
+    "linebreak",
+    "unicode-properties",
+    "brotli",
+  ],
 };
 
 export default nextConfig;

@@ -1,11 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { LignePrestation } from '@/models/lignePrestation';
-import { ParametreCRendu } from '@/models/ParametreCRendu';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IParametreCRendu } from '@/models/ParametreCRendu';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const LignePrestation = getTenantModel<ILignePrestation>(context.connection, 'LignePrestation');
+  const ParametreCRendu = getTenantModel<IParametreCRendu>(context.connection, 'ParametreCRendu');
+
   try {
-    await db();
     
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');

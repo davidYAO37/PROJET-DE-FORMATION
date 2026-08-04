@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ExamenHospitalisation } from "@/models/examenHospit";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    getTenantModel(context.connection, "Patient");
 
     try {
-        await db();
         const { id } = await params;
 
 

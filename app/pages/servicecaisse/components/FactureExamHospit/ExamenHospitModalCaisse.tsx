@@ -48,19 +48,10 @@ export default function ExamenHospitalisationModalCaisse({
         <Modal
             show={show}
             onHide={onHide}
-            size="xl"
-            centered
+            fullscreen
             scrollable
-            dialogClassName="modal-xxl"
             backdrop="static"
             keyboard={false}
-            style={{ 
-                maxWidth: '98vw', 
-                width: '98vw', 
-                margin: 'auto',
-                height: '95vh'
-            }}
-            contentClassName="h-100"
         >
             <Modal.Header
                 closeButton
@@ -79,7 +70,7 @@ export default function ExamenHospitalisationModalCaisse({
                 </Modal.Title>
             </Modal.Header>
 
-            <Modal.Body style={{ padding: '0.5rem', maxHeight: 'calc(95vh - 120px)', overflow: 'auto' }}>
+            <Modal.Body style={{ padding: '0.5rem', overflow: 'auto' }}>
                 <HospitalisationPageCaisse
                     key={`${key}-${CodePrestation}`}
                     params={{

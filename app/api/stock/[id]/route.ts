@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Stock } from "@/models/Stock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IStock } from "@/models/Stock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // PUT /api/stock/[id] - Mettre à jour un stock
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    await db();
-    
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
+
     try {
         const { id } = await params;
         const body = await request.json();
@@ -67,9 +72,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 // DELETE /api/stock/[id] - Supprimer un stock
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    await db();
-    
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
+
     try {
         const { id } = await params;
         

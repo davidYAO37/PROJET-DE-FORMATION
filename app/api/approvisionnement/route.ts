@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Approvisionnement } from "@/models/Approvisionnement";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IApprovisionnement } from "@/models/Approvisionnement";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Approvisionnement = getTenantModel<IApprovisionnement>(context.connection, "Approvisionnement");
     const { searchParams } = new URL(req.url);
     const idFournisseur = searchParams.get("IDFournisseur");
     const dateDebut     = searchParams.get("dateDebut");
@@ -22,7 +27,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Approvisionnement = getTenantModel<IApprovisionnement>(context.connection, "Approvisionnement");
     const body = await req.json();
     try {
         const Approvisionnements = await Approvisionnement.create(body);

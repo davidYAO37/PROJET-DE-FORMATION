@@ -1,17 +1,25 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { ExamenHospitalisation } from '@/models/examenHospit';
-import { LignePrestation } from '@/models/lignePrestation';
-import { ResultatLignePrestation } from '@/models/resultatLignePrestation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IExamenHospitalisation } from '@/models/examenHospit';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IResultatLignePrestation } from '@/models/resultatLignePrestation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 const startOfDay = (d: Date) => { const v = new Date(d); v.setHours(0, 0, 0, 0); return v; };
 const endOfDay = (d: Date) => { const v = new Date(d); v.setHours(23, 59, 59, 999); return v; };
 const addDays = (d: Date, n: number) => { const v = new Date(d); v.setDate(v.getDate() + n); return v; };
 
 export async function GET(req: NextRequest) {
-    try {
-        await db();
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const { connection } = context;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
+    const LignePrestation = getTenantModel<ILignePrestation>(connection, 'LignePrestation');
+    const ResultatLignePrestation = getTenantModel<IResultatLignePrestation>(connection, 'ResultatLignePrestation');
 
+    try {
         const { searchParams } = new URL(req.url);
         const today = new Date();
         const dateDebutParam = searchParams.get('dateDebut');

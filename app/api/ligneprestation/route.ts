@@ -1,14 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { LignePrestation } from "@/models/lignePrestation";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ILignePrestation } from "@/models/lignePrestation";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // GET /api/ligneprestation?CodePrestation=XXX&idHospitalisation=YYY
 // OU GET /api/ligneprestation?patientId=ZZZ
 // OU GET /api/ligneprestation?id=XXX (pour récupérer une seule ligne)
 // Récupère les lignes de prestation liées à une hospitalisation, un patient ou une ligne spécifique
 export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+
     try {
-        await db();
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
         const CodePrestation = searchParams.get("CodePrestation") || "";
@@ -71,8 +77,11 @@ export async function GET(req: NextRequest) {
 
 // POST /api/ligneprestation - Créer une nouvelle ligne de prestation
 export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+
     try {
-        await db();
         const body = await req.json();
 
         // Validation des champs requis
@@ -116,8 +125,11 @@ export async function POST(req: NextRequest) {
 
 // PUT /api/ligneprestation - Mettre à jour une ligne de prestation
 export async function PUT(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+
     try {
-        await db();
         const body = await req.json();
         const { _id, ...updateData } = body;
 
@@ -153,8 +165,11 @@ export async function PUT(req: NextRequest) {
 
 // DELETE /api/ligneprestation?id=XXX - Supprimer une ligne de prestation
 export async function DELETE(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+
     try {
-        await db();
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
 

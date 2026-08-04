@@ -20,8 +20,8 @@ export interface IActeClinique {
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     ORdonnacementAffichage?: number;
     // ... autres champs si besoin
-   MontantAnesthesiste?: string | number; // "1" ou 1
-   MontantAideOperatoire?: string | number; // "1" ou 1
+    MontantAnesthesiste?: string | number; // "1" ou 1
+    MontantAideOperatoire?: string | number; // "1" ou 1
 }
 
 // Type TarifAssurance
@@ -56,7 +56,7 @@ export interface ILignePrestation {
     Montant_MedExecutant: number;
     MontantAnesthesiste: number;
     MontantAideOperatoire: number;
-     IDmedecinAideOperatoire?: string;
+    IDmedecinAideOperatoire?: string;
     IDAnesthesiste?: string;
     numMedecinExecutant?: string;
     medecinExecutant?: string;
@@ -1120,13 +1120,29 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
         });
     }, []);
 
+
+    // Sélectionner/désélectionner "Payé" pour toutes les lignes modifiables
+    const toggleAllPaye = useCallback(() => {
+        setLignes(prev => {
+            const editableLignes = prev.filter(l => (l.Statutprescription ?? 2) < 3);
+            const toutesPayees = editableLignes.length > 0 && editableLignes.every(l => l.AFacturer === 'Payé');
+            const newValue: 'Payé' | 'Non Payé' = toutesPayees ? 'Non Payé' : 'Payé';
+            return prev.map(ligne => {
+                if ((ligne.Statutprescription ?? 2) < 3) {
+                    return { ...ligne, AFacturer: newValue };
+                }
+                return ligne;
+            });
+        });
+    }, []);
+
     const toggleExclusion = useCallback((lineId: string) => {
         setLignes(prev => {
             const ligne = prev.find(l => l.IDLignePrestation === lineId);
             if (!ligne) return prev;
-            
-                    const newValue = ligne.Exclusion === 'Accepter' ? 'Refuser' : 'Accepter';
-            
+
+            const newValue = ligne.Exclusion === 'Accepter' ? 'Refuser' : 'Accepter';
+
             // Utiliser la même logique que onFieldChangeAndRecalc
             onFieldChangeAndRecalc(lineId, 'Exclusion', newValue);
             return prev;
@@ -1152,7 +1168,17 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                     <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
                         <tr>
                             {/* Colonnes visibles */}
-                            <th style={{ width: '80px', textAlign: 'center' }}>Payé</th>
+                            <th style={{ width: '80px', textAlign: 'center' }}>
+                                <div className="d-flex flex-column align-items-center">
+                                    <span>Payé</span>
+                                    <Form.Check
+                                        type="checkbox"
+                                        checked={lignes.length > 0 && lignes.filter(l => (l.Statutprescription ?? 2) < 3).length > 0 && lignes.filter(l => (l.Statutprescription ?? 2) < 3).every(l => l.AFacturer === 'Payé')}
+                                        onChange={toggleAllPaye}
+                                        title="Tout sélectionner / désélectionner"
+                                    />
+                                </div>
+                            </th>
                             <th style={{ width: '120px' }}>Date</th>
                             <th style={{ minWidth: '220px' }}>Acte</th>
                             <th style={{ width: '80px' }}>Coeffi</th>
@@ -1185,7 +1211,7 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                                             disabled={!isEditable}
                                             title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}
                                         />
-                                       
+
                                     </td>
                                     {/* Date */}
                                     <td style={{ padding: '4px' }}>
@@ -1288,10 +1314,10 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                                             </Form.Select>
                                         ) : (
                                             <span style={{ color: '#999', fontSize: '12px' }}>
-                                                {l.IDAnesthesiste ? 
-                                                    medecins.find((m: any) => m._id === l.IDAnesthesiste)?.nom + ' ' + 
-                                                    medecins.find((m: any) => m._id === l.IDAnesthesiste)?.prenoms || 
-                                                    'Médecin supprimé' : 
+                                                {l.IDAnesthesiste ?
+                                                    medecins.find((m: any) => m._id === l.IDAnesthesiste)?.nom + ' ' +
+                                                    medecins.find((m: any) => m._id === l.IDAnesthesiste)?.prenoms ||
+                                                    'Médecin supprimé' :
                                                     '-'
                                                 }
                                             </span>
@@ -1317,10 +1343,10 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                                             </Form.Select>
                                         ) : (
                                             <span style={{ color: '#999', fontSize: '12px' }}>
-                                                {l.IDmedecinAideOperatoire ? 
-                                                    medecins.find((m: any) => m._id === l.IDmedecinAideOperatoire)?.nom + ' ' + 
-                                                    medecins.find((m: any) => m._id === l.IDmedecinAideOperatoire)?.prenoms || 
-                                                    'Médecin supprimé' : 
+                                                {l.IDmedecinAideOperatoire ?
+                                                    medecins.find((m: any) => m._id === l.IDmedecinAideOperatoire)?.nom + ' ' +
+                                                    medecins.find((m: any) => m._id === l.IDmedecinAideOperatoire)?.prenoms ||
+                                                    'Médecin supprimé' :
                                                     '-'
                                                 }
                                             </span>

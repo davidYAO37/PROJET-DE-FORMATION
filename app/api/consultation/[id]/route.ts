@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { Consultation, IConsultation } from "@/models/consultation";
-import { Patient } from "@/models/patient";
-import { Assurance } from "@/models/assurance";
-import { Medecin } from "@/models/medecin";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IConsultation } from "@/models/consultation";
+import { IPatient } from "@/models/patient";
+import { IAssurance } from "@/models/assurance";
+import { IMedecin } from "@/models/medecin";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
 
     try {
         const { id } = await params;
@@ -24,7 +29,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 }
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
 
     try {
         const { id } = await params;
@@ -55,7 +62,12 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     }
 }
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+    const Assurance = getTenantModel<IAssurance>(context.connection, "Assurance");
+    const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
 
     try {
         const { id } = await params;
@@ -157,7 +169,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 }
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
 
     try {
         const { id } = await params; // ✅ récupération correcte de l'ID

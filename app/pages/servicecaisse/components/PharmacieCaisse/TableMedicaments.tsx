@@ -467,6 +467,27 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
     });
   }, [currentUser]);
 
+  // Sélectionner/désélectionner "Payé" pour toutes les lignes
+  const toggleAllPaye = useCallback(() => {
+    setLignes(prev => {
+      const toutesPayees = prev.length > 0 && prev.every(l => l.paye);
+      const newPaye = !toutesPayees;
+      return prev.map(ligne => {
+        const updatedLigne = { ...ligne, paye: newPaye };
+        if (newPaye && !updatedLigne.payePar) {
+          updatedLigne.payePar = currentUser;
+          updatedLigne.payeLe = new Date().toLocaleDateString();
+          updatedLigne.payeA = new Date().toLocaleTimeString();
+        } else if (!newPaye) {
+          updatedLigne.payePar = "";
+          updatedLigne.payeLe = "";
+          updatedLigne.payeA = "";
+        }
+        return updatedLigne;
+      });
+    });
+  }, [currentUser]);
+
   // Bascher l'état de refus
   const toggleRefuse = useCallback((id: string) => {
     setLignes(prev => {
@@ -519,7 +540,17 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
               <th style={{ width: '10%' }}>Qté</th>
               <th style={{ width: '15%' }}>P.U (FCFA)</th>
               <th style={{ width: '15%' }}>Total (FCFA)</th>
-              <th style={{ width: '10%' }}>Payé</th>
+              <th style={{ width: '10%', textAlign: 'center' }}>
+                <div className="d-flex flex-column align-items-center">
+                  <span>Payé</span>
+                  <Form.Check
+                    type="checkbox"
+                    checked={lignes.length > 0 && lignes.every(l => l.paye)}
+                    onChange={toggleAllPaye}
+                    title="Tout sélectionner / désélectionner"
+                  />
+                </div>
+              </th>
               <th style={{ width: '10%' }}>Refusé</th>
               <th style={{ width: '5%' }}></th>
             </tr>

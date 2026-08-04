@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Facturation } from '@/models/Facturation';
-import { Consultation } from '@/models/consultation';
-import { Prescription } from '@/models/Prescription';
-import { Assurance } from '@/models/assurance';
-import { FacturationAssur } from '@/models/factureAssur';
-import { LigneFacture } from '@/models/ligneFacture';
-import { FactureRecap } from '@/models/factureRecap';
-import { TypeActe } from '@/models/TypeActe';
-import { ExamenHospitalisation } from '@/models/examenHospit';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IFacturation } from '@/models/Facturation';
+import { IConsultation } from '@/models/consultation';
+import { IPrescription } from '@/models/Prescription';
+import { IAssurance } from '@/models/assurance';
+import { IFactureAssur } from '@/models/factureAssur';
+import { ILigneFacture } from '@/models/ligneFacture';
+import { IFactureRecap } from '@/models/factureRecap';
+import { ITypeActe } from '@/models/TypeActe';
+import { IExamenHospitalisation } from '@/models/examenHospit';
 import mongoose from 'mongoose';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 const arrondi = (n: number) => Math.round(n || 0);
 
@@ -34,8 +37,15 @@ interface LigneBordereau {
 }
 
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Assurance = getTenantModel<IAssurance>(connection, 'Assurance');
+  const TypeActe = getTenantModel<ITypeActe>(connection, 'TypeActe');
+
   try {
-    await db();
     const { searchParams } = new URL(request.url);
     const assuranceId = searchParams.get('assuranceId') || '';
     const dateDebut = searchParams.get('dateDebut') || '';
@@ -161,8 +171,19 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
+  const Assurance = getTenantModel<IAssurance>(connection, 'Assurance');
+  const FacturationAssur = getTenantModel<IFactureAssur>(connection, 'FactureAssur');
+  const LigneFacture = getTenantModel<ILigneFacture>(connection, 'LigneFacture');
+  const FactureRecap = getTenantModel<IFactureRecap>(connection, 'FactureRecap');
+  const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
+
   try {
-    await db();
     const body = await request.json();
     const { assuranceId, dateDebut, dateFin, lignes, saisirpar, entrepriseId } = body;
 

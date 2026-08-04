@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { CommandeFournisseur } from "@/models/CommandeFournisseur";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ICommandeFournisseur } from "@/models/CommandeFournisseur";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(_req, ROLES);
+    if (!context) return response;
+    const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(context.connection, "CommandeFournisseur");
     const { id } = await params;
     const commande = await CommandeFournisseur.findById(id).lean();
     if (!commande) return NextResponse.json({ error: "Introuvable" }, { status: 404 });
@@ -11,7 +16,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(context.connection, "CommandeFournisseur");
     const { id } = await params;
     const body = await req.json();
     try {
@@ -24,7 +31,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(_req, ROLES);
+    if (!context) return response;
+    const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(context.connection, "CommandeFournisseur");
     const { id } = await params;
     await CommandeFournisseur.findByIdAndUpdate(id, { Statut: "ANNULEE" });
     return NextResponse.json({ ok: true });

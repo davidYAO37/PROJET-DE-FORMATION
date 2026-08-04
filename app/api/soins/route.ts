@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { ISoinHospitalisation } from "@/models/hospitalisation/SoinHospitalisation";
+import { refreshRapportHospitalisation } from "@/lib/rapportHospitalisation";
 
 const ROLES = ["admin", "medecin", "infirmier"];
 
@@ -56,6 +57,12 @@ export async function POST(req: NextRequest) {
       date: body.date ? new Date(body.date) : new Date(),
       validation: { valide: false },
     });
+
+    try {
+      await refreshRapportHospitalisation(connection, body.hospitalisationId);
+    } catch (refreshError) {
+      console.error("Erreur lors de l'actualisation du rapport d'hospitalisation:", refreshError);
+    }
 
     return NextResponse.json({ success: true, data: soin }, { status: 201 });
   } catch (error) {

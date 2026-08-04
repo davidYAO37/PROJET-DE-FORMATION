@@ -1,13 +1,18 @@
 // app/api/ListeAutreActes/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { ExamenHospitalisation } from "@/models";
-import { Medecin } from "@/models/medecin";
-import { Assurance } from "@/models/assurance";
-import { Patient } from "@/models/patient";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    getTenantModel(context.connection, "Medecin");
+    getTenantModel(context.connection, "Assurance");
+    getTenantModel(context.connection, "Patient");
     try {
         const { searchParams } = new URL(req.url);
         const patientId = searchParams.get("patientId");

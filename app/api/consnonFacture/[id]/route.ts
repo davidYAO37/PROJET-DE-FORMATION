@@ -1,8 +1,11 @@
 
-import { db } from "@/db/mongoConnect";
-import { Consultation } from "@/models/consultation";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IConsultation } from "@/models/consultation";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // Fonction pour valider les ObjectIds
 const isValidObjectId = (value: any): boolean => {
@@ -44,8 +47,11 @@ const cleanPayload = (payload: any): any => {
 };
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+
   try {
-    await db();
     const { id } = await params;
     const body = await req.json();
     if (!id) {

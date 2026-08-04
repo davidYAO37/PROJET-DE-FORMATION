@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { db } from "@/db/mongoConnect";
-import { LignePrestation } from "@/models/lignePrestation";
-import { ActeParamLabo } from "@/models/acteParamLabo";
-import { ResultatLignePrestation } from "@/models/resultatLignePrestation";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ILignePrestation } from "@/models/lignePrestation";
+import { IActeParamLabo } from "@/models/acteParamLabo";
+import { IResultatLignePrestation } from "@/models/resultatLignePrestation";
 
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ lignePrestationId: string }> }) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const { connection } = context;
+    const LignePrestation = getTenantModel<ILignePrestation>(connection, "LignePrestation");
+    const ActeParamLabo = getTenantModel<IActeParamLabo>(connection, "ActeParamLabo");
+    const ResultatLignePrestation = getTenantModel<IResultatLignePrestation>(connection, "ResultatLignePrestation");
 
     try {
-        await db();
         const { lignePrestationId } = await params;
 
         const { searchParams } = new URL(req.url);

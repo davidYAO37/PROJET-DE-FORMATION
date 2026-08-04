@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Consultation } from "@/models/consultation";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IConsultation } from "@/models/consultation";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
     try {
         const { id } = await params;
         const consultation = await Consultation.findById(id);
@@ -17,7 +22,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
 
     try {
         const { id } = await params;

@@ -69,6 +69,7 @@ export interface ILignePrestation extends Omit<Document, '_id'> {
     medecinExecutant?: string;
     idFacturation?: Types.ObjectId | string;
     SOCIETE_PATIENT?: string;
+    IDSOCIETEPARTENAIRE?: Types.ObjectId | string;
     ordonnancementAffichage?: number;
     entrepriseId?: string;
     Code_dossier?: string;
@@ -95,7 +96,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         partAssurance: { type: Number, required: true },
         tauxAssurance: { type: Number, required: true },
         IdPatient: { type: Schema.Types.ObjectId, ref: "Patient", required: true },
-        idHospitalisation: { type: Schema.Types.ObjectId, ref: "ExamenHospit" },
+        idHospitalisation: { type: Schema.Types.ObjectId, ref: "ExamenHospitalisation" },
         partAssure: { type: Number, required: true },
         prixTotal: { type: Number, required: true },
         coefficientActe: { type: Number, required: true },
@@ -153,6 +154,7 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         medecinExecutant: { type: String },
         idFacturation: { type: Schema.Types.ObjectId, ref: "Facturation" },
         SOCIETE_PATIENT: { type: String },
+        IDSOCIETEPARTENAIRE: { type: Schema.Types.ObjectId, ref: 'Societe' },
         ordonnancementAffichage: { type: Number },
         entrepriseId: { type: String },
         Code_dossier: { type: String },

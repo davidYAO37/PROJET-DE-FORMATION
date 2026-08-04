@@ -48,6 +48,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
     const [numBon, setNumBon] = useState("");
     const [recuPar, setRecuPar] = useState("");
     const [CodePrestation, setCodePrestation] = useState("");
+    const [acteWarning, setActeWarning] = useState<string | null>(null);
 
     useEffect(() => {
         const nom = localStorage.getItem("nom_utilisateur");
@@ -206,6 +207,84 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         setTotalPatient(partPat + surplusCalc);
     }, [montantClinique, montantAssurance, taux, selectedAssurance, assurances]);
 
+    // Validation de la sélection de l'acte (même logique que BlocActe dans ConsultationAdd)
+    const handleActeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const acteId = e.target.value;
+        setActeWarning(null);
+
+        if (!acteId) {
+            setSelectedActe('');
+            return;
+        }
+
+        const acte = actes.find((a) => a._id === acteId);
+        if (!acte) {
+            setSelectedActe(acteId);
+            return;
+        }
+
+        // Acte non facturable : pas de restriction
+        if (acte.ActeNonFacturable) {
+            setSelectedActe(acteId);
+            return;
+        }
+
+        // Acte facturable : vérifier la dernière consultation du même acte pour ce patient
+        if (!patient?._id) {
+            setSelectedActe(acteId);
+            return;
+        }
+
+        try {
+            const res = await fetch(`/api/consultation?patientId=${patient._id}`);
+            if (!res.ok) {
+                setSelectedActe(acteId);
+                return;
+            }
+
+            const consultations = await res.json();
+            if (!Array.isArray(consultations)) {
+                setSelectedActe(acteId);
+                return;
+            }
+
+            const sameActeConsultations = consultations.filter((c: any) =>
+                c._id !== currentConsultation?._id &&
+                (c.IDACTE === acteId || c.designationC === acte.designationacte)
+            );
+
+            if (sameActeConsultations.length === 0) {
+                setSelectedActe(acteId);
+                return;
+            }
+
+            // Trier par date décroissante
+            sameActeConsultations.sort((a: any, b: any) =>
+                new Date(b.Date_consulation).getTime() - new Date(a.Date_consulation).getTime()
+            );
+
+            const lastConsultation = sameActeConsultations[0];
+            const lastDate = new Date(lastConsultation.Date_consulation);
+            const today = new Date();
+            const diffTime = today.getTime() - lastDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays <= 15) {
+                const dateStr = lastDate.toLocaleDateString();
+                setActeWarning(
+                    `Ce patient a déjà bénéficié de la prestation "${acte.designationacte}" le ${dateStr} (il y a ${diffDays} jour${diffDays > 1 ? 's' : ''}). Veuillez choisir une prestation non facturable.`
+                );
+                setSelectedActe('');
+                return;
+            }
+
+            setSelectedActe(acteId);
+        } catch (error) {
+            console.error('Erreur lors de la vérification des consultations:', error);
+            setSelectedActe(acteId);
+        }
+    };
+
     // Fonction pour charger une consultation par son CodePrestation
     const loadConsultationByCode = async () => {
         if (!CodePrestation.trim()) {
@@ -358,10 +437,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                         <Form.Label className="fw-semibold">Choisir la prestation</Form.Label>
                         <Form.Select
                             value={selectedActe}
-                            onChange={e => {
-                                console.log("Acte sélectionné:", e.target.value);
-                                setSelectedActe(e.target.value);
-                            }}
+                            onChange={handleActeChange}
                             size="lg"
                             className="border-primary"
                         >
@@ -374,6 +450,11 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                                 ))
                             )}
                         </Form.Select>
+                        {acteWarning && (
+                            <Alert variant="warning" className="mt-2 py-2 mb-0">
+                                <small>{acteWarning}</small>
+                            </Alert>
+                        )}
                     </Col>
                     <Col md={2}>
                         <Form.Label className="fw-semibold">Montant Clinique</Form.Label>

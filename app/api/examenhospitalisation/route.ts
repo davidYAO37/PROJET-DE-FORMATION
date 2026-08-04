@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ExamenHospitalisation } from "@/models/examenHospit";
-import { LignePrestation } from "@/models/lignePrestation";
-import mongoose, { Schema } from "mongoose";
-import { Assurance } from "@/models/assurance";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+import { ILignePrestation } from "@/models/lignePrestation";
+import { IAssurance } from "@/models/assurance";
+import { IConsultation } from "@/models/consultation";
+import mongoose from "mongoose";
+
+const ROLES = ["admin", "medecin", "accueil"];
 
 export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const { connection } = context;
+
     try {
-        await db();
+        const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, "ExamenHospitalisation");
         const { searchParams } = new URL(req.url);
         const CodePrestation = searchParams.get("CodePrestation");
         const typeActe = searchParams.get("typeActe");
@@ -44,8 +52,16 @@ export async function GET(req: NextRequest) {
 // enregistrement ou modification de l'examen
 
 export async function POST(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const { connection } = context;
+
     try {
-        await db();
+        const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, "ExamenHospitalisation");
+        const LignePrestation = getTenantModel<ILignePrestation>(connection, "LignePrestation");
+        const Assurance = getTenantModel<IAssurance>(connection, "Assurance");
+        const Consultation = getTenantModel<IConsultation>(connection, "Consultation");
+
         const body = await req.json();
         const { header, lignes, Recupar } = body || {};
 
@@ -88,7 +104,6 @@ export async function POST(req: NextRequest) {
         // Récupérer les informations de la consultation si disponible
         let consultationData: any = {};
         if (header.CodePrestation) {
-            const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
             consultationData = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean() || {};
             console.log("📋 Données de la consultation récupérées:", {
                 IdPatient: consultationData.IdPatient,
@@ -98,6 +113,9 @@ export async function POST(req: NextRequest) {
                 Sexe: consultationData.Sexe
             });
         }
+
+        // SI COMBO_Bilan_société..ValeurAffichée<>"" ALORS ... SINON ... FIN
+        const hasSocietePartenaire = Boolean(header.IDSOCIETEPARTENAIRE);
 
         // Préparer les données de l'examen avec les champs supplémentaires
         const examenData = {
@@ -115,8 +133,13 @@ export async function POST(req: NextRequest) {
             // Ajouter le champ sexe depuis la consultation
             sexe: consultationData.Sexe || header.sexe || "",
 
-            //StatutPrescription
-            statutPrescriptionMedecin: header.Statutprescription || 2,
+            // Si c'est un bilan (société partenaire sélectionnée) on ne facture pas et on passe à la réception
+            statutPrescriptionMedecin: hasSocietePartenaire ? 1 : (header.Statutprescription || 2),
+            ...(hasSocietePartenaire && { StatutLaboratoire: 1 }),
+            IDSOCIETEPARTENAIRE: hasSocietePartenaire
+                ? new mongoose.Types.ObjectId(header.IDSOCIETEPARTENAIRE)
+                : null,
+            PartenaireBilan: hasSocietePartenaire ? (header.PartenaireBilan || "") : "",
 
             // Informations de suivi
             SaisiPar: Recupar,
@@ -152,7 +175,6 @@ export async function POST(req: NextRequest) {
         // Récupérer l'IdPatient depuis la consultation s'il n'est pas fourni
         let patientId = header.IdPatient;
         if (!patientId && header.CodePrestation) {
-            const Consultation = mongoose.models.Consultation || mongoose.model("Consultation", new Schema({}, { strict: false }));
             const consultation: any = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean();
             if (consultation) {
                 patientId = consultation.IdPatient || consultation.IdPatient;
@@ -176,7 +198,6 @@ export async function POST(req: NextRequest) {
                     if (!patientId && !l.IdPatient) {
                         throw new Error("IdPatient est requis pour la ligne de prestation");
                     }
-
                     const doc: any = {
                         ...l,
                         CodePrestation: header.CodePrestation,
@@ -207,12 +228,13 @@ export async function POST(req: NextRequest) {
                         montantTotalAPayer: (l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0) + (l.PartAssure || 0),
                         prixAccepte: l.Accepter || 0,
                         prixRefuse: l.Refuser || 0,
-                        statutPrescriptionMedecin: l.Statutprescription || 2,
+                        statutPrescriptionMedecin: hasSocietePartenaire ? 1 : (l.Statutprescription || 2),
                         coefficientClinique: l.CoefClinique || l.Coefficient || 1,
                         taxe: l.TAXE || 0,
                         Assurance: header.Assurance || "",
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
+                        IDSOCIETEPARTENAIRE: saved.IDSOCIETEPARTENAIRE || null,
                         
                         // Ajouter le champ sexe depuis la consultation
                         sexe: consultationData.Sexe || "",
@@ -237,7 +259,6 @@ export async function POST(req: NextRequest) {
                     const isValidObjectId = l.IDLignePrestation &&
                         l.IDLignePrestation.length === 24 &&
                         /^[0-9a-fA-F]{24}$/.test(l.IDLignePrestation);
-
                     if (isValidObjectId) {
                         console.log(`✏️ Mise à jour ligne ${index + 1} avec ObjectId:`, l.IDLignePrestation);
                         result = await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, doc, { new: true });
@@ -259,7 +280,6 @@ export async function POST(req: NextRequest) {
                 }
             })
         );
-
         // Vérifier les échecs
         const failures = results.filter((r) => r.status === "rejected");
         if (failures.length > 0) {
@@ -289,7 +309,6 @@ export async function POST(req: NextRequest) {
                 { status: 207 }
             );
         }
-
         return NextResponse.json({
             success: true,
             message: isUpdate ? "Examen mis à jour avec succès" : "Examen créé avec succès",

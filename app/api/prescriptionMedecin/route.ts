@@ -1,12 +1,17 @@
-import { NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Prescription } from "@/models/Prescription";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IPrescription } from "@/models/Prescription";
 
-export async function GET(request: Request) {
+const ROLES = ["admin", "medecin", "accueil"];
+
+export async function GET(request: NextRequest) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
+
     const { searchParams } = new URL(request.url);
     const CodePrestation = searchParams.get("CodePrestation");
-
-    await db();
 
     try {
         // Recherche la prescription par CodePrestation, en excluant les champs
@@ -26,8 +31,10 @@ export async function GET(request: Request) {
     }
 }
 
-export async function POST(request: Request) {
-    await db();
+export async function POST(request: NextRequest) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
 
     try {
         const body = await request.json();

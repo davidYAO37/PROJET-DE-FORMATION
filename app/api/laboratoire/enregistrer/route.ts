@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { LignePrestation } from "@/models/lignePrestation";
-import { ResultatLignePrestation } from "@/models/resultatLignePrestation";
-import { ExamenHospitalisation } from "@/models/examenHospit";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ILignePrestation } from "@/models/lignePrestation";
+import { IResultatLignePrestation } from "@/models/resultatLignePrestation";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 interface ParametreResultat {
     _id?: string;
@@ -21,9 +24,14 @@ interface ParametreResultat {
 }
 
 export async function POST(req: NextRequest) {
-    try {
-        await db();
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const { connection } = context;
+    const LignePrestation = getTenantModel<ILignePrestation>(connection, "LignePrestation");
+    const ResultatLignePrestation = getTenantModel<IResultatLignePrestation>(connection, "ResultatLignePrestation");
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, "ExamenHospitalisation");
 
+    try {
         const body = await req.json();
 
         const {

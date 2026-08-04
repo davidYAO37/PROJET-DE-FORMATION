@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { caisse } from '@/models/caisse';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { ICaisse } from '@/models/caisse';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
+  const { context, response } = await withTenant(request, ROLES);
+  if (!context) return response;
+  const caisse = getTenantModel<ICaisse>(context.connection, 'Caisse');
+
   try {
-    await db();
     const { searchParams } = new URL(request.url);
     const entrepriseId = searchParams.get('entrepriseId') || '';
     const id = searchParams.get('id') || '';
@@ -37,8 +43,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response } = await withTenant(request, ROLES);
+  if (!context) return response;
+  const caisse = getTenantModel<ICaisse>(context.connection, 'Caisse');
+
   try {
-    await db();
     const body = await request.json();
     const { action } = body;
 

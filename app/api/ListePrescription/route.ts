@@ -1,12 +1,17 @@
 // app/api/ListePrescription/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { Prescription } from "@/models/Prescription";
-import { Medecin } from "@/models/medecin";
-import { Assurance } from "@/models/assurance";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IPrescription } from "@/models/Prescription";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
+    getTenantModel(context.connection, "Medecin");
+    getTenantModel(context.connection, "Assurance");
     try {
         const { searchParams } = new URL(req.url);
         const patientId = searchParams.get("patientId");

@@ -94,6 +94,8 @@ export type ExamenHospitalisationForm = {
     IDMEDECIN?: string;
     Code_dossier?: string;
     sexe?: string;
+    societePartenaireId?: string;
+    societePartenaire?: string;
 
 };
 
@@ -135,5 +137,7 @@ export const defaultFormData: ExamenHospitalisationForm = {
     reduction: 0,
     MotifRemise: "",
     TotalapayerPatient: 0,
-    sexe: ""
+    sexe: "",
+    societePartenaireId: "",
+    societePartenaire: ""
 };

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { useEffect, useState } from 'react';
 import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/components/FactureExamHospit/ExamenHospitModalCaisse';
+import ExamenHospitalisationModalCaisseManuelle from '@/app/pages/servicecaisse/components/FactureExamHospitManuelle/ExamenHospitModalCaisseManuelle';
 import PharmacieCaisseModal from '@/app/pages/servicecaisse/components/PharmacieCaisse/PharmacieCaisseModal';
 import FacturesNonSoldesModal from '@/app/pages/servicecaisse/components/FacturesNonSoldesModal';
 import PointCaisseModal from '@/app/pages/servicecaisse/components/PointCaisseModal';
@@ -19,7 +20,8 @@ const menu = [
   { label: 'Tableau de bord', path: '/pages/servicecaisse/tcaisse', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
   { label: 'Compte patient', path: '/pages/servicecaisse/comptePatient', icon: <i className="bi bi-wallet-fill me-2 text-success"></i> },
   { label: 'Factures en attente', path: '/pages/servicecaisse/listefactures', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
-  { label: 'Saisir une Facture Exam-Hospit...', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i>, style: { cursor: 'pointer' } },
+  { label: 'Saisie Auto Facture Exam-Hospit...', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i>, style: { cursor: 'pointer' } },
+  { label: 'Saisie Manuelle Facture Exam-Hospit...', path: '#', isModal: true, icon: <i className="bi bi-pencil-square me-2 text-info"></i>, style: { cursor: 'pointer' } },
   { label: 'Facturer une pharmacie', path: '#', isModal: true, icon: <i className="bi bi-arrow-right-circle-fill me-2 text-warning"></i>, style: { cursor: 'pointer' } },
   { label: 'Facture à solder', path: '#', isModal: true, icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i>, style: { cursor: 'pointer' } },
   { label: 'Point de caisse', path: '#', isModal: true, icon: <i className="bi bi-cash-stack me-2 text-success"></i>, style: { cursor: 'pointer' } },
@@ -38,6 +40,7 @@ export default function Sidebarcaisse() {
   const [showPaiementPharmacieModal, setShowPaiementPharmacieModal] = useState(false);
   const [showFacturesNonSoldesModal, setShowFacturesNonSoldesModal] = useState(false);
   const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
+  const [showFactureManuelleModal, setShowFactureManuelleModal] = useState(false);
   const [showPointCaisseModal, setShowPointCaisseModal] = useState(false);
   const [showListeEncaissementModal, setShowListeEncaissementModal] = useState(false);
   const [showListeFacturesAnnuleesModal, setShowListeFacturesAnnuleesModal] = useState(false);
@@ -179,6 +182,12 @@ export default function Sidebarcaisse() {
     setOpen(false);
   };
 
+  // ouvre le modal Facture Manuelle et ferme la sidebar en mobile
+  const handleFactureManuelleClick = () => {
+    setShowFactureManuelleModal(true);
+    setOpen(false);
+  };
+
   // ouvre le modal des factures non soldées et ferme la sidebar en mobile
   const handleFacturesNonSoldesClick = () => {
     setShowFacturesNonSoldesModal(true);
@@ -255,8 +264,10 @@ export default function Sidebarcaisse() {
                 <div
                   className={`sidebar-link-medical d-flex align-items-center justify-content-between ${pathname === item.path ? 'active' : ''} cursor-pointer`}
                   onClick={
-                    item.label === 'Saisir une Facture Exam-Hospit...'
+                    item.label === 'Saisie Auto Facture Exam-Hospit...'
                       ? handleFactureClick
+                      : item.label === 'Saisie Manuelle Facture Exam-Hospit...'
+                        ? handleFactureManuelleClick
                       : item.label === 'Facturer une pharmacie'
                         ? handlePaiementPharmacieClick
                         : item.label === 'Facture à solder'
@@ -318,6 +329,13 @@ export default function Sidebarcaisse() {
       <ExamenHospitalisationModalCaisse
         show={showFactureModal}
         onHide={() => setShowFactureModal(false)}
+        onPaiementSuccess={chargerFacturesASolder}
+      />
+
+      {/* Modal pour la facture manuelle */}
+      <ExamenHospitalisationModalCaisseManuelle
+        show={showFactureManuelleModal}
+        onHide={() => setShowFactureManuelleModal(false)}
         onPaiementSuccess={chargerFacturesASolder}
       />
 

@@ -31,7 +31,7 @@ const SERVICE_LABELS: Record<ServiceHospitalisation | string, string> = {
   URG: 'Urgences',
 };
 
-const formatDateInput = (value: string | Date) => {
+const formatDateInput = (value?: string | Date | null) => {
   if (!value) return '';
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return '';
@@ -147,7 +147,7 @@ export default function RapportHospitalisationModal({
       patientNom: rapport.patientNom,
       patientPrenoms: rapport.patientPrenoms,
       dateEntree: new Date(rapport.dateEntree),
-      dateSortie: new Date(rapport.dateSortie),
+      dateSortie: rapport.dateSortie ? new Date(rapport.dateSortie) : undefined,
       service: rapport.service,
       motifHospitalisation: rapport.motifHospitalisation,
       diagnosticAdmission: rapport.diagnosticAdmission,
@@ -241,14 +241,15 @@ export default function RapportHospitalisationModal({
     }
   };
 
-  const getServiceLabel = (service: ServiceHospitalisation | string) => {
-    return SERVICE_LABELS[service] || service || 'N/A';
+  const getServiceLabel = (service?: ServiceHospitalisation | string) => {
+    if (!service) return 'N/A';
+    return SERVICE_LABELS[service] || service;
   };
 
   const getReportPrintContent = (rapport: RapportHospitalisationForm | RapportHospitalisation) => {
     const patientFullName = `${rapport.patientNom || ''} ${rapport.patientPrenoms || ''}`.trim() || 'Patient non renseigné';
     const dateEntree = new Date(rapport.dateEntree).toLocaleDateString('fr-FR');
-    const dateSortie = new Date(rapport.dateSortie).toLocaleDateString('fr-FR');
+    const dateSortie = rapport.dateSortie ? new Date(rapport.dateSortie).toLocaleDateString('fr-FR') : 'N/A';
     const dateRapport = new Date(rapport.dateRapport).toLocaleDateString('fr-FR');
 
     return `

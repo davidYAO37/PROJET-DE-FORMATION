@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { HonoraireMed } from '@/models/HonoraireMed';
-import { HonorairePaye } from '@/models/HonorairePaye';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IHonoraireMed } from '@/models/HonoraireMed';
+import { IHonorairePaye } from '@/models/HonorairePaye';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
+  const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+
   try {
-    await db();
     const { id } = await params;
     const { honoraireId, ancienMontant, montant, modePaiement, banque, numeroCheque, payePar } = await request.json();
 
@@ -76,8 +84,13 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
+  const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+
   try {
-    await db();
     const { id } = await params;
     const { honoraireId, montant } = await request.json();
 

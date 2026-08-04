@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
 import { COMPTE_RENDU_OPERATOIRE_TYPES, COMPTE_RENDU_OPERATOIRE_STATUTS } from '@/types/compteRenduOperatoire';
-import { CompteRenduOperatoire } from '@/models/compteRenduOperatoire';
+import { ICompteRenduOperatoire } from '@/models/compteRenduOperatoire';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 // PUT - Mettre à jour un compte rendu opératoire spécifique
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const CompteRenduOperatoire = getTenantModel<ICompteRenduOperatoire>(context.connection, 'CompteRenduOperatoire');
+    getTenantModel(context.connection, 'Patient');
+    getTenantModel(context.connection, 'Medecin');
+
     try {
         const { id } = await params;
         const body = await req.json();
@@ -95,7 +102,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE - Supprimer un compte rendu opératoire spécifique
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const CompteRenduOperatoire = getTenantModel<ICompteRenduOperatoire>(context.connection, 'CompteRenduOperatoire');
+
     try {
         const { id } = await params;
         const userName = req.headers.get('x-user-name') || '';

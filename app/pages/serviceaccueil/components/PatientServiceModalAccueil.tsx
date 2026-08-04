@@ -1,5 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Tabs, Tab, Button, Spinner, Alert, Table, Badge } from 'react-bootstrap';
+import { FaEdit } from 'react-icons/fa';
+import type { Patient } from '@/types/patient';
+import FicheConsultationUpdate from './ConsultationUpdate/FicheConsultationUpdate';
 
 interface PatientServiceModalAccueilProps {
     show: boolean;
@@ -17,6 +20,7 @@ interface Consultation {
     CodePrestation: string;
     Medecin?: string;
     StatutC?: boolean;
+    statutPrescriptionMedecin?: number;
 }
 
 interface Prescription {
@@ -48,6 +52,10 @@ export default function PatientServiceModalAccueil({ show, onHide, patientId }: 
     const [consultationsLoading, setConsultationsLoading] = useState(false);
     const [consultationsError, setConsultationsError] = useState('');
 
+    const [patientData, setPatientData] = useState<Patient | null>(null);
+    const [showUpdateConsultation, setShowUpdateConsultation] = useState(false);
+    const [selectedConsult, setSelectedConsult] = useState<Consultation | null>(null);
+
     const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
     const [prescriptionsLoading, setPrescriptionsLoading] = useState(false);
     const [prescriptionsError, setPrescriptionsError] = useState('');
@@ -65,6 +73,7 @@ export default function PatientServiceModalAccueil({ show, onHide, patientId }: 
                 if (!response.ok) throw new Error('Erreur patient');
                 const data = await response.json();
                 setPatientName(`${data.Nom || ''} ${data.Prenoms || ''}`.trim());
+                setPatientData(data);
             } catch (error) {
                 console.error('Erreur chargement patient:', error);
                 setPatientName('Patient');
@@ -150,7 +159,23 @@ export default function PatientServiceModalAccueil({ show, onHide, patientId }: 
         if (tab) setActiveTab(tab);
     };
 
+    const handleModifierConsultation = (consultation: Consultation) => {
+        if ((consultation.statutPrescriptionMedecin ?? 2) >= 3) {
+            alert("⚠️ Cette consultation est déjà facturée et ne peut plus être modifiée.");
+            return;
+        }
+        setSelectedConsult(consultation);
+        setShowUpdateConsultation(true);
+    };
+
+    const handleCloseUpdateConsultation = () => {
+        setShowUpdateConsultation(false);
+        setSelectedConsult(null);
+        loadConsultations();
+    };
+
     return (
+        <>
         <Modal show={show} onHide={onHide} size="xl" centered scrollable>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>Service Patient : {patientName || 'Chargement...'}</Modal.Title>
@@ -177,6 +202,7 @@ export default function PatientServiceModalAccueil({ show, onHide, patientId }: 
                                             <th>Montant</th>
                                             <th>Médecin</th>
                                             <th>Statut</th>
+                                            <th>Action</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -188,9 +214,29 @@ export default function PatientServiceModalAccueil({ show, onHide, patientId }: 
                                                 <td>{(consult.montantapayer ?? consult.PrixClinique ?? 0).toLocaleString()} FCFA</td>
                                                 <td>{consult.Medecin || '-'}</td>
                                                 <td>
-                                                    <Badge bg={consult.StatutC ? 'success' : 'warning'}>
-                                                        {consult.StatutC ? 'Facturée' : 'En attente'}
-                                                    </Badge>
+                                                    {(() => {
+                                                        const statut = consult.statutPrescriptionMedecin ?? 1;
+                                                        if (statut >= 3) {
+                                                            return <Badge bg="success">Facturé</Badge>;
+                                                        }
+                                                        if (statut === 2) {
+                                                            return consult.StatutC
+                                                                ? <Badge bg="secondary">Pas Facturé</Badge>
+                                                                : <Badge bg="warning">En attente</Badge>;
+                                                        }
+                                                        return <Badge bg="secondary">Pas Facturé</Badge>;
+                                                    })()}
+                                                </td>
+                                                <td>
+                                                    <Button
+                                                        variant="outline-primary"
+                                                        size="sm"
+                                                        disabled={(consult.statutPrescriptionMedecin ?? 2) >= 3}
+                                                        onClick={() => handleModifierConsultation(consult)}
+                                                        title={(consult.statutPrescriptionMedecin ?? 2) >= 3 ? "Consultation déjà facturée" : "Modifier la consultation"}
+                                                    >
+                                                        <span>Modifier</span> <FaEdit />
+                                                    </Button>
                                                 </td>
                                             </tr>
                                         ))}
@@ -305,5 +351,24 @@ export default function PatientServiceModalAccueil({ show, onHide, patientId }: 
                 </Button>
             </Modal.Footer>
         </Modal>
+
+        {/* Modal de modification de consultation */}
+        <Modal show={showUpdateConsultation} onHide={handleCloseUpdateConsultation} size="xl" centered scrollable>
+            <Modal.Header closeButton>
+                <Modal.Title>
+                    Modifier la consultation - {selectedConsult?.CodePrestation}
+                </Modal.Title>
+            </Modal.Header>
+            <Modal.Body>
+                {patientData && (
+                    <FicheConsultationUpdate
+                        patient={patientData}
+                        consultationId={selectedConsult?._id}
+                        onClose={handleCloseUpdateConsultation}
+                    />
+                )}
+            </Modal.Body>
+        </Modal>
+        </>
     );
 }

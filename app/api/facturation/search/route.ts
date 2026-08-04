@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Facturation } from "@/models/Facturation";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IFacturation } from "@/models/Facturation";
 import mongoose from "mongoose";
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 // GET /api/facturation/search
 // Params: patient, codePrestation, dateDebut, dateFin, typefacture, statut, page, limit
 export async function GET(req: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
+
     try {
-        await db();
         const { searchParams } = new URL(req.url);
 
         const patient = searchParams.get("patient") || "";

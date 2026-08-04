@@ -1,15 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Pharmacie } from "@/models/Pharmacie";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IPharmacie } from "@/models/Pharmacie";
 
-export async function GET() {
-    await db();
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+
+export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     const actes = await Pharmacie.find().lean();
     return NextResponse.json(actes);
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     const body = await req.json();
     try {
         const acte = await Pharmacie.create(body);

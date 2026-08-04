@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { FacturationAssur } from '@/models/factureAssur';
-import { PaiementPartenaire } from '@/models/paiementPartenaire';
-import { Facturation } from '@/models/Facturation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IFactureAssur } from '@/models/factureAssur';
+import { IPaiementPartenaire } from '@/models/paiementPartenaire';
+import { IFacturation } from '@/models/Facturation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function GET(request: NextRequest) {
-  try {
-    await db();
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const FacturationAssur = getTenantModel<IFactureAssur>(connection, 'FactureAssur');
+  const PaiementPartenaire = getTenantModel<IPaiementPartenaire>(connection, 'PaiementPartenaire');
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
 
+  try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'liste';
     const entrepriseId = searchParams.get('entrepriseId') || '';
@@ -84,8 +92,14 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const FacturationAssur = getTenantModel<IFactureAssur>(connection, 'FactureAssur');
+  const PaiementPartenaire = getTenantModel<IPaiementPartenaire>(connection, 'PaiementPartenaire');
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+
   try {
-    await db();
     const body = await request.json();
     const { action } = body;
 

@@ -1,15 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { HonoraireMed } from '@/models/HonoraireMed';
-import { HonorairePaye } from '@/models/HonorairePaye';
-import { LigneHonoraireMed } from '@/models/LigneHonoraireMed';
-import { Medecin } from '@/models/medecin';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IHonoraireMed } from '@/models/HonoraireMed';
+import { IHonorairePaye } from '@/models/HonorairePaye';
+import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
+import { IMedecin } from '@/models/medecin';
 import mongoose from 'mongoose';
 
-export async function GET(request: NextRequest) {
-  try {
-    await db();
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
+export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
+  const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+  const LigneHonoraireMed = getTenantModel<ILigneHonoraireMed>(connection, 'LigneHonoraireMed');
+  const Medecin = getTenantModel<IMedecin>(connection, 'Medecin');
+
+  try {
     const { searchParams } = new URL(request.url);
     const dateDebut = searchParams.get('dateDebut');
     const dateFin = searchParams.get('dateFin');
@@ -97,8 +106,13 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
+  const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+
   try {
-    await db();
     const body = await request.json();
     const { action } = body;
 

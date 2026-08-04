@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
-import ArretTravail from '@/models/arretTravail';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IArretTravail } from '@/models/arretTravail';
 import { isTypeArretTravail, ARRET_TRAVAIL_STATUTS } from '@/types/arretTravail';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 // PUT - Mettre à jour un arrêt de travail spécifique
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const ArretTravail = getTenantModel<IArretTravail>(context.connection, 'ArretTravail');
+  getTenantModel(context.connection, 'Patient');
+  getTenantModel(context.connection, 'Medecin');
+
   try {
     const { id } = await params;
     const body = await req.json();
@@ -124,7 +131,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE - Supprimer un arrêt de travail spécifique
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  if (!context) return tenantErrorResponse;
+  const ArretTravail = getTenantModel<IArretTravail>(context.connection, 'ArretTravail');
+
   try {
     const { id } = await params;
     const userName = req.headers.get('x-user-name') || '';

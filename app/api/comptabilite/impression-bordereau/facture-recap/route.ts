@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { FactureRecap } from '@/models/factureRecap';
-import { FacturationAssur } from '@/models/factureAssur';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IFactureRecap } from '@/models/factureRecap';
+import { IFactureAssur } from '@/models/factureAssur';
 import mongoose from 'mongoose';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 // SELECT Facture_Recap.* FROM Facture_Recap WHERE Facture_Recap.IDFactureAssur = {ParamIDFactureAssur}
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const FactureRecap = getTenantModel<IFactureRecap>(context.connection, 'FactureRecap');
+  const FacturationAssur = getTenantModel<IFactureAssur>(context.connection, 'FactureAssur');
+
   try {
-    await db();
     const { searchParams } = new URL(request.url);
     const idFactureAssur = searchParams.get('idFactureAssur') || '';
 

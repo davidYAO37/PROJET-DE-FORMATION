@@ -77,6 +77,7 @@ export interface IExamenHospitalisation extends Omit<Document, '_id'> {
     NumCompteVisa?: string;
     DateValidation?: Date;
     IDSOCIETEPARTENAIRE?: Types.ObjectId;
+    PartenaireBilan?: string;
     ProvenanceExamen?: string;
     NIdentificationExamen?: string;
     Biologiste?: string;
@@ -191,6 +192,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         NumCompteVisa: { type: String, maxlength: 50 },
         DateValidation: { type: Date },
         IDSOCIETEPARTENAIRE: { type: Schema.Types.ObjectId, ref: 'Societe' },
+        PartenaireBilan: { type: String, maxlength: 100 },
         ProvenanceExamen: { type: String, maxlength: 150 },
         NIdentificationExamen: { type: String, maxlength: 50 },
         Biologiste: { type: String, maxlength: 60 },

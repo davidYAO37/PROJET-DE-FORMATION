@@ -1,23 +1,28 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IPatient } from '@/models/patient';
+import { IConsultation } from '@/models/consultation';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 export async function DELETE(
   request: NextRequest, 
   { params }: { params: Promise<{ type: string }> }
 ) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Patient = getTenantModel<IPatient>(connection, 'Patient');
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+
   try {
-    await db();
-    
     const { type } = await params;
     console.log('DELETE antecedent - Type:', type);
     
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
     const consultationId = searchParams.get('consultationId');
-    
-    // Importer dynamiquement pour éviter les dépendances circulaires
-    const { Patient } = await import('@/models/patient');
-    const { Consultation } = await import('@/models/consultation');
     
     let finalPatientId = patientId;
     

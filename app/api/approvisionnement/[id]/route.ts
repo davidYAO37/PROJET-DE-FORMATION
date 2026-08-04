@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Approvisionnement } from "@/models/Approvisionnement";
-import { EntreeStock } from "@/models/EntreeStock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IApprovisionnement } from "@/models/Approvisionnement";
+import { IEntreeStock } from "@/models/EntreeStock";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // -------------------- MODIFICATION D'UN ACHAT ET TOUTES ENTREESTOCK --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Approvisionnement = getTenantModel<IApprovisionnement>(context.connection, "Approvisionnement");
     try {
         const { id } = await params;
         const body = await req.json();
@@ -26,7 +31,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN ACHAT ET TOUS SES ENTREESTOCK --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Approvisionnement = getTenantModel<IApprovisionnement>(context.connection, "Approvisionnement");
+    const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
     try {
         const { id } = await params;
 

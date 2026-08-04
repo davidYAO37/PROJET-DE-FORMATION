@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
-import { Facturation } from '@/models/Facturation';
-import { LignePrestation } from '@/models/lignePrestation';
-import { Medecin } from '@/models/medecin';
-import { HonoraireMed } from '@/models/HonoraireMed';
-import { LigneHonoraireMed } from '@/models/LigneHonoraireMed';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IFacturation } from '@/models/Facturation';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IMedecin } from '@/models/medecin';
+import { IHonoraireMed } from '@/models/HonoraireMed';
+import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
 import mongoose from 'mongoose';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 const TAUX_TAXE = 7.5;
 
@@ -25,9 +28,15 @@ interface ActeBordereau {
 }
 
 export async function GET(request: NextRequest) {
-  try {
-    await db();
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const LignePrestation = getTenantModel<ILignePrestation>(connection, 'LignePrestation');
+  const Medecin = getTenantModel<IMedecin>(connection, 'Medecin');
 
+  try {
     const { searchParams } = new URL(request.url);
     const medecinId = searchParams.get('medecinId') || '';
     const dateDebut = searchParams.get('dateDebut') || '';
@@ -208,8 +217,17 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const LignePrestation = getTenantModel<ILignePrestation>(connection, 'LignePrestation');
+  const Medecin = getTenantModel<IMedecin>(connection, 'Medecin');
+  const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
+  const LigneHonoraireMed = getTenantModel<ILigneHonoraireMed>(connection, 'LigneHonoraireMed');
+
   try {
-    await db();
     const body = await request.json();
     const { medecinId, dateDebut, dateFin, actes, payePar } = body;
 

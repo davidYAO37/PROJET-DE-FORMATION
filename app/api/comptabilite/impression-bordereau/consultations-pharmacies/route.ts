@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { LigneFacture } from '@/models/ligneFacture';
-import { FacturationAssur } from '@/models/factureAssur';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { ILigneFacture } from '@/models/ligneFacture';
+import { IFactureAssur } from '@/models/factureAssur';
 import mongoose from 'mongoose';
 
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+
 export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const LigneFacture = getTenantModel<ILigneFacture>(context.connection, 'LigneFacture');
+  const FacturationAssur = getTenantModel<IFactureAssur>(context.connection, 'FactureAssur');
+
   try {
-    await db();
     const { searchParams } = new URL(request.url);
     const idFactureAssur = searchParams.get('idFactureAssur') || '';
 

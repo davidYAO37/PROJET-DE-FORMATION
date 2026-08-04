@@ -1,14 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Facturation } from '@/models/Facturation';
-import { Consultation } from '@/models/consultation';
-import { Prescription } from '@/models/Prescription';
-import { ExamenHospitalisation } from '@/models/examenHospit';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IFacturation } from '@/models/Facturation';
+import { IConsultation } from '@/models/consultation';
+import { IPrescription } from '@/models/Prescription';
+import { IExamenHospitalisation } from '@/models/examenHospit';
 import mongoose from 'mongoose';
 
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+
 export async function PUT(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
+  const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
+
   try {
-    await db();
     const body = await request.json();
     const {
       idConsultation,

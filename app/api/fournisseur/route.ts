@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Fournisseur } from "@/models/Fournisseur";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IFournisseur } from "@/models/Fournisseur";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Fournisseur = getTenantModel<IFournisseur>(context.connection, "Fournisseur");
     try {
         const { searchParams } = new URL(req.url);
         const actif = searchParams.get("actif");
@@ -17,7 +22,9 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Fournisseur = getTenantModel<IFournisseur>(context.connection, "Fournisseur");
     try {
         const body = await req.json();
         const fournisseur = await Fournisseur.create(body);
