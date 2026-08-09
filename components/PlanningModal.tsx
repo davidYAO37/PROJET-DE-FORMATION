@@ -42,6 +42,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
   const [rdvTable, setRdvTable] = useState<RdvRow[]>([]);
   const [nbRdvParJour, setNbRdvParJour] = useState(0);
   const [medecinsLoaded, setMedecinsLoaded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Fonction pour réinitialiser tous les états
   const resetForm = () => {
@@ -78,9 +79,9 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
       try {
         // Pour le moment, on charge tous les médecins sans filtrage
         const url = '/api/medecins';
-        
+
         console.log('Chargement des médecins depuis:', url);
-        
+
         const response = await fetch(url);
         if (response.ok) {
           const data = await response.json();
@@ -94,7 +95,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
         console.error('Erreur lors du chargement des médecins:', error);
       }
     };
-    
+
     // Ne charger les médecins que s'ils ne sont pas déjà chargés
     if (!medecinsLoaded) {
       fetchMedecins();
@@ -137,11 +138,11 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
     }
 
     const slots: RdvRow[] = [];
-    
+
     // Heure de début
     let HeureActuelle = debutHour;
     let MinuteActuelle = debutMinute;
-    
+
     // Heure de fin (HeureFin1-1 dans le code WLanguage)
     const HeureFin = finHour - 1;
 
@@ -160,7 +161,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
           MinuteActuelle = MinuteActuelle - 60;
         }
       }
-      
+
       // Boucle POUR pour les minutes
       for (let nMinuteActuelle = MinuteActuelle; nMinuteActuelle < 60; nMinuteActuelle += intervalle) {
         // Afficher l'heure actuelle
@@ -187,7 +188,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
     for (let d = new Date(debut); d <= fin; d.setDate(d.getDate() + 1)) {
       const jourSemaine = d.getDay(); // 0 = Dimanche, 1 = Lundi, ..., 6 = Samedi
       const jourNom = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'][jourSemaine];
-      
+
       let shouldAdd = false;
       switch (jourSemaine) {
         case 1: shouldAdd = jours.lundi; break;
@@ -225,6 +226,8 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
 
   // Valider le planning
   const handleValider = async () => {
+    if (isSubmitting) return;
+
     if (planningTable.length === 0 || rdvTable.length === 0) {
       alert("Le planning ou les heures du rendez-vous ne sont pas correctement définis");
       return;
@@ -234,6 +237,8 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
       alert("Veuillez indiquer le médecin avant de continuer cette opération");
       return;
     }
+
+    setIsSubmitting(true);
 
     // Récupérer l'IdEntreprise et l'utilisateur depuis le localStorage
     const idEntreprise = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') : null;
@@ -262,20 +267,20 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
 
       if (response.ok) {
         const result = await response.json();
-        
+
         // Afficher un message détaillé des actions effectuées
         let message = "✅ Planning traité avec succès!\n\n";
-        
+
         if (result.details) {
           message += `📊 **Actions effectuées :**\n`;
           message += `• Plannings créés : ${result.details.planningsCrees}\n`;
           message += `• Plannings modifiés : ${result.details.planningsModifies}\n\n`;
-          
+
           message += `👥 **Rendez-vous :**\n`;
           message += `• RDV avec patient conservés : ${result.details.rdvConserve}\n`;
           message += `• RDV disponibles supprimés : ${result.details.rdvSupprime}\n`;
           message += `• Nouveaux RDV créés : ${result.details.nouveauxRdv}\n\n`;
-          
+
           if (result.details.rdvConserve > 0) {
             message += `⚠️ **Important :** ${result.details.rdvConserve} rendez-vous avec patient ont été conservés et ne peuvent pas être modifiés.`;
           }
@@ -303,6 +308,8 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
     } catch (error) {
       console.error('Erreur:', error);
       alert("Erreur lors de la création du planning");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -323,7 +330,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
                 <i className="bi bi-gear-fill me-2"></i>
                 Paramètres du Planning
               </h5>
-              
+
               <Row className="mb-3">
                 <Col md={12}>
                   <Form.Group>
@@ -452,7 +459,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
                 <i className="bi bi-calendar-check-fill me-2"></i>
                 Planning Médecin
               </h5>
-              
+
               <div className={`table-responsive ${styles.tableResponsive}`} style={{ maxHeight: '400px', overflowY: 'auto' }}>
                 <Table striped bordered hover className={`shadow-sm ${styles.tableResponsive}`}>
                   <thead className={`table-dark sticky-top ${styles.tableDark}`}>
@@ -514,8 +521,8 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
         <Button variant="secondary" onClick={onHide}>
           Annuler
         </Button>
-        <Button variant="primary" onClick={handleValider}>
-          Valider Planning
+        <Button variant="primary" onClick={handleValider} disabled={isSubmitting}>
+          {isSubmitting ? 'Validation...' : 'Valider Planning'}
         </Button>
       </Modal.Footer>
     </Modal>

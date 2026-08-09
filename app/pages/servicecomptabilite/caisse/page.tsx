@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Row, Col, Button, Form, Table, Badge, Spinner, Alert, Tabs, Tab } from 'react-bootstrap';
 import FicheCaisseModal from '../components/FicheCaisseModal';
+import ParametrageOperationsModal from '../components/ParametrageOperationsModal';
 import { useEntreprise } from '@/hooks/useEntreprise';
 import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from '@/utils/printRecu';
 
@@ -157,6 +158,7 @@ export default function CaissePage() {
   const [filtreType, setFiltreType] = useState('');
   const [recherche, setRecherche] = useState('');
   const [showFiche, setShowFiche] = useState(false);
+  const [showParametrageOperations, setShowParametrageOperations] = useState(false);
   const [caisseIdEdition, setCaisseIdEdition] = useState<string | null>(null);
   const [onglet, setOnglet] = useState('caisse');
   const [facturations, setFacturations] = useState<any[]>([]);
@@ -224,7 +226,7 @@ export default function CaissePage() {
 
   // Filtrage des prestations
   const facturationsFiltrees = facturations.filter(f =>
-    !recherchePrestations || 
+    !recherchePrestations ||
     (f.patientNom || '').toLowerCase().includes(recherchePrestations.toLowerCase()) ||
     (f.typeActe || '').toLowerCase().includes(recherchePrestations.toLowerCase()) ||
     (f.modePaiement || '').toLowerCase().includes(recherchePrestations.toLowerCase()) ||
@@ -245,7 +247,7 @@ export default function CaissePage() {
     const printDateTime = now.toLocaleDateString('fr-FR') + ' ' + now.toLocaleTimeString('fr-FR');
 
     const titreRapport = 'ETAT DES MOUVEMENTS DE PRESTATIONS';
-    
+
     // Calculer les totaux
     const totalFactures = facturationsFiltrees.reduce((s, f) => s + (f.montantTotal || 0), 0);
     const totalEncaisses = facturationsFiltrees.reduce((s, f) => s + (f.montantPaye || 0), 0);
@@ -324,12 +326,12 @@ export default function CaissePage() {
               </thead>
               <tbody>
                 ${prestations.map((f, i) => {
-                  const estSoldé = (f.resteAPayer || 0) <= 0;
-                  const estPartiel = (f.montantPaye || 0) > 0 && !estSoldé;
-                  const statutText = estSoldé ? 'Soldé' : estPartiel ? 'Partiel' : 'Impayé';
-                  const statutClass = estSoldé ? 'bg-success' : estPartiel ? 'bg-warning' : 'bg-danger';
-                  
-                  return `
+      const estSoldé = (f.resteAPayer || 0) <= 0;
+      const estPartiel = (f.montantPaye || 0) > 0 && !estSoldé;
+      const statutText = estSoldé ? 'Soldé' : estPartiel ? 'Partiel' : 'Impayé';
+      const statutClass = estSoldé ? 'bg-success' : estPartiel ? 'bg-warning' : 'bg-danger';
+
+      return `
                     <tr style="${i % 2 === 0 ? 'background:#ffffff;' : 'background:#f9f9f9;'}">
                       <td style="border:1px solid #000;padding:5px;">${f.dateFacture ? new Date(f.dateFacture).toLocaleDateString('fr-FR') : '-'}</td>
                       <td style="border:1px solid #000;padding:5px;font-weight:bold;">${f.patientNom || '-'}</td>
@@ -342,7 +344,7 @@ export default function CaissePage() {
                       </td>
                     </tr>
                   `;
-                }).join('')}
+    }).join('')}
                 <!-- Ligne de sous-total pour ${mode} -->
                 <tr style="background:#6a1b9a;color:#fff;font-weight:bold;">
                   <td colspan="3" style="border:1px solid #000;padding:5px;text-align:right;">SOUS-TOTAL ${mode.toUpperCase()} :</td>
@@ -400,6 +402,9 @@ export default function CaissePage() {
           <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.72rem', marginTop: 1 }}>{periode}</div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Button onClick={() => setShowParametrageOperations(true)} style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.4)', color: '#fff', fontWeight: 700, fontSize: '0.78rem', borderRadius: 6, padding: '5px 12px' }}>
+            <i className="bi bi-gear-fill me-1"></i>Opérations
+          </Button>
           <Button onClick={() => { setCaisseIdEdition(null); setShowFiche(true); }} style={{ background: 'rgba(255,255,255,0.2)', border: '1px solid rgba(255,255,255,0.4)', color: '#fff', fontWeight: 700, fontSize: '0.78rem', borderRadius: 6, padding: '5px 14px' }}>
             <i className="bi bi-plus-circle me-1"></i>Nouveau
           </Button>
@@ -408,21 +413,21 @@ export default function CaissePage() {
       </div>
 
       {message && <Alert variant={message.type} dismissible onClose={() => setMessage(null)} className="py-2 mb-2" style={{ fontSize: '0.8rem' }}>{message.text}</Alert>}
- {/* FILTRES COMMUNS */}
-          <Card className="mb-2" style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
-            <Card.Body style={{ padding: '8px 14px' }}>
-              <Row className="g-2 align-items-end">
-                <Col xs="auto"><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Début</Form.Label><Form.Control type="date" size="sm" value={dateDebut} onChange={e => setDateDebut(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }} /></Col>
-                <Col xs="auto"><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Fin</Form.Label><Form.Control type="date" size="sm" value={dateFin} onChange={e => setDateFin(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }} /></Col>
-                <Col xs="auto" className="ms-auto d-flex gap-2">
-                  <Button onClick={onglet === 'caisse' ? charger : chargerFacturations} disabled={loading || loadingFacturations} style={{ background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', border: 'none', fontWeight: 700, fontSize: '0.78rem', padding: '5px 14px', borderRadius: 6 }}>
-                    {(loading || loadingFacturations) ? <><Spinner size="sm" animation="border" className="me-1" />…</> : <><i className="bi bi-search me-1"></i>Rechercher</>}
-                  </Button>
-                  <Button variant="outline-secondary" onClick={onglet === 'caisse' ? charger : chargerFacturations} disabled={loading || loadingFacturations} style={{ borderRadius: 6, fontSize: '0.78rem', padding: '5px 10px' }}><i className="bi bi-arrow-clockwise"></i></Button>
-                </Col>
-              </Row>
-            </Card.Body>
-          </Card>
+      {/* FILTRES COMMUNS */}
+      <Card className="mb-2" style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
+        <Card.Body style={{ padding: '8px 14px' }}>
+          <Row className="g-2 align-items-end">
+            <Col xs="auto"><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Début</Form.Label><Form.Control type="date" size="sm" value={dateDebut} onChange={e => setDateDebut(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }} /></Col>
+            <Col xs="auto"><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Fin</Form.Label><Form.Control type="date" size="sm" value={dateFin} onChange={e => setDateFin(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }} /></Col>
+            <Col xs="auto" className="ms-auto d-flex gap-2">
+              <Button onClick={onglet === 'caisse' ? charger : chargerFacturations} disabled={loading || loadingFacturations} style={{ background: 'linear-gradient(135deg,#1b5e20,#2e7d32)', border: 'none', fontWeight: 700, fontSize: '0.78rem', padding: '5px 14px', borderRadius: 6 }}>
+                {(loading || loadingFacturations) ? <><Spinner size="sm" animation="border" className="me-1" />…</> : <><i className="bi bi-search me-1"></i>Rechercher</>}
+              </Button>
+              <Button variant="outline-secondary" onClick={onglet === 'caisse' ? charger : chargerFacturations} disabled={loading || loadingFacturations} style={{ borderRadius: 6, fontSize: '0.78rem', padding: '5px 10px' }}><i className="bi bi-arrow-clockwise"></i></Button>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
       <Tabs activeKey={onglet} onSelect={(k) => setOnglet(k || 'caisse')} className="mb-2" style={{ background: 'transparent' }}>
         <Tab eventKey="caisse" title={<><i className="bi bi-cash-register me-1"></i>Mouvements Caisse</>}>
           {/* FILTRES CAISSE */}
@@ -439,13 +444,13 @@ export default function CaissePage() {
                 </Col>
                 <Col xs={12} md={4}>
                   <Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Recherche</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    size="sm" 
-                    placeholder="Opération, motif, personne…" 
-                    value={recherche} 
-                    onChange={e => setRecherche(e.target.value)} 
-                    style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem' }} 
+                  <Form.Control
+                    type="text"
+                    size="sm"
+                    placeholder="Opération, motif, personne…"
+                    value={recherche}
+                    onChange={e => setRecherche(e.target.value)}
+                    style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem' }}
                   />
                 </Col>
               </Row>
@@ -457,7 +462,7 @@ export default function CaissePage() {
             {[
               { label: 'Total Entrées', value: totalEntrees, bg: 'linear-gradient(135deg,#1b5e20,#66bb6a)', icon: 'bi-arrow-down-circle-fill' },
               { label: 'Total Sorties', value: totalSorties, bg: 'linear-gradient(135deg,#b71c1c,#ef9a9a)', icon: 'bi-arrow-up-circle-fill' },
-              { label: 'Solde Caisse',  value: solde, bg: solde >= 0 ? 'linear-gradient(135deg,#006064,#26c6da)' : 'linear-gradient(135deg,#880e4f,#f48fb1)', icon: 'bi-wallet2' },
+              { label: 'Solde Caisse', value: solde, bg: solde >= 0 ? 'linear-gradient(135deg,#006064,#26c6da)' : 'linear-gradient(135deg,#880e4f,#f48fb1)', icon: 'bi-wallet2' },
               { label: 'Nb opérations', value: docsFiltres.length, bg: 'linear-gradient(135deg,#1565c0,#42a5f5)', icon: 'bi-list-ol', isCount: true },
             ].map((kpi, ki) => (
               <Col key={ki} xs={6} md={3}>
@@ -476,7 +481,7 @@ export default function CaissePage() {
             ))}
           </Row>
 
-         
+
 
           {/* TABLEAU */}
           <Card style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
@@ -489,7 +494,7 @@ export default function CaissePage() {
                 <Table bordered className="mb-0" style={{ fontSize: '0.73rem', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                      {['Date','Opération','Motif','Montant','Personne','Saisi par','Actions'].map((h, hi) => (
+                      {['Date', 'Opération', 'Motif', 'Montant', 'Personne', 'Saisi par', 'Actions'].map((h, hi) => (
                         <th key={hi} style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #b0bec5', textAlign: hi === 3 ? 'right' : hi === 6 ? 'center' : 'left' }}>{h}</th>
                       ))}
                     </tr>
@@ -561,13 +566,13 @@ export default function CaissePage() {
               <Row className="g-2 align-items-end">
                 <Col xs={12} md={8}>
                   <Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Recherche</Form.Label>
-                  <Form.Control 
-                    type="text" 
-                    size="sm" 
-                    placeholder="Patient, type acte, mode paiement, numéro, source..." 
-                    value={recherchePrestations} 
-                    onChange={e => setRecherchePrestations(e.target.value)} 
-                    style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem' }} 
+                  <Form.Control
+                    type="text"
+                    size="sm"
+                    placeholder="Patient, type acte, mode paiement, numéro, source..."
+                    value={recherchePrestations}
+                    onChange={e => setRecherchePrestations(e.target.value)}
+                    style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem' }}
                   />
                 </Col>
                 <Col xs={12} md={4}>
@@ -609,7 +614,7 @@ export default function CaissePage() {
             ))}
           </Row>
 
-          
+
           {/* TABLEAU DES PRESTATIONS */}
           <Card style={{ borderRadius: 8, border: 'none', boxShadow: '0 1px 6px rgba(0,0,0,0.07)' }}>
             <div style={{ background: 'linear-gradient(90deg,#6a1b9a,#9c27b0)', color: '#fff', padding: '7px 14px', borderRadius: '8px 8px 0 0', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -621,8 +626,8 @@ export default function CaissePage() {
                 <Table bordered className="mb-0" style={{ fontSize: '0.73rem', borderCollapse: 'collapse' }}>
                   <thead>
                     <tr style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                      {['Date','Patient','Type Acte','Total Facturé','Montant Payé','Reste à Payer','Mode Paiement','Statut'].map((h, hi) => (
-                        <th key={hi} style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #b0bec5', textAlign: [3,4,5].includes(hi) ? 'right' : 'left' }}>{h}</th>
+                      {['Date', 'Patient', 'Type Acte', 'Total Facturé', 'Montant Payé', 'Reste à Payer', 'Mode Paiement', 'Statut'].map((h, hi) => (
+                        <th key={hi} style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #b0bec5', textAlign: [3, 4, 5].includes(hi) ? 'right' : 'left' }}>{h}</th>
                       ))}
                     </tr>
                   </thead>
@@ -679,6 +684,7 @@ export default function CaissePage() {
       </Tabs>
 
       <FicheCaisseModal show={showFiche} onHide={() => { setShowFiche(false); setCaisseIdEdition(null); }} caisseId={caisseIdEdition} onSaved={charger} />
+      <ParametrageOperationsModal show={showParametrageOperations} onHide={() => setShowParametrageOperations(false)} />
     </div>
   );
 }

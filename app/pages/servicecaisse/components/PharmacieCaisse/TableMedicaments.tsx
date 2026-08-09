@@ -37,10 +37,10 @@ export interface ILigneMedicament {
 }
 
 // Fonction pour déterminer le statut du stock
-function getStockStatus(medicament: IMedicament): { 
-  status: 'normal' | 'alert' | 'critical' | 'out'; 
-  color: string; 
-  icon: string; 
+function getStockStatus(medicament: IMedicament): {
+  status: 'normal' | 'alert' | 'critical' | 'out';
+  color: string;
+  icon: string;
   label: string;
 } {
   const stock = medicament.StockDisponible || 0;
@@ -75,10 +75,10 @@ function MedicamentSelect({ medicaments, selectedId, onSelect }: MedicamentSelec
   // Filtrer les médicaments selon la recherche (limiter à 50 résultats pour la performance INP)
   const filteredMedicaments = (searchTerm
     ? medicaments.filter(m =>
-        m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+      m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
     : medicaments).slice(0, 50);
 
   // Calculer la position du dropdown
@@ -97,7 +97,7 @@ function MedicamentSelect({ medicaments, selectedId, onSelect }: MedicamentSelec
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node) &&
-          inputRef.current && !inputRef.current.contains(event.target as Node)) {
+        inputRef.current && !inputRef.current.contains(event.target as Node)) {
         setShowDropdown(false);
       }
     };
@@ -445,7 +445,8 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
     setLignes(prev => {
       const newLignes = prev.map(ligne => {
         if (ligne.id === id) {
-          const updatedLigne = { ...ligne, paye: !ligne.paye };
+          const nextPaye = !ligne.paye;
+          const updatedLigne = { ...ligne, paye: nextPaye, refuse: nextPaye ? false : ligne.refuse };
 
           // Mettre à jour les infos de paiement immédiatement
           if (updatedLigne.paye && !updatedLigne.payePar) {
@@ -473,7 +474,7 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
       const toutesPayees = prev.length > 0 && prev.every(l => l.paye);
       const newPaye = !toutesPayees;
       return prev.map(ligne => {
-        const updatedLigne = { ...ligne, paye: newPaye };
+        const updatedLigne = { ...ligne, paye: newPaye, refuse: newPaye ? false : ligne.refuse };
         if (newPaye && !updatedLigne.payePar) {
           updatedLigne.payePar = currentUser;
           updatedLigne.payeLe = new Date().toLocaleDateString();
@@ -493,7 +494,8 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
     setLignes(prev => {
       const newLignes = prev.map(ligne => {
         if (ligne.id === id) {
-          const updatedLigne = { ...ligne, refuse: !ligne.refuse };
+          const nextRefuse = !ligne.refuse;
+          const updatedLigne = { ...ligne, refuse: nextRefuse, paye: nextRefuse ? false : ligne.paye };
 
           // Recalculer les parts assurance/patient immédiatement
           const prixTotal = updatedLigne.quantite * updatedLigne.prixUnitaire;
@@ -503,6 +505,9 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
           } else {
             updatedLigne.partAssurance = 0;
             updatedLigne.partAssure = prixTotal;
+            updatedLigne.payePar = "";
+            updatedLigne.payeLe = "";
+            updatedLigne.payeA = "";
           }
 
           return updatedLigne;

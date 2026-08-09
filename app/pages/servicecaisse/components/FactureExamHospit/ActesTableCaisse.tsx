@@ -1137,17 +1137,27 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
     }, []);
 
     const toggleExclusion = useCallback((lineId: string) => {
-        setLignes(prev => {
-            const ligne = prev.find(l => l.IDLignePrestation === lineId);
-            if (!ligne) return prev;
+        setLignes(prev => prev.map(ligne => {
+            if (ligne.IDLignePrestation !== lineId) return ligne;
 
-            const newValue = ligne.Exclusion === 'Accepter' ? 'Refuser' : 'Accepter';
+            const newValue: ILignePrestation['Exclusion'] = ligne.Exclusion === 'Accepter' ? 'Refuser' : 'Accepter';
+            const copy: ILignePrestation = { ...ligne, Exclusion: newValue };
 
-            // Utiliser la même logique que onFieldChangeAndRecalc
-            onFieldChangeAndRecalc(lineId, 'Exclusion', newValue);
-            return prev;
-        });
-    }, [onFieldChangeAndRecalc]);
+            const acte = findActeById(copy.IDACTE);
+            if (acte) {
+                if (assuranceId === 1) {
+                    tarifActeClinique(copy, acte, 1);
+                } else {
+                    tarifActeAssurance(copy, acte, assuranceId);
+                }
+                prixActe(copy, acte);
+            } else {
+                copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
+            }
+
+            return copy;
+        }));
+    }, [actes, assuranceId]);
 
     // ---------- UI ----------
     return (

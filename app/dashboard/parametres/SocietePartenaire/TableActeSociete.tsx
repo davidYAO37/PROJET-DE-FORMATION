@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { Table, Button, Form } from "react-bootstrap";
 import { FaTrash, FaArrowUp, FaArrowDown } from "react-icons/fa";
 import { ActeSocietePartenaire } from "@/types/ActeSocietePartenaire";
@@ -22,6 +22,147 @@ interface FamilleActeOption {
 interface Props {
     societeId: string | null;
 }
+
+interface ActeSelectProps {
+    actes: ActeCliniqueOption[];
+    selectedId: string;
+    onSelect: (acte: ActeCliniqueOption) => void;
+}
+
+const ActeSelect = memo(function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
+    const [searchTerm, setSearchTerm] = useState("");
+    const [showDropdown, setShowDropdown] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+    const inputRef = useRef<HTMLInputElement>(null);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+
+    const filteredActes = useMemo(() => {
+        const lower = searchTerm.toLowerCase();
+        const list = searchTerm
+            ? actes.filter(
+                (a) =>
+                    a.designationacte?.toLowerCase().includes(lower) ||
+                    a.lettreCle?.toLowerCase().includes(lower)
+            )
+            : actes;
+        return list.slice(0, 50);
+    }, [searchTerm, actes]);
+
+    useEffect(() => {
+        if (showDropdown && inputRef.current) {
+            const rect = inputRef.current.getBoundingClientRect();
+            setDropdownPosition({
+                top: rect.bottom + 5,
+                left: rect.left,
+                width: rect.width,
+            });
+        }
+    }, [showDropdown]);
+
+    const handleClickOutside = useCallback((event: MouseEvent) => {
+        if (
+            dropdownRef.current &&
+            !dropdownRef.current.contains(event.target as Node) &&
+            inputRef.current &&
+            !inputRef.current.contains(event.target as Node)
+        ) {
+            setShowDropdown(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [handleClickOutside]);
+
+    const handleSelect = useCallback(
+        (acte: ActeCliniqueOption) => {
+            onSelect(acte);
+            setSearchTerm("");
+            setShowDropdown(false);
+        },
+        [onSelect]
+    );
+
+    const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(e.target.value);
+        setShowDropdown(true);
+    }, []);
+
+    const selectedActe = useMemo(
+        () => actes.find((a) => a._id === selectedId),
+        [actes, selectedId]
+    );
+
+    return (
+        <div style={{ position: "relative" }}>
+            <Form.Control
+                ref={inputRef}
+                type="text"
+                size="sm"
+                placeholder="Rechercher un acte..."
+                value={searchTerm || selectedActe?.designationacte || ""}
+                onChange={handleInputChange}
+                onFocus={() => setShowDropdown(true)}
+            />
+            {showDropdown && (
+                <div
+                    ref={dropdownRef}
+                    style={{
+                        position: "fixed",
+                        top: `${dropdownPosition.top}px`,
+                        left: `${dropdownPosition.left}px`,
+                        width: `${dropdownPosition.width}px`,
+                        maxHeight: "200px",
+                        overflow: "auto",
+                        backgroundColor: "white",
+                        border: "1px solid #dee2e6",
+                        borderRadius: "0.375rem",
+                        boxShadow: "0 0.5rem 1rem rgba(0, 0, 0, 0.15)",
+                        zIndex: 1050,
+                    }}
+                >
+                    {filteredActes.length === 0 ? (
+                        <div style={{ padding: "8px", color: "#6c757d", fontSize: "13px" }}>
+                            Aucun acte trouvé
+                        </div>
+                    ) : (
+                        filteredActes.map((acte) => (
+                            <div
+                                key={acte._id}
+                                onClick={() => handleSelect(acte)}
+                                style={{
+                                    padding: "8px",
+                                    cursor: "pointer",
+                                    fontSize: "13px",
+                                    borderBottom: "1px solid #f8f9fa",
+                                    backgroundColor: acte._id === selectedId ? "#e3f2fd" : "white",
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.currentTarget.style.backgroundColor = "#f8f9fa";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.currentTarget.style.backgroundColor =
+                                        acte._id === selectedId ? "#e3f2fd" : "white";
+                                }}
+                            >
+                                <div>
+                                    <strong>{acte.designationacte}</strong>
+                                </div>
+                                {acte.lettreCle && (
+                                    <div style={{ fontSize: "11px", color: "#6c757d" }}>
+                                        {acte.lettreCle}
+                                        {acte.coefficient ? ` · Coef. ${acte.coefficient}` : ""}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
+                </div>
+            )}
+        </div>
+    );
+});
 
 const emptyLigne = (societeId: string, ordre: number): ActeSocietePartenaire => ({
     IDSOCIETEPARTENAIRE: societeId,
@@ -291,18 +432,11 @@ export default function TableActeSociete({ societeId }: Props) {
                         acteSocietePartenaire.map((acte, index) => (
                             <tr key={acte._id || `row-${index}`}>
                                 <td>
-                                    <Form.Select
-                                        size="sm"
-                                        value={acte.IDACTEP || ""}
-                                        onChange={(e) => handleActeSelect(e.target.value, index)}
-                                    >
-                                        <option value="">-- Sélectionner un acte --</option>
-                                        {actesDisponibles.map((option) => (
-                                            <option key={option._id} value={option._id}>
-                                                {option.designationacte}
-                                            </option>
-                                        ))}
-                                    </Form.Select>
+                                    <ActeSelect
+                                        actes={actesDisponibles}
+                                        selectedId={acte.IDACTEP || ""}
+                                        onSelect={(selected) => handleActeSelect(selected._id, index)}
+                                    />
                                     {acte.IDACTEP && !getActeLabel(acte.IDACTEP) && (
                                         <small className="text-muted">Acte ID: {acte.IDACTEP}</small>
                                     )}
