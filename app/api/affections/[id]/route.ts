@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import Affection from "@/models/affection";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IAffection } from "@/models/affection";
+
+const WRITE_ROLES = ["admin"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Affection = getTenantModel<IAffection>(context.connection, "Affection");
     try {
         const { id } = await params;
         const body = await req.json();
@@ -57,7 +62,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 }
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Affection = getTenantModel<IAffection>(context.connection, "Affection");
     try {
         const { id } = await params;
         

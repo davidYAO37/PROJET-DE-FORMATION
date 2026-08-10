@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ActeClinique } from "@/models/acteclinique";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeClinique } from "@/models/acteclinique";
+
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
 
 export async function GET(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+
     // Récupérer les paramètres de l'URL
     const { searchParams } = new URL(req.url);
     const consultationviste = searchParams.get('consultationviste');
@@ -20,7 +26,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+
     const body = await req.json();
     
     console.log("POST /api/actes - Données reçues:", body);

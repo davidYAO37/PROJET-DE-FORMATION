@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Consultation } from '@/models/consultation';
-import { db } from '@/db/mongoConnect';
+import { IConsultation } from '@/models/consultation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
-    
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+
     const { searchParams } = new URL(request.url);
     const medecinId = searchParams.get('medecinId');
     

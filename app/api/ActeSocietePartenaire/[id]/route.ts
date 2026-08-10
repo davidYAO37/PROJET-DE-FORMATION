@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ActeSocietePartenaire } from "@/models/acteSocietePartenaire";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeSocietePartenaire } from "@/models/acteSocietePartenaire";
+
+const WRITE_ROLES = ["admin"];
 
 // PUT : modifier un acte société partenaire
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeSocietePartenaire = getTenantModel<IActeSocietePartenaire>(context.connection, "ActeSocietePartenaire");
     try {
-        await db();
         const { id } = await params;
         const body = await req.json();
         const acteSocietePartenaire = await ActeSocietePartenaire.findByIdAndUpdate(id, body, { new: true });
@@ -22,8 +27,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE : supprimer un acte société partenaire
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeSocietePartenaire = getTenantModel<IActeSocietePartenaire>(context.connection, "ActeSocietePartenaire");
     try {
-        await db();
         const { id } = await params;
         const acteSocietePartenaire = await ActeSocietePartenaire.findByIdAndDelete(id);
 

@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Consultation } from "@/models/consultation";
-import { Medecin } from "@/models/medecin";
-import { Patient } from "@/models/patient";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IConsultation } from "@/models/consultation";
+
+const ROLES = ["admin", "caisse", "comptable", "accueil"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    getTenantModel(context.connection, "Patient");
+    getTenantModel(context.connection, "Medecin");
 
     try {
         // Récupérer toutes les consultations avec demande d'annulation

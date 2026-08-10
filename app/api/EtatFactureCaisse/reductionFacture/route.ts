@@ -1,16 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IFacturation } from "@/models/Facturation";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "caisse", "comptable"];
 
 export async function GET(req: NextRequest) {
     try {
+        const { context, response } = await withTenant(req, ROLES);
+        if (!context) return response;
+        const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+
         const { searchParams } = new URL(req.url);
         const codeVisiteur = searchParams.get("codeVisiteur");
 
         if (!codeVisiteur) {
             return NextResponse.json({ error: "Le paramètre codeVisiteur est requis" }, { status: 400 });
         }
-
-        // Importer les modèles nécessaires
-        const { Facturation } = await import("@/models/Facturation");
 
         // Récupérer les remises de facturation
         const facturations = await Facturation.find({
@@ -40,15 +46,16 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
+        const { context, response } = await withTenant(req, ROLES);
+        if (!context) return response;
+        const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+
         const data = await req.json();
         const { codeVisiteur } = data;
 
         if (!codeVisiteur) {
             return NextResponse.json({ error: "Le paramètre codeVisiteur est requis" }, { status: 400 });
         }
-
-        // Importer les modèles nécessaires
-        const { Facturation } = await import("@/models/Facturation");
 
         // Récupérer les remises de facturation
         const facturations = await Facturation.find({

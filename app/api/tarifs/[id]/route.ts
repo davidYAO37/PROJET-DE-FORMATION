@@ -1,12 +1,19 @@
-import { db } from "@/db/mongoConnect";
-import { ActeClinique } from "@/models/acteclinique";
-import { TarifAssurance } from "@/models/tarifassurance";
+import { IActeClinique } from "@/models/acteclinique";
+import { ITarifAssurance } from "@/models/tarifassurance";
 import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
+const WRITE_ROLES = ["admin"];
 
 // ✅ Récupération des tarifs ou initialisation si vides
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, READ_ROLES);
+        if (!context) return response;
+        const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+        const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
         const { id } = await params;
 
         // 1. On récupère les tarifs existants
@@ -45,9 +52,11 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
 }
 
 // ✅ Mise à jour des tarifs (sauvegarde)
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, WRITE_ROLES);
+        if (!context) return response;
+        const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
         const { id } = await params;
         const body = await req.json();
 

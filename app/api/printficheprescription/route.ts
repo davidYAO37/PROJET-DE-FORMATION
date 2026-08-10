@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { Consultation } from '@/models/consultation';
-import { Patient } from '@/models/patient';
-import { LignePrestation } from '@/models/lignePrestation';
-import { PatientPrescription } from '@/models/PatientPrescription';
-import { db } from '@/db/mongoConnect';
+import { IConsultation } from '@/models/consultation';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IPatientPrescription } from '@/models/PatientPrescription';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 
 export async function GET(request: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
 
     try {
     

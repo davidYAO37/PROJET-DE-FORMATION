@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Stock } from "@/models/Stock";
-import { EntreeStock } from "@/models/EntreeStock";
-import { SortieStock } from "@/models/SortieStock";
-import { HistoriqueInventaire } from "@/models/HistoriqueInventaire";
+import { IStock } from "@/models/Stock";
+import { IEntreeStock } from "@/models/EntreeStock";
+import { ISortieStock } from "@/models/SortieStock";
+import { IHistoriqueInventaire } from "@/models/HistoriqueInventaire";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const WRITE_ROLES = ["admin", "pharmacien"];
 
 // POST /api/gestionstock/inventaire/ajuster
 // Body: { lignes: [{ stockId, IDMEDICAMENT, Medicament, Reference, qteTheorique, qtePhysique, saisiPar }] }
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
+    const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
+    const HistoriqueInventaire = getTenantModel<IHistoriqueInventaire>(context.connection, "HistoriqueInventaire");
     try {
         const { lignes, saisiPar } = await req.json();
         const now = new Date();

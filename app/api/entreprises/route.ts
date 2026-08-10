@@ -5,7 +5,10 @@ import { NextResponse } from "next/server";
 export async function GET() {
   await db();
   try {
-    const entreprises = await Entreprise.find({});
+    const entreprises = await Entreprise.find(
+      { isActive: true, statut: "active" },
+      { NomSociete: 1, LogoE: 1 }
+    ).lean();
     return NextResponse.json({
       success: true,
       data: entreprises

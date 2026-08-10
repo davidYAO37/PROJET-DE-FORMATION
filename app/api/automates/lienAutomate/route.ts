@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { LienAutomate } from "@/models/lienAutomate";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ILienAutomate } from "@/models/lienAutomate";
 
-export async function GET() {
+const ROLES = ["admin"];
+
+export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
     try {
-        await db();
         const lien = await LienAutomate.findOne().sort({ createdAt: -1 });
         return NextResponse.json({ success: true, data: lien || {} });
     } catch (error) {
@@ -14,8 +19,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
     try {
-        await db();
         const body = await req.json();
         const { nLienNFS, LienHormone, LienVS, LienBiochimie } = body;
 

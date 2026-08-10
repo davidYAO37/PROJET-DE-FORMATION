@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
-import { Patient } from '@/models/patient';
-import { ExamenHospitalisation } from '@/models/examenHospit';
-import { LignePrestation } from '@/models/lignePrestation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IPatient } from '@/models/patient';
+import { IExamenHospitalisation } from '@/models/examenHospit';
+import { ILignePrestation } from '@/models/lignePrestation';
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "caisse", "comptable"];
 
 export async function GET(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+
     try {
         const { searchParams } = new URL(req.url);
         const ParamCODEcONSULTATION = searchParams.get('ParamCODEcONSULTATION');
@@ -19,8 +27,6 @@ export async function GET(req: NextRequest) {
             );
         }
 
-        const database = await db();
-        
         // Récupérer les informations consultation depuis la collection Consultation
         const consultation = await Consultation.findOne({
             CodePrestation: ParamCODEcONSULTATION

@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ActeClinique } from "@/models/acteclinique";
-import { TarifAssurance } from "@/models/tarifassurance";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeClinique } from "@/models/acteclinique";
+import { ITarifAssurance } from "@/models/tarifassurance";
+
+const WRITE_ROLES = ["admin"];
 
 // Fonction utilitaire de nettoyage des nombres
 function cleanNumber(value: any): number {
@@ -39,7 +42,11 @@ function cleanText(value: any): string {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+    const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
+
     const { rows, overwriteDuplicates = false, removeDuplicatesAsTarif = false } = await req.json();
 
     console.log("POST /api/actes/import - Données reçues:", { 

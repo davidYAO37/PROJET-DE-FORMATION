@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ParamLabo } from "@/models/paramLabo";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IParamLabo } from "@/models/paramLabo";
+
+const WRITE_ROLES = ["admin"];
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ParamLabo = getTenantModel<IParamLabo>(context.connection, "ParamLabo");
+
     const { rows } = await req.json();
 
     if (!Array.isArray(rows)) {

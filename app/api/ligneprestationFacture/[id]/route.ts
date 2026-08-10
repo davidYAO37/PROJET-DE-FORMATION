@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { LignePrestation } from "@/models/lignePrestation";
+import { ILignePrestation } from "@/models/lignePrestation";
 import mongoose from "mongoose";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "biologiste", "infirmier"];
 
 // GET /api/ligneprestationFacture/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
 
     try {
-        await db();
+        const { context, response } = await withTenant(req, READ_ROLES);
+        if (!context) return response;
+        const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
         const { id } = await params;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -43,7 +49,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // PUT /api/ligneprestationFacture/[id]
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, WRITE_ROLES);
+        if (!context) return response;
+        const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
         const { id } = await params;
         const body = await req.json();
 
@@ -83,7 +91,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 // DELETE /api/ligneprestationFacture/[id]
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, WRITE_ROLES);
+        if (!context) return response;
+        const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
         const { id } = await params;
 
         if (!mongoose.Types.ObjectId.isValid(id)) {

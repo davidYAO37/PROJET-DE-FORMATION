@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ParametreNfs } from "@/models/parametreNfs";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IParametreNfs } from "@/models/parametreNfs";
+
+const WRITE_ROLES = ["admin"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
     try {
-        await db();
         const { id } = await params;
         const body = await req.json();
         const { PARAMETRE, DESCRIPTION } = body;
@@ -31,8 +36,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(_req, WRITE_ROLES);
+    if (!context) return response;
+    const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
     try {
-        await db();
         const { id } = await params;
         const deleted = await ParametreNfs.findByIdAndDelete(id);
 

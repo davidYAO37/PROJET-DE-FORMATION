@@ -1,9 +1,15 @@
-import { db } from "@/db/mongoConnect";
-import { Medecin } from "@/models/medecin";
-import { NextResponse } from "next/server";
+import { IMedecin } from "@/models/medecin";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
+const WRITE_ROLES = ["admin"];
+
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { context, response } = await withTenant(req, READ_ROLES);
+  if (!context) return response;
+  const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   const { id } = await params;
   try {
     const medecin = await Medecin.findById(id);
@@ -14,8 +20,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   }
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   const { id } = await params;
   try {
     const body = await req.json();
@@ -30,8 +38,10 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   const { id } = await params;
   try {
     await Medecin.findByIdAndDelete(id);

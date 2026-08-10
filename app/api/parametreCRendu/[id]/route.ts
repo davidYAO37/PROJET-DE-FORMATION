@@ -1,12 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ParametreCRendu } from "@/models/ParametreCRendu";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IParametreCRendu } from "@/models/ParametreCRendu";
+
+const WRITE_ROLES = ["admin"];
 
 // PUT - Mettre à jour un paramètre de compte rendu
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    await db();
+  const { context, response } = await withTenant(request, WRITE_ROLES);
+  if (!context) return response;
+  const ParametreCRendu = getTenantModel<IParametreCRendu>(context.connection, "ParametreCRendu");
 
+  try {
     const { id } = await params;
 
     const body = await request.json();
@@ -52,9 +57,11 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 // DELETE - Supprimer un paramètre de compte rendu
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  try {
-    await db();
+  const { context, response } = await withTenant(request, WRITE_ROLES);
+  if (!context) return response;
+  const ParametreCRendu = getTenantModel<IParametreCRendu>(context.connection, "ParametreCRendu");
 
+  try {
     const { id } = await params;
 
     // Vérifier si le paramètre existe

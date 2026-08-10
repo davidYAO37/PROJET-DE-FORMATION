@@ -1,13 +1,19 @@
-import { NextResponse } from 'next/server';
-import { ExamenHospitalisation } from '@/models/examenHospit';
-import { TypeActe } from '@/models/TypeActe';
-import { db } from '@/db/mongoConnect';
+import { NextRequest, NextResponse } from 'next/server';
+import { IExamenHospitalisation } from '@/models/examenHospit';
+import { ITypeActe } from '@/models/TypeActe';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 
 // GET les ExamenHospitalisation avec Designationtypeacte dans TypeActe.Hospitalisation=true
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    await db();
-    
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
+
     // Récupérer d'abord les types d'actes avec Hospitalisation=true
     const actesHospitalisation = await TypeActe.find({ 
       Hospitalisation: true 

@@ -62,24 +62,17 @@ export default function Home() {
   const createSuperAdminIfNeeded = async () => {
     setCreatingSuperAdmin(true);
     try {
-      const checkResponse = await fetch('/api/check-users');
-      const checkData = await checkResponse.json();
+      // POST est idempotent : ne crée le super admin que si la base est vide (userCount === 0)
+      const createResponse = await fetch('/api/check-users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
 
-      if (checkData.userCount === 0) {
-        console.log('🚀 Création du super admin...');
-        const createResponse = await fetch('/api/check-users', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' }
-        });
-
-        if (createResponse.ok) {
-          const createData = await createResponse.json();
-          console.log('✅ Super admin créé:', createData.message);
-        } else {
-          console.error('❌ Erreur lors de la création du super admin');
-        }
+      if (createResponse.ok) {
+        const createData = await createResponse.json();
+        console.log('ℹ️', createData.message);
       } else {
-        console.log('ℹ️ Le super admin existe déjà');
+        console.error('❌ Erreur lors de la vérification/création du super admin');
       }
     } catch (error) {
       console.error('❌ Erreur lors de la vérification/création du super admin:', error);

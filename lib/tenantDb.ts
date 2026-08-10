@@ -109,6 +109,15 @@ export function getCachedTenantConnection(entrepriseId: string): Connection | un
   return cached && cached.readyState === 1 ? cached : undefined;
 }
 
+export async function closeTenantConnection(entrepriseId: string): Promise<void> {
+  const connection = tenantConnections.get(entrepriseId);
+  tenantConnections.delete(entrepriseId);
+  tenantConnectionPromises.delete(entrepriseId);
+  if (connection && connection !== mongoose.connection) {
+    await connection.close();
+  }
+}
+
 export async function closeAllTenantConnections(): Promise<void> {
   const promises: Promise<void>[] = [];
   tenantConnections.forEach((connection) => {

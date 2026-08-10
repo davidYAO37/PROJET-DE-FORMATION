@@ -7,6 +7,8 @@ import { db } from "@/db/mongoConnect";
 const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "change-me-in-production";
 const TOKEN_NAME = "easy_medical_token";
 const TOKEN_MAX_AGE = 60 * 60 * 24 * 7;
+const IMPERSONATE_COOKIE = "easy_medical_impersonate";
+const IMPERSONATE_MAX_AGE = 60 * 60 * 4; // 4h, session de support limitée
 
 export interface JWTPayload {
   userId: string;
@@ -96,4 +98,32 @@ export async function removeAuthCookie(response: NextResponse) {
     path: "/",
     maxAge: 0,
   });
+}
+
+export function setImpersonateCookie(response: NextResponse, entrepriseId: string) {
+  response.cookies.set(IMPERSONATE_COOKIE, entrepriseId, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: IMPERSONATE_MAX_AGE,
+  });
+}
+
+export function clearImpersonateCookie(response: NextResponse) {
+  response.cookies.set(IMPERSONATE_COOKIE, "", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    path: "/",
+    maxAge: 0,
+  });
+}
+
+export async function getImpersonateEntrepriseId(req?: NextRequest): Promise<string | undefined> {
+  if (req) {
+    return req.cookies.get(IMPERSONATE_COOKIE)?.value || undefined;
+  }
+  const cookieStore = await cookies();
+  return cookieStore.get(IMPERSONATE_COOKIE)?.value || undefined;
 }

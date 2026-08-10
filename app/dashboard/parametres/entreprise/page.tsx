@@ -1,15 +1,19 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner, Modal } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaEye, FaUsers } from 'react-icons/fa';
 import AjouterEntreprise from './AjouterEntreprise';
 import ModifierEntreprise from './ModifierEntreprise';
+import GererUtilisateursEntreprise from './GererUtilisateursEntreprise';
 import { Entreprise } from '@/types/entreprise';
 
 
 const ITEMS_PER_PAGE = 10;
 
 export default function Entreprises() {
+  const router = useRouter();
+  const [isAdminSuper, setIsAdminSuper] = useState(false);
   const [entreprises, setEntreprises] = useState<Entreprise[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -17,6 +21,8 @@ export default function Entreprises() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showUsersModal, setShowUsersModal] = useState(false);
+  const [entrepriseForUsers, setEntrepriseForUsers] = useState<Entreprise | null>(null);
   const [selectedEntreprise, setSelectedEntreprises] = useState<Entreprise | null>(null);
   const [entrepriseToDelete, setEntrepriseToDelete] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,7 +53,30 @@ export default function Entreprises() {
       }
     };
     fetchEntreprises();
+
+    try {
+      const profil = JSON.parse(localStorage.getItem('profil') || 'null');
+      setIsAdminSuper(profil?.type === 'adminsuper');
+    } catch {
+      setIsAdminSuper(false);
+    }
   }, []);
+
+  const handleConsulterEntreprise = async (entrepriseId?: string) => {
+    if (!entrepriseId) return;
+    try {
+      const res = await fetch('/api/adminsuper/impersonate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entrepriseId }),
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Erreur');
+      router.push('/dashboard');
+    } catch {
+      showNotification("Impossible de consulter cette entreprise", 'danger');
+    }
+  };
 
 
   const handleAddEntreprise = (Entreprise: Entreprise) => {
@@ -58,6 +87,11 @@ export default function Entreprises() {
   const handleEditClick = (Entreprise: Entreprise) => {
     setSelectedEntreprises(Entreprise);
     setShowEditModal(true);
+  };
+
+  const handleGererUtilisateurs = (Entreprise: Entreprise) => {
+    setEntrepriseForUsers(Entreprise);
+    setShowUsersModal(true);
   };
 
   const handleSaveEntreprise = (updated: Entreprise) => {
@@ -76,9 +110,14 @@ export default function Entreprises() {
     
     try {
       const response = await fetch(`/api/entreprise/${entrepriseToDelete}`, { method: 'DELETE' });
+      const data = await response.json().catch(() => ({}));
       if (response.ok) {
         setEntreprises((prev) => prev.filter((m) => m._id !== entrepriseToDelete));
         showNotification(`🗑️ l'Entreprise supprimée.`, 'danger');
+        setShowDeleteModal(false);
+        setEntrepriseToDelete(null);
+      } else {
+        showNotification(data?.error || 'Erreur suppression', 'danger');
         setShowDeleteModal(false);
         setEntrepriseToDelete(null);
       }
@@ -224,6 +263,28 @@ export default function Entreprises() {
                         )}
                       </td>
                       <td className="bg-primary bg-opacity-10">
+                        {isAdminSuper && (
+                          <>
+                            <Button
+                              variant="outline-success"
+                              size="sm"
+                              className="me-2"
+                              title="Consulter les données de cette entreprise"
+                              onClick={() => handleConsulterEntreprise(Entreprise._id)}
+                            >
+                              <FaEye />
+                            </Button>
+                            <Button
+                              variant="outline-secondary"
+                              size="sm"
+                              className="me-2"
+                              title="Gérer les utilisateurs de cette entreprise"
+                              onClick={() => handleGererUtilisateurs(Entreprise)}
+                            >
+                              <FaUsers />
+                            </Button>
+                          </>
+                        )}
                         <Button 
                           variant="outline-primary" 
                           size="sm" 
@@ -267,6 +328,11 @@ export default function Entreprises() {
 
         <AjouterEntreprise show={showAddModal} onHide={() => setShowAddModal(false)} onAdd={handleAddEntreprise} />
         <ModifierEntreprise show={showEditModal} onHide={() => setShowEditModal(false)} entreprise={selectedEntreprise} onSave={handleSaveEntreprise} />
+        <GererUtilisateursEntreprise
+          show={showUsersModal}
+          onHide={() => setShowUsersModal(false)}
+          entreprise={entrepriseForUsers}
+        />
         
         {/* Modal de confirmation de suppression */}
         <Modal 

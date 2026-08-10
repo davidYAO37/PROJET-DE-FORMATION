@@ -1,9 +1,13 @@
 import { db } from "@/db/mongoConnect";
 import { UserCollection } from "@/models/users.model";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { requireAuth } from "@/lib/auth";
 
-export const POST = async (req: Request) => {
+export const POST = async (req: NextRequest) => {
   try {
+    const { user: currentUser, error } = await requireAuth(req, ["admin"]);
+    if (error) return error;
+
     const { email } = await req.json();
     
     if (!email) {
@@ -16,6 +20,13 @@ export const POST = async (req: Request) => {
     const user = await UserCollection.findOne({ email });
     if (!user) {
       return NextResponse.json({ message: "Utilisateur non trouvé" }, { status: 404 });
+    }
+
+    if (
+      currentUser!.type !== "adminsuper" &&
+      String(user.entrepriseId) !== String(currentUser!.entrepriseId)
+    ) {
+      return NextResponse.json({ message: "Accès interdit" }, { status: 403 });
     }
 
     // Débloquer le compte

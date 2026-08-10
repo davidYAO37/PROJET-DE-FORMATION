@@ -1,12 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ActeClinique } from "@/models/acteclinique";
-import { Assurance } from "@/models/assurance";
-import { TarifAssurance } from "@/models/tarifassurance";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeClinique } from "@/models/acteclinique";
+import { IAssurance } from "@/models/assurance";
+import { ITarifAssurance } from "@/models/tarifassurance";
+
+const WRITE_ROLES = ["admin"];
 
 // Lorsqu'on ajoute un acte, on l'ajoute à tous les tarifs assurances existants
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+    const Assurance = getTenantModel<IAssurance>(context.connection, "Assurance");
+    const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
     const body = await req.json();
     try {
         // Création de l'acte
@@ -31,7 +38,10 @@ export async function POST(req: NextRequest) {
 
 // Lorsqu'on modifie un acte, on met à jour la désignation et la lettre clé dans tous les tarifs assurances
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+    const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
     const { id } = await params;
     const body = await req.json();
     try {

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { SortieStock } from "@/models/SortieStock";
-import { Stock } from "@/models/Stock";
+import { ISortieStock } from "@/models/SortieStock";
+import { IStock } from "@/models/Stock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "pharmacien", "accueil", "caisse", "comptable"];
+const WRITE_ROLES = ["admin", "pharmacien", "caisse"];
 
 // GET /api/sortiestock?reference=xxx&IDPRESCRIPTION=xxx
-export async function GET(request: Request) {
-    await db();
-    
+export async function GET(request: NextRequest) {
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
+
     try {
         const { searchParams } = new URL(request.url);
         const reference = searchParams.get("reference");
@@ -33,8 +39,11 @@ export async function GET(request: Request) {
 
 // POST /api/sortiestock - Créer une nouvelle sortie de stock
 export async function POST(request: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(request, WRITE_ROLES);
+    if (!context) return response;
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
+
     try {
         const body = await request.json();
         

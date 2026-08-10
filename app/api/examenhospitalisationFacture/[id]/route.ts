@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose from "mongoose";
-import { ExamenHospitalisation } from "@/models/examenHospit";
-import { LignePrestation } from "@/models/lignePrestation";
-import { Facturation } from "@/models/Facturation";
-import { Assurance } from "@/models/assurance";
-import { db } from "@/db/mongoConnect";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+import { ILignePrestation } from "@/models/lignePrestation";
+import { IFacturation } from "@/models/Facturation";
+import { IAssurance } from "@/models/assurance";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "biologiste", "infirmier"];
 
 // Fonction pour valider les ObjectIds
 const isValidObjectId = (value: any): boolean => {
@@ -49,7 +53,9 @@ const cleanPayload = (payload: any): any => {
 
 export async function GET(req: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
     const { searchParams } = new URL(req.url);
     const CodePrestation = searchParams.get("CodePrestation");
     const typeActe = searchParams.get("typeActe");
@@ -79,7 +85,11 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+    const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
     const body = await req.json();
     const { header, lignes, Recupar } = body;
 
@@ -90,7 +100,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const session = await mongoose.startSession();
+    const session = await context.connection.startSession();
     session.startTransaction();
 
     // Nettoyer le header avant la mise à jour/création
@@ -157,7 +167,9 @@ export async function POST(req: NextRequest) {
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
     const { id } = await params;
     const body = await req.json();
 

@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ActeClinique } from "@/models/acteclinique";
-import { TarifAssurance } from "@/models/tarifassurance";
+import { IActeClinique } from "@/models/acteclinique";
+import { ITarifAssurance } from "@/models/tarifassurance";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const WRITE_ROLES = ["admin"];
 
 // Synchronise tous les actes cliniques dans les tarifs d'une assurance
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+    const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
     const { assuranceId } = await req.json();
     if (!assuranceId) {
         return NextResponse.json({ error: "assuranceId requis" }, { status: 400 });

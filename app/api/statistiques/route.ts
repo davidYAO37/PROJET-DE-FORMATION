@@ -1,11 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
-import { Facturation } from '@/models/Facturation';
-import { LignePrestation } from '@/models/lignePrestation';
-import { RendezVous } from '@/models/RendezVous';
-import { Medecin } from '@/models/medecin';
+import { IConsultation } from '@/models/consultation';
+import { IFacturation } from '@/models/Facturation';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IRendezVous } from '@/models/RendezVous';
+import { IMedecin } from '@/models/medecin';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
 
 const startOfDay = (date: Date) => {
   const value = new Date(date);
@@ -32,7 +35,13 @@ const toObjectId = (id: string | null) => {
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+    const RendezVous = getTenantModel<IRendezVous>(context.connection, "RendezVous");
+    const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
 
     const { searchParams } = new URL(request.url);
     const today = new Date();

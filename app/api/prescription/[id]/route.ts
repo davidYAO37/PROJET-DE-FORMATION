@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Prescription } from "@/models/Prescription";
+import { IPrescription } from "@/models/Prescription";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "caisse", "infirmier"];
 
 // GET /api/prescriptionMedecin/[id] - Récupérer une prescription par ID
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
 
     try {
         const { id } = await params;
@@ -26,7 +32,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
 // PUT /api/prescriptionMedecin/[id] - Mettre à jour une prescription
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(request, WRITE_ROLES);
+    if (!context) return response;
+    const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
 
     try {
         const { id } = await params;

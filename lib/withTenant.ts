@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose, { Model, Types } from "mongoose";
-import { verifyToken, getTokenFromCookies, type JWTPayload } from "./auth";
+import { verifyToken, getTokenFromCookies, getImpersonateEntrepriseId, type JWTPayload } from "./auth";
 import { getTenantConnection, getPrimaryConnection } from "./tenantDb";
 import { getTenantModel, type TenantDocument } from "./tenantModels";
 
@@ -61,8 +61,16 @@ export async function withTenant(
   }
 
   try {
-    const connection = payload.entrepriseId
-      ? await getTenantConnection(payload.entrepriseId)
+    let effectiveEntrepriseId = payload.entrepriseId;
+    if (payload.type === "adminsuper") {
+      const impersonatedEntrepriseId = await getImpersonateEntrepriseId(req);
+      if (impersonatedEntrepriseId) {
+        effectiveEntrepriseId = impersonatedEntrepriseId;
+      }
+    }
+
+    const connection = effectiveEntrepriseId
+      ? await getTenantConnection(effectiveEntrepriseId)
       : await getPrimaryConnection();
     const userObjectId = new Types.ObjectId(payload.userId);
     return {

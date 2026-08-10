@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { PatientPrescription } from "@/models/PatientPrescription";
+import { IPatientPrescription } from "@/models/PatientPrescription";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "caisse", "infirmier"];
 
 // GET /api/patientprescriptionFacture?reference=xxx&IDPRESCRIPTION=xxx&_id=xxx&CodePrestation=xxx
-export async function GET(request: Request) {
-    await db();
+export async function GET(request: NextRequest) {
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
 
     try {
         const { searchParams } = new URL(request.url);
@@ -38,7 +44,9 @@ export async function GET(request: Request) {
 
 // POST /api/patientprescriptionFacture - Créer une nouvelle prescription patient
 export async function POST(request: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(request, WRITE_ROLES);
+    if (!context) return response;
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
 
     try {
         const body = await request.json();

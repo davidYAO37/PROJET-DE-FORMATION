@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Stock } from "@/models/Stock";
+import { IStock } from "@/models/Stock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const WRITE_ROLES = ["admin", "pharmacien"];
 
 // -------------------- MODIFICATION D'UN STOCK --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
     try {
         const { id } = await params;
         const body = await req.json();
@@ -22,7 +27,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN STOCK --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
     try {
         const { id } = await params;
 

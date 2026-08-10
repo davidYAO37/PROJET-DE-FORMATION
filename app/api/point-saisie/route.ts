@@ -1,15 +1,24 @@
-import { NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
-import { ExamenHospitalisation } from '@/models/examenHospit';
-import { LignePrestation } from '@/models/lignePrestation';
-import { Prescription } from '@/models/Prescription';
-import { PatientPrescription } from '@/models/PatientPrescription';
+import { NextRequest, NextResponse } from 'next/server';
+import { IConsultation } from '@/models/consultation';
+import { IExamenHospitalisation } from '@/models/examenHospit';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IPrescription } from '@/models/Prescription';
+import { IPatientPrescription } from '@/models/PatientPrescription';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
 
-export async function POST(request: Request) {
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
+
+export async function POST(request: NextRequest) {
     try {
-        await db();
-        
+        const { context, response } = await withTenant(request, READ_ROLES);
+        if (!context) return response;
+        const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+        const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+        const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+        const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
+        const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
+
         const { dateDebut, dateFin } = await request.json();
 
         // Validation des paramètres - correspond au code WinDev
@@ -230,7 +239,9 @@ export async function POST(request: Request) {
     }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
     return NextResponse.json({
         message: 'API Point de Saisie - Utilisez POST pour rechercher des données',
         endpoints: {

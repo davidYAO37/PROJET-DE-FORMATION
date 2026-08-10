@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ParamBiochimie } from "@/models/paramBiochimie";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IParamBiochimie } from "@/models/paramBiochimie";
+
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
 
 export async function GET(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ParamBiochimie = getTenantModel<IParamBiochimie>(context.connection, "ParamBiochimie");
+
     try {
         const paramBiochimies = await ParamBiochimie.find({}).sort({ CodeB: 1 }).lean();
         return NextResponse.json(paramBiochimies);
@@ -14,8 +20,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ParamBiochimie = getTenantModel<IParamBiochimie>(context.connection, "ParamBiochimie");
+
     try {
         const body = await req.json();
         const newParamBiochimie = new ParamBiochimie(body);

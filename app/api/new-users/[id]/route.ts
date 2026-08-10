@@ -1,11 +1,23 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { UserCollection } from "@/models/users.model";
+import { requireAuth } from "@/lib/auth";
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { user: currentUser, error } = await requireAuth(req, ["admin"]);
+    if (error) return error;
+
     await db();
     const { id } = await params;
+
+    if (currentUser!.type !== "adminsuper") {
+      const targetUser = await UserCollection.findById(id).lean();
+      if (!targetUser || String(targetUser.entrepriseId) !== String(currentUser!.entrepriseId)) {
+        return NextResponse.json({ message: "Accès interdit" }, { status: 403 });
+      }
+    }
+
     const body = await req.json();
 
     // Validation des champs requis
@@ -80,10 +92,20 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
+    const { user: currentUser, error } = await requireAuth(req, ["admin"]);
+    if (error) return error;
+
     await db();
     const { id } = await params;
+
+    if (currentUser!.type !== "adminsuper") {
+      const targetUser = await UserCollection.findById(id).lean();
+      if (!targetUser || String(targetUser.entrepriseId) !== String(currentUser!.entrepriseId)) {
+        return NextResponse.json({ message: "Accès interdit" }, { status: 403 });
+      }
+    }
 
     const deletedUser = await UserCollection.findByIdAndDelete(id);
 

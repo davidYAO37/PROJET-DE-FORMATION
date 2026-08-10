@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import Affection from "@/models/affection";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IAffection } from "@/models/affection";
+
+const WRITE_ROLES = ["admin"];
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Affection = getTenantModel<IAffection>(context.connection, "Affection");
     
     try {
         const body = await req.json();

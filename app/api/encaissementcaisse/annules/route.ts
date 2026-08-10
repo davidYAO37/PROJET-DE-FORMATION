@@ -1,12 +1,17 @@
-import { NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { EncaissementCaisseAnnule } from '@/models/EncaissementCaisseAnnule';
+import { NextRequest, NextResponse } from 'next/server';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IEncaissementCaisseAnnule } from '@/models/EncaissementCaisseAnnule';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+const READ_ROLES = ["admin", "caisse", "comptable", "accueil"];
+
+export async function GET(req: NextRequest) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, READ_ROLES);
+        if (!context) return response;
+        const EncaissementCaisseAnnule = getTenantModel<IEncaissementCaisseAnnule>(context.connection, "EncaissementCaisseAnnule");
 
         const annulations = await EncaissementCaisseAnnule.find()
             .sort({ Annulerle: -1, createdAt: -1 })

@@ -1,9 +1,16 @@
-import { db } from '@/db/mongoConnect';
+import mongoose from 'mongoose';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IPatient } from '@/models/patient';
+import { IExamenHospitalisation } from '@/models/examenHospit';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IPrescription } from '@/models/Prescription';
+import { IPatientPrescription } from '@/models/PatientPrescription';
 
 // Service pour la consultation
-export const getDetailConsultation = async (ParamCode_consultation: string) => {
-    const { Consultation } = await import("@/models/consultation");
-    const { Patient } = await import("@/models/patient");
+export const getDetailConsultation = async (connection: mongoose.Connection, ParamCode_consultation: string) => {
+    const Consultation = getTenantModel<IConsultation>(connection, "Consultation");
+    const Patient = getTenantModel<IPatient>(connection, "Patient");
 
     // Recherche de la consultation
     const consultation = await Consultation.findOne({
@@ -50,11 +57,11 @@ export const getDetailConsultation = async (ParamCode_consultation: string) => {
 };
 
 // Service pour les examens
-export const getDetailExamens = async (ParamCode_consultation: string) => {
-    const { Consultation } = await import("@/models/consultation");
-    const { Patient } = await import("@/models/patient");
-    const { ExamenHospitalisation } = await import("@/models/examenHospit");
-    const { LignePrestation } = await import("@/models/lignePrestation");
+export const getDetailExamens = async (connection: mongoose.Connection, ParamCode_consultation: string) => {
+    const Consultation = getTenantModel<IConsultation>(connection, "Consultation");
+    const Patient = getTenantModel<IPatient>(connection, "Patient");
+    getTenantModel<IExamenHospitalisation>(connection, "ExamenHospitalisation");
+    const LignePrestation = getTenantModel<ILignePrestation>(connection, "LignePrestation");
 
     // Recherche de la consultation
     const consultation = await Consultation.findOne({
@@ -157,11 +164,11 @@ export const getDetailExamens = async (ParamCode_consultation: string) => {
 };
 
 // Service pour la pharmacie
-export const getDetailPharmacie = async (ParamCode_consultation: string) => {
-    const { Consultation } = await import("@/models/consultation");
-    const { Patient } = await import("@/models/patient");
-    const { Prescription } = await import("@/models/Prescription");
-    const { PatientPrescription } = await import("@/models/PatientPrescription");
+export const getDetailPharmacie = async (connection: mongoose.Connection, ParamCode_consultation: string) => {
+    const Consultation = getTenantModel<IConsultation>(connection, "Consultation");
+    const Patient = getTenantModel<IPatient>(connection, "Patient");
+    const Prescription = getTenantModel<IPrescription>(connection, "Prescription");
+    const PatientPrescription = getTenantModel<IPatientPrescription>(connection, "PatientPrescription");
 
     // Recherche de la consultation
     const consultation = await Consultation.findOne({
@@ -268,17 +275,15 @@ export const getDetailPharmacie = async (ParamCode_consultation: string) => {
 };
 
 // Service composite pour FactureDetailleActe
-export const getFactureDetailleActe = async (ParamCode_consultation: string) => {
-    await db();
-    
+export const getFactureDetailleActe = async (connection: mongoose.Connection, ParamCode_consultation: string) => {
     try {
         // D'abord récupérer les données de consultation
-        const consultationData = await getDetailConsultation(ParamCode_consultation);
+        const consultationData = await getDetailConsultation(connection, ParamCode_consultation);
         
         // Exécuter les services en parallèle
         const [examensData, pharmacieData] = await Promise.all([
-            getDetailExamens(ParamCode_consultation),
-            getDetailPharmacie(ParamCode_consultation).catch(() => ({ 
+            getDetailExamens(connection, ParamCode_consultation),
+            getDetailPharmacie(connection, ParamCode_consultation).catch(() => ({ 
                 medicaments: []
             }))
         ]);

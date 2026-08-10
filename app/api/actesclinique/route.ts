@@ -1,9 +1,14 @@
-import { db } from "@/db/mongoConnect";
-import { ActeClinique } from "@/models/acteclinique";
 import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeClinique } from "@/models/acteclinique";
+
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
 
     const { searchParams } = new URL(req.url);
     const page = parseInt(searchParams.get("page") || "1", 10);

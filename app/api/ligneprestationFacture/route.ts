@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { LignePrestation } from "@/models/lignePrestation";
+import { ILignePrestation } from "@/models/lignePrestation";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "biologiste", "infirmier"];
 
 // GET /api/ligneprestationFacture?CodePrestation=XXX&idHospitalisation=YYY
 // OU GET /api/ligneprestation?id=XXX (pour récupérer une seule ligne)
@@ -8,7 +12,9 @@ import { LignePrestation } from "@/models/lignePrestation";
 // GET /api/ligneprestationFacture
 export async function GET(req: NextRequest) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, READ_ROLES);
+        if (!context) return response;
+        const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
         const { searchParams } = new URL(req.url);
 
         const id = searchParams.get("id");
@@ -79,7 +85,9 @@ export async function GET(req: NextRequest) {
 // POST /api/ligneprestation - Créer une nouvelle ligne de prestation
 export async function POST(req: NextRequest) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, WRITE_ROLES);
+        if (!context) return response;
+        const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
         const body = await req.json();
 
         // Validation des champs requis
@@ -123,7 +131,9 @@ export async function POST(req: NextRequest) {
 // PUT /api/ligneprestation - Mettre à jour une ligne de prestation
 export async function PUT(req: NextRequest) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, WRITE_ROLES);
+        if (!context) return response;
+        const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
         const body = await req.json();
         const { _id, ...updateData } = body;
 
@@ -160,7 +170,9 @@ export async function PUT(req: NextRequest) {
 // DELETE /api/ligneprestation?id=XXX - Supprimer une ligne de prestation
 export async function DELETE(req: NextRequest) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, WRITE_ROLES);
+        if (!context) return response;
+        const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
         const { searchParams } = new URL(req.url);
         const id = searchParams.get("id");
 

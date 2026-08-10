@@ -32,7 +32,7 @@ const EntrepriseSchema = new Schema<IEntreprise>({
     contact: { type: String, maxlength: 100 },
     email: { type: String, maxlength: 200, lowercase: true },
     mongoUri: { type: String, maxlength: 1000 },
-    dbName: { type: String, maxlength: 200 },
+    dbName: { type: String, maxlength: 200, unique: true, sparse: true },
     statut: { type: String, enum: ["active", "suspendue", "resiliee"], default: "active" },
     dateExpiration: { type: Date },
     licenceKey: { type: String, maxlength: 500 },

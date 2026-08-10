@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { HistoriqueInventaire } from "@/models/HistoriqueInventaire";
+import { IHistoriqueInventaire } from "@/models/HistoriqueInventaire";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function GET() {
-    await db();
+const READ_ROLES = ["admin", "pharmacien", "accueil", "caisse", "comptable"];
+
+export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const HistoriqueInventaire = getTenantModel<IHistoriqueInventaire>(context.connection, "HistoriqueInventaire");
     try {
         const historique = await HistoriqueInventaire.find()
             .sort({ DateInventaire: -1 })

@@ -1,13 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { DocumentPatient } from "@/models/documentpatient";
-import { ExamenHospitalisation } from "@/models/examenHospit";
+import { IDocumentPatient } from "@/models/documentpatient";
+import { IExamenHospitalisation } from "@/models/examenHospit";
 import { Types } from "mongoose";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "biologiste", "infirmier"];
 
 // GET /api/documents/patient?patientId=xxx
 export async function GET(req: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const DocumentPatient = getTenantModel<IDocumentPatient>(context.connection, "DocumentPatient");
+
     const { searchParams } = new URL(req.url);
     const patientId = searchParams.get("patientId");
 
@@ -42,7 +49,11 @@ export async function GET(req: NextRequest) {
 // POST /api/documents/patient
 export async function POST(req: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const DocumentPatient = getTenantModel<IDocumentPatient>(context.connection, "DocumentPatient");
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+
     const body = await req.json();
 
     const {

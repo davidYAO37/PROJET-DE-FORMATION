@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ActeClinique } from "@/models/acteclinique";
-import { TarifAssurance } from "@/models/tarifassurance";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeClinique } from "@/models/acteclinique";
+import { ITarifAssurance } from "@/models/tarifassurance";
+
+const WRITE_ROLES = ["admin"];
 
 // -------------------- MODIFICATION D'UN ACTE ET TOUS SES TARIFS --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+    const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
     try {
         const { id } = await params;
         const body = await req.json();
@@ -58,7 +64,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN ACTE ET TOUS SES TARIFS --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+    const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
     try {
         const { id } = await params;
 

@@ -1,12 +1,17 @@
-import { NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { SocieteAssurance } from "@/models/SocieteAssurance";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ISocieteAssurance } from "@/models/SocieteAssurance";
+
+const ROLES = ["admin", "accueil", "caisse", "comptable", "medecin", "infirmier"];
 
 // GET /api/societeassurance?assuranceId=xxx
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const SocieteAssurance = getTenantModel<ISocieteAssurance>(context.connection, "SocieteAssurance");
     const { searchParams } = new URL(request.url);
     const assuranceId = searchParams.get("assuranceId");
-    await db();
     if (!assuranceId) {
         return NextResponse.json([], { status: 200 });
     }
@@ -15,10 +20,12 @@ export async function GET(request: Request) {
 }
 
 // POST /api/societeassurance
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const SocieteAssurance = getTenantModel<ISocieteAssurance>(context.connection, "SocieteAssurance");
     const body = await request.json();
     const { societe, assuranceId } = body;
-    await db();
     if (!assuranceId || !societe) {
         return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
     }
@@ -34,10 +41,12 @@ export async function POST(request: Request) {
 }
 
 // PUT /api/societeassurance
-export async function PUT(request: Request) {
+export async function PUT(request: NextRequest) {
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const SocieteAssurance = getTenantModel<ISocieteAssurance>(context.connection, "SocieteAssurance");
     const body = await request.json();
     const { id, societe, assuranceId } = body;
-    await db();
     if (!id || !societe || !assuranceId) {
         return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
     }

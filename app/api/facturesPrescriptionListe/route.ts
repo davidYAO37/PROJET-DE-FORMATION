@@ -1,10 +1,15 @@
 // app/api/facturesPrescriptionListe/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { Facturation } from "@/models/Facturation";
-import { db } from "@/db/mongoConnect";
+import { IFacturation } from "@/models/Facturation";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
     try {
         const { searchParams } = new URL(req.url);
         const IDPRESCRIPTION = searchParams.get("IDPRESCRIPTION");

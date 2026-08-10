@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { RendezVous } from '@/models/RendezVous';
-import { db } from '@/db/mongoConnect';
+import { IRendezVous } from '@/models/RendezVous';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
-    
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const RendezVous = getTenantModel<IRendezVous>(context.connection, "RendezVous");
+
     const { searchParams } = new URL(request.url);
     const medecinId = searchParams.get('medecinId');
     const all = searchParams.get('all') === 'true';

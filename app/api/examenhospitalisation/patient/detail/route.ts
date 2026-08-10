@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ExamenHospitalisation } from "@/models/examenHospit";
+import { IExamenHospitalisation } from "@/models/examenHospit";
 import { Types } from "mongoose";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 
 // GET /api/examenhospitalisation/patient/detail?patientId=xxx
 // Retourne TOUS les examenhospit d'un patient sans filtrer par type d'acte
 export async function GET(req: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
     const { searchParams } = new URL(req.url);
     const patientId = searchParams.get("patientId");
     const codePrestation = searchParams.get("codePrestation");

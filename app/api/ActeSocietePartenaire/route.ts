@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ActeSocietePartenaire } from "@/models/acteSocietePartenaire";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeSocietePartenaire } from "@/models/acteSocietePartenaire";
 import mongoose from "mongoose";
 
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
+
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ActeSocietePartenaire = getTenantModel<IActeSocietePartenaire>(context.connection, "ActeSocietePartenaire");
     const { searchParams } = new URL(req.url);
     const societeId = searchParams.get("societeId");
 
@@ -20,8 +26,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeSocietePartenaire = getTenantModel<IActeSocietePartenaire>(context.connection, "ActeSocietePartenaire");
     try {
-        await db();
         const body = await req.json();
         const { IDSOCIETEPARTENAIRE, IDACTEP } = body;
 

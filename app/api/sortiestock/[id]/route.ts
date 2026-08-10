@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { SortieStock } from "@/models/SortieStock";
+import { ISortieStock } from "@/models/SortieStock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const WRITE_ROLES = ["admin", "pharmacien", "caisse"];
 
 // PUT /api/sortiestock/[id] - Mettre à jour une sortie de stock
-export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    await db();
-    
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(request, WRITE_ROLES);
+    if (!context) return response;
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
+
     try {
         const { id } = await params;
         const body = await request.json();
@@ -33,9 +38,11 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 }
 
 // DELETE /api/sortiestock/[id] - Supprimer une sortie de stock
-export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
-    await db();
-    
+export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(request, WRITE_ROLES);
+    if (!context) return response;
+    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
+
     try {
         const { id } = await params;
         

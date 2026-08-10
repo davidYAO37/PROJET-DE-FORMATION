@@ -1,13 +1,27 @@
 import { db } from "@/db/mongoConnect";
 import { Entreprise } from "@/models/entreprise";
-import { NextResponse } from "next/server";
+import { User } from "@/models/users.model";
+import { NextRequest, NextResponse } from "next/server";
 import { buildLogoDataUrlFromUpload } from "@/lib/entrepriseLogo";
+import { closeTenantConnection } from "@/lib/tenantDb";
+import { requireAuth } from "@/lib/auth";
 
-export async function GET(_: Request, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  // Tout utilisateur authentifié peut consulter les infos (logo/entête) de SA PROPRE
+  // entreprise (utilisé pour l'habillage du dashboard). Seul adminsuper peut consulter
+  // n'importe quelle entreprise.
+  const { user: currentUser, error } = await requireAuth(req);
+  if (error) return error;
+
   const { id } = await params;
+
+  if (currentUser!.type !== "adminsuper" && currentUser!.entrepriseId !== id) {
+    return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
+  }
+
+  await db();
   try {
-    const entreprise = await Entreprise.findById(id);
+    const entreprise = await Entreprise.findById(id, { mongoUri: 0, licenceKey: 0 });
     if (!entreprise) return NextResponse.json({ error: "Entreprise non trouvée" }, { status: 404 });
     return NextResponse.json(entreprise);
   } catch {
@@ -15,7 +29,10 @@ export async function GET(_: Request, { params }: { params: Promise<{ id: string
   }
 }
 
-export async function PUT(req: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error } = await requireAuth(req, ["adminsuper"]);
+  if (error) return error;
+
   await db();
   const { id } = await params;
   try {
@@ -71,8 +88,16 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
       updateData = body;
       console.log("Données JSON reçues pour modification entreprise:", body);
     }
-    
-    const updated = await Entreprise.findByIdAndUpdate(id, updateData, { new: true });
+
+    // dbName / mongoUri ne doivent jamais être modifiés après création
+    // (changer la base d'une entreprise existante ferait perdre l'accès à ses données)
+    delete updateData.dbName;
+    delete updateData.mongoUri;
+
+    const updated = await Entreprise.findByIdAndUpdate(id, updateData, {
+      new: true,
+      projection: { mongoUri: 0, licenceKey: 0 },
+    });
     if (!updated) return NextResponse.json({ error: "Entreprise non trouvée" }, { status: 404 });
     
     console.log("Entreprise modifiée:", updated);
@@ -83,13 +108,34 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
   }
 }
 
-export async function DELETE(_: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  const { error } = await requireAuth(req, ["adminsuper"]);
+  if (error) return error;
+
   await db();
   const { id } = await params;
   try {
-    await Entreprise.findByIdAndDelete(id);
+    const usersCount = await User.countDocuments({ entrepriseId: id });
+    if (usersCount > 0) {
+      return NextResponse.json(
+        {
+          error: `Impossible de supprimer cette entreprise : ${usersCount} utilisateur(s) y sont encore rattaché(s). Réaffectez ou supprimez-les d'abord.`,
+          usersCount,
+        },
+        { status: 409 }
+      );
+    }
+
+    const deleted = await Entreprise.findByIdAndDelete(id);
+    if (!deleted) {
+      return NextResponse.json({ error: "Entreprise non trouvée" }, { status: 404 });
+    }
+
+    await closeTenantConnection(id);
+
     return NextResponse.json({ message: "Entreprise supprimée" });
-  } catch {
+  } catch (error) {
+    console.error("Erreur suppression entreprise:", error);
     return NextResponse.json({ error: "Erreur suppression" }, { status: 500 });
   }
 }

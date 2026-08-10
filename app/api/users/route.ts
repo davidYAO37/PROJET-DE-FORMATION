@@ -1,5 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db/mongoConnect';
+import { requireAuth } from '@/lib/auth';
 import mongoose from 'mongoose';
 
 // Interface pour l'utilisateur
@@ -13,12 +14,19 @@ interface IUser {
   [key: string]: any;
 }
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
+    const { user: currentUser, error } = await requireAuth(request, ['admin']);
+    if (error) return error;
+
     await db();
     
     const { searchParams } = new URL(request.url);
-    const entrepriseId = searchParams.get('entrepriseId');
+    let entrepriseId = searchParams.get('entrepriseId');
+
+    if (currentUser!.type !== 'adminsuper') {
+      entrepriseId = currentUser!.entrepriseId || null;
+    }
 
     if (!entrepriseId) {
       return NextResponse.json(
@@ -33,7 +41,7 @@ export async function GET(request: Request) {
     // Récupérer les utilisateurs liés à l'entreprise
     const users = await User.find({ 
       entrepriseId: entrepriseId 
-    }).select('name uid type email entrepriseId');
+    }).select('nom prenom name uid type email entrepriseId isLocked createdAt');
 
     return NextResponse.json({
       success: true,

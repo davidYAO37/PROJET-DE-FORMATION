@@ -1,15 +1,24 @@
-import { NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Facturation } from "@/models/Facturation";
-import { LignePrestation } from "@/models/lignePrestation";
-import { Patient } from "@/models/patient";
-import { PatientPrescription } from "@/models/PatientPrescription";
+import { NextRequest, NextResponse } from "next/server";
+import { IFacturation } from "@/models/Facturation";
+import { ILignePrestation } from "@/models/lignePrestation";
+import { IPatient } from "@/models/patient";
+import { IPatientPrescription } from "@/models/PatientPrescription";
 import { Types } from "mongoose";
-import { Assurance } from "@/models/assurance";
+import { IAssurance } from "@/models/assurance";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function GET(req: Request, context: { params: Promise<{ id: string }> }) {
-  await db();
-  const { id } = await context.params;
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
+
+export async function GET(req: NextRequest, routeContext: { params: Promise<{ id: string }> }) {
+  const { context, response } = await withTenant(req, READ_ROLES);
+  if (!context) return response;
+  const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+  const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+  const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+  const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
+  const Assurance = getTenantModel<IAssurance>(context.connection, "Assurance");
+  const { id } = await routeContext.params;
 
   try {
     if (!id) {

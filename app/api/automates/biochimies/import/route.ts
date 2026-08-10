@@ -1,14 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IBiochimieTraitement } from "@/models/BiochimieTraitement";
+import { ILienAutomate } from "@/models/lienAutomate";
+import { IParamBiochimie } from "@/models/paramBiochimie";
 
-import { db } from "@/db/mongoConnect";
-import { BiochimieTraitement } from "@/models/BiochimieTraitement";
-import { LienAutomate } from "@/models/lienAutomate";
-import { ParamBiochimie } from "@/models/paramBiochimie";
+const WRITE_ROLES = ["admin", "biologiste", "technicienlabo"];
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const BiochimieTraitement = getTenantModel<IBiochimieTraitement>(context.connection, "BiochimieTraitement");
+    const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
+    const ParamBiochimie = getTenantModel<IParamBiochimie>(context.connection, "ParamBiochimie");
 
     try {
-        await db();
         const automate = await LienAutomate.findOne();
 
         if (!automate?.LienBiochimie) {

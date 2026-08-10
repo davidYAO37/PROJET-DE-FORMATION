@@ -1,14 +1,19 @@
-import { db } from "@/db/mongoConnect";
-import { ObservationHospit } from "@/models/ObservationHospit";
+import { IObservationHospit } from "@/models/ObservationHospit";
 import { NextResponse, NextRequest } from "next/server";
 import { Types } from "mongoose";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const WRITE_ROLES = ["admin", "medecin", "infirmier"];
 
 // PUT: Mettre à jour une observation existante
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await db();
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const ObservationHospit = getTenantModel<IObservationHospit>(context.connection, "ObservationHospit");
   try {
     const { id } = await params;
     if (!Types.ObjectId.isValid(id)) {
@@ -76,7 +81,9 @@ export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await db();
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const ObservationHospit = getTenantModel<IObservationHospit>(context.connection, "ObservationHospit");
   try {
     const { id } = await params;
     if (!Types.ObjectId.isValid(id)) {

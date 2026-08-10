@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ActeParamBiochimie } from "@/models/acteParamBiochimie";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeParamBiochimie } from "@/models/acteParamBiochimie";
+
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
 
 export async function GET(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ActeParamBiochimie = getTenantModel<IActeParamBiochimie>(context.connection, "ActeParamBiochimie");
+
     try {
         const { searchParams } = new URL(req.url);
         const idactep = searchParams.get('idactep');
@@ -35,8 +41,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeParamBiochimie = getTenantModel<IActeParamBiochimie>(context.connection, "ActeParamBiochimie");
+
     try {
         const body = await req.json();
         const nouvelActeParam = new ActeParamBiochimie(body);
@@ -48,8 +56,10 @@ export async function POST(req: NextRequest) {
 }
 
 export async function PUT(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeParamBiochimie = getTenantModel<IActeParamBiochimie>(context.connection, "ActeParamBiochimie");
+
     try {
         const { searchParams } = new URL(req.url);
         const id = searchParams.get('id');
@@ -76,8 +86,10 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeParamBiochimie = getTenantModel<IActeParamBiochimie>(context.connection, "ActeParamBiochimie");
+
     try {
         const { searchParams } = new URL(req.url);
         const idactep = searchParams.get('idactep');

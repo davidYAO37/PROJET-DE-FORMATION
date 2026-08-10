@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Stock } from "@/models/Stock";
+import { IStock } from "@/models/Stock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "pharmacien", "accueil", "caisse", "comptable"];
 
 // -------------------- RÉCUPÉRER UN STOCK PAR RÉFÉRENCE --------------------
 export async function GET(req: NextRequest, { params }: { params: Promise<{ reference: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
     try {
         const { reference } = await params;
         

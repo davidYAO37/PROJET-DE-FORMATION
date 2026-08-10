@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ComptePatient } from "@/models/ComptePatient";
-import { Patient } from "@/models/patient";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IComptePatient } from "@/models/ComptePatient";
+import { IPatient } from "@/models/patient";
 import mongoose from "mongoose";
+
+const ROLES = ["admin", "accueil", "caisse", "comptable"];
 
 // GET /api/comptePatient?IDPARTIENT=xxx
 export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ComptePatient = getTenantModel<IComptePatient>(context.connection, "ComptePatient");
+    getTenantModel(context.connection, "Patient");
     try {
-        await db();
         const { searchParams } = new URL(req.url);
         const IDPARTIENT = searchParams.get("IDPARTIENT");
 
@@ -28,8 +34,11 @@ export async function GET(req: NextRequest) {
 
 // POST /api/comptePatient - Créer un mouvement de caution et mettre à jour le patient
 export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ComptePatient = getTenantModel<IComptePatient>(context.connection, "ComptePatient");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
     try {
-        await db();
         const body = await req.json();
 
         if (!body.IDPARTIENT) {

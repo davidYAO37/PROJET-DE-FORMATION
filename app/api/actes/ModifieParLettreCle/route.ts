@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ActeClinique } from "@/models/acteclinique";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeClinique } from "@/models/acteclinique";
+
+const WRITE_ROLES = ["admin"];
 
 export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
     try {
-        await db();
         const { lettreCle, prixClinique, prixMutuel, prixPreferentiel } = await req.json();
 
         if (!lettreCle) {

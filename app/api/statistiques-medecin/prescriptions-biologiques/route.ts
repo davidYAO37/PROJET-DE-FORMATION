@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import { db } from '@/db/mongoConnect';
-import { LignePrestation } from '@/models/lignePrestation';
-import { Medecin } from '@/models/medecin';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IMedecin } from '@/models/medecin';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
 
 const startOfDay = (date: Date) => {
   const value = new Date(date);
@@ -27,7 +30,7 @@ const toObjectId = (id: string | null) => {
   return new mongoose.Types.ObjectId(id);
 };
 
-const resolveMedecinObjectId = async (searchParams: URLSearchParams) => {
+const resolveMedecinObjectId = async (searchParams: URLSearchParams, Medecin: ReturnType<typeof getTenantModel<IMedecin>>) => {
   const medecinIdParam = searchParams.get('medecinId');
   const profilIdParam = searchParams.get('profilId');
   const profilNom = searchParams.get('nom');
@@ -53,7 +56,10 @@ const resolveMedecinObjectId = async (searchParams: URLSearchParams) => {
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+    const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
 
     const { searchParams } = new URL(request.url);
     const dateDebutParam = searchParams.get('dateDebut');
@@ -61,7 +67,7 @@ export async function GET(request: NextRequest) {
     const today = new Date();
     const periodStart = dateDebutParam ? startOfDay(new Date(dateDebutParam)) : startOfDay(addDays(today, -29));
     const periodEnd = dateFinParam ? endOfDay(new Date(dateFinParam)) : endOfDay(today);
-    const medecinObjectId = await resolveMedecinObjectId(searchParams);
+    const medecinObjectId = await resolveMedecinObjectId(searchParams, Medecin);
     const ligneMedecinFilter = medecinObjectId ? { idMedecin: medecinObjectId } : {};
 
     const [medecins, prescriptions] = await Promise.all([

@@ -1,14 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Consultation } from "@/models/consultation";
-import { Facturation } from "@/models/Facturation";
-import { Medecin } from "@/models/medecin";
-import { Patient } from "@/models/patient";
-import { db } from "@/db/mongoConnect";
+import { IConsultation } from "@/models/consultation";
+import { IFacturation } from "@/models/Facturation";
+import { IMedecin } from "@/models/medecin";
+import { IPatient } from "@/models/patient";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
 export const dynamic = "force-dynamic";
 
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
+
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+    const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
 
     try {
         let facturationsNonSoldées: any[] = [];

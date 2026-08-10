@@ -1,9 +1,15 @@
-import { db } from '@/db/mongoConnect';
-import { FeuilleSoins } from '@/models/FeuilleSoins';
-import { NextResponse } from 'next/server';
+import { IFeuilleSoins } from '@/models/FeuilleSoins';
+import { NextRequest, NextResponse } from 'next/server';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
 
-export async function GET(req: Request) {
-  await db();
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "infirmier"];
+
+export async function GET(req: NextRequest) {
+  const { context, response } = await withTenant(req, READ_ROLES);
+  if (!context) return response;
+  const FeuilleSoins = getTenantModel<IFeuilleSoins>(context.connection, "FeuilleSoins");
   try {
     const { searchParams } = new URL(req.url);
     const patientId    = searchParams.get('patientId');
@@ -22,8 +28,10 @@ export async function GET(req: Request) {
   }
 }
 
-export async function POST(req: Request) {
-  await db();
+export async function POST(req: NextRequest) {
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const FeuilleSoins = getTenantModel<IFeuilleSoins>(context.connection, "FeuilleSoins");
   try {
     const body = await req.json();
     const soin = await FeuilleSoins.create(body);

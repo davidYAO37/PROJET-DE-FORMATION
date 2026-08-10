@@ -1,11 +1,17 @@
-import { db } from "@/db/mongoConnect";
-import { ObservationHospit } from "@/models/ObservationHospit";
+import { IObservationHospit } from "@/models/ObservationHospit";
 import { NextResponse, NextRequest } from "next/server";
 import { Types } from "mongoose";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "infirmier"];
 
 // GET: Récupérer les observations selon les filtres
 export async function GET(req: NextRequest) {
-  await db();
+  const { context, response } = await withTenant(req, READ_ROLES);
+  if (!context) return response;
+  const ObservationHospit = getTenantModel<IObservationHospit>(context.connection, "ObservationHospit");
   try {
     const { searchParams } = new URL(req.url);
     const hospitalisationId = searchParams.get("hospitalisationId");
@@ -52,7 +58,9 @@ export async function GET(req: NextRequest) {
 
 // POST: Créer une nouvelle observation
 export async function POST(req: NextRequest) {
-  await db();
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const ObservationHospit = getTenantModel<IObservationHospit>(context.connection, "ObservationHospit");
   try {
     const body = await req.json();
     

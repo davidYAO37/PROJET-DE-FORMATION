@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getFactureDetailleActe } from "@/services/factureService";
+import { withTenant } from "@/lib/withTenant";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "caisse", "comptable"];
 
 export async function GET(req: NextRequest) {
     try {
+        const { context, response } = await withTenant(req, ROLES);
+        if (!context) return response;
+
         const { searchParams } = new URL(req.url);
         const ParamCode_consultation = searchParams.get("ParamCode_consultation");
 
@@ -11,7 +17,7 @@ export async function GET(req: NextRequest) {
         }
 
         // Utiliser le service pour obtenir les données combinées
-        const factureData = await getFactureDetailleActe(ParamCode_consultation);
+        const factureData = await getFactureDetailleActe(context.connection, ParamCode_consultation);
 
         return NextResponse.json(factureData);
 
@@ -35,6 +41,9 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
+        const { context, response } = await withTenant(req, ROLES);
+        if (!context) return response;
+
         const data = await req.json();
         const { ParamCode_consultation } = data;
 
@@ -43,7 +52,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Utiliser le service pour obtenir les données combinées
-        const factureData = await getFactureDetailleActe(ParamCode_consultation);
+        const factureData = await getFactureDetailleActe(context.connection, ParamCode_consultation);
 
         return NextResponse.json(factureData);
 

@@ -1,9 +1,14 @@
-import { db } from "@/db/mongoConnect";
-import { PlanningMed } from "@/models/PlanningMed";
-import { NextResponse } from "next/server";
+import { IPlanningMed } from "@/models/PlanningMed";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function PUT(req: Request) {
-  await db();
+const WRITE_ROLES = ["admin", "medecin", "accueil"];
+
+export async function PUT(req: NextRequest) {
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const PlanningMed = getTenantModel<IPlanningMed>(context.connection, "PlanningMed");
   try {
     const body = await req.json();
     const { planningId, decrement, entrepriseId } = body;

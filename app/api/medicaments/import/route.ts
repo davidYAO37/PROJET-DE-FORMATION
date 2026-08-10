@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Pharmacie } from "@/models/Pharmacie";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IPharmacie } from "@/models/Pharmacie";
+
+const WRITE_ROLES = ["admin"];
 
 // Fonction utilitaire de nettoyage
 function cleanNumber(value: any): number {
@@ -23,7 +26,10 @@ function cleanNumber(value: any): number {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
+
     const { rows } = await req.json();
 
     if (!Array.isArray(rows)) {

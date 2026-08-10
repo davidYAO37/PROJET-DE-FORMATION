@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Assurance } from "@/models/assurance";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IAssurance } from "@/models/assurance";
+
+const WRITE_ROLES = ["admin"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Assurance = getTenantModel<IAssurance>(context.connection, "Assurance");
     const body = await req.json();
     const { id } = await params;
     try {
@@ -15,7 +20,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const Assurance = getTenantModel<IAssurance>(context.connection, "Assurance");
     const { id } = await params;
     try {
         await Assurance.findByIdAndDelete(id);

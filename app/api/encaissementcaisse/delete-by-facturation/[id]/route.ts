@@ -1,12 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { EncaissementCaisse } from '@/models/EncaissementCaisse';
-import { db } from '@/db/mongoConnect';
+import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
 
 export const dynamic = 'force-dynamic';
 
 // Supprimer tous les encaissements pour une facturation
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, ["admin"]);
+    if (!context) return response;
+    const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
 
     try {
         const { id } = await params;

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { TarifAssurance } from "@/models/tarifassurance";
+import { ITarifAssurance } from "@/models/tarifassurance";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const WRITE_ROLES = ["admin"];
 
 // Supprime les doublons de tarifs pour une assurance donnée
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
     const { assuranceId } = await req.json();
     
     if (!assuranceId) {

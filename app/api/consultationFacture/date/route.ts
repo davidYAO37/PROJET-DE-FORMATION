@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function POST(req: NextRequest) {
-    try {
-        await db(); // ✅ Connexion à MongoDB
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
 
+    try {
         // 🔸 Définir le jour courant (de minuit à minuit)
         const today = new Date();
         today.setHours(0, 0, 0, 0);

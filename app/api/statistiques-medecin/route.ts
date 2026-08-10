@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import mongoose from 'mongoose';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
-import { RendezVous } from '@/models/RendezVous';
-import { Prescription } from '@/models/Prescription';
-import { LignePrestation } from '@/models/lignePrestation';
-import { Medecin } from '@/models/medecin';
-import { Facturation } from '@/models/Facturation';
-import { ExamenHospitalisation } from '@/models/examenHospit';
-import { Patient } from '@/models/patient';
-import { TypeActe } from '@/models/TypeActe';
+import { IConsultation } from '@/models/consultation';
+import { IRendezVous } from '@/models/RendezVous';
+import { IPrescription } from '@/models/Prescription';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IMedecin } from '@/models/medecin';
+import { IFacturation } from '@/models/Facturation';
+import { IExamenHospitalisation } from '@/models/examenHospit';
+import { IPatient } from '@/models/patient';
+import { ITypeActe } from '@/models/TypeActe';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
 
 const startOfDay = (date: Date) => {
   const value = new Date(date);
@@ -47,7 +50,17 @@ const getStatus = (taux: number): 'Excellent' | 'Correct' | 'À surveiller' => {
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const RendezVous = getTenantModel<IRendezVous>(context.connection, "RendezVous");
+    const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+    const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
+    const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+    const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
 
     const { searchParams } = new URL(request.url);
     const medecinIdParam = searchParams.get('medecinId');

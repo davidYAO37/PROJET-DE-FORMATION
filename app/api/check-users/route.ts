@@ -1,14 +1,24 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { UserCollection } from "@/models/users.model";
 import { hashPassword, generateLocalUID } from "@/utils/auth";
+import { requireAuth } from "@/lib/auth";
 
-export const GET = async () => {
+export const GET = async (req: NextRequest) => {
   try {
+    const { user: currentUser, error } = await requireAuth(req, ["admin"]);
+    if (error) return error;
+
     await db();
-    
-    const userCount = await UserCollection.countDocuments();
-    const users = await UserCollection.find({}, { 
+
+    // Un admin (non super) ne voit que les utilisateurs de sa propre entreprise
+    const filter =
+      currentUser!.type === "adminsuper"
+        ? {}
+        : { entrepriseId: currentUser!.entrepriseId };
+
+    const userCount = await UserCollection.countDocuments(filter);
+    const users = await UserCollection.find(filter, { 
       _id: 1, nom: 1, prenom: 1, email: 1, type: 1, uid: 1, entrepriseId: 1, 
       isLocked: 1, failedAttempts: 1, remainingAttempts: 1, lockedUntil: 1
     }).lean();

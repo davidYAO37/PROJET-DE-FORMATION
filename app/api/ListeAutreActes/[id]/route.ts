@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Patient } from "@/models/patient";
-import { db } from "@/db/mongoConnect";
-import { ExamenHospitalisation } from "@/models";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IPatient } from "@/models/patient";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
     try {
         const { searchParams } = new URL(req.url);
         const patientId = searchParams.get("patientId");
@@ -29,7 +35,10 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
     try {
         const body = await req.json();
         

@@ -1,12 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { PatientPrescription } from "@/models/PatientPrescription";
-import { Facturation } from "@/models/Facturation";
+import { IPatientPrescription } from "@/models/PatientPrescription";
+import { IFacturation } from "@/models/Facturation";
 import { Types } from "mongoose";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
-  await db();
-  const { id } = await context.params;
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+
+export async function GET(req: NextRequest, routeContext: { params: Promise<{ id: string }> }) {
+  const { context, response } = await withTenant(req, READ_ROLES);
+  if (!context) return response;
+  const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
+  const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+  const { id } = await routeContext.params;
 
   try {     
     

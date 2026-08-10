@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ComptePatient } from "@/models/ComptePatient";
-import { Patient } from "@/models/patient";
-import mongoose from "mongoose";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IComptePatient } from "@/models/ComptePatient";
+import { IPatient } from "@/models/patient";
+
+const ROLES = ["admin", "accueil", "caisse", "comptable"];
 
 // GET /api/comptePatient/[id]
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ComptePatient = getTenantModel<IComptePatient>(context.connection, "ComptePatient");
+    getTenantModel(context.connection, "Patient");
     try {
-        await db();
         const { id } = await params;
 
         const compte = await ComptePatient.findById(id)
@@ -26,8 +31,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // PUT /api/comptePatient/[id] - Modifier un mouvement et réajuster le compte patient
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ComptePatient = getTenantModel<IComptePatient>(context.connection, "ComptePatient");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
     try {
-        await db();
         const { id } = await params;
         const body = await req.json();
 
@@ -76,8 +84,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE /api/comptePatient/[id] - Supprimer un mouvement et réajuster le compte patient
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ComptePatient = getTenantModel<IComptePatient>(context.connection, "ComptePatient");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
     try {
-        await db();
         const { id } = await params;
 
         const compte = await ComptePatient.findById(id);

@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IConsultation } from "@/models/consultation";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "caisse", "comptable"];
 
 export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    getTenantModel(context.connection, "Patient");
+
     try {
-        await db();
-        
         const { searchParams } = new URL(req.url);
         const ParamCode_consultation = searchParams.get("ParamCode_consultation");
 
         if (!ParamCode_consultation) {
             return NextResponse.json({ error: "Le paramètre ParamCode_consultation est requis" }, { status: 400 });
         }
-
-        // Importer les modèles dynamiquement après la connexion
-        const { Consultation } = await import("@/models/consultation");
-        const { Patient } = await import("@/models/patient");
 
         // Recherche de la consultation avec les critères spécifiés
         const consultation = await Consultation.findOne({
@@ -67,13 +70,12 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    getTenantModel(context.connection, "Patient");
+
     try {
-        await db();
-        
-        // Importer les modèles dynamiquement après la connexion
-        const { Consultation } = await import("@/models/consultation");
-        const { Patient } = await import("@/models/patient");
-        
         const data = await req.json();
         const { ParamCode_consultation } = data;
 

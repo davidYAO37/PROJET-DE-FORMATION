@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IModeDePaiement } from "@/models/ModeDePaiement";
 
-import { db } from "@/db/mongoConnect";
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
 
-import { ModeDePaiement } from "@/models/ModeDePaiement";
+export async function GET(req: NextRequest) {
 
-
-
-export async function GET() {
-
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
 
     const modepaiements = await ModeDePaiement.find().lean();
 
@@ -23,7 +25,9 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
 
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
 
     const body = await req.json();
 

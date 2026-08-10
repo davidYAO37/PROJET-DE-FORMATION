@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { RapportHospitalisation } from '@/models/rapportHospitalisation';
+import { IRapportHospitalisation } from '@/models/rapportHospitalisation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "infirmier"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+  const { context, response } = await withTenant(req, READ_ROLES);
+  if (!context) return response;
+  const RapportHospitalisation = getTenantModel<IRapportHospitalisation>(context.connection, "RapportHospitalisation");
   try {
     const { id } = await params;
     const rapport = await RapportHospitalisation.findById(id);
@@ -26,7 +32,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const RapportHospitalisation = getTenantModel<IRapportHospitalisation>(context.connection, "RapportHospitalisation");
   try {
     const { id } = await params;
     const body = await req.json();
@@ -96,7 +104,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  await db();
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const RapportHospitalisation = getTenantModel<IRapportHospitalisation>(context.connection, "RapportHospitalisation");
   try {
     const { id } = await params;
     const userName = req.headers.get('x-user-name') || '';

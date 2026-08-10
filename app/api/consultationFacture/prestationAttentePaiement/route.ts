@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ExamenHospitalisation } from "@/models/examenHospit";
-import { Patient } from "@/models/patient";      // ✅ Pour populate IdPatient
-import { Medecin } from "@/models/medecin";      // ✅ Pour populate idMedecin
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "biologiste", "technicienlabo", "caisse", "comptable"];
 
 export async function GET(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    getTenantModel(context.connection, "Patient");
+    getTenantModel(context.connection, "Medecin");
 
     try {
         const { searchParams } = new URL(req.url);

@@ -1,13 +1,17 @@
-import { db } from '@/db/mongoConnect';
-import { Facturation } from '@/models/Facturation';
-import { NextResponse } from 'next/server';
+import { IFacturation } from '@/models/Facturation';
+import { NextRequest, NextResponse } from 'next/server';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
 
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
+const WRITE_ROLES = ["admin", "caisse", "comptable"];
 
-// Connexion à la base de données
-await db();
-
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
     try {
+        const { context, response } = await withTenant(request, READ_ROLES);
+        if (!context) return response;
+        const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+
         const { searchParams } = new URL(request.url);
         const idHospitalisation = searchParams.get('idHospitalisation');
 
@@ -38,8 +42,12 @@ export async function GET(request: Request) {
     }
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
     try {
+        const { context, response } = await withTenant(request, WRITE_ROLES);
+        if (!context) return response;
+        const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+
         const data = await request.json();
         
         // Validation des données requises

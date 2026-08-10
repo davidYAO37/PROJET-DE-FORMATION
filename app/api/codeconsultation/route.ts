@@ -1,13 +1,18 @@
 
-import { NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Consultation } from "@/models/consultation";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IConsultation } from "@/models/consultation";
 
-export async function GET(request: Request) {
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "caisse", "comptable"];
+
+export async function GET(request: NextRequest) {
+    const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+    if (!context) return tenantErrorResponse;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+
     const { searchParams } = new URL(request.url);
     const CodePrestation = searchParams.get("CodePrestation");
-
-    await db();
 
     // Recherche la consultation par CodePrestation
     const consultation = await Consultation.findOne({ CodePrestation: CodePrestation }).lean();

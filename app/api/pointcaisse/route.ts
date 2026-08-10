@@ -1,16 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { EncaissementCaisse } from '@/models/EncaissementCaisse';
-import { Consultation } from '@/models/consultation';
-import { Facturation } from '@/models/Facturation';
-import { LignePrestation } from '@/models/lignePrestation';
-import { PatientPrescription } from '@/models/PatientPrescription';
+import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
+import { IConsultation } from '@/models/consultation';
+import { IFacturation } from '@/models/Facturation';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IPatientPrescription } from '@/models/PatientPrescription';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "caisse", "comptable", "accueil"];
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
-    
-    
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
+
     const { searchParams } = new URL(request.url);
     const dateDebut = searchParams.get('dateDebut');
     const dateFin = searchParams.get('dateFin');

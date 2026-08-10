@@ -1,39 +1,22 @@
 import { NextRequest, NextResponse } from 'next/server';
-import mongoose from 'mongoose';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IArretTravail } from '@/models/arretTravail';
 
-// Connexion à la base de données
-async function connectDB() {
-  if (mongoose.connection.readyState === 0) {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/bd_esaymed');
-  }
-}
-
-// Schéma simple pour tester
-const SimpleArretSchema = new mongoose.Schema({
-  patientId: { type: String, required: true },
-  patientNom: { type: String, required: true },
-  patientPrenoms: { type: String, required: true },
-  dateDebut: { type: Date, required: true },
-  dateFin: { type: Date, required: true },
-  motif: { type: String, required: true },
-  medecinTraitant: { type: String, required: true },
-  statut: { type: String, enum: ['en_cours', 'termine', 'annule'], default: 'en_cours' },
-  numeroDocument: { type: String, required: true, unique: true },
-  dateCreation: { type: Date, default: Date.now }
-}, { collection: 'arrettravails' });
-
-const SimpleArret = mongoose.models.SimpleArret || mongoose.model('SimpleArret', SimpleArretSchema);
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
 
 // GET - Test simple
 export async function GET(request: NextRequest) {
   try {
-    await connectDB();
-    
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const ArretTravail = getTenantModel<IArretTravail>(context.connection, 'ArretTravail');
+
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');
     
     if (patientId) {
-      const arrets = await SimpleArret.find({ patientId }).sort({ dateCreation: -1 });
+      const arrets = await ArretTravail.find({ patientId }).sort({ dateCreation: -1 });
       return NextResponse.json({
         success: true,
         data: arrets,
@@ -43,15 +26,13 @@ export async function GET(request: NextRequest) {
     
     return NextResponse.json({
       success: true,
-      message: 'API arrettravail-simple fonctionne',
-      models: mongoose.modelNames(),
-      connectionState: mongoose.connection.readyState
+      message: 'API arrettravail-simple fonctionne'
     });
     
   } catch (error: any) {
     console.error('Erreur GET arrettravail-simple:', error);
     return NextResponse.json(
-      { success: false, error: error.message, stack: error.stack },
+      { success: false, error: error.message },
       { status: 500 }
     );
   }
@@ -60,8 +41,10 @@ export async function GET(request: NextRequest) {
 // POST - Test simple
 export async function POST(request: NextRequest) {
   try {
-    await connectDB();
-    
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const ArretTravail = getTenantModel<IArretTravail>(context.connection, 'ArretTravail');
+
     const body = await request.json();
     
     console.log('Données reçues:', body);
@@ -76,7 +59,7 @@ export async function POST(request: NextRequest) {
     }
     
     // Créer un arrêt simple
-    const nouvelArret = new SimpleArret({
+    const nouvelArret = new ArretTravail({
       ...body,
       numeroDocument: `AT-${new Date().getFullYear()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`
     });

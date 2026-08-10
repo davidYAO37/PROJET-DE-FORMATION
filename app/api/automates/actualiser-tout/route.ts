@@ -1,8 +1,10 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 
-export async function POST() {
+export async function POST(req: NextRequest) {
 
     try {
+
+        const cookie = req.headers.get("cookie") || "";
 
         const resultat = {
             nfs: null as any,
@@ -18,7 +20,8 @@ export async function POST() {
                 await fetch(
                     `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/nfs/import`,
                     {
-                        method: "POST"
+                        method: "POST",
+                        headers: { cookie }
                     }
                 );
 
@@ -40,7 +43,8 @@ export async function POST() {
                 await fetch(
                     `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/hormones/import`,
                     {
-                        method: "POST"
+                        method: "POST",
+                        headers: { cookie }
                     }
                 );
 
@@ -62,7 +66,8 @@ export async function POST() {
                 await fetch(
                     `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/vs/import`,
                     {
-                        method: "POST"
+                        method: "POST",
+                        headers: { cookie }
                     }
                 );
 
@@ -82,9 +87,10 @@ export async function POST() {
 
             const response =
                 await fetch(
-                    `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/biochimie/import`,
+                    `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/biochimies/import`,
                     {
-                        method: "POST"
+                        method: "POST",
+                        headers: { cookie }
                     }
                 );
 

@@ -38,16 +38,22 @@ export const useEntreprise = () => {
           }
         }
 
-        // Si pas d'IdEntreprise ou erreur, charger la première entreprise disponible
-        const res = await fetch('/api/entreprise');
+        // Si pas d'IdEntreprise en localStorage, récupérer celui de l'utilisateur connecté
+        const meRes = await fetch('/api/me');
+        if (!meRes.ok) return;
+        const meData = await meRes.json();
+        const myEntrepriseId = meData?.user?.entrepriseId;
+        if (!myEntrepriseId) return;
+
+        const res = await fetch(`/api/entreprise/${myEntrepriseId}`);
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled && Array.isArray(data) && data.length > 0) {
-          setEntreprise(data[0]);
+        if (!cancelled && data) {
+          setEntreprise(data);
 
           // Sauvegarder l'ID dans localStorage pour les prochaines fois
-          if (typeof window !== 'undefined' && data[0]._id) {
-            localStorage.setItem('IdEntreprise', data[0]._id);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('IdEntreprise', myEntrepriseId);
           }
         }
       } catch (error) {

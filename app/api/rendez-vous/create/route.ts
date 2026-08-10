@@ -1,9 +1,14 @@
-import { db } from "@/db/mongoConnect";
-import { RendezVous } from "@/models/RendezVous";
-import { NextResponse } from "next/server";
+import { IRendezVous } from "@/models/RendezVous";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function POST(req: Request) {
-  await db();
+const WRITE_ROLES = ["admin", "medecin", "accueil"];
+
+export async function POST(req: NextRequest) {
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const RendezVous = getTenantModel<IRendezVous>(context.connection, "RendezVous");
   try {
     const body = await req.json();
     const { 

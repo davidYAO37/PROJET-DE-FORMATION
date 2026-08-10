@@ -2,6 +2,7 @@
 
 import Sidebar from '@/components/Sidebar';
 import Verifconnecion from '@/components/verifconnecion';
+import ImpersonationBanner from '@/components/ImpersonationBanner';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const metadata = {
@@ -13,13 +14,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <Verifconnecion>
 
-            <div className="d-flex flex-column flex-md-row min-vh-100" style={{ minHeight: '100vh' }
-            }>
-                <Sidebar />
-                < main className="flex-grow-1 p-3" >
+            <div className="d-flex flex-column min-vh-100" style={{ minHeight: '100vh' }}>
+                <ImpersonationBanner />
+                <div className="d-flex flex-column flex-md-row flex-grow-1">
+                    <Sidebar />
+                    < main className="flex-grow-1 p-3" >
 
-                    {children}
-                </main>
+                        {children}
+                    </main>
+                </div>
             </div>
 
         </Verifconnecion>

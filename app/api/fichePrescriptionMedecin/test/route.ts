@@ -1,10 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
-    
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+
     // Test de connexion et vérification des modèles
     const models: { [key: string]: string } = {};
     

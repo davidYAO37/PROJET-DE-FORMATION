@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ParametreNfs } from "@/models/parametreNfs";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IParametreNfs } from "@/models/parametreNfs";
 
-export async function GET() {
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
+
+export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
     try {
-        await db();
         const params = await ParametreNfs.find().sort({ PARAMETRE: 1 });
         return NextResponse.json({ success: true, data: params });
     } catch (error) {
@@ -14,8 +20,10 @@ export async function GET() {
 }
 
 export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
     try {
-        await db();
         const body = await req.json();
         const { PARAMETRE, DESCRIPTION } = body;
 

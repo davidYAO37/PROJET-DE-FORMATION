@@ -157,6 +157,24 @@ export default function ModifierEntreprise({
                         />
                       </Form.Group>
                     </Col>
+                    {entreprise?.dbName && (
+                      <Col md={12}>
+                        <Form.Group className="mb-3">
+                          <Form.Label className="fw-semibold text-secondary">
+                            Base de données dédiée
+                          </Form.Label>
+                          <Form.Control
+                            value={entreprise.dbName}
+                            disabled
+                            readOnly
+                            className="shadow-sm"
+                          />
+                          <Form.Text className="text-muted">
+                            Non modifiable après création.
+                          </Form.Text>
+                        </Form.Group>
+                      </Col>
+                    )}
                   </Row>
                 </Card.Body>
               </Card>

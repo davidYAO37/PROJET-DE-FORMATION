@@ -4,6 +4,7 @@ import { Entreprise } from "@/types/entreprise";
 import React, { useState } from "react";
 import { Modal, Button, Form, Col, Row, Card } from "react-bootstrap";
 import RTFEditor from "@/components/RTFEditor";
+import { buildDbNameFromNomSociete } from "@/lib/slugify";
 
 interface AjouterEntrepriseProps {
   show: boolean;
@@ -23,7 +24,16 @@ export default function AjouterEntreprise({
   const [LogoEPreview, setLogoEPreview] = useState<string>("");
   const [PiedPageSociete, setPiedPageSociete] = useState("");
   const [NCC, setNCC] = useState("");
+  const [dbName, setDbName] = useState("");
+  const [dbNameEdited, setDbNameEdited] = useState(false);
   const [loading, setLoading] = useState(false);
+
+  const handleNomSocieteChange = (value: string) => {
+    setNomSociete(value);
+    if (!dbNameEdited) {
+      setDbName(buildDbNameFromNomSociete(value));
+    }
+  };
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,6 +58,7 @@ export default function AjouterEntreprise({
       formData.append("PiedPageSociete", PiedPageSociete);
       formData.append("LogoE", LogoE);
       formData.append("NCC", NCC);
+      formData.append("dbName", dbName);
 
       if (LogoEFile) {
         formData.append("logoFile", LogoEFile);
@@ -68,6 +79,8 @@ export default function AjouterEntreprise({
         setLogoEPreview("");
         setPiedPageSociete("");
         setNCC("");
+        setDbName("");
+        setDbNameEdited(false);
         onHide();
       }
     } catch (error) {
@@ -113,7 +126,7 @@ export default function AjouterEntreprise({
                         </Form.Label>
                         <Form.Control
                           value={NomSociete}
-                          onChange={(e) => setNomSociete(e.target.value)}
+                          onChange={(e) => handleNomSocieteChange(e.target.value)}
                           placeholder="Entrez le nom de l'entreprise..."
                           required
                           className="shadow-sm"
@@ -132,6 +145,25 @@ export default function AjouterEntreprise({
                           required
                           className="shadow-sm"
                         />
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold text-secondary">
+                          Base de données dédiée
+                        </Form.Label>
+                        <Form.Control
+                          value={dbName}
+                          onChange={(e) => {
+                            setDbName(e.target.value);
+                            setDbNameEdited(true);
+                          }}
+                          placeholder="bd_nom_entreprise"
+                          className="shadow-sm"
+                        />
+                        <Form.Text className="text-muted">
+                          Générée automatiquement à partir du nom. Modifiable avant validation, mais non modifiable après création.
+                        </Form.Text>
                       </Form.Group>
                     </Col>
                   </Row>

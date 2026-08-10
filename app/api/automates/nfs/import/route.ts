@@ -1,17 +1,22 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeClinique } from "@/models/acteclinique";
+import { IParametreNfs } from "@/models/parametreNfs";
+import { INfsTraitement } from "@/models/nfsTraitement";
+import { ILienAutomate } from "@/models/lienAutomate";
 
-import { db } from "@/db/mongoConnect";
-import { ActeClinique } from "@/models/acteclinique";
-import { ParametreNfs } from "@/models/parametreNfs";
-import { NfsTraitement } from "@/models/nfsTraitement";
-import { LienAutomate } from "@/models/lienAutomate";
+const WRITE_ROLES = ["admin", "biologiste", "technicienlabo"];
 
-
-export async function POST() {
+export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
+    const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
+    const NfsTraitement = getTenantModel<INfsTraitement>(context.connection, "NfsTraitement");
+    const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
 
     try {
-
-        await db();
 
         const automate = await LienAutomate.findOne();
 

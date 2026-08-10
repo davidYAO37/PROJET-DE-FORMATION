@@ -1,14 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IVitesseTraitement } from "@/models/VitesseTraitement";
+import { ILienAutomate } from "@/models/lienAutomate";
+import { IActeClinique } from "@/models/acteclinique";
 
-import { db } from "@/db/mongoConnect";
-import { VitesseTraitement } from "@/models/VitesseTraitement";
-import { LienAutomate } from "@/models/lienAutomate";
-import { ActeClinique } from "@/models/acteclinique";
+const WRITE_ROLES = ["admin", "biologiste", "technicienlabo"];
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const VitesseTraitement = getTenantModel<IVitesseTraitement>(context.connection, "VitesseTraitement");
+    const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
+    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
 
     try {
-        await db();
         const automate = await LienAutomate.findOne().sort({ createdAt: -1 });
         if (!automate?.LienVS) {
             return NextResponse.json(

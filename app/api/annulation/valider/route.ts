@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
-import { Consultation } from "@/models/consultation";
-import { Facturation } from "@/models/Facturation";
-import { Patient } from "@/models/patient";
-import { EncaissementCaisse } from "@/models/EncaissementCaisse";
-import { EncaissementCaisseAnnule } from "@/models/EncaissementCaisseAnnule";
-import { PatientPrescription } from "@/models/PatientPrescription";
-import { LignePrestation } from "@/models/lignePrestation";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IConsultation } from "@/models/consultation";
+import { IFacturation } from "@/models/Facturation";
+import { IPatient } from "@/models/patient";
+import { IEncaissementCaisse } from "@/models/EncaissementCaisse";
+import { IEncaissementCaisseAnnule } from "@/models/EncaissementCaisseAnnule";
+import { IPatientPrescription } from "@/models/PatientPrescription";
+import { ILignePrestation } from "@/models/lignePrestation";
+
+const ROLES = ["admin", "caisse", "comptable", "accueil"];
 
 async function archiverAnnulationFacture(
+    EncaissementCaisseAnnule: any,
     facture: any,
     encaissements: any[],
     typeFacture: 'Consultation' | 'Facturation',
@@ -71,7 +74,15 @@ async function archiverAnnulationFacture(
 }
 
 export async function POST(req: NextRequest) {
-    await db();
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+    const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
+    const EncaissementCaisseAnnule = getTenantModel<IEncaissementCaisseAnnule>(context.connection, "EncaissementCaisseAnnule");
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
 
     try {
         const { factureId, typeFacture, motifAnnulation, utilisateur } = await req.json();
@@ -104,7 +115,7 @@ export async function POST(req: NextRequest) {
             }
 
             const encaissements = await EncaissementCaisse.find({ IDCONSULTATION: String(consultation._id) });
-            await archiverAnnulationFacture(consultation, encaissements, 'Consultation', motifAnnulation, utilisateur);
+            await archiverAnnulationFacture(EncaissementCaisseAnnule, consultation, encaissements, 'Consultation', motifAnnulation, utilisateur);
 
             // Mettre à jour la consultation
             consultation.StatutC = true;
@@ -136,7 +147,7 @@ export async function POST(req: NextRequest) {
             }
 
             const encaissements = await EncaissementCaisse.find({ IDFACTURATION: String(facturation._id) });
-            await archiverAnnulationFacture(facturation, encaissements, 'Facturation', motifAnnulation, utilisateur);
+            await archiverAnnulationFacture(EncaissementCaisseAnnule, facturation, encaissements, 'Facturation', motifAnnulation, utilisateur);
 
             // Restaurer la caution du patient si Modepaiement est "Caution"
             if (facturation.Modepaiement === "Caution" && facturation.IdPatient) {

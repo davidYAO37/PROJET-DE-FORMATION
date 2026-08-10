@@ -1,15 +1,20 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ILienAutomate } from "@/models/lienAutomate";
+import { IFamilleActe } from "@/models/familleActe";
+import { IHormoneTraitement } from "@/models/HormoneTraitement";
 
-import { db } from "@/db/mongoConnect";
-import { LienAutomate } from "@/models/lienAutomate";
-import { FamilleActe } from "@/models/familleActe";
-import { HormoneTraitement } from "@/models/HormoneTraitement";
+const WRITE_ROLES = ["admin", "biologiste", "technicienlabo"];
 
-export async function POST() {
+export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
+    const FamilleActe = getTenantModel<IFamilleActe>(context.connection, "FamilleActe");
+    const HormoneTraitement = getTenantModel<IHormoneTraitement>(context.connection, "HormoneTraitement");
 
     try {
-
-        await db();
 
         const automate =
             await LienAutomate

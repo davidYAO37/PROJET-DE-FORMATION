@@ -1,21 +1,33 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { ExamenHospitalisation } from '@/models/examenHospit';
-import { LignePrestation } from '@/models/lignePrestation';
-import { PatientPrescription } from '@/models/PatientPrescription';
-import { Consultation } from '@/models/consultation';
+import { IExamenHospitalisation } from '@/models/examenHospit';
+import { ILignePrestation } from '@/models/lignePrestation';
+import { IPatientPrescription } from '@/models/PatientPrescription';
+import { IConsultation } from '@/models/consultation';
 import {
-  PrescriptionHospitalisation,
+  IPrescriptionHospitalisation,
 } from '@/models/hospitalisation/PrescriptionHospitalisation';
-import { SoinHospitalisation } from '@/models/hospitalisation/SoinHospitalisation';
-import { ConstanteHospitalisation } from '@/models/hospitalisation/ConstanteHospitalisation';
+import { ISoinHospitalisation } from '@/models/hospitalisation/SoinHospitalisation';
+import { IConstanteHospitalisation } from '@/models/hospitalisation/ConstanteHospitalisation';
 import {
-  EvolutionMedicaleHospitalisation,
+  IEvolutionMedicaleHospitalisation,
 } from '@/models/hospitalisation/EvolutionMedicaleHospitalisation';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(request, READ_ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const PrescriptionHospitalisation = getTenantModel<IPrescriptionHospitalisation>(context.connection, "PrescriptionHospitalisation");
+    const SoinHospitalisation = getTenantModel<ISoinHospitalisation>(context.connection, "SoinHospitalisation");
+    const ConstanteHospitalisation = getTenantModel<IConstanteHospitalisation>(context.connection, "ConstanteHospitalisation");
+    const EvolutionMedicaleHospitalisation = getTenantModel<IEvolutionMedicaleHospitalisation>(context.connection, "EvolutionMedicaleHospitalisation");
 
     const { searchParams } = new URL(request.url);
     const patientId = searchParams.get('patientId');

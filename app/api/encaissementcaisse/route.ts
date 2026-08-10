@@ -1,15 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { EncaissementCaisse, IEncaissementCaisse } from '@/models/EncaissementCaisse';
-import { EncaissementCaisseAnnule } from '@/models/EncaissementCaisseAnnule';
-import { db } from '@/db/mongoConnect';
-import { Facturation } from '@/models/Facturation';
-import { Consultation } from '@/models/consultation';
-import { Patient } from '@/models/patient';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
+import { IEncaissementCaisseAnnule } from '@/models/EncaissementCaisseAnnule';
+import { IFacturation } from '@/models/Facturation';
+import { IConsultation } from '@/models/consultation';
+import { IPatient } from '@/models/patient';
 
 export const dynamic = 'force-dynamic';
 
+const ROLES = ["admin", "caisse", "comptable", "accueil"];
+
 export async function POST(req: NextRequest) {
-  await db();
+  const { context, response } = await withTenant(req, ROLES);
+  if (!context) return response;
+  const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
+  const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
+  const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+  const Patient = getTenantModel<IPatient>(context.connection, "Patient");
   const body = await req.json();
   try {
     // Logique WinDev : vérifier le type et actualiser en conséquence
@@ -160,7 +168,9 @@ export async function POST(req: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
 
     const { searchParams } = new URL(request.url);
     const idFacturation = searchParams.get('idFacturation');
@@ -212,7 +222,9 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(request, ROLES);
+    if (!context) return response;
+    const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
 
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
@@ -285,7 +297,10 @@ export async function PATCH(request: NextRequest) {
 // Garder DELETE pour l'annulation effective si nécessaire plus tard
 export async function DELETE(request: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(request, ["admin"]);
+    if (!context) return response;
+    const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
+    const EncaissementCaisseAnnule = getTenantModel<IEncaissementCaisseAnnule>(context.connection, "EncaissementCaisseAnnule");
 
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');

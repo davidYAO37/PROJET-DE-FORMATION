@@ -1,11 +1,17 @@
-import { Consultation } from '@/models';
-import { Facturation } from '@/models/Facturation';
+import { IConsultation } from '@/models/consultation';
+import { IFacturation } from '@/models/Facturation';
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
 
 export async function GET(req: NextRequest) {
     try {
-        await db();
+        const { context, response } = await withTenant(req, READ_ROLES);
+        if (!context) return response;
+        const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+        const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
         console.log('Test de prise en compte des dates');
         
         const { searchParams } = new URL(req.url);

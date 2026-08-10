@@ -1,11 +1,16 @@
-import { db } from "@/db/mongoConnect";
-import { PlanningMed } from "@/models/PlanningMed";
-import { RendezVous } from "@/models/RendezVous";
-import { Medecin } from "@/models/medecin";
-import { NextResponse } from "next/server";
+import { IPlanningMed } from "@/models/PlanningMed";
+import { IRendezVous } from "@/models/RendezVous";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function DELETE(req: Request) {
-  await db();
+const WRITE_ROLES = ["admin", "medecin", "accueil"];
+
+export async function DELETE(req: NextRequest) {
+  const { context, response } = await withTenant(req, WRITE_ROLES);
+  if (!context) return response;
+  const PlanningMed = getTenantModel<IPlanningMed>(context.connection, "PlanningMed");
+  const RendezVous = getTenantModel<IRendezVous>(context.connection, "RendezVous");
   try {
     const { searchParams } = new URL(req.url);
     const planningId = searchParams.get('planningId');

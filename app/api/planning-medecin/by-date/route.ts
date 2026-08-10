@@ -1,9 +1,14 @@
-import { db } from "@/db/mongoConnect";
-import { PlanningMed } from "@/models/PlanningMed";
-import { NextResponse } from "next/server";
+import { IPlanningMed } from "@/models/PlanningMed";
+import { NextRequest, NextResponse } from "next/server";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function GET(req: Request) {
-  await db();
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+
+export async function GET(req: NextRequest) {
+  const { context, response } = await withTenant(req, READ_ROLES);
+  if (!context) return response;
+  const PlanningMed = getTenantModel<IPlanningMed>(context.connection, "PlanningMed");
   try {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date');

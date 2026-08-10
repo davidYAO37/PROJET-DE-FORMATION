@@ -1,11 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
-import { TypeActe } from "@/models/TypeActe";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { ITypeActe } from "@/models/TypeActe";
+
+const WRITE_ROLES = ["admin"];
 
 // PUT : modifier un type d’acte
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
     try {
-        await db();
         const { id } = await params;
         const body = await req.json();
         const acte = await TypeActe.findByIdAndUpdate(id, body, { new: true });
@@ -22,8 +27,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE : supprimer un type d’acte
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
     try {
-        await db();
         const { id } = await params;
         const acte = await TypeActe.findByIdAndDelete(id);
 

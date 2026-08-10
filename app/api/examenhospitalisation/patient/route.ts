@@ -1,15 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ExamenHospitalisation } from "@/models/examenHospit";
-import { TypeActe } from "@/models/TypeActe";
+import { IExamenHospitalisation } from "@/models/examenHospit";
+import { ITypeActe } from "@/models/TypeActe";
 import { Types } from "mongoose";
-import { Chambre } from "@/models/chambre";
-import { Lit } from "@/models/lit";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 
 // GET /api/examenhospitalisation/patient?patientId=xxx
 export async function GET(req: NextRequest) {
   try {
-    await db();
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
+    const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
     const { searchParams } = new URL(req.url);
     const patientId = searchParams.get("patientId");
     const entrepriseId = searchParams.get("entrepriseId");

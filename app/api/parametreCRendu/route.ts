@@ -1,15 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import mongoose from "mongoose";
-import { ParametreCRendu } from "@/models/ParametreCRendu";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IParametreCRendu } from "@/models/ParametreCRendu";
 
-
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
 
 // GET - Récupérer tous les paramètres de compte rendu
 export async function GET(request: NextRequest) {
+  const { context, response } = await withTenant(request, READ_ROLES);
+  if (!context) return response;
+  const ParametreCRendu = getTenantModel<IParametreCRendu>(context.connection, "ParametreCRendu");
+
   try {
-    await db();
-    
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
@@ -41,9 +44,11 @@ export async function GET(request: NextRequest) {
 
 // POST - Créer un nouveau paramètre de compte rendu
 export async function POST(request: NextRequest) {
+  const { context, response } = await withTenant(request, WRITE_ROLES);
+  if (!context) return response;
+  const ParametreCRendu = getTenantModel<IParametreCRendu>(context.connection, "ParametreCRendu");
+
   try {
-    await db();
-    
     const body = await request.json();
     const { LettreCle, Date: dateParam, AjouterPar, HeureAjoute } = body;
     

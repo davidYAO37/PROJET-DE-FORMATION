@@ -1,18 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { FamilleActe } from "@/models/familleActe";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IFamilleActe } from "@/models/familleActe";
+
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
 
 // GET toutes les famille actes bilogique
-export async function GET() {
-    await db();
+export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const FamilleActe = getTenantModel<IFamilleActe>(context.connection, "FamilleActe");
     const actes = await FamilleActe.find().sort({ Description: 1 });
     return NextResponse.json(actes);
 }
 
 // POST ajout d’un type d’acte
 export async function POST(req: NextRequest) {
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const FamilleActe = getTenantModel<IFamilleActe>(context.connection, "FamilleActe");
     try {
-        await db();
         const body = await req.json();
         const { Description } = body;
 

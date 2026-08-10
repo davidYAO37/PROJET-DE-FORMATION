@@ -1,10 +1,16 @@
-import { NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { Stock } from "@/models/Stock";
-import { EntreeStock } from "@/models/EntreeStock";
+import { NextRequest, NextResponse } from "next/server";
+import { IStock } from "@/models/Stock";
+import { IEntreeStock } from "@/models/EntreeStock";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
 
-export async function GET() {
-    await db();
+const READ_ROLES = ["admin", "pharmacien", "accueil", "caisse", "comptable"];
+
+export async function GET(req: NextRequest) {
+    const { context, response } = await withTenant(req, READ_ROLES);
+    if (!context) return response;
+    const Stock = getTenantModel<IStock>(context.connection, "Stock");
+    const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
 
     const stocks = await Stock.find().lean();
 

@@ -1,11 +1,16 @@
-import { NextResponse } from 'next/server';
-import { TypeActe } from '@/models/TypeActe';
-import { db } from '@/db/mongoConnect';
+import { NextRequest, NextResponse } from 'next/server';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { ITypeActe } from '@/models/TypeActe';
+
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 
 // GET les types d'actes avec Hospitalisation=true
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const { context, response } = await withTenant(req, READ_ROLES);
+  if (!context) return response;
+  const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
   try {
-    await db();
     const actesHospitalisation = await TypeActe.find({ 
       Hospitalisation: true 
     }).sort({ Designation: 1 }).lean();

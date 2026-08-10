@@ -1,13 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db/mongoConnect';
-import { Consultation } from '@/models/consultation';
-import { Patient } from '@/models/patient';
-import { Prescription } from '@/models/Prescription';
-import { PatientPrescription } from '@/models/PatientPrescription';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { IConsultation } from '@/models/consultation';
+import { IPatient } from '@/models/patient';
+import { IPrescription } from '@/models/Prescription';
+import { IPatientPrescription } from '@/models/PatientPrescription';
+
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "caisse", "comptable", "pharmacien"];
 
 export async function GET(req: NextRequest) {
-    await db();
-    
+    const { context, response } = await withTenant(req, ROLES);
+    if (!context) return response;
+    const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+    const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
+    const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
+
     try {
         const { searchParams } = new URL(req.url);
         const ParamCODEcONSULTATION = searchParams.get('ParamCODEcONSULTATION');

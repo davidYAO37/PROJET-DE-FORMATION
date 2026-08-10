@@ -1,9 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { db } from "@/db/mongoConnect";
-import { ModeDePaiement } from "@/models/ModeDePaiement";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IModeDePaiement } from "@/models/ModeDePaiement";
+
+const WRITE_ROLES = ["admin"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
     const body = await req.json();
     const { id } = await params;
     try {
@@ -15,7 +20,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    await db();
+    const { context, response } = await withTenant(req, WRITE_ROLES);
+    if (!context) return response;
+    const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
     const { id } = await params;
     try {
         await ModeDePaiement.findByIdAndDelete(id);

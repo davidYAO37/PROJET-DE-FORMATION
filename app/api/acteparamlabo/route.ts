@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ActeParamLabo } from "@/models/acteParamLabo";
-import { db } from "@/db/mongoConnect";
+import { withTenant } from "@/lib/withTenant";
+import { getTenantModel } from "@/lib/tenantModels";
+import { IActeParamLabo } from "@/models/acteParamLabo";
+
+const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const WRITE_ROLES = ["admin"];
 
 export async function GET(request: NextRequest) {
+  const { context, response } = await withTenant(request, READ_ROLES);
+  if (!context) return response;
+  const ActeParamLabo = getTenantModel<IActeParamLabo>(context.connection, "ActeParamLabo");
+
   try {
-    await db();
-    
     const { searchParams } = new URL(request.url);
     const idactep = searchParams.get('idactep');
     
@@ -56,8 +62,11 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  const { context, response } = await withTenant(request, WRITE_ROLES);
+  if (!context) return response;
+  const ActeParamLabo = getTenantModel<IActeParamLabo>(context.connection, "ActeParamLabo");
+
   try {
-    await db();
     const body = await request.json();
     
     const nouvelActeParam = new ActeParamLabo(body);
@@ -74,9 +83,11 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
+  const { context, response } = await withTenant(request, WRITE_ROLES);
+  if (!context) return response;
+  const ActeParamLabo = getTenantModel<IActeParamLabo>(context.connection, "ActeParamLabo");
+
   try {
-    await db();
-    
     const { searchParams } = new URL(request.url);
     const id = searchParams.get('id');
     
@@ -155,9 +166,11 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
+  const { context, response } = await withTenant(request, WRITE_ROLES);
+  if (!context) return response;
+  const ActeParamLabo = getTenantModel<IActeParamLabo>(context.connection, "ActeParamLabo");
+
   try {
-    await db();
-    
     const { searchParams } = new URL(request.url);
     const idactep = searchParams.get('idactep');
     const id = searchParams.get('id');
