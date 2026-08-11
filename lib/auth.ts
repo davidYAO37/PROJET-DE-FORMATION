@@ -4,7 +4,15 @@ import { NextRequest, NextResponse } from "next/server";
 import { User } from "@/models/users.model";
 import { db } from "@/db/mongoConnect";
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET || "change-me-in-production";
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
+  if (!secret) {
+    throw new Error("❌ JWT_SECRET (ou NEXTAUTH_SECRET) doit être défini dans les variables d'environnement");
+  }
+  return secret;
+}
+
+const JWT_SECRET = getJwtSecret();
 const TOKEN_NAME = "easy_medical_token";
 const TOKEN_MAX_AGE = 60 * 60 * 24 * 7;
 const IMPERSONATE_COOKIE = "easy_medical_impersonate";

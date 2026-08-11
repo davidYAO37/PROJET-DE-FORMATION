@@ -2,6 +2,7 @@ import { IMedecin } from "@/models/medecin";
 import { UserCollection } from "@/models/users.model";
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword } from "@/utils/auth";
+import { getImpersonateEntrepriseId } from "@/lib/auth";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
@@ -22,7 +23,7 @@ export async function GET(req: NextRequest) {
     } else {
       medecins = await Medecin.find({});
     }
-    
+
     return NextResponse.json(medecins);
   } catch (error) {
     console.error('Erreur API médecins:', error);
@@ -36,62 +37,67 @@ export async function POST(req: NextRequest) {
   const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   try {
     const body = await req.json();
-    
-    // Récupérer l'entrepriseId depuis le corps ou le header
-    let entrepriseId = body.entrepriseId;
-    
-    // Si pas dans le corps, essayer de le récupérer depuis les headers
-    if (!entrepriseId) {
-      entrepriseId = req.headers.get('x-entreprise-id');
+    const impersonatedEntrepriseId = await getImpersonateEntrepriseId(req);
+    const tenantEntrepriseId = context.user.type === "adminsuper"
+      ? (impersonatedEntrepriseId || context.user.entrepriseId)
+      : context.user.entrepriseId;
+
+    let entrepriseId = body.entrepriseId || req.headers.get("x-entreprise-id") || tenantEntrepriseId || null;
+
+    if (context.user.type !== "adminsuper" && (!tenantEntrepriseId || !entrepriseId || String(tenantEntrepriseId) !== String(entrepriseId))) {
+      return NextResponse.json(
+        { error: "L'entreprise du médecin doit correspondre au tenant de l'utilisateur." },
+        { status: 403 }
+      );
     }
-    
-    // Si toujours pas trouvé, utiliser une valeur par défaut ou null
-    if (!entrepriseId) {
-      console.log("⚠️ Aucun entrepriseId trouvé, utilisateur créé sans entreprise");
-      entrepriseId = null;
+
+    if (context.user.type === "adminsuper" && tenantEntrepriseId && entrepriseId && String(tenantEntrepriseId) !== String(entrepriseId)) {
+      return NextResponse.json(
+        { error: "L'entreprise du médecin ne correspond pas au tenant courant." },
+        { status: 403 }
+      );
     }
-    
+
+    if (!entrepriseId) {
+      return NextResponse.json({ error: "Une entreprise valide est requise pour créer un médecin." }, { status: 400 });
+    }
+
     console.log("🏢 Création médecin avec entrepriseId:", entrepriseId);
     console.log("📧 Email utilisé comme mot de passe:", body.EmailMed);
-    
-    // Ajouter l'entrepriseId au corps pour utilisation ultérieure
+
     body.entrepriseId = entrepriseId;
-    
+
     const newMedecin = await Medecin.create(body);
 
-    // Synchronisation inverse : créer un utilisateur si le médecin n'a pas de userId
     if (!body.userId && body.EmailMed) {
       try {
-        // Vérifier si l'utilisateur existe déjà
-        const existingUser = await UserCollection.findOne({ email: body.EmailMed });
+        const existingUser = await UserCollection.findOne({
+          email: body.EmailMed,
+          entrepriseId: entrepriseId,
+        });
+
         if (!existingUser) {
-          // Déterminer le type en fonction de la spécialité
           const userType = body.specialite === "Radiologie" ? "radiologue" : "medecin";
-          
-          // Hasher le mot de passe (utiliser l'email comme mot de passe par défaut)
           const hashedPassword = await hashPassword(body.EmailMed);
-          
+
           const newUser = new UserCollection({
             nom: body.nom,
             prenom: body.prenoms,
             email: body.EmailMed,
             type: userType,
-            entrepriseId: entrepriseId, // Utilise l'entrepriseId de la requête
+            entrepriseId: entrepriseId,
             uid: `medecin_${newMedecin._id}`,
-            password: hashedPassword // Mot de passe hashé = email
+            password: hashedPassword,
           });
-          
+
           await newUser.save();
-          
-          // Mettre à jour le médecin avec le userId
           await Medecin.findByIdAndUpdate(newMedecin._id, { userId: newUser._id });
-          
+
           console.log(`✅ Utilisateur créé automatiquement pour le médecin ${body.EmailMed}`);
           console.log(`🔐 Mot de passe par défaut: ${body.EmailMed} (email = mot de passe, hashé et sécurisé)`);
         }
       } catch (userError) {
         console.error("❌ Erreur lors de la création de l'utilisateur associé:", userError);
-        // Ne pas bloquer la création du médecin
       }
     }
 

@@ -3,7 +3,7 @@ import { UserCollection } from "@/models/users.model";
 import { IMedecin } from "@/models/medecin";
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword, generateLocalUID } from "@/utils/auth";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getImpersonateEntrepriseId } from "@/lib/auth";
 import { getTenantConnection } from "@/lib/tenantDb";
 import { getTenantModel } from "@/lib/tenantModels";
 
@@ -15,9 +15,23 @@ export const POST = async (req: NextRequest) => {
     await db();
     const user = await req.json();
 
-    // Un admin (non super) ne peut créer des utilisateurs que pour sa propre entreprise
+    const impersonatedEntrepriseId = await getImpersonateEntrepriseId(req);
+    const tenantEntrepriseId = currentUser!.type === "adminsuper"
+      ? (impersonatedEntrepriseId || currentUser!.entrepriseId)
+      : currentUser!.entrepriseId;
+
+    if (!tenantEntrepriseId) {
+      return NextResponse.json({ message: "Aucune entreprise valide pour ce tenant." }, { status: 400 });
+    }
+
+    if (user.entrepriseId && String(user.entrepriseId) !== String(tenantEntrepriseId)) {
+      return NextResponse.json({ message: "L'entreprise de l'utilisateur ne correspond pas au tenant courant." }, { status: 403 });
+    }
+
     if (currentUser!.type !== "adminsuper") {
       user.entrepriseId = currentUser!.entrepriseId;
+    } else {
+      user.entrepriseId = tenantEntrepriseId;
     }
 
     // Vérifier si l'email existe déjà
@@ -58,8 +72,8 @@ export const POST = async (req: NextRequest) => {
       }
     }
 
-    return NextResponse.json({ 
-      message: "Utilisateur ajouté avec succès", 
+    return NextResponse.json({
+      message: "Utilisateur ajouté avec succès",
       user: {
         nom: newUser.nom,
         prenom: newUser.prenom,

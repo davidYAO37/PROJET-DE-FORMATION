@@ -3,8 +3,8 @@
  *
  * Usage (PowerShell) :
  *   $env:MONGO_URI="mongodb://localhost:27017"
- *   $env:SUPER_ADMIN_EMAIL="ykdavid11@gmail.com"
- *   $env:SUPER_ADMIN_PASSWORD="Yao2026!"
+ *   $env:SUPER_ADMIN_EMAIL="admin@example.com"
+ *   $env:SUPER_ADMIN_PASSWORD="<mot_de_passe_fort>"
  *   node check-users.js
  */
 
@@ -27,8 +27,13 @@ async function main() {
   const rawUri = process.env.MONGO_URI || process.env.MONGODB_URI || 'mongodb://localhost:27017';
   const dbName = extractDbNameFromUri(rawUri) || process.env.MONGO_DB_NAME || 'bd_esaymed';
   const superAdminEmail = (process.env.SUPER_ADMIN_EMAIL || DEFAULT_EMAIL).toLowerCase().trim();
-  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Yao2026!';
+  const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD;
   const entrepriseName = process.env.ENTREPRISE_NAME || 'Entreprise par défaut';
+
+  if (!superAdminPassword) {
+    console.error('❌ SUPER_ADMIN_PASSWORD doit être défini dans l\'environnement (aucune valeur par défaut).');
+    process.exit(1);
+  }
 
   const client = new MongoClient(rawUri);
 
