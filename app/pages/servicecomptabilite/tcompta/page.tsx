@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Row, Col, Button, Spinner, Badge } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 const fmt = (n: number) =>
   (n || 0).toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
@@ -72,6 +73,7 @@ export default function DashboardComptabilite() {
   `;
 
   return (
+    <LicenceModuleGuard module="comptabilite">
     <>
       <style>{cardStyles}</style>
       <div className="container-fluid">
@@ -213,5 +215,6 @@ export default function DashboardComptabilite() {
         )}
       </div>
     </>
+    </LicenceModuleGuard>
   );
 }

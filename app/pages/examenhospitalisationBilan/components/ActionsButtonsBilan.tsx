@@ -5,11 +5,12 @@ import { Button, Row, Col } from "react-bootstrap";
 
 type Props = {
   disabled?: boolean;
+  label?: string;
   onSubmit?: () => Promise<void> | void; // fonction d’envoi
   onSuccess?: () => void; // 👈 callback quand tout s’est bien passé
 };
 
-export default function ActionsButtonsBilan({ disabled = false, onSubmit, onSuccess }: Props) {
+export default function ActionsButtonsBilan({ disabled = false, label, onSubmit, onSuccess }: Props) {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [locked, setLocked] = useState(false);
 
@@ -43,7 +44,7 @@ export default function ActionsButtonsBilan({ disabled = false, onSubmit, onSucc
             ? "Enregistrement en cours..."
             : locked
             ? "✅ Enregistré avec succès"
-            : "Allez à la caisse SVP"}
+            : (label || "Enregistrer")}
         </Button>
       </Col>
     </Row>

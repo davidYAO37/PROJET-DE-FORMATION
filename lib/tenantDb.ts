@@ -1,6 +1,7 @@
 import mongoose, { Connection } from "mongoose";
 import { db } from "@/db/mongoConnect";
 import { Entreprise, IEntreprise } from "@/models/entreprise";
+import { getLicenceStatus } from "@/lib/licence";
 
 const tenantConnections = new Map<string, Connection>();
 const tenantConnectionPromises = new Map<string, Promise<Connection>>();
@@ -61,12 +62,10 @@ export async function getTenantConnection(entrepriseId?: string): Promise<Connec
       throw new Error("Entreprise introuvable");
     }
 
-    if (entreprise.isActive === false || entreprise.statut === "suspendue" || entreprise.statut === "resiliee") {
-      throw new Error("Entreprise inactive ou suspendue");
-    }
-
-    if (entreprise.dateExpiration && new Date(entreprise.dateExpiration) < new Date()) {
-      throw new Error("Licence expirée");
+    const licenceStatus = getLicenceStatus(entreprise);
+    if (licenceStatus.isBlocked) {
+      const message = licenceStatus.alerts[0]?.message || "Licence invalide ou expirée";
+      throw new Error(message);
     }
 
     const mongoUri = entreprise.mongoUri || process.env.MONGO_URI;

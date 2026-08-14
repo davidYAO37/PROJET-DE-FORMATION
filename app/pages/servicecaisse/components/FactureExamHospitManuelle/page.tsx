@@ -121,13 +121,6 @@ export default function HospitalisationPageCaisse({
     useEffect(() => {
         const today = new Date().toISOString().split('T')[0];
 
-        console.log("Initializing form data with:", {
-            dateEntree,
-            dateSortie,
-            nombreDeJours,
-            Rclinique
-        });
-
         setFormData(prev => ({
             ...prev,
             dateEntree: dateEntree ? new Date(dateEntree).toISOString().split('T')[0] : today,
@@ -398,6 +391,9 @@ export default function HospitalisationPageCaisse({
             resteAPayer: 0,
             TotalapayerPatient: 0,
             Rclinique: "",
+            // Réinitialiser l'assurance par défaut en mode création
+            Assure: defaultFormData.Assure,
+            assurance: defaultFormData.assurance,
         }));
     };
 
@@ -440,17 +436,18 @@ export default function HospitalisationPageCaisse({
             patientId: data.IdPatient || prev.patientId,
             PatientP: data.PatientP || prev.PatientP,
             CodePrestation: codePrestation || prev.CodePrestation,
-            Assure: data.Assure ?? prev.Assure,
+            // En mode modification, l'assurance vient STRICTEMENT de l'examen existant
+            Assure: data.Assure || "",
             assurance: {
-                ...prev.assurance,
-                assuranceId: data.IDASSURANCE || prev.assurance.assuranceId,
-                designationassurance: data.assurance || prev.assurance.designationassurance, // ✅ AJOUTÉ
-                type: data.Assure ?? prev.assurance.type,
-                taux: data.Taux ?? prev.assurance.taux,
-                matricule: data.Numcarte ?? prev.assurance.matricule,
-                numeroBon: data.NumBon ?? prev.assurance.numeroBon,
-                societe: data.SOCIETE_PATIENT ?? prev.assurance.societe,
-                adherent: data.Souscripteur ?? prev.assurance.adherent,
+                assuranceId: data.IDASSURANCE ? String(data.IDASSURANCE) : "",
+                designationassurance: data.Assurance || "",
+                type: data.Assure || "",
+                taux: Number(data.Taux) || 0,
+                matricule: data.Numcarte || "",
+                numeroBon: data.NumBon || "",
+                societe: data.SocieteP || "",
+                numero: "",
+                adherent: data.Souscripteur || "",
             },
             medecinId: data.NummedecinExécutant || data.medecinId || prev.medecinId,
             medecinPrescripteur: data.Medecin || data.medecinPrescripteur || prev.medecinPrescripteur,
@@ -556,7 +553,6 @@ export default function HospitalisationPageCaisse({
         try {
             await hydrateFromExistingExamen(value);
         } catch (error) {
-            console.error("Erreur lors du chargement de l'examen:", error);
             resetCreationState(value);
         }
     };
@@ -832,11 +828,6 @@ export default function HospitalisationPageCaisse({
                             };
 
                             // Utiliser les lignes actuelles du composant ActesTable
-                            console.log("📤 Envoi des données:", { header, lignesCount: lignesValides.length });
-                            console.log("🔍 Valeur de formData.assurance:", formData.assurance);
-                            console.log("🔍 Valeur de header.Assurance:", header.Assurance);
-                            console.log("🔍 Valeur de header.IDASSURANCE:", header.IDASSURANCE);
-
                             const resp = await fetch('/api/examenhospitalisationFacture', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -845,12 +836,8 @@ export default function HospitalisationPageCaisse({
                             const out = await resp.json();
 
                             if (!resp.ok) {
-                                console.error("❌ Erreur d'enregistrement:", out);
-                                console.error("📊 Détails complets:", JSON.stringify(out, null, 2));
-
                                 // Afficher les détails des erreurs si disponibles
                                 if (out.details && Array.isArray(out.details)) {
-                                    console.error("🔍 Détails des erreurs:", out.details);
                                     const errorMsg = `${out.message}\n\nDétails:\n${out.details.map((d: any) =>
                                         `- Ligne ${d.ligne}: ${d.message}`
                                     ).join('\n')}\n\nSuccès: ${out.successCount}/${out.totalCount}`;
@@ -860,7 +847,6 @@ export default function HospitalisationPageCaisse({
                                 }
                                 return;
                             }
-                            console.log("✅ Enregistrement réussi:", out);
                             alert(out?.message || 'Facture enregistrée avec succès');
 
                             // Appeler le callback onSuccess pour fermer le modal

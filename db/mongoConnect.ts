@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 
 // Importer tous les modèles pour garantir leur enregistrement
 import "../models";
+import { seedDefaultDataForConnection } from "@/lib/seedDefaultData";
 
 const MONGO_URI = process.env.MONGO_URI as string;
 
@@ -33,6 +34,18 @@ export const db = async () => {
     console.error("❌ Erreur MongoDB:", error);
     throw error;
   }
+
+  // Injection des paramètres par défaut à l'initialisation du projet
+  // (équivalent WinDev : ajout si la collection est vide)
+  if (!(global as any).mongoSeedPromise) {
+    (global as any).mongoSeedPromise = seedDefaultDataForConnection(
+      cached.conn
+    ).catch((err) => {
+      console.error("❌ Erreur lors du seed des paramètres par défaut:", err);
+      return [];
+    });
+  }
+  await (global as any).mongoSeedPromise;
 
   return cached.conn;
 };

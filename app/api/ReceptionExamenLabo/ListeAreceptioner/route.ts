@@ -29,8 +29,7 @@ export async function GET(req: NextRequest) {
 
         const receptions = await ExamenHospitalisation.find({
             Designationtypeacte: 'EXAMEN BIOLOGIQUE',
-            StatutLaboratoire: { $in: [1, null] },
-            statutPrescriptionMedecin: { $gt: 1 },
+            StatutLaboratoire: 1,
             DatePres: {
                 $gte: start,
                 $lte: end,

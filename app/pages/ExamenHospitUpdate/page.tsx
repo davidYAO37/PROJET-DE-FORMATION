@@ -209,17 +209,18 @@ export default function HospitalisationPage({
         setFormData((prev) => ({
             ...prev,
             typeacte: typeActeValue,
-            // Assurance
-            Assure: data.Assure || prev.Assure,
+            // Assurance : priorité absolue aux données de l'examen existant
+            Assure: data.Assure || "",
             assurance: {
-                ...prev.assurance,
-                assuranceId: data.IDASSURANCE || prev.assurance.assuranceId,
-                type: data.Assure || prev.assurance.type,
-                taux: data.Taux || prev.assurance.taux,
-                matricule: data.Numcarte || prev.assurance.matricule,
-                numeroBon: data.NumBon || prev.assurance.numeroBon,
-                societe: data.SOCIETE_PATIENT || prev.assurance.societe,
-                adherent: data.Souscripteur || prev.assurance.adherent,
+                assuranceId: data.IDASSURANCE ? String(data.IDASSURANCE) : "",
+                designationassurance: data.Assurance || "",
+                type: data.Assure || "",
+                taux: Number(data.Taux) || 0,
+                matricule: data.Numcarte || "",
+                numeroBon: data.NumBon || "",
+                societe: data.SocieteP || "",
+                numero: "",
+                adherent: data.Souscripteur || "",
             },
             // Médecins
             medecinId: data.NummedecinExécutant || prev.medecinId,
@@ -389,7 +390,6 @@ export default function HospitalisationPage({
                                             // Laisse hydrateFromExistingExamen décider si on passe en modification
                                             await hydrateFromExistingExamen(value);
                                         } catch (error) {
-                                            console.error("Erreur lors de la recherche de l'examen:", error);
                                             resetCreationState(value);
                                         }
                                     }}
@@ -428,7 +428,6 @@ export default function HospitalisationPage({
 
                                                 // 2.1 - SI TROUVÉ: Mode modification
                                                 if (data && data._id) {
-                                                    console.log("✅ Examen trouvé - Mode MODIFICATION", data._id);
                                                     setModeModification(true);
                                                     setExamenHospitId(data._id);
 
@@ -436,17 +435,18 @@ export default function HospitalisationPage({
                                                     setFormData((prev) => ({
                                                         ...prev,
                                                         typeacte: value,
-                                                        // Assurance
-                                                        Assure: data.Assure || prev.Assure,
+                                                        // Assurance : priorité absolue aux données de l'examen existant
+                                                        Assure: data.Assure || "",
                                                         assurance: {
-                                                            ...prev.assurance,
-                                                            assuranceId: data.IDASSURANCE || prev.assurance.assuranceId,
-                                                            type: data.Assure || prev.assurance.type,
-                                                            taux: data.Taux || prev.assurance.taux,
-                                                            matricule: data.Numcarte || prev.assurance.matricule,
-                                                            numeroBon: data.NumBon || prev.assurance.numeroBon,
-                                                            societe: data.SocieteP || prev.assurance.societe,
-                                                            adherent: data.Souscripteur || prev.assurance.adherent,
+                                                            assuranceId: data.IDASSURANCE ? String(data.IDASSURANCE) : "",
+                                                            designationassurance: data.Assurance || "",
+                                                            type: data.Assure || "",
+                                                            taux: Number(data.Taux) || 0,
+                                                            matricule: data.Numcarte || "",
+                                                            numeroBon: data.NumBon || "",
+                                                            societe: data.SocieteP || "",
+                                                            numero: "",
+                                                            adherent: data.Souscripteur || "",
                                                         },
                                                         // Médecin executant
                                                         medecinId: data.NummedecinExécutant || prev.medecinId,
@@ -513,7 +513,6 @@ export default function HospitalisationPage({
                                                     }
                                                 } else {
                                                     // 2.2 - SI NON TROUVÉ: Mode création - Vider ActesTable, PaiementInfo, CliniqueInfo
-                                                    console.log("ℹ️ Examen non trouvé - Mode CRÉATION");
                                                     setModeModification(false);
                                                     setExamenHospitId(undefined);
 
@@ -549,7 +548,6 @@ export default function HospitalisationPage({
                                                 }
                                             } else if (res.status === 404) {
                                                 // 2.2 - Examen non trouvé: Mode création
-                                                console.log("ℹ️ Examen non trouvé (404) - Mode CRÉATION");
                                                 setModeModification(false);
                                                 setExamenHospitId(undefined);
 
@@ -581,7 +579,6 @@ export default function HospitalisationPage({
                                                 }));
                                             }
                                         } catch (error) {
-                                            console.error("Erreur lors de la recherche de l'examen:", error);
                                             // En cas d'erreur, mode création par défaut
                                             setModeModification(false);
                                             setExamenHospitId(undefined);
@@ -726,9 +723,6 @@ export default function HospitalisationPage({
                                 medecinPrescripteur: formData.medecinPrescripteur || "",
                             };
 
-                            // Utiliser les lignes actuelles du composant ActesTable
-                            console.log("📤 Envoi des données:", { header, lignesCount: lignesValides.length });
-
                             const resp = await fetch('/api/examenhospitalisation', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
@@ -737,12 +731,8 @@ export default function HospitalisationPage({
                             const out = await resp.json();
 
                             if (!resp.ok) {
-                                console.error("❌ Erreur d'enregistrement:", out);
-                                console.error("📊 Détails complets:", JSON.stringify(out, null, 2));
-
                                 // Afficher les détails des erreurs si disponibles
                                 if (out.details && Array.isArray(out.details)) {
-                                    console.error("🔍 Détails des erreurs:", out.details);
                                     const errorMsg = `${out.message}\n\nDétails:\n${out.details.map((d: any) =>
                                         `- Ligne ${d.ligne}: ${d.message}`
                                     ).join('\n')}\n\nSuccès: ${out.successCount}/${out.totalCount}`;
@@ -753,7 +743,6 @@ export default function HospitalisationPage({
                                 return;
                             }
 
-                            console.log("✅ Enregistrement réussi:", out);
                             alert(out?.message || 'Facture enregistrée avec succès');
                         }}
                     /*   onSuccess={() => {

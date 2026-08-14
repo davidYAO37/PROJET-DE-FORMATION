@@ -47,7 +47,7 @@ export async function PUT(
       Restapayer: nouveauReste,
       PayéPar: payePar || '',
       Recupar: payePar || '',
-      Modepaiement: modePaiement || 'ESPECE',
+      Modepaiement: modePaiement || 'Espèce',
       BanqueC: banque || '',
       NCheque: numeroCheque || '',
     });

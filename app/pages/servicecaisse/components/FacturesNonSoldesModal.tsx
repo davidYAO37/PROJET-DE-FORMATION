@@ -245,8 +245,7 @@ export default function FacturesNonSoldesModal({ show, onHide, onPaiementSuccess
       } else {
         alert('Erreur lors de l\'enregistrement du paiement');
       }
-    } catch (error) {
-      console.error('Erreur paiement:', error);
+    } catch {
       alert('Erreur de connexion');
     } finally {
       setLoadingPaiement(false);
@@ -294,45 +293,24 @@ export default function FacturesNonSoldesModal({ show, onHide, onPaiementSuccess
       </span>
     );
   };
-  // Récupérer les modes de paiement depuis l'API
+  // Récupérer les modes de paiement depuis le modèle
   useEffect(() => {
     const fetchModesPaiement = async () => {
       try {
-        const response = await fetch('/api/modepaiement');
-
+        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
+        const response = await fetch(`/api/modepaiement?entrepriseId=${encodeURIComponent(entrepriseId)}`);
         if (!response.ok) {
-          console.error('Erreur HTTP:', response.status);
-          // Utiliser des modes de paiement par défaut
-          setModesPaiement([
-            { _id: '1', Modepaiement: 'ESPECE' },
-            { _id: '2', Modepaiement: 'CARTE' },
-            { _id: '3', Modepaiement: 'CHEQUE' },
-            { _id: '4', Modepaiement: 'MOBILE' }
-          ]);
+          setModesPaiement([]);
           return;
         }
-
         const result = await response.json();
-        if (result && result.data && Array.isArray(result.data)) {
+        if (result?.data && Array.isArray(result.data)) {
           setModesPaiement(result.data);
         } else {
-          // Utiliser des modes de paiement par défaut si la réponse n'est pas un tableau
-          setModesPaiement([
-            { _id: '1', Modepaiement: 'ESPECE' },
-            { _id: '2', Modepaiement: 'CARTE' },
-            { _id: '3', Modepaiement: 'CHEQUE' },
-            { _id: '4', Modepaiement: 'MOBILE' }
-          ]);
+          setModesPaiement([]);
         }
-      } catch (error) {
-        console.error('Erreur lors de la récupération des modes de paiement:', error);
-        // Utiliser des modes de paiement par défaut en cas d'erreur
-        setModesPaiement([
-          { _id: '1', Modepaiement: 'ESPECE' },
-          { _id: '2', Modepaiement: 'CARTE' },
-          { _id: '3', Modepaiement: 'CHEQUE' },
-          { _id: '4', Modepaiement: 'MOBILE' }
-        ]);
+      } catch {
+        setModesPaiement([]);
       }
     };
 

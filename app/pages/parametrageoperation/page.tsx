@@ -1,6 +1,7 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import { Card, Row, Col, Button, Form, Table, Badge, Spinner, Alert } from 'react-bootstrap';
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 interface IOperation {
   _id: string;
@@ -211,6 +212,7 @@ export default function ParametrageOperationsPage() {
   const nbSorties = operations.filter(o => o.TYPEOP === 'Sortie de caisse').length;
 
   return (
+    <LicenceModuleGuard module="operation">
     <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '8px 10px' }}>
 
       {/* HEADER */}
@@ -360,5 +362,6 @@ export default function ParametrageOperationsPage() {
         </Col>
       </Row>
     </div>
+    </LicenceModuleGuard>
   );
 }

@@ -3,7 +3,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IAssurance } from "@/models/assurance";
 
-const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const READ_ROLES = ["admin", "adminsuper", "accueil", "biologiste", "caisse", "comptable", "facturation", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
 
 export async function GET(req: NextRequest) {

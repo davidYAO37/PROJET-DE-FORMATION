@@ -59,7 +59,8 @@ export default function FactureAssuranceModal({ show, onHide }: Props) {
   const [selectedFacture, setSelectedFacture] = useState<FactureAssur | null>(null);
   const [showPaiement, setShowPaiement] = useState(false);
   const [montantPaiement, setMontantPaiement] = useState('');
-  const [modePaiement, setModePaiement] = useState('CHEQUE');
+  const [modePaiement, setModePaiement] = useState('');
+  const [modesPaiement, setModesPaiement] = useState<{ _id: string; Modepaiement: string }[]>([]);
   const [banque, setBanque] = useState('');
   const [numeroCheque, setNumeroCheque] = useState('');
   const [datePaiement, setDatePaiement] = useState(today());
@@ -70,6 +71,28 @@ export default function FactureAssuranceModal({ show, onHide }: Props) {
   useEffect(() => {
     setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
     setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
+  }, []);
+
+  // Charger les modes de paiement depuis le modèle
+  useEffect(() => {
+    const fetchModes = async () => {
+      try {
+        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
+        const res = await fetch(`/api/modepaiement?entrepriseId=${encodeURIComponent(entrepriseId)}`);
+        if (res.ok) {
+          const json = await res.json();
+          const modes = Array.isArray(json?.data) ? json.data : [];
+          setModesPaiement(modes);
+          if (modes.length > 0 && !modePaiement) {
+            const defaultMode = modes.find((m: any) => m.Modepaiement === 'CHEQUE') || modes[0];
+            setModePaiement(defaultMode.Modepaiement);
+          }
+        }
+      } catch {
+        setModesPaiement([]);
+      }
+    };
+    void fetchModes();
   }, []);
 
   const chargerAssurances = useCallback(async () => {
@@ -94,8 +117,9 @@ export default function FactureAssuranceModal({ show, onHide }: Props) {
         setFactures(json.data || []);
         setTotaux(json.totaux || null);
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setFactures([]);
+      setTotaux(null);
     } finally {
       setLoading(false);
     }
@@ -378,10 +402,10 @@ export default function FactureAssuranceModal({ show, onHide }: Props) {
                     <Col md={2}>
                       <Form.Label className="small fw-semibold">Mode paiement</Form.Label>
                       <Form.Select size="sm" value={modePaiement} onChange={e => setModePaiement(e.target.value)}>
-                        <option value="CHEQUE">Chèque</option>
-                        <option value="VIREMENT">Virement</option>
-                        <option value="ESPECE">Espèce</option>
-                        <option value="MOBILE MONEY">Mobile Money</option>
+                        {modesPaiement.length === 0 && <option value="">Aucun mode</option>}
+                        {modesPaiement.map((m) => (
+                          <option key={m._id} value={m.Modepaiement}>{m.Modepaiement}</option>
+                        ))}
                       </Form.Select>
                     </Col>
                     {(modePaiement === 'CHEQUE' || modePaiement === 'VIREMENT') && (

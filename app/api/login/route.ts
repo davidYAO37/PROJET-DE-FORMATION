@@ -4,6 +4,7 @@ import { signToken, setAuthCookie } from "@/lib/auth";
 import { db } from "@/db/mongoConnect";
 import { User } from "@/models/users.model";
 import { Entreprise } from "@/models/entreprise";
+import { getLicenceStatus } from "@/lib/licence";
 import { JournalConnexion } from "@/models/journalConnexion";
 
 const MAX_ATTEMPTS = 4;
@@ -170,23 +171,12 @@ export async function POST(req: NextRequest) {
         );
       }
 
-      if (!entreprise.isActive || entreprise.statut !== "active") {
-        await logConnexion("failure", "Entreprise inactive");
-        return NextResponse.json(
-          { message: "Entreprise inactive" },
-          { status: 403 }
-        );
-      }
-
-      if (
-        entreprise.dateExpiration &&
-        new Date(entreprise.dateExpiration) < new Date()
-      ) {
-        await logConnexion("failure", "Licence expirée");
-        return NextResponse.json(
-          { message: "Licence expirée" },
-          { status: 403 }
-        );
+      const licenceStatus = getLicenceStatus(entreprise);
+      if (licenceStatus.isBlocked) {
+        const message =
+          licenceStatus.alerts[0]?.message || "Entreprise inactive ou licence invalide";
+        await logConnexion("failure", message);
+        return NextResponse.json({ message }, { status: 403 });
       }
 
       if (!user.entrepriseId) {

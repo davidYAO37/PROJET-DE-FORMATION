@@ -12,7 +12,7 @@ import { ITypeActe } from '@/models/TypeActe';
 import { IExamenHospitalisation } from '@/models/examenHospit';
 import mongoose from 'mongoose';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'adminsuper', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 const arrondi = (n: number) => Math.round(n || 0);
 

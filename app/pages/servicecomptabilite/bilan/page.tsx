@@ -33,8 +33,26 @@ export default function BilanPage() {
   const [loading, setLoading] = useState(false);
   const [recherche, setRecherche] = useState('');
   const [message, setMessage] = useState<string | null>(null);
+  const [modesPaiement, setModesPaiement] = useState<{ _id: string; Modepaiement: string }[]>([]);
 
   useEffect(() => { setEntrepriseId(localStorage.getItem('IdEntreprise') || ''); }, []);
+
+  // Charger les modes de paiement depuis le modèle
+  useEffect(() => {
+    const fetchModes = async () => {
+      try {
+        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
+        const res = await fetch(`/api/modepaiement?entrepriseId=${encodeURIComponent(entrepriseId)}`);
+        if (res.ok) {
+          const json = await res.json();
+          setModesPaiement(Array.isArray(json?.data) ? json.data : []);
+        }
+      } catch {
+        setModesPaiement([]);
+      }
+    };
+    void fetchModes();
+  }, []);
 
   const charger = useCallback(async () => {
     setLoading(true); setMessage(null);
@@ -126,7 +144,10 @@ export default function BilanPage() {
             <Col xs="auto">
               <Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Mode paiement</Form.Label>
               <Form.Select size="sm" value={modePaiement} onChange={e => setModePaiement(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 140 }}>
-                {['TOUS','ESPECE','CHEQUE','MOBILE MONEY','VIREMENT','CARTE'].map(m => <option key={m}>{m}</option>)}
+                <option value="TOUS">TOUS</option>
+                {modesPaiement.map((m) => (
+                  <option key={m._id} value={m.Modepaiement}>{m.Modepaiement}</option>
+                ))}
               </Form.Select>
             </Col>
             <Col xs="auto">

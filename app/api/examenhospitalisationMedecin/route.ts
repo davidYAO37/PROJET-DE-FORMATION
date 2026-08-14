@@ -94,7 +94,7 @@ export async function POST(req: NextRequest) {
                 const assurance = await Assurance.findById(header.IDASSURANCE);
                 assuranceName = assurance?.designationassurance || '';
             } catch (error) {
-                console.error('Error fetching assurance:', error);
+                // Ignorer silencieusement : le nom restera vide
             }
         }
 
@@ -102,12 +102,6 @@ export async function POST(req: NextRequest) {
         let consultationData: any = {};
         if (header.CodePrestation) {
             consultationData = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean() || {};
-            console.log("📋 Données de la consultation récupérées:", {
-                IdPatient: consultationData.IdPatient,
-                PatientP: consultationData.PatientP,
-                Medecin: consultationData.Medecin,
-                IDMEDECIN: consultationData.IDMEDECIN
-            });
         }
 
         // Préparer les données de l'examen avec les champs supplémentaires
@@ -163,22 +157,13 @@ export async function POST(req: NextRequest) {
             const consultation: any = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean();
             if (consultation) {
                 patientId = consultation.IdPatient || consultation.IdPatient;
-                console.log("✅ IdPatient récupéré depuis la consultation:", patientId);
             }
         }
 
         // Mise à jour ou insertion des lignes de prestation
-        //console.log("📋 Nombre de lignes à enregistrer:", lignes.length);
-
         const results = await Promise.allSettled(
             lignes.map(async (l: any, index: number) => {
                 try {
-                    console.log(`📝 Traitement ligne ${index + 1}:`, {
-                        Acte: l.Acte,
-                        IDACTE: l.IDACTE,
-                        IDLignePrestation: l.IDLignePrestation
-                    });
-
                     // Vérifier que IdPatient est fourni
                     if (!patientId && !l.IdPatient) {
                         throw new Error("IdPatient est requis pour la ligne de prestation");
@@ -239,19 +224,15 @@ export async function POST(req: NextRequest) {
                         /^[0-9a-fA-F]{24}$/.test(l.IDLignePrestation);
 
                     if (isValidObjectId) {
-                        console.log(`✏️ Mise à jour ligne ${index + 1} avec ObjectId:`, l.IDLignePrestation);
                         result = await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, doc, { new: true });
                         if (!result) {
                             // Si pas trouvé, créer une nouvelle ligne
-                            console.log(`⚠️ Ligne non trouvée, création d'une nouvelle ligne ${index + 1}`);
                             result = await LignePrestation.create(doc);
                         }
                     } else {
                         // UUID ou ID invalide -> créer une nouvelle ligne
-                        console.log(`➕ Création nouvelle ligne ${index + 1} (ID invalide ou absent: ${l.IDLignePrestation})`);
                         result = await LignePrestation.create(doc);
                     }
-                    console.log(`✅ Ligne ${index + 1} enregistrée avec succès, ID:`, result._id);
                     return result;
                 } catch (error: any) {
                     console.error(`❌ Erreur ligne ${index + 1}:`, error.message);
@@ -263,8 +244,6 @@ export async function POST(req: NextRequest) {
         // Vérifier les échecs
         const failures = results.filter((r) => r.status === "rejected");
         if (failures.length > 0) {
-            console.error("❌ Erreurs lors de l'enregistrement des lignes:", failures);
-
             // Extraire les détails des erreurs
             const errorDetails = failures.map((f: any, idx) => {
                 const reason = f.reason;
@@ -275,8 +254,6 @@ export async function POST(req: NextRequest) {
                     name: reason?.name
                 };
             });
-
-            console.error("📊 Détails des erreurs:", errorDetails);
 
             return NextResponse.json(
                 {
@@ -297,7 +274,6 @@ export async function POST(req: NextRequest) {
             lignesCount: lignes.length,
         });
     } catch (e: any) {
-        console.error("Erreur POST /api/examenhospitalisationMedecin:", e);
         return NextResponse.json(
             {
                 error: "Erreur serveur",

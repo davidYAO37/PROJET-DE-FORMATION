@@ -12,6 +12,7 @@ import GestionLienAutomate from "@/components/GestionLienAutomate";
 import GestionParametreNfs from "@/components/GestionParametreNfs";
 import { useRouter } from "next/navigation";
 import { ListeAnnulationEncaissementModal, ListeAnnulationFactureModal } from "@/app/pages/servicecaisse/components";
+import ProtectedAccordionItem from "@/components/licence/ProtectedAccordionItem";
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
@@ -95,310 +96,330 @@ export default function Sidebar() {
           </li>
         </ul>
         <Accordion alwaysOpen className="w-100 px-2">
-          {/* Service accueil */}
-          <Accordion.Item eventKey="0">
-            <Accordion.Header>
-              <i
-                className="bi bi-people-fill me-2 text-primary"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service accueil
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/serviceaccueil/tpatient"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-hospital me-2 text-info"></i> Gestion
-                    Accueil
-                  </Link>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/* Service Medecin */}
-          <Accordion.Item eventKey="1">
-            <Accordion.Header>
-              <i
-                className="bi bi-person-badge-fill me-2 text-success"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service Médecin
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/servicemedecin/tmedecin"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-person-gear me-2 text-success"></i>{" "}
-                    Gestion Médecin
-                  </Link>
-                </li>
-              </ul>
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <button
-                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
-                    onClick={handleListePlanningClick}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <i className="bi bi-calendar-week me-2 text-primary"></i>{" "}
-                    Planning Médecin
-                  </button>
-                </li>
-              </ul>
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <button
-                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
-                    onClick={handleDisponibiliteClick}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <i className="bi bi-clock me-2 text-warning"></i>{" "}
-                    Disponibilité Médecin
-                  </button>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/* Service caisse */}
-          <Accordion.Item eventKey="2">
-            <Accordion.Header>
-              <i
-                className="bi bi-cash-stack me-2 text-warning"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service caisse
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/servicecaisse/tcaisse"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-cash-coin me-2 text-warning"></i>{" "}
-                    Gestion caisse
-                  </Link>
-                </li>
-              </ul>
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <button
-                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
-                    onClick={() => setShowListeAnnulationModal(true)}
-                    style={{ cursor: "pointer" }}
-                  >
-                    <i className="bi bi-exclamation-triangle-fill me-2 text-danger"></i>{" "}
-                    Liste à annuler
-                  </button>
-                </li>
-              </ul>
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <button
-                    className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
-                    onClick={() =>
-                      setShowListeEncaissementAnnulationModal(true)
-                    }
-                    style={{ cursor: "pointer" }}
-                  >
-                    <i className="bi bi-exclamation-triangle-fill me-2 text-danger"></i>{" "}
-                    Encaissements à annuler
-                  </button>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/* Service comptabilité */}
-          <Accordion.Item eventKey="3">
-            <Accordion.Header>
-              <i
-                className="bi bi-calculator-fill me-2 text-secondary"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service comptabilité
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/servicecomptabilite/tcompta"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-receipt me-2 text-secondary"></i>{" "}
-                    Gestion Comptabilité
-                  </Link>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/* Service Facturation */}
-          <Accordion.Item eventKey="3b">
-            <Accordion.Header>
-              <i
-                className="bi bi-receipt-cutoff me-2 text-primary"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service Facturation
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/servicefacturation/tfacturation"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-receipt-cutoff me-2 text-primary"></i>{" "}
-                    Gestion Facturation
-                  </Link>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/* Service pharmacie */}
-          <Accordion.Item eventKey="4">
-            <Accordion.Header>
-              <i
-                className="bi bi-capsule me-2 text-danger"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service Pharmacie
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/servicepharmacie"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-prescription2 me-2 text-danger"></i>{" "}
-                    Gestion Pharmacie
-                  </Link>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/* Service biologiste */}
-          <Accordion.Item eventKey="5">
-            <Accordion.Header>
-              <i
-                className="bi bi-microscope me-2 text-info"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service biologiste
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/servicebiologiste/tbiologiste"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-clipboard2-pulse me-2 text-info"></i>{" "}
-                    Gestion Biologiste
-                  </Link>
-                </li>
-                {!loading && user && user.type === "adminsuper" && (
-                  <>
-                    <li>
-                      <button
-                        className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
-                        onClick={() => setShowLienAutomateModal(true)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <i className="bi bi-link-45deg me-2 text-danger"></i>{" "}
-                        Liens Automates
-                      </button>
-                    </li>
-                    <li>
-                      <button
-                        className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
-                        onClick={() => setShowParametreNfsModal(true)}
-                        style={{ cursor: "pointer" }}
-                      >
-                        <i className="bi bi-droplet-fill me-2 text-primary"></i>{" "}
-                        Paramètres NFS
-                      </button>
-                    </li>
-                  </>
-                )}
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/* Service laboratoire */}
-          <Accordion.Item eventKey="6">
-            <Accordion.Header>
-              <i
-                className="bi bi-virus me-2 text-primary"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service laboratoire
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/servicelaboratoire/tlaboratoire"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-droplet me-2 text-primary"></i> Gestion
-                    Laboratoire
-                  </Link>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/* Service Infirmerie */}
-          <Accordion.Item eventKey="7">
-            <Accordion.Header>
-              <i
-                className="bi bi-heart-pulse-fill me-2 text-info"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service Infirmerie
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/serviceinfirmier/tinfirmier"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-bandaid me-2 text-info"></i> Gestion
-                    Infirmerie
-                  </Link>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
-          {/*Sevive Radiologie */}
-          <Accordion.Item eventKey="8">
-            <Accordion.Header>
-              <i
-                className="bi bi-broadcast me-2 text-info"
-                style={{ fontSize: "20px" }}
-              ></i>
-              Service Radiologie
-            </Accordion.Header>
-            <Accordion.Body className="ps-2">
-              <ul className="nav flex-column gap-2">
-                <li>
-                  <Link
-                    href="/pages/serviceradio/tradio"
-                    className="sidebar-link-medical d-flex align-items-center"
-                  >
-                    <i className="bi bi-broadcast me-2 text-info"></i> Gestion
-                    Radiologie
-                  </Link>
-                </li>
-              </ul>
-            </Accordion.Body>
-          </Accordion.Item>
+          <ProtectedAccordionItem
+            eventKey="0"
+            module="accueil"
+            header={
+              <>
+                <i
+                  className="bi bi-people-fill me-2 text-primary"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service accueil
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/serviceaccueil/tpatient"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-hospital me-2 text-info"></i> Gestion
+                  Accueil
+                </Link>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="1"
+            module="medecin"
+            header={
+              <>
+                <i
+                  className="bi bi-person-badge-fill me-2 text-success"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service Médecin
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/servicemedecin/tmedecin"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-person-gear me-2 text-success"></i>{" "}
+                  Gestion Médecin
+                </Link>
+              </li>
+            </ul>
+            <ul className="nav flex-column gap-2">
+              <li>
+                <button
+                  className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                  onClick={handleListePlanningClick}
+                  style={{ cursor: "pointer" }}
+                >
+                  <i className="bi bi-calendar-week me-2 text-primary"></i>{" "}
+                  Planning Médecin
+                </button>
+              </li>
+            </ul>
+            <ul className="nav flex-column gap-2">
+              <li>
+                <button
+                  className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                  onClick={handleDisponibiliteClick}
+                  style={{ cursor: "pointer" }}
+                >
+                  <i className="bi bi-clock me-2 text-warning"></i>{" "}
+                  Disponibilité Médecin
+                </button>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="2"
+            module="caisse"
+            header={
+              <>
+                <i
+                  className="bi bi-cash-stack me-2 text-warning"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service caisse
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/servicecaisse/tcaisse"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-cash-coin me-2 text-warning"></i>{" "}
+                  Gestion caisse
+                </Link>
+              </li>
+            </ul>
+            <ul className="nav flex-column gap-2">
+              <li>
+                <button
+                  className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                  onClick={() => setShowListeAnnulationModal(true)}
+                  style={{ cursor: "pointer" }}
+                >
+                  <i className="bi bi-exclamation-triangle-fill me-2 text-danger"></i>{" "}
+                  Liste à annuler
+                </button>
+              </li>
+            </ul>
+            <ul className="nav flex-column gap-2">
+              <li>
+                <button
+                  className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                  onClick={() =>
+                    setShowListeEncaissementAnnulationModal(true)
+                  }
+                  style={{ cursor: "pointer" }}
+                >
+                  <i className="bi bi-exclamation-triangle-fill me-2 text-danger"></i>{" "}
+                  Encaissements à annuler
+                </button>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="3"
+            module="comptabilite"
+            header={
+              <>
+                <i
+                  className="bi bi-calculator-fill me-2 text-secondary"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service comptabilité
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/servicecomptabilite/tcompta"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-receipt me-2 text-secondary"></i>{" "}
+                  Gestion Comptabilité
+                </Link>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="3b"
+            module="facturation"
+            header={
+              <>
+                <i
+                  className="bi bi-receipt-cutoff me-2 text-primary"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service Facturation
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/servicefacturation/tfacturation"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-receipt-cutoff me-2 text-primary"></i>{" "}
+                  Gestion Facturation
+                </Link>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="4"
+            module="pharmacie"
+            header={
+              <>
+                <i
+                  className="bi bi-capsule me-2 text-danger"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service Pharmacie
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/servicepharmacie"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-prescription2 me-2 text-danger"></i>{" "}
+                  Gestion Pharmacie
+                </Link>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="5"
+            module="biologiste"
+            header={
+              <>
+                <i
+                  className="bi bi-microscope me-2 text-info"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service biologiste
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/servicebiologiste/tbiologiste"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-clipboard2-pulse me-2 text-info"></i>{" "}
+                  Gestion Biologiste
+                </Link>
+              </li>
+              {!loading && user && user.type === "adminsuper" && (
+                <>
+                  <li>
+                    <button
+                      className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                      onClick={() => setShowLienAutomateModal(true)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <i className="bi bi-link-45deg me-2 text-danger"></i>{" "}
+                      Liens Automates
+                    </button>
+                  </li>
+                  <li>
+                    <button
+                      className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
+                      onClick={() => setShowParametreNfsModal(true)}
+                      style={{ cursor: "pointer" }}
+                    >
+                      <i className="bi bi-droplet-fill me-2 text-primary"></i>{" "}
+                      Paramètres NFS
+                    </button>
+                  </li>
+                </>
+              )}
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="6"
+            module="laboratoire"
+            header={
+              <>
+                <i
+                  className="bi bi-virus me-2 text-primary"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service laboratoire
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/servicelaboratoire/tlaboratoire"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-droplet me-2 text-primary"></i> Gestion
+                  Laboratoire
+                </Link>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="7"
+            module="infirmier"
+            header={
+              <>
+                <i
+                  className="bi bi-heart-pulse-fill me-2 text-info"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service Infirmerie
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/serviceinfirmier/tinfirmier"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-bandaid me-2 text-info"></i> Gestion
+                  Infirmerie
+                </Link>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
+          <ProtectedAccordionItem
+            eventKey="8"
+            module="radio"
+            header={
+              <>
+                <i
+                  className="bi bi-broadcast me-2 text-info"
+                  style={{ fontSize: "20px" }}
+                ></i>
+                Service Radiologie
+              </>
+            }
+          >
+            <ul className="nav flex-column gap-2">
+              <li>
+                <Link
+                  href="/pages/serviceradio/tradio"
+                  className="sidebar-link-medical d-flex align-items-center"
+                >
+                  <i className="bi bi-broadcast me-2 text-info"></i> Gestion
+                  Radiologie
+                </Link>
+              </li>
+            </ul>
+          </ProtectedAccordionItem>
           {/* Paramètre utilisateur */}
           <Accordion.Item eventKey="9">
             <Accordion.Header>
@@ -653,6 +674,17 @@ export default function Sidebar() {
                     </ul>
                   </Accordion.Body>
                 </Accordion.Item>
+                {!loading && user && user.type !== "adminsuper" && (
+                  <li>
+                    <Link
+                      href="/dashboard/licence"
+                      className="sidebar-link-medical d-flex align-items-center"
+                    >
+                      <i className="bi bi-key me-2 text-success"></i>{" "}
+                      Ma licence
+                    </Link>
+                  </li>
+                )}
                 {!loading && user && user.type === "adminsuper" && (
                   <>
                     <li>
@@ -662,6 +694,15 @@ export default function Sidebar() {
                       >
                         <i className="bi bi-building me-2 text-primary"></i>{" "}
                         Gestion entreprise
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/dashboard/parametres/licences"
+                        className="sidebar-link-medical d-flex align-items-center"
+                      >
+                        <i className="bi bi-key me-2 text-warning"></i>{" "}
+                        Gestion licences
                       </Link>
                     </li>
                     <li>

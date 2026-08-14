@@ -96,7 +96,7 @@ export type ExamenHospitalisationForm = {
     sexe?: string;
     societePartenaireId?: string;
     societePartenaire?: string;
-
+    aFacturer?: boolean;
 };
 
 // ✅ Valeur par défaut centralisée
@@ -139,5 +139,6 @@ export const defaultFormData: ExamenHospitalisationForm = {
     TotalapayerPatient: 0,
     sexe: "",
     societePartenaireId: "",
-    societePartenaire: ""
+    societePartenaire: "",
+    aFacturer: false
 };

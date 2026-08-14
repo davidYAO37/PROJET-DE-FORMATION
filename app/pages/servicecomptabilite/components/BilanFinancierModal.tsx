@@ -50,9 +50,27 @@ export default function BilanFinancierModal({ show, onHide }: Props) {
   const [recherche, setRecherche] = useState('');
   const [onglet, setOnglet] = useState<'detail' | 'recap'>('detail');
   const [entrepriseId, setEntrepriseId] = useState('');
+  const [modesPaiement, setModesPaiement] = useState<{ _id: string; Modepaiement: string }[]>([]);
 
   useEffect(() => {
     setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
+  }, []);
+
+  // Charger les modes de paiement depuis le modèle
+  useEffect(() => {
+    const fetchModes = async () => {
+      try {
+        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
+        const res = await fetch(`/api/modepaiement?entrepriseId=${encodeURIComponent(entrepriseId)}`);
+        if (res.ok) {
+          const json = await res.json();
+          setModesPaiement(Array.isArray(json?.data) ? json.data : []);
+        }
+      } catch {
+        setModesPaiement([]);
+      }
+    };
+    void fetchModes();
   }, []);
 
   const charger = useCallback(async () => {
@@ -72,8 +90,7 @@ export default function BilanFinancierModal({ show, onHide }: Props) {
         setTotaux(json.totaux || null);
         setParTypeActe(json.parTypeActe || {});
       }
-    } catch (e) {
-      console.error(e);
+    } catch {
     } finally {
       setLoading(false);
     }
@@ -135,11 +152,9 @@ export default function BilanFinancierModal({ show, onHide }: Props) {
                 <Form.Label className="small fw-semibold">Mode paiement</Form.Label>
                 <Form.Select size="sm" value={modePaiement} onChange={e => setModePaiement(e.target.value)}>
                   <option value="TOUS">Tous</option>
-                  <option value="ESPECE">Espèce</option>
-                  <option value="CHEQUE">Chèque</option>
-                  <option value="VIREMENT">Virement</option>
-                  <option value="CARTE">Carte</option>
-                  <option value="MOBILE MONEY">Mobile Money</option>
+                  {modesPaiement.map((m) => (
+                    <option key={m._id} value={m.Modepaiement}>{m.Modepaiement}</option>
+                  ))}
                 </Form.Select>
               </Col>
               <Col md={2}>

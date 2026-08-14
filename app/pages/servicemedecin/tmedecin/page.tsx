@@ -4,6 +4,7 @@ import ListePatientsMedecin from './components/ListePatientsMedecin';
 import { Badge, Button, Card, Col, Row } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 interface Statistiques {
   patientsRecus: number;
@@ -90,6 +91,7 @@ const medecinConnecte = localStorage.getItem('nom_utilisateur');
     router.push('/connexion');
   };
   return (
+    <LicenceModuleGuard module="medecin">
     <>
     <style>{cardStyles}</style>
         
@@ -168,5 +170,6 @@ const medecinConnecte = localStorage.getItem('nom_utilisateur');
             <ListePatientsMedecin />
           </div>
    </>
+    </LicenceModuleGuard>
   );
 }

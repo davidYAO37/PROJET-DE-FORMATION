@@ -22,6 +22,7 @@ import Pagination from "@/components/Pagination";
 import { Pharmacie } from "@/types/pharmacie";
 import { Approvisionnement } from "@/types/Approvisionnement";
 import Inventaire from "./Inventaire";
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 const VUES: Record<string, { titre: string; icon: React.ReactNode }> = {
     dashboard:         { titre: "Tableau de bord",          icon: <FaTachometerAlt className="text-primary" /> },
@@ -319,8 +320,10 @@ function PageContent() {
 
 export default function ServicePharmaciePage() {
     return (
-        <Suspense fallback={<div className="text-center py-5"><Spinner animation="border" /></div>}>
-            <PageContent />
-        </Suspense>
+        <LicenceModuleGuard module="pharmacie">
+            <Suspense fallback={<div className="text-center py-5"><Spinner animation="border" /></div>}>
+                <PageContent />
+            </Suspense>
+        </LicenceModuleGuard>
     );
 }

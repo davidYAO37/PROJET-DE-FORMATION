@@ -6,6 +6,7 @@ import { FaUserCheck, FaFlask, FaFileInvoice, FaClock, FaSignOutAlt } from 'reac
 import Page from '../patientcaisse/page';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 export default function Caisse() {
   const router = useRouter();
@@ -138,6 +139,7 @@ export default function Caisse() {
   };
   
   return (
+    <LicenceModuleGuard module="caisse">
     <>
       <style>{cardStyles}</style>
     
@@ -216,5 +218,6 @@ export default function Caisse() {
         <Page />
       </div>
     </>
+    </LicenceModuleGuard>
   );
 }

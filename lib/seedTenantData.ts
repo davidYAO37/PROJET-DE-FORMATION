@@ -1,5 +1,6 @@
 import { getPrimaryConnection, getTenantConnection } from "./tenantDb";
 import { getTenantModel } from "./tenantModels";
+import { seedDefaultDataForConnection, type SeedResult } from "./seedDefaultData";
 
 /**
  * Liste des modèles de paramétrage à copier depuis la base principale (bd_esaymed)
@@ -15,38 +16,44 @@ const SEED_MODEL_NAMES = [
   "FamilleActe",
   "ModeDePaiement",
   "ParametreCRendu",
+  "ParametreNfs",
   "ParamLabo",
   "ParamBiochimie",
   "Affection",
   "Chambre",
   "Assurance",
+  "Operation",
   "SocietePartenaire",
   "Pharmacie",
   "ActeParamBiochimie",
   "ActeParamLabo",
 ] as const;
 
-export interface SeedResult {
-  model: string;
-  copied: number;
-  error?: string;
-}
+export type { SeedResult };
 
 /**
  * Copie les données de paramétrage de bd_esaymed vers la base dédiée
  * de l'entreprise nouvellement créée. Les _id sont préservés afin de
  * conserver l'intégrité des références croisées entre modèles
  * (ex: ActeClinique.IDTYPE_ACTE -> TypeActe._id).
+ *
+ * Avant la copie, les données par défaut de type WinDev (ajout si vide)
+ * sont injectées dans la base principale, afin que chaque nouveau tenant
+ * dispose des mêmes paramètres de base (_id identiques).
  */
 export async function seedDefaultTenantData(
   entrepriseId: string
 ): Promise<SeedResult[]> {
   const sourceConnection = await getPrimaryConnection();
+
+  // 1. Garantir les données par défaut dans la base principale (équivalent WinDev)
+  const primaryResults = await seedDefaultDataForConnection(sourceConnection);
+
   const destConnection = await getTenantConnection(entrepriseId);
 
   if (destConnection === sourceConnection) {
-    // L'entreprise partage la connexion principale (pas de base dédiée) : rien à copier.
-    return [];
+    // L'entreprise partage la connexion principale : les defaults viennent d'être seedés.
+    return primaryResults;
   }
 
   const results: SeedResult[] = [];

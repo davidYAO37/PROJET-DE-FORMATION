@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Container, Row, Col, Form } from "react-bootstrap";
+import { Container, Row, Col, Form, Card } from "react-bootstrap";
 import { defaultFormData, ExamenHospitalisationForm } from "@/types/examenHospitalisation";
 import PatientInfoBilan from "./components/PatientInfoBilan";
 import AssuranceInfoBilan from "./components/AssuranceInfoBilan";
@@ -193,13 +193,25 @@ export default function HospitalisationPageBilan() {
     };
 
     return (
-        <Container fluid className="p-3">
-            <h3 className={`text-center mb-3 ${modeModification ? 'text-warning' : 'text-primary'}`}>
-                {modeModification ? 'FICHE DE MODIFICATION' : 'FICHE DE SAISIE'} {formData.typeacte ? `---> ${formData.typeacte}` : ''}
-            </h3>
+        <Container fluid className="p-3" style={{ backgroundColor: '#f8f9fa', minHeight: '100vh' }}>
+            {/* Header */}
+            <div className="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-4 p-3 bg-white rounded-3 shadow-sm">
+                <div>
+                    <h3 className="m-0 fw-bold text-primary">
+                        {modeModification ? 'Fiche de modification' : 'Fiche de saisie'}
+                    </h3>
+                    {formData.typeacte && (
+                        <span className="text-muted small">{formData.typeacte}</span>
+                    )}
+                </div>
+                <span className={`badge ${modeModification ? 'bg-warning text-dark' : 'bg-primary'} fs-6`}>
+                    {modeModification ? 'Modification' : 'Nouvelle saisie'}
+                </span>
+            </div>
 
-            <Row>
-                <Col md={3}>
+            <Row className="g-3">
+                {/* Sidebar : patient + assurance */}
+                <Col lg={3} md={4} className="d-flex flex-column gap-3">
                     <PatientInfoBilan
                         formData={formData}
                         setFormData={setFormData}
@@ -213,6 +225,18 @@ export default function HospitalisationPageBilan() {
                                 dateEntree: today,
                                 dateSortie: today,
                                 nombreDeJours: 1,
+                                Assure: "NON ASSURE",
+                                assurance: {
+                                    ...prev.assurance,
+                                    assuranceId: "",
+                                    designationassurance: "",
+                                    type: "NON ASSURE",
+                                    taux: 0,
+                                    matricule: "",
+                                    numeroBon: "",
+                                },
+                                societePartenaireId: "",
+                                societePartenaire: "",
                             }));
 
                             // Réinitialiser le mode modification
@@ -233,317 +257,407 @@ export default function HospitalisationPageBilan() {
                     />
                 </Col>
 
-                <Col md={9}>
-                    <Form>
-                        <Row className="mb-1">
-                            <Col xs={12} md={6} lg={3} className="mb-2">
-                                <Form.Label>Nature Acte</Form.Label>
-                                <Form.Select
-                                    value={formData.typeacte || ""}
-                                    onChange={async (e) => {
-                                        const value = e.target.value;
+                {/* Main content */}
+                <Col lg={9} md={8}>
+                    {/* Informations générales */}
+                    <Card className="shadow-sm border-0 mb-3">
+                        <Card.Header className="bg-white fw-bold text-primary border-bottom">
+                            Informations générales
+                        </Card.Header>
+                        <Card.Body>
+                            <Form>
+                                <Row className="g-3">
+                                    <Col xs={12} md={6} lg={3}>
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small text-uppercase">Nature Acte</Form.Label>
+                                            <Form.Select
+                                                value={formData.typeacte || ""}
+                                                onChange={async (e) => {
+                                                    const value = e.target.value;
 
-                                        if (!value) {
-                                            setFormData((prev) => ({ ...prev, typeacte: "" }));
-                                            return;
-                                        }
+                                                    if (!value) {
+                                                        setFormData((prev) => ({ ...prev, typeacte: "" }));
+                                                        return;
+                                                    }
 
-                                        // Mettre à jour le type d'acte
-                                        setFormData((prev) => ({ ...prev, typeacte: value }));
+                                                    // Mettre à jour le type d'acte
+                                                    setFormData((prev) => ({ ...prev, typeacte: value }));
 
-                                        // 2. Rechercher l'examen avec CodePrestation ET Designationtypeacte
-                                        if (!CodePrestation) {
-                                            return;
-                                        }
+                                                    // 2. Rechercher l'examen avec CodePrestation ET Designationtypeacte
+                                                    if (!CodePrestation) {
+                                                        return;
+                                                    }
 
-                                        try {
-                                            const res = await fetch(`/api/examenhospitalisation?CodePrestation=${encodeURIComponent(CodePrestation)}&typeActe=${encodeURIComponent(value)}`);
+                                                    try {
+                                                        const res = await fetch(`/api/examenhospitalisation?CodePrestation=${encodeURIComponent(CodePrestation)}&typeActe=${encodeURIComponent(value)}`);
 
-                                            if (res.ok) {
-                                                const data = await res.json();
+                                                        if (res.ok) {
+                                                            const data = await res.json();
 
-                                                // 2.1 - SI TROUVÉ: Mode modification
-                                                if (data && data._id) {
-                                                    console.log("✅ Examen trouvé - Mode MODIFICATION", data._id);
-                                                    setModeModification(true);
-                                                    setExamenHospitId(data._id);
+                                                            // 2.1 - SI TROUVÉ: Mode modification
+                                                            if (data && data._id) {
+                                                                setModeModification(true);
+                                                                setExamenHospitId(data._id);
 
-                                                    // Charger les infos AssuranceInfo depuis examenHospit
+                                                                // Charger les infos AssuranceInfo depuis examenHospit
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    typeacte: value,
+                                                                    // Société partenaire
+                                                                    societePartenaireId: data.IDSOCIETEPARTENAIRE || prev.societePartenaireId,
+                                                                    societePartenaire: data.PartenaireBilan || prev.societePartenaire,
+                                                                    // Assurance : priorité absolue aux données de l'examen existant
+                                                                    Assure: data.Assure || "",
+                                                                    assurance: {
+                                                                        assuranceId: data.IDASSURANCE ? String(data.IDASSURANCE) : "",
+                                                                        designationassurance: data.Assurance || "",
+                                                                        type: data.Assure || "",
+                                                                        taux: Number(data.Taux) || 0,
+                                                                        matricule: data.Numcarte || "",
+                                                                        numeroBon: data.NumBon || "",
+                                                                        societe: data.SocieteP || "",
+                                                                        numero: "",
+                                                                        adherent: data.Souscripteur || "",
+                                                                    },
+                                                                    // Médecin executant
+                                                                    medecinId: data.NummedecinExécutant || prev.medecinId,
+                                                                    medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
+                                                                    // Renseignement clinique
+                                                                    Rclinique: data.Rclinique || prev.Rclinique,
+                                                                    // Société patient
+                                                                    societePatient: data.SOCIETE_PATIENT || prev.societePatient,
+                                                                    // Dates
+                                                                    dateEntree: data.Entrele ? new Date(data.Entrele).toISOString().split('T')[0] : prev.dateEntree,
+                                                                    dateSortie: data.SortieLe ? new Date(data.SortieLe).toISOString().split('T')[0] : prev.dateSortie,
+                                                                    nombreDeJours: data.nombreDeJours || prev.nombreDeJours,
+                                                                    // Montants
+                                                                    factureTotal: data.Montanttotal || 0,
+                                                                    partAssurance: data.PartAssuranceP || 0,
+                                                                    Partassure: data.Partassure || 0,
+                                                                    resteAPayer: data.Restapayer || 0,
+                                                                    surplus: data.TotalSurplus || 0,
+                                                                }));
+
+                                                                // Charger les lignes prestation liées à cet examen
+                                                                const resLignes = await fetch(`/api/ligneprestation?CodePrestation=${encodeURIComponent(CodePrestation)}&idHospitalisation=${encodeURIComponent(data._id)}`);
+                                                                if (resLignes.ok) {
+                                                                    const payload = await resLignes.json();
+                                                                    const rawLines = Array.isArray(payload?.data) ? payload.data : [];
+
+                                                                    // Mapper les lignes
+                                                                    const mappedLines = rawLines.map((l: any) => ({
+                                                                        DATE: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
+                                                                        Acte: l.prestation || "",
+                                                                        Lettre_Cle: l.lettreCle || "",
+                                                                        Coefficient: Number(l.coefficientActe ?? 1),
+                                                                        QteP: Number(l.qte ?? 1),
+                                                                        Coef_ASSUR: Number(l.reliquatCoefAssurance ?? 0),
+                                                                        SURPLUS: Number(l.totalSurplus ?? 0),
+                                                                        Prixunitaire: Number(l.prix ?? 0),
+                                                                        TAXE: Number(l.taxe ?? 0),
+                                                                        PrixTotal: Number(l.prixTotal ?? 0),
+                                                                        PartAssurance: Number(l.partAssurance ?? 0),
+                                                                        PartAssure: Number(l.partAssure ?? 0),
+                                                                        IDTYPE: String(l.idTypeActe || ""),
+                                                                        Reliquat: Number(l.reliquatPatient ?? 0),
+                                                                        TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
+                                                                        Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
+                                                                        StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
+                                                                        IDACTE: String(l.idActe || ""),
+                                                                        Exclusion: l.exclusionActe === "Refuser" ? "Refuser" : "Accepter",
+                                                                        COEFFICIENT_ASSURANCE: Number(l.coefficientAssur ?? 0),
+                                                                        TARIF_ASSURANCE: Number(l.tarifAssurance ?? 0),
+                                                                        IDHOSPO: String(l.idHospitalisation || ""),
+                                                                        IDFAMILLE: String(l.idFamilleActeBiologie || ""),
+                                                                        Refuser: Number(l.prixRefuse ?? 0),
+                                                                        Accepter: Number(l.prixAccepte ?? 0),
+                                                                        IDLignePrestation: String(l._id || ""),
+                                                                        Statutprescription: Number(l.statutPrescriptionMedecin ?? 2),
+                                                                        CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
+                                                                        forfaitclinique: 0,
+                                                                        ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
+                                                                        Action: "",
+                                                                    }));
+
+                                                                    setPresetLines(mappedLines);
+                                                                    setCurrentLignes(mappedLines);
+                                                                    setResetKey((k) => k + 1);
+                                                                }
+                                                            } else {
+                                                                // 2.2 - SI NON TROUVÉ: Mode création - Vider ActesTable, PaiementInfo, CliniqueInfo
+                                                                setModeModification(false);
+                                                                setExamenHospitId(undefined);
+
+                                                                // Vider uniquement les champs spécifiés
+                                                                setPresetLines([]);
+                                                                setCurrentLignes([]);
+                                                                setResetKey((k) => k + 1);
+
+                                                                // Réinitialiser les totaux
+                                                                setTotaux({
+                                                                    montantTotal: 0,
+                                                                    partAssurance: 0,
+                                                                    partAssure: 0,
+                                                                    totalTaxe: 0,
+                                                                    totalSurplus: 0,
+                                                                    montantExecutant: 0,
+                                                                    montantARegler: 0,
+                                                                });
+
+                                                                // Réinitialiser les montants et infos cliniques/paiement
+                                                                setFormData((prev) => ({
+                                                                    ...prev,
+                                                                    typeacte: value,
+                                                                    Assure: "NON ASSURE",
+                                                                    assurance: {
+                                                                        ...prev.assurance,
+                                                                        assuranceId: "",
+                                                                        designationassurance: "",
+                                                                        type: "NON ASSURE",
+                                                                        taux: 0,
+                                                                        matricule: "",
+                                                                        numeroBon: "",
+                                                                    },
+                                                                    societePartenaireId: "",
+                                                                    societePartenaire: "",
+                                                                    factureTotal: 0,
+                                                                    partAssurance: 0,
+                                                                    Partassure: 0,
+                                                                    surplus: 0,
+                                                                    resteAPayer: 0,
+                                                                    Rclinique: "",
+                                                                    // Garder dateEntree et dateSortie (déjà initialisés à aujourd'hui)
+                                                                }));
+                                                            }
+                                                        } else if (res.status === 404) {
+                                                            // 2.2 - Examen non trouvé: Mode création
+                                                            setModeModification(false);
+                                                            setExamenHospitId(undefined);
+
+                                                            // Vider ActesTable, PaiementInfo, CliniqueInfo
+                                                            setPresetLines([]);
+                                                            setCurrentLignes([]);
+                                                            setResetKey((k) => k + 1);
+
+                                                            setTotaux({
+                                                                montantTotal: 0,
+                                                                partAssurance: 0,
+                                                                partAssure: 0,
+                                                                totalTaxe: 0,
+                                                                totalSurplus: 0,
+                                                                montantExecutant: 0,
+                                                                montantARegler: 0,
+
+                                                            });
+
+                                                            setFormData((prev) => ({
+                                                                ...prev,
+                                                                typeacte: value,
+                                                                Assure: "NON ASSURE",
+                                                                assurance: {
+                                                                    ...prev.assurance,
+                                                                    assuranceId: "",
+                                                                    designationassurance: "",
+                                                                    type: "NON ASSURE",
+                                                                    taux: 0,
+                                                                    matricule: "",
+                                                                    numeroBon: "",
+                                                                },
+                                                                societePartenaireId: "",
+                                                                societePartenaire: "",
+                                                                factureTotal: 0,
+                                                                partAssurance: 0,
+                                                                Partassure: 0,
+                                                                surplus: 0,
+                                                                resteAPayer: 0,
+                                                                Rclinique: "",
+                                                            }));
+                                                        }
+                                                    } catch (error) {
+                                                        // En cas d'erreur, mode création par défaut
+                                                        setModeModification(false);
+                                                        setExamenHospitId(undefined);
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            Assure: "NON ASSURE",
+                                                            assurance: {
+                                                                ...prev.assurance,
+                                                                assuranceId: "",
+                                                                designationassurance: "",
+                                                                type: "NON ASSURE",
+                                                                taux: 0,
+                                                                matricule: "",
+                                                                numeroBon: "",
+                                                            },
+                                                            societePartenaireId: "",
+                                                            societePartenaire: "",
+                                                        }));
+                                                    }
+                                                }}
+                                            >
+                                                <option value="">--- Sélectionner ---</option>
+                                                {typesActe.map((type) => (
+                                                    <option key={type._id} value={type.Designation}>
+                                                        {type.Designation}
+                                                    </option>
+                                                ))}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12} md={6} lg={3}>
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small text-uppercase">Société Partenaire</Form.Label>
+                                            <Form.Select
+                                                value={formData.societePartenaireId || ""}
+                                                onChange={(e) => {
+                                                    const id = e.target.value;
+
+                                                    // SI TABLE_PRESTATION.Occurrence()>0 ALORS Erreur(...) RETOUR
+                                                    const hasActes = currentLignes.some((l: any) => l.IDACTE);
+                                                    if (hasActes) {
+                                                        alert("Veuillez supprimer la liste ci-dessous avant cette opération");
+                                                        return;
+                                                    }
+
+                                                    const societe = societesPartenaires.find((s) => s._id === id);
+
+                                                    // SINON : RafraichirFenetre() + réinitialisation des infos d'assurance
                                                     setFormData((prev) => ({
                                                         ...prev,
-                                                        typeacte: value,
-                                                        // Assurance
-                                                        Assure: data.Assure || prev.Assure,
+                                                        societePartenaireId: id,
+                                                        societePartenaire: societe?.Designation || "",
+                                                        Assure: "NON ASSURE",
                                                         assurance: {
                                                             ...prev.assurance,
-                                                            assuranceId: data.IDASSURANCE || prev.assurance.assuranceId,
-                                                            type: data.Assure || prev.assurance.type,
-                                                            taux: data.Taux || prev.assurance.taux,
-                                                            matricule: data.Numcarte || prev.assurance.matricule,
-                                                            numeroBon: data.NumBon || prev.assurance.numeroBon,
-                                                            societe: data.SocieteP || prev.assurance.societe,
-                                                            adherent: data.Souscripteur || prev.assurance.adherent,
+                                                            assuranceId: "",
+                                                            taux: 0,
+                                                            matricule: "",
+                                                            numeroBon: "",
+                                                            societe: "",
+                                                            numero: "",
+                                                            adherent: "",
                                                         },
-                                                        // Médecin executant
-                                                        medecinId: data.NummedecinExécutant || prev.medecinId,
-                                                        medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
-                                                        // Renseignement clinique
-                                                        Rclinique: data.Rclinique || prev.Rclinique,
-                                                        // Société patient
-                                                        societePatient: data.SOCIETE_PATIENT || prev.societePatient,
-                                                        // Dates
-                                                        dateEntree: data.Entrele ? new Date(data.Entrele).toISOString().split('T')[0] : prev.dateEntree,
-                                                        dateSortie: data.SortieLe ? new Date(data.SortieLe).toISOString().split('T')[0] : prev.dateSortie,
-                                                        nombreDeJours: data.nombreDeJours || prev.nombreDeJours,
-                                                        // Montants
-                                                        factureTotal: data.Montanttotal || 0,
-                                                        partAssurance: data.PartAssuranceP || 0,
-                                                        Partassure: data.Partassure || 0,
-                                                        resteAPayer: data.Restapayer || 0,
-                                                        surplus: data.TotalSurplus || 0,
                                                     }));
-
-                                                    // Charger les lignes prestation liées à cet examen
-                                                    const resLignes = await fetch(`/api/ligneprestation?CodePrestation=${encodeURIComponent(CodePrestation)}&idHospitalisation=${encodeURIComponent(data._id)}`);
-                                                    if (resLignes.ok) {
-                                                        const payload = await resLignes.json();
-                                                        const rawLines = Array.isArray(payload?.data) ? payload.data : [];
-
-                                                        // Mapper les lignes
-                                                        const mappedLines = rawLines.map((l: any) => ({
-                                                            DATE: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
-                                                            Acte: l.prestation || "",
-                                                            Lettre_Cle: l.lettreCle || "",
-                                                            Coefficient: Number(l.coefficientActe ?? 1),
-                                                            QteP: Number(l.qte ?? 1),
-                                                            Coef_ASSUR: Number(l.reliquatCoefAssurance ?? 0),
-                                                            SURPLUS: Number(l.totalSurplus ?? 0),
-                                                            Prixunitaire: Number(l.prix ?? 0),
-                                                            TAXE: Number(l.taxe ?? 0),
-                                                            PrixTotal: Number(l.prixTotal ?? 0),
-                                                            PartAssurance: Number(l.partAssurance ?? 0),
-                                                            PartAssure: Number(l.partAssure ?? 0),
-                                                            IDTYPE: String(l.idTypeActe || ""),
-                                                            Reliquat: Number(l.reliquatPatient ?? 0),
-                                                            TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
-                                                            Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
-                                                            StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
-                                                            IDACTE: String(l.idActe || ""),
-                                                            Exclusion: l.exclusionActe === "Refuser" ? "Refuser" : "Accepter",
-                                                            COEFFICIENT_ASSURANCE: Number(l.coefficientAssur ?? 0),
-                                                            TARIF_ASSURANCE: Number(l.tarifAssurance ?? 0),
-                                                            IDHOSPO: String(l.idHospitalisation || ""),
-                                                            IDFAMILLE: String(l.idFamilleActeBiologie || ""),
-                                                            Refuser: Number(l.prixRefuse ?? 0),
-                                                            Accepter: Number(l.prixAccepte ?? 0),
-                                                            IDLignePrestation: String(l._id || ""),
-                                                            Statutprescription: Number(l.statutPrescriptionMedecin ?? 2),
-                                                            CoefClinique: Number(l.coefficientClinique ?? l.coefficientActe ?? 1),
-                                                            forfaitclinique: 0,
-                                                            ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
-                                                            Action: "",
-                                                        }));
-
-                                                        setPresetLines(mappedLines);
-                                                        setResetKey((k) => k + 1);
-                                                    }
-                                                } else {
-                                                    // 2.2 - SI NON TROUVÉ: Mode création - Vider ActesTable, PaiementInfo, CliniqueInfo
-                                                    console.log("ℹ️ Examen non trouvé - Mode CRÉATION");
-                                                    setModeModification(false);
-                                                    setExamenHospitId(undefined);
-
-                                                    // Vider uniquement les champs spécifiés
-                                                    setPresetLines([]);
-                                                    setCurrentLignes([]);
-                                                    setResetKey((k) => k + 1);
-
-                                                    // Réinitialiser les totaux
-                                                    setTotaux({
-                                                        montantTotal: 0,
-                                                        partAssurance: 0,
-                                                        partAssure: 0,
-                                                        totalTaxe: 0,
-                                                        totalSurplus: 0,
-                                                        montantExecutant: 0,
-                                                        montantARegler: 0,
-                                                    });
-
-                                                    // Réinitialiser les montants et infos cliniques/paiement
+                                                }}
+                                            >
+                                                <option value="">--- Sélectionner ---</option>
+                                                {societesPartenaires.map((societe) => (
+                                                    <option key={societe._id} value={societe._id}>
+                                                        {societe.Designation}
+                                                    </option>
+                                                ))}
+                                            </Form.Select>
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12} sm={6} md={4} lg={3}>
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small text-uppercase">Entrée le</Form.Label>
+                                            <Form.Control
+                                                type="date"
+                                                value={formData.dateEntree}
+                                                onChange={(e) => handleDateChange("dateEntree", e.target.value)}
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12} sm={6} md={4} lg={3}>
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small text-uppercase">Sortie le</Form.Label>
+                                            <Form.Control
+                                                type="date"
+                                                value={formData.dateSortie}
+                                                onChange={(e) => handleDateChange("dateSortie", e.target.value)}
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                    <Col xs={12} sm={6} md={4} lg={2}>
+                                        <Form.Group>
+                                            <Form.Label className="fw-semibold small text-uppercase">NB (Jrs)</Form.Label>
+                                            <Form.Control
+                                                type="number"
+                                                value={formData.nombreDeJours}
+                                                onChange={(e) => handleNombreJoursChange(parseInt(e.target.value))}
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                    {/* A Facturer */}
+                                    <Col xs={12} sm={6} md={4} lg={2}>
+                                        <Form.Group className="d-flex justify-content-between align-items-center h-100">
+                                            <Form.Label className="mb-0 fw-semibold small text-uppercase">A Facturer</Form.Label>
+                                            <Form.Check
+                                                type="switch"
+                                                checked={formData.aFacturer || false}
+                                                onChange={(e) =>
                                                     setFormData((prev) => ({
                                                         ...prev,
-                                                        typeacte: value,
-                                                        factureTotal: 0,
-                                                        partAssurance: 0,
-                                                        Partassure: 0,
-                                                        surplus: 0,
-                                                        resteAPayer: 0,
-                                                        Rclinique: "",
-                                                        // Garder AssuranceInfo (déjà chargé depuis la consultation)
-                                                        // Garder dateEntree et dateSortie (déjà initialisés à aujourd'hui)
-                                                    }));
+                                                        aFacturer: e.target.checked,
+                                                    }))
                                                 }
-                                            } else if (res.status === 404) {
-                                                // 2.2 - Examen non trouvé: Mode création
-                                                console.log("ℹ️ Examen non trouvé (404) - Mode CRÉATION");
-                                                setModeModification(false);
-                                                setExamenHospitId(undefined);
+                                                id="toggle-a-facturer"
+                                            />
+                                        </Form.Group>
+                                    </Col>
+                                </Row>
 
-                                                // Vider ActesTable, PaiementInfo, CliniqueInfo
-                                                setPresetLines([]);
-                                                setCurrentLignes([]);
-                                                setResetKey((k) => k + 1);
+                                {errorMessage && <div className="alert alert-danger mt-3 mb-0">{errorMessage}</div>}
+                            </Form>
+                        </Card.Body>
+                    </Card>
 
-                                                setTotaux({
-                                                    montantTotal: 0,
-                                                    partAssurance: 0,
-                                                    partAssure: 0,
-                                                    totalTaxe: 0,
-                                                    totalSurplus: 0,
-                                                    montantExecutant: 0,
-                                                    montantARegler: 0,
+                    {/* Lignes de prestation */}
+                    <Card className="shadow-sm border-0 mb-3">
+                        <Card.Header className="bg-white fw-bold text-primary border-bottom">
+                            Lignes de prestation
+                        </Card.Header>
+                        <Card.Body className="p-0">
+                            <TablePrestationsBilan
 
-                                                });
+                                key={`actes-${resetKey}-${triggerRecalculation}`}
+                                assuranceId={formData.Assure === "NON ASSURE" ? 1 : formData.Assure === "TARIF MUTUALISTE" ? 2 : 3}
+                                saiTaux={formData.assurance.taux || 0}
+                                assuranceDbId={formData.assurance.assuranceId || undefined}
+                                societePartenaireId={formData.societePartenaireId || undefined}
+                                externalResetKey={resetKey}
+                                presetLines={presetLines}
+                                modeModification={modeModification}
+                                onTotalsChange={(s) => {
+                                    setTotaux(s);
+                                    setFormData((prev) => ({
+                                        ...prev,
+                                        factureTotal: s.montantTotal,
+                                        partAssurance: s.partAssurance,
+                                        Partassure: s.partAssure,
+                                        surplus: s.totalSurplus,
+                                        resteAPayer: s.montantARegler,
+                                    }));
+                                }}
+                                onLinesChange={(lignes) => {
+                                    setCurrentLignes(lignes);
+                                }}
+                            />
+                        </Card.Body>
+                    </Card>
 
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    typeacte: value,
-                                                    factureTotal: 0,
-                                                    partAssurance: 0,
-                                                    Partassure: 0,
-                                                    surplus: 0,
-                                                    resteAPayer: 0,
-                                                    Rclinique: "",
-                                                }));
-                                            }
-                                        } catch (error) {
-                                            console.error("Erreur lors de la recherche de l'examen:", error);
-                                            // En cas d'erreur, mode création par défaut
-                                            setModeModification(false);
-                                            setExamenHospitId(undefined);
-                                        }
-                                    }}
-                                >
-                                    <option value="">--- Sélectionner ---</option>
-                                    {typesActe.map((type) => (
-                                        <option key={type._id} value={type.Designation}>
-                                            {type.Designation}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Col>
-                            <Col xs={12} md={6} lg={3} className="mb-2">
-                                <Form.Label>Société Partenaire</Form.Label>
-                                <Form.Select
-                                    value={formData.societePartenaireId || ""}
-                                    onChange={(e) => {
-                                        const id = e.target.value;
-
-                                        // SI TABLE_PRESTATION.Occurrence()>0 ALORS Erreur(...) RETOUR
-                                        const hasActes = currentLignes.some((l: any) => l.IDACTE);
-                                        if (hasActes) {
-                                            alert("Veuillez supprimer la liste ci-dessous avant cette opération");
-                                            return;
-                                        }
-
-                                        const societe = societesPartenaires.find((s) => s._id === id);
-
-                                        // SINON : RafraichirFenetre() + réinitialisation des infos d'assurance
-                                        setFormData((prev) => ({
-                                            ...prev,
-                                            societePartenaireId: id,
-                                            societePartenaire: societe?.Designation || "",
-                                            Assure: "NON ASSURE",
-                                            assurance: {
-                                                ...prev.assurance,
-                                                assuranceId: "",
-                                                taux: 0,
-                                                matricule: "",
-                                                numeroBon: "",
-                                                societe: "",
-                                                numero: "",
-                                                adherent: "",
-                                            },
-                                        }));
-                                    }}
-                                >
-                                    <option value="">--- Sélectionner ---</option>
-                                    {societesPartenaires.map((societe) => (
-                                        <option key={societe._id} value={societe._id}>
-                                            {societe.Designation}
-                                        </option>
-                                    ))}
-                                </Form.Select>
-                            </Col>
-                            <Col xs={12} sm={6} md={4} lg={3} className="mb-2">
-                                <Form.Label>Entrée le</Form.Label>
-                                <Form.Control
-                                    type="date"
-                                    value={formData.dateEntree}
-                                    onChange={(e) => handleDateChange("dateEntree", e.target.value)}
-                                />
-                            </Col>
-                            <Col xs={12} sm={6} md={4} lg={3} className="mb-2">
-                                <Form.Label>Sortie le</Form.Label>
-                                <Form.Control
-                                    type="date"
-                                    value={formData.dateSortie}
-                                    onChange={(e) => handleDateChange("dateSortie", e.target.value)}
-                                />
-                            </Col>
-                            <Col xs={12} sm={6} md={4} lg={2} className="mb-2">
-                                <Form.Label>NB (Jrs)</Form.Label>
-                                <Form.Control
-                                    type="number"
-                                    value={formData.nombreDeJours}
-                                    onChange={(e) => handleNombreJoursChange(parseInt(e.target.value))}
-                                />
-                            </Col>
-                        </Row>
-
-                        {errorMessage && <div className="alert alert-danger mt-2">{errorMessage}</div>}
-                    </Form>
-                    <Row>
-                        <TablePrestationsBilan
-
-                            key={`actes-${resetKey}-${triggerRecalculation}`}
-                            assuranceId={formData.Assure === "NON ASSURE" ? 1 : formData.Assure === "TARIF MUTUALISTE" ? 2 : 3}
-                            saiTaux={formData.assurance.taux || 0}
-                            assuranceDbId={formData.assurance.assuranceId || undefined}
-                            societePartenaireId={formData.societePartenaireId || undefined}
-                            externalResetKey={resetKey}
-                            presetLines={presetLines}
-                            onTotalsChange={(s) => {
-                                setTotaux(s);
-                                setFormData((prev) => ({
-                                    ...prev,
-                                    factureTotal: s.montantTotal,
-                                    partAssurance: s.partAssurance,
-                                    Partassure: s.partAssure,
-                                    surplus: s.totalSurplus,
-                                    resteAPayer: s.montantARegler,
-                                }));
-                            }}
-                            onLinesChange={(lignes) => {
-                                setCurrentLignes(lignes);
-                            }}
-                        />
-                    </Row>
-                    <Row>
-                        <Col md={5}>
+                    {/* Informations cliniques & paiement */}
+                    <Row className="g-3 mb-3">
+                        <Col md={6}>
                             <CliniqueInfoBilan
                                 formData={formData}
                                 setFormData={setFormData}
                                 hasActesMedecin={currentLignes.some(ligne => ligne.StatutMedecinActe === "OUI")}
                             />
                         </Col>
-                        <Col md={7}>
-                            <PaiementInfoBilan formData={formData} setFormData={setFormData} />
+                        <Col md={6}>
+                            <PaiementInfoBilan
+                                formData={formData}
+                                setFormData={setFormData}
+                            />
                         </Col>
                     </Row>
 
+                    {/* Bouton d'action */}
                     <ActionsButtonsBilan
                         disabled={!!errorMessage}
+                        label="Envoyer au laboratoire"
                         onSubmit={async () => {
                             // validations principales
                             if (!CodePrestation) {
@@ -605,27 +719,29 @@ export default function HospitalisationPageBilan() {
                                 SOCIETE_PATIENT: formData.societePatient || "",
                                 medecinId: formData.medecinId || "",
                                 medecinPrescripteur: formData.medecinPrescripteur || "",
+                                /* SI A Facturer est activer, Statutprescription=2 sinon 1 */
+                                Statutprescription: formData.aFacturer ? 2 : 1,
+                                StatutLaboratoire: 1,
                                 IDSOCIETEPARTENAIRE: formData.societePartenaireId || undefined,
                                 PartenaireBilan: formData.societePartenaire || "",
                             };
 
-                            // Utiliser les lignes actuelles du composant ActesTable
-                            console.log("📤 Envoi des données:", { header, lignesCount: lignesValides.length });
+                            // Propager le statut sur chaque ligne de prestation
+                            const lignesAEnvoyer = lignesValides.map((l) => ({
+                                ...l,
+                                Statutprescription: formData.aFacturer ? 2 : 1,
+                            }));
 
                             const resp = await fetch('/api/examenhospitalisation', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ header, lignes: lignesValides, Recupar: recuPar }),
+                                body: JSON.stringify({ header, lignes: lignesAEnvoyer, Recupar: recuPar }),
                             });
                             const out = await resp.json();
 
                             if (!resp.ok) {
-                                console.error("❌ Erreur d'enregistrement:", out);
-                                console.error("📊 Détails complets:", JSON.stringify(out, null, 2));
-
                                 // Afficher les détails des erreurs si disponibles
                                 if (out.details && Array.isArray(out.details)) {
-                                    console.error("🔍 Détails des erreurs:", out.details);
                                     const errorMsg = `${out.message}\n\nDétails:\n${out.details.map((d: any) =>
                                         `- Ligne ${d.ligne}: ${d.message}`
                                     ).join('\n')}\n\nSuccès: ${out.successCount}/${out.totalCount}`;
@@ -636,7 +752,6 @@ export default function HospitalisationPageBilan() {
                                 return;
                             }
 
-                            console.log("✅ Enregistrement réussi:", out);
                             alert(out?.message || 'Facture enregistrée avec succès');
                         }}
                     /*   onSuccess={() => {

@@ -20,8 +20,6 @@ interface FicheComptePatientProps {
   onSaved?: () => void;
 }
 
-const modesPaiement = ['ESPECE', 'CARTE', 'CHEQUE', 'MOBILE'];
-
 export default function FicheComptePatient({ show, onHide, patient, onSaved }: FicheComptePatientProps) {
   const [type, setType] = useState<'Paiement' | 'Remboursement'>('Paiement');
   const [montant, setMontant] = useState('');
@@ -29,8 +27,35 @@ export default function FicheComptePatient({ show, onHide, patient, onSaved }: F
   const [recuDe, setRecuDe] = useState('');
   const [recuPar, setRecuPar] = useState('');
   const [motif, setMotif] = useState('');
-  const [modePaiement, setModePaiement] = useState('ESPECE');
+  const [modePaiement, setModePaiement] = useState('');
+  const [modesPaiement, setModesPaiement] = useState<{ _id: string; Modepaiement: string }[]>([]);
   const [loading, setLoading] = useState(false);
+
+  // Charger les modes de paiement depuis le modèle
+  useEffect(() => {
+    const fetchModes = async () => {
+      try {
+        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
+        const res = await fetch(`/api/modepaiement?entrepriseId=${encodeURIComponent(entrepriseId)}`);
+        if (res.ok) {
+          const json = await res.json();
+          const modes = Array.isArray(json?.data) ? json.data : [];
+          setModesPaiement(modes);
+        }
+      } catch {
+        // Ignorer silencieusement : la liste restera vide
+      }
+    };
+    void fetchModes();
+  }, []);
+
+  // Définir le mode de paiement par défaut dès que la liste est chargée
+  useEffect(() => {
+    if (modesPaiement.length > 0 && !modePaiement) {
+      const defaultMode = modesPaiement.find((m) => m.Modepaiement === 'Espèce') || modesPaiement[0];
+      setModePaiement(defaultMode.Modepaiement);
+    }
+  }, [modesPaiement]);
 
   useEffect(() => {
     if (show) {
@@ -40,9 +65,11 @@ export default function FicheComptePatient({ show, onHide, patient, onSaved }: F
       setRecuDe('');
       setRecuPar(typeof window !== 'undefined' ? localStorage.getItem('nom_utilisateur') || '' : '');
       setMotif('');
-      setModePaiement('ESPECE');
+      // Réinitialiser au mode par défaut du modèle
+      const defaultMode = modesPaiement.find((m) => m.Modepaiement === 'Espèce') || modesPaiement[0];
+      setModePaiement(defaultMode?.Modepaiement || '');
     }
-  }, [show]);
+  }, [show, modesPaiement]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -79,7 +106,6 @@ export default function FicheComptePatient({ show, onHide, patient, onSaved }: F
         alert(data.error || 'Erreur lors de l\'enregistrement');
       }
     } catch (err) {
-      console.error(err);
       alert('Erreur de connexion');
     } finally {
       setLoading(false);
@@ -249,8 +275,9 @@ export default function FicheComptePatient({ show, onHide, patient, onSaved }: F
           <Form.Group className="mb-3">
             <Form.Label className="fw-semibold">{labels.modePaiement}</Form.Label>
             <Form.Select value={modePaiement} onChange={(e) => setModePaiement(e.target.value)}>
+              {modesPaiement.length === 0 && <option value="">Aucun mode disponible</option>}
               {modesPaiement.map((m) => (
-                <option key={m} value={m}>{m}</option>
+                <option key={m._id} value={m.Modepaiement}>{m.Modepaiement}</option>
               ))}
             </Form.Select>
           </Form.Group>

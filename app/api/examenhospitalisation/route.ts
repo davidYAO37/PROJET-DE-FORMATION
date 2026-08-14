@@ -97,7 +97,7 @@ export async function POST(req: NextRequest) {
                 const assurance = await Assurance.findById(header.IDASSURANCE);
                 assuranceName = assurance?.designationassurance || '';
             } catch (error) {
-                console.error('Error fetching assurance:', error);
+                // Ignorer silencieusement : le nom restera vide
             }
         }
 
@@ -105,17 +105,19 @@ export async function POST(req: NextRequest) {
         let consultationData: any = {};
         if (header.CodePrestation) {
             consultationData = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean() || {};
-            console.log("📋 Données de la consultation récupérées:", {
-                IdPatient: consultationData.IdPatient,
-                PatientP: consultationData.PatientP,
-                Medecin: consultationData.Medecin,
-                IDMEDECIN: consultationData.IDMEDECIN,
-                Sexe: consultationData.Sexe
-            });
         }
 
         // SI COMBO_Bilan_société..ValeurAffichée<>"" ALORS ... SINON ... FIN
         const hasSocietePartenaire = Boolean(header.IDSOCIETEPARTENAIRE);
+
+        // Destination imposée par l'interrupteur caisse/laboratoire ;
+        // si non fournie, on conserve la logique historique basée sur la société partenaire.
+        const statutPrescription = header.Statutprescription !== undefined
+            ? Number(header.Statutprescription)
+            : (hasSocietePartenaire ? 1 : 2);
+        const statutLaboratoire = header.StatutLaboratoire !== undefined
+            ? Number(header.StatutLaboratoire)
+            : (hasSocietePartenaire ? 1 : undefined);
 
         // Préparer les données de l'examen avec les champs supplémentaires
         const examenData = {
@@ -133,9 +135,9 @@ export async function POST(req: NextRequest) {
             // Ajouter le champ sexe depuis la consultation
             sexe: consultationData.Sexe || header.sexe || "",
 
-            // Si c'est un bilan (société partenaire sélectionnée) on ne facture pas et on passe à la réception
-            statutPrescriptionMedecin: hasSocietePartenaire ? 1 : (header.Statutprescription || 2),
-            ...(hasSocietePartenaire && { StatutLaboratoire: 1 }),
+            // Statut prescription / laboratoire (interrupteur caisse/labo ou fallback partenaire)
+            statutPrescriptionMedecin: statutPrescription,
+            ...(statutLaboratoire !== undefined && { StatutLaboratoire: statutLaboratoire }),
             IDSOCIETEPARTENAIRE: hasSocietePartenaire
                 ? new mongoose.Types.ObjectId(header.IDSOCIETEPARTENAIRE)
                 : null,
@@ -178,22 +180,13 @@ export async function POST(req: NextRequest) {
             const consultation: any = await Consultation.findOne({ CodePrestation: header.CodePrestation }).lean();
             if (consultation) {
                 patientId = consultation.IdPatient || consultation.IdPatient;
-                console.log("✅ IdPatient récupéré depuis la consultation:", patientId);
             }
         }
 
         // Mise à jour ou insertion des lignes de prestation
-        console.log("📋 Nombre de lignes à enregistrer:", lignes.length);
-
         const results = await Promise.allSettled(
             lignes.map(async (l: any, index: number) => {
                 try {
-                    console.log(`📝 Traitement ligne ${index + 1}:`, {
-                        Acte: l.Acte,
-                        IDACTE: l.IDACTE,
-                        IDLignePrestation: l.IDLignePrestation
-                    });
-
                     // Vérifier que IdPatient est fourni
                     if (!patientId && !l.IdPatient) {
                         throw new Error("IdPatient est requis pour la ligne de prestation");
@@ -228,7 +221,9 @@ export async function POST(req: NextRequest) {
                         montantTotalAPayer: (l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0) + (l.PartAssure || 0),
                         prixAccepte: l.Accepter || 0,
                         prixRefuse: l.Refuser || 0,
-                        statutPrescriptionMedecin: hasSocietePartenaire ? 1 : (l.Statutprescription || 2),
+                        statutPrescriptionMedecin: l.Statutprescription !== undefined
+                            ? Number(l.Statutprescription)
+                            : (hasSocietePartenaire ? 1 : 2),
                         coefficientClinique: l.CoefClinique || l.Coefficient || 1,
                         taxe: l.TAXE || 0,
                         Assurance: header.Assurance || "",
@@ -260,22 +255,17 @@ export async function POST(req: NextRequest) {
                         l.IDLignePrestation.length === 24 &&
                         /^[0-9a-fA-F]{24}$/.test(l.IDLignePrestation);
                     if (isValidObjectId) {
-                        console.log(`✏️ Mise à jour ligne ${index + 1} avec ObjectId:`, l.IDLignePrestation);
                         result = await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, doc, { new: true });
                         if (!result) {
                             // Si pas trouvé, créer une nouvelle ligne
-                            console.log(`⚠️ Ligne non trouvée, création d'une nouvelle ligne ${index + 1}`);
                             result = await LignePrestation.create(doc);
                         }
                     } else {
                         // UUID ou ID invalide -> créer une nouvelle ligne
-                        console.log(`➕ Création nouvelle ligne ${index + 1} (ID invalide ou absent: ${l.IDLignePrestation})`);
                         result = await LignePrestation.create(doc);
                     }
-                    console.log(`✅ Ligne ${index + 1} enregistrée avec succès, ID:`, result._id);
                     return result;
                 } catch (error: any) {
-                    console.error(`❌ Erreur ligne ${index + 1}:`, error.message);
                     throw error;
                 }
             })
@@ -283,8 +273,6 @@ export async function POST(req: NextRequest) {
         // Vérifier les échecs
         const failures = results.filter((r) => r.status === "rejected");
         if (failures.length > 0) {
-            console.error("❌ Erreurs lors de l'enregistrement des lignes:", failures);
-
             // Extraire les détails des erreurs
             const errorDetails = failures.map((f: any, idx) => {
                 const reason = f.reason;
@@ -295,8 +283,6 @@ export async function POST(req: NextRequest) {
                     name: reason?.name
                 };
             });
-
-            console.error("📊 Détails des erreurs:", errorDetails);
 
             return NextResponse.json(
                 {

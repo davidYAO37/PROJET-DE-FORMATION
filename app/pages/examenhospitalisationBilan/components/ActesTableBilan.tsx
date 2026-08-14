@@ -235,6 +235,7 @@ interface Props {
     externalResetKey?: number; // modifie pour réinitialiser la table depuis l'extérieur
     presetLines?: ILignePrestation[]; // lignes à charger (optionnel)
     onLinesChange?: (lignes: ILignePrestation[]) => void;
+    modeModification?: boolean; // true en modification : ne pas écraser les lignes par les actes société
 }
 
 function generateLineId(): string {
@@ -284,12 +285,16 @@ const emptyLigne = (): ILignePrestation => ({
     Action: ""
 });
 
-export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, assuranceDbId, societePartenaireId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
+export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, assuranceDbId, societePartenaireId, onTotalsChange, externalResetKey, presetLines, onLinesChange, modeModification = false }: Props) {
     const [actes, setActes] = useState<IActeClinique[]>([]);
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
     const [actesSocietePartenaire, setActesSocietePartenaire] = useState<IActeSocietePartenaireRaw[]>([]);
     const actesRef = useRef<IActeClinique[]>([]);
     const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
+    const onLinesChangeRef = useRef(onLinesChange);
+    const onTotalsChangeRef = useRef(onTotalsChange);
+    onLinesChangeRef.current = onLinesChange;
+    onTotalsChangeRef.current = onTotalsChange;
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [totaux, setTotaux] = useState({
         montantTotal: 0,
@@ -401,15 +406,18 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
                     return ligne;
                 });
 
-                setLignes(nouvellesLignes.length > 0 ? nouvellesLignes : [emptyLigne()]);
+                // En mode modification, garder les lignes déjà chargées (presetLines)
+                if (!modeModification) {
+                    setLignes(nouvellesLignes.length > 0 ? nouvellesLignes : [emptyLigne()]);
+                }
             })
             .catch(() => setActesSocietePartenaire([]));
-    }, [societePartenaireId]);
+    }, [societePartenaireId, modeModification]);
 
     useEffect(() => {
         // recalculer totaux à chaque modification de lignes
         facturePharmacie();
-        if (onLinesChange) onLinesChange(lignes);
+        if (onLinesChangeRef.current) onLinesChangeRef.current(lignes);
     }, [lignes]);
 
     // Réinitialisation/chargement externe des lignes
@@ -423,7 +431,7 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
         }
         // Effacer message d'erreur éventuel
         setErrorMsg(null);
-    }, [externalResetKey]);
+    }, [externalResetKey, presetLines]);
 
     // ---------- Helpers pour rechercher objets -------------
     const findActeById = useCallback((id: string) => actes.find((a) => a._id === id), [actes]);
@@ -846,7 +854,7 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
         s.montantARegler = s.totalSurplus + s.partAssure;
         // SAI_Reste_à_payer = SAI_Montant_a_régler
         setTotaux(s);
-        if (onTotalsChange) onTotalsChange(s);
+        if (onTotalsChangeRef.current) onTotalsChangeRef.current(s);
     }
 
     // ---------- Actions utilisateur ----------

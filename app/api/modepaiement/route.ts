@@ -3,7 +3,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IModeDePaiement } from "@/models/ModeDePaiement";
 
-const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
+const READ_ROLES = ["admin", "adminsuper", "accueil", "biologiste", "caisse", "comptable", "facturation", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
 
 export async function GET(req: NextRequest) {
@@ -12,7 +12,15 @@ export async function GET(req: NextRequest) {
     if (!context) return response;
     const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
 
-    const modepaiements = await ModeDePaiement.find().lean();
+    const { searchParams } = new URL(req.url);
+    const entrepriseId = searchParams.get('entrepriseId');
+
+    const filter: any = {};
+    if (entrepriseId) {
+        filter.entrepriseId = entrepriseId;
+    }
+
+    const modepaiements = await ModeDePaiement.find(filter).lean();
 
     return NextResponse.json({
         success: true,

@@ -150,7 +150,16 @@ export default function FactureAssurancePage() {
       const res = await fetch('/api/assurances');
       if (res.ok) {
         const data = await res.json();
-        setAssurances(Array.isArray(data) ? data : []);
+        const list: Assurance[] = Array.isArray(data) ? data : [];
+        // Trier : assurances classiques d'abord, puis NON ASSURE en dernier
+        list.sort((a, b) => {
+          const aNA = a.designationassurance?.toUpperCase().includes('NON ASSUR');
+          const bNA = b.designationassurance?.toUpperCase().includes('NON ASSUR');
+          if (aNA && !bNA) return 1;
+          if (!aNA && bNA) return -1;
+          return a.designationassurance.localeCompare(b.designationassurance);
+        });
+        setAssurances(list);
       }
     } catch (error) {
       console.error('Erreur chargement assurances:', error);
@@ -336,7 +345,7 @@ export default function FactureAssurancePage() {
       <div style={{ background: 'linear-gradient(135deg,#006064 0%,#00838f 50%,#26c6da 100%)', borderRadius: 8, padding: '8px 16px', marginBottom: 8, display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 4px 20px rgba(0,96,100,0.3)' }}>
         <div>
           <div style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.68rem', fontWeight: 600, letterSpacing: 2, textTransform: 'uppercase' }}>Module Comptabilité</div>
-          <div style={{ color: '#fff', fontSize: '1.05rem', fontWeight: 800, letterSpacing: 1 }}>Création Bordereau Assurance</div>
+          <div style={{ color: '#fff', fontSize: '1.05rem', fontWeight: 800, letterSpacing: 1 }}>Création Bordereau Assurance / Non Assuré</div>
           <div style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.72rem', marginTop: 1 }}>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
         </div>
         <i className="bi bi-shield-fill-check" style={{ fontSize: '1.8rem', color: 'rgba(255,255,255,0.25)' }}></i>
@@ -675,7 +684,7 @@ export default function FactureAssurancePage() {
               <Table bordered className="mb-0" style={{ fontSize: '0.73rem', borderCollapse: 'collapse', minWidth: 900 }}>
                 <thead>
                   <tr style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                    <th style={{ background: '#1565c0', color: '#fff', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center', borderRight: '1px solid #0d47a1', width: 80 }}>ACTION</th>
+                    <th style={{ background: '#1565c0', color: '#fff', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center', borderRight: '1px solid #0d47a1', width: 80 }}>Action</th>
                     <th style={{ background: '#1565c0', color: '#fff', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center', borderRight: '1px solid #0d47a1' }}>Référence</th>
                     <th style={{ background: '#1565c0', color: '#fff', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center', borderRight: '1px solid #0d47a1' }}>Date</th>
                     <th style={{ background: '#1565c0', color: '#fff', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', textAlign: 'center', borderRight: '1px solid #0d47a1' }}>Assurance</th>
@@ -707,9 +716,9 @@ export default function FactureAssurancePage() {
                             <button title="Facture récap" onClick={e => { e.stopPropagation(); handleRecapFacture(f); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
                               <i className="bi bi-file-earmark-bar-graph-fill" style={{ fontSize: '0.9rem', color: '#6a1b9a' }}></i>
                             </button>
-                            <button title="Supprimer" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+                           {/*  <button title="Supprimer" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
                               <i className="bi bi-trash-fill" style={{ fontSize: '0.9rem', color: '#b71c1c' }}></i>
-                            </button>
+                            </button> */}
                           </div>
                         </td>
                         <td style={{ padding: '3px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>{f.Reference}</td>

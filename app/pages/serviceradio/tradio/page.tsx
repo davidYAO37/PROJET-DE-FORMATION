@@ -8,6 +8,7 @@ import ListesValides from "./components/ListesValides";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IPatient } from "@/models/patient";
 import { useRouter } from 'next/navigation';
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 export default function TRadioPage() {
   const router = useRouter();
@@ -56,6 +57,7 @@ export default function TRadioPage() {
   }, [activeTab]);
 
   return (
+    <LicenceModuleGuard module="radio">
     <Container fluid className="p-4">
       <div className="mb-4">
         <div className="d-flex justify-content-between align-items-center mb-4">
@@ -128,5 +130,6 @@ export default function TRadioPage() {
         </Tabs>
       </div>       
     </Container>
+    </LicenceModuleGuard>
   );
 }

@@ -5,6 +5,7 @@ import AvisHospitalisationPeriode from '@/components/hospitalisation/AvisHospita
 import { Badge, Button, Card, Col, Row } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 interface Statistiques {
   patientsEnCharge: number;
@@ -71,6 +72,7 @@ export default function PageInfirmier() {
   `;
 
   return (
+    <LicenceModuleGuard module="infirmier">
     <>
       <style>{cardStyles}</style>
       <div className="container-fluid">
@@ -146,5 +148,6 @@ export default function PageInfirmier() {
 
       <AvisHospitalisationPeriode />
     </>
+    </LicenceModuleGuard>
   );
 }

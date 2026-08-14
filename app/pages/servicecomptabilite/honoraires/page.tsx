@@ -197,9 +197,14 @@ export default function HonorairesPage() {
   const [banque, setBanque] = useState('');
   const [nCheque, setNCheque] = useState('');
   const [datePaiement, setDatePaiement] = useState(today());
+  const [modesPaiement, setModesPaiement] = useState<{ _id: string; Modepaiement: string }[]>([]);
 
   useEffect(() => {
     chargerMedecins();
+    // Charger les modes de paiement
+    fetch('/api/modepaiement').then(r => r.json()).then(j => {
+      if (j.success && j.data) setModesPaiement(j.data);
+    }).catch(() => {});
   }, []);
 
   const chargerMedecins = async () => {
@@ -1022,10 +1027,8 @@ export default function HonorairesPage() {
               <Form.Group>
                 <Form.Label>Mode de paiement</Form.Label>
                 <Form.Select value={modePaiementEdit} onChange={e => setModePaiementEdit(e.target.value)}>
-                  <option value="Espèce">Espèce</option>
-                  <option value="Chèque">Chèque</option>
-                  <option value="Virement">Virement</option>
-                  <option value="Mobile Money">Mobile Money</option>
+                  <option value="">-- Sélectionner --</option>
+                  {modesPaiement.map(m => <option key={m._id} value={m.Modepaiement}>{m.Modepaiement}</option>)}
                 </Form.Select>
               </Form.Group>
             </Col>
@@ -1095,10 +1098,8 @@ export default function HonorairesPage() {
               <Form.Group>
                 <Form.Label>Mode de paiement</Form.Label>
                 <Form.Select value={modePaiement} onChange={e => setModePaiement(e.target.value)}>
-                  <option value="Espèce">Espèce</option>
-                  <option value="Chèque">Chèque</option>
-                  <option value="Virement">Virement</option>
-                  <option value="Mobile Money">Mobile Money</option>
+                  <option value="">-- Sélectionner --</option>
+                  {modesPaiement.map(m => <option key={m._id} value={m.Modepaiement}>{m.Modepaiement}</option>)}
                 </Form.Select>
               </Form.Group>
             </Col>

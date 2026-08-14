@@ -4,8 +4,12 @@ import { getTenantModel } from '@/lib/tenantModels';
 import { IFactureAssur } from '@/models/factureAssur';
 import { IPaiementPartenaire } from '@/models/paiementPartenaire';
 import { IFacturation } from '@/models/Facturation';
+import { IConsultation } from '@/models/consultation';
+import { IPrescription } from '@/models/Prescription';
+import { IExamenHospitalisation } from '@/models/examenHospit';
+import { ILigneFacture } from '@/models/ligneFacture';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'adminsuper', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function GET(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
@@ -202,6 +206,92 @@ export async function POST(request: NextRequest) {
         RetirePar: retirePar || '',
       });
       return NextResponse.json({ success: true, message: 'Retrait enregistré' });
+    }
+
+    if (action === 'annuler') {
+      const { factureAssurId, annulePar } = body;
+      if (!factureAssurId) {
+        return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
+      }
+
+      const facture = await FacturationAssur.findById(factureAssurId);
+      if (!facture) {
+        return NextResponse.json({ success: false, message: 'Bordereau introuvable' }, { status: 404 });
+      }
+
+      // Vérifier qu'aucun paiement n'a été effectué
+      const paiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId }).lean();
+      const totalPaye = paiements.reduce((s: number, p: any) => s + (p.MontantRecu || 0), 0);
+      if (totalPaye > 0) {
+        return NextResponse.json({ success: false, message: 'Impossible d\'annuler : des paiements ont déjà été enregistrés' }, { status: 400 });
+      }
+
+      const reference = facture.Reference || '';
+
+      // Récupérer les lignes pour retrouver les IDs des documents sources
+      const LigneFacture = getTenantModel<ILigneFacture>(connection, 'LigneFacture');
+      const lignes = await LigneFacture.find({ FactureAssur: factureAssurId }).lean();
+
+      // Collecter les IDs des documents sources
+      const consultationsIds = lignes.filter(l => l.IDCONSULTATION).map(l => l.IDCONSULTATION!);
+      const prescriptionsIds = lignes.filter(l => l.IDPRESCRIPTION).map(l => l.IDPRESCRIPTION!);
+      const facturationsIds = lignes.filter(l => l.IDFACTURATION).map(l => l.IDFACTURATION!);
+      const hospitalisationsIds = lignes.filter(l => l.idHospitalisation).map(l => l.idHospitalisation!);
+
+      // Réinitialiser StatutFacture et Numfacture sur les documents sources
+      const resetFields = { $set: { StatutFacture: false, Numfacture: '' } };
+
+      if (consultationsIds.length > 0) {
+        const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+        await Consultation.updateMany({ _id: { $in: consultationsIds } }, resetFields);
+      }
+
+      if (prescriptionsIds.length > 0) {
+        const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
+        await Prescription.updateMany({ _id: { $in: prescriptionsIds } }, resetFields);
+      }
+
+      if (facturationsIds.length > 0) {
+        await Facturation.updateMany({ _id: { $in: facturationsIds } }, resetFields);
+      }
+
+      if (hospitalisationsIds.length > 0) {
+        const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
+        await ExamenHospitalisation.updateMany({ _id: { $in: hospitalisationsIds } }, resetFields);
+      }
+
+      // Aussi réinitialiser par référence (au cas où des lignes n'ont pas d'ID direct)
+      if (reference) {
+        try {
+          const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+          await Consultation.updateMany({ Numfacture: reference }, resetFields);
+        } catch { /* */ }
+        try {
+          const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
+          await Prescription.updateMany({ Numfacture: reference }, resetFields);
+        } catch { /* */ }
+        try {
+          await Facturation.updateMany({ Numfacture: reference }, resetFields);
+        } catch { /* */ }
+        try {
+          const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
+          await ExamenHospitalisation.updateMany({ Numfacture: reference }, resetFields);
+        } catch { /* */ }
+      }
+
+      // Supprimer les lignes du bordereau
+      await LigneFacture.deleteMany({ FactureAssur: factureAssurId });
+
+      // Supprimer les récaps
+      try {
+        const FactureRecap = getTenantModel(connection, 'FactureRecap');
+        await FactureRecap.deleteMany({ FactureAssur: factureAssurId });
+      } catch { /* */ }
+
+      // Supprimer le bordereau lui-même
+      await FacturationAssur.findByIdAndDelete(factureAssurId);
+
+      return NextResponse.json({ success: true, message: 'Bordereau annulé avec succès' });
     }
 
     return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });

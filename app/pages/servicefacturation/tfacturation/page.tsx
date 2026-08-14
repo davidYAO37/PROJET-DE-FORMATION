@@ -1,7 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { useState, useEffect, useCallback } from 'react';
-import { Spinner } from 'react-bootstrap';
+import { Spinner, Modal, Button, Form } from 'react-bootstrap';
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 const BASE = '/pages/servicefacturation';
 const fmt = (n: number) => (n || 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 });
@@ -38,22 +39,44 @@ export default function TableauDeBordFacturation() {
   const [detailAssur, setDetailAssur] = useState<any[]>([]);
   const [showDetailHono, setShowDetailHono] = useState(false);
   const [showDetailAssur, setShowDetailAssur] = useState(false);
-  const [entrepriseId, setEntrepriseId] = useState('');
+  const [entrepriseId, setEntrepriseId] = useState<string | null>(null);
+  const [utilisateur, setUtilisateur] = useState('');
+  const [actionLoading, setActionLoading] = useState(false);
+  const [actionMsg, setActionMsg] = useState<{ type: 'success' | 'danger'; text: string } | null>(null);
+
+  // Modals
+  const [modalAnnuler, setModalAnnuler] = useState<any | null>(null);
+  const [modalDeposer, setModalDeposer] = useState<any | null>(null);
+  const [depotPar, setDepotPar] = useState('');
+  const [modalRecouvrer, setModalRecouvrer] = useState<any | null>(null);
+  const [recouvreMontant, setRecouvreMontant] = useState('');
+  const [recouvrePar, setRecouvrePar] = useState('');
+  const [recouvreModePaiement, setRecouvreModePaiement] = useState('');
+  const [recouvreNumCheque, setRecouvreNumCheque] = useState('');
+  const [recouvreBanque, setRecouvreBanque] = useState('');
+  const [modesPaiement, setModesPaiement] = useState<{ _id: string; Modepaiement: string }[]>([]);
 
   useEffect(() => {
-    setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
+    const eid = localStorage.getItem('IdEntreprise') || '';
+    setEntrepriseId(eid);
+    setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
+    // Charger les modes de paiement
+    fetch('/api/modepaiement').then(r => r.json()).then(j => {
+      if (j.success && j.data) setModesPaiement(j.data);
+    }).catch(() => {});
   }, []);
 
   const charger = useCallback(async () => {
     setLoading(true);
-    const debut = new Date(annee, mois, 1).toISOString().split('T')[0];
-    const fin = new Date(annee, mois + 1, 0).toISOString().split('T')[0];
-    const eid = entrepriseId;
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const debut = `${annee}-${pad(mois + 1)}-01`;
+    const dernierJour = new Date(annee, mois + 1, 0).getDate();
+    const fin = `${annee}-${pad(mois + 1)}-${pad(dernierJour)}`;
 
     try {
       const [resH, resA] = await Promise.all([
-        fetch(`/api/comptabilite/honoraires?dateDebut=${debut}&dateFin=${fin}&entrepriseId=${eid}`),
-        fetch(`/api/comptabilite/factureAssurance?dateDebut=${debut}&dateFin=${fin}&entrepriseId=${eid}`),
+        fetch(`/api/comptabilite/honoraires?dateDebut=${debut}&dateFin=${fin}`),
+        fetch(`/api/comptabilite/factureAssurance?dateDebut=${debut}&dateFin=${fin}`),
       ]);
 
       if (resH.ok) {
@@ -89,13 +112,85 @@ export default function TableauDeBordFacturation() {
     } finally {
       setLoading(false);
     }
-  }, [mois, annee, entrepriseId]);
+  }, [mois, annee]);
 
-  useEffect(() => {
-    if (entrepriseId !== undefined) charger();
-  }, [charger, entrepriseId]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { charger(); }, [mois, annee]);
 
   const annees = Array.from({ length: 5 }, (_, i) => now.getFullYear() - i);
+
+  // ===== ACTIONS FACTURES ASSURANCE =====
+  const handleAnnuler = async () => {
+    if (!modalAnnuler) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/comptabilite/factureAssurance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'annuler', factureAssurId: modalAnnuler._id, annulePar: utilisateur }),
+      });
+      const j = await res.json();
+      if (j.success) {
+        setActionMsg({ type: 'success', text: `Bordereau ${modalAnnuler.Reference} annulé` });
+        setModalAnnuler(null);
+        charger();
+      } else {
+        setActionMsg({ type: 'danger', text: j.message || 'Erreur' });
+      }
+    } catch { setActionMsg({ type: 'danger', text: 'Erreur réseau' }); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleDeposer = async () => {
+    if (!modalDeposer) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/comptabilite/factureAssurance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'depot', factureAssurId: modalDeposer._id, depotPar: depotPar || utilisateur }),
+      });
+      const j = await res.json();
+      if (j.success) {
+        setActionMsg({ type: 'success', text: `Bordereau ${modalDeposer.Reference} déposé` });
+        setModalDeposer(null); setDepotPar('');
+        charger();
+      } else {
+        setActionMsg({ type: 'danger', text: j.message || 'Erreur' });
+      }
+    } catch { setActionMsg({ type: 'danger', text: 'Erreur réseau' }); }
+    finally { setActionLoading(false); }
+  };
+
+  const handleRecouvrer = async () => {
+    if (!modalRecouvrer || !recouvreMontant) return;
+    setActionLoading(true);
+    try {
+      const res = await fetch('/api/comptabilite/factureAssurance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'payer',
+          factureAssurId: modalRecouvrer._id,
+          montant: Number(recouvreMontant),
+          modePaiement: recouvreModePaiement,
+          recuPar: recouvrePar || utilisateur,
+          numeroCheque: recouvreNumCheque,
+          banque: recouvreBanque,
+          entrepriseId,
+        }),
+      });
+      const j = await res.json();
+      if (j.success) {
+        setActionMsg({ type: 'success', text: `Paiement enregistré pour ${modalRecouvrer.Reference}` });
+        setModalRecouvrer(null); setRecouvreMontant(''); setRecouvrePar(''); setRecouvreModePaiement(''); setRecouvreNumCheque(''); setRecouvreBanque('');
+        charger();
+      } else {
+        setActionMsg({ type: 'danger', text: j.message || 'Erreur' });
+      }
+    } catch { setActionMsg({ type: 'danger', text: 'Erreur réseau' }); }
+    finally { setActionLoading(false); }
+  };
 
   const KpiCard = ({ label, value, icon, color, isCount }: { label: string; value: number; icon: string; color: string; isCount?: boolean }) => (
     <div style={{ background: '#fff', borderRadius: 8, padding: '12px 14px', boxShadow: '0 1px 5px rgba(0,0,0,0.07)', borderLeft: `4px solid ${color}` }}>
@@ -110,6 +205,7 @@ export default function TableauDeBordFacturation() {
   );
 
   return (
+    <LicenceModuleGuard module="facturation">
     <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '16px' }}>
 
       {/* Header */}
@@ -250,18 +346,24 @@ export default function TableauDeBordFacturation() {
 
         {/* Tableau détail assurances */}
         {showDetailAssur && (
-          <div style={{ borderTop: '2px solid #c62828', overflowX: 'auto', maxHeight: 320, overflowY: 'auto' }}>
+          <div style={{ borderTop: '2px solid #c62828', overflowX: 'auto', maxHeight: 400, overflowY: 'auto' }}>
+            {actionMsg && (
+              <div style={{ padding: '6px 14px', background: actionMsg.type === 'success' ? '#e8f5e9' : '#ffebee', color: actionMsg.type === 'success' ? '#2e7d32' : '#b71c1c', fontSize: '0.72rem', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span>{actionMsg.text}</span>
+                <button onClick={() => setActionMsg(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontWeight: 700 }}>&times;</button>
+              </div>
+            )}
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.73rem' }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, background: '#ffebee', zIndex: 1 }}>
-                  {['Référence', 'Assurance', 'Date', 'Part Assurance', 'Payé', 'Reste', 'Dépôt', 'Statut'].map((h, i) => (
-                    <th key={i} style={{ padding: '6px 10px', borderBottom: '1px solid #ef9a9a', color: '#b71c1c', fontWeight: 700, textAlign: i >= 3 && i <= 5 ? 'right' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
+                  {['Référence', 'Assurance', 'Date', 'Part Assurance', 'Payé', 'Reste', 'Dépôt', 'Statut', 'Actions'].map((h, i) => (
+                    <th key={i} style={{ padding: '6px 10px', borderBottom: '1px solid #ef9a9a', color: '#b71c1c', fontWeight: 700, textAlign: i >= 3 && i <= 5 ? 'right' : i === 8 ? 'center' : 'left', whiteSpace: 'nowrap' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {detailAssur.length === 0 ? (
-                  <tr><td colSpan={8} style={{ padding: '20px', textAlign: 'center', color: '#90a4ae' }}>Aucune facture assurance pour cette période</td></tr>
+                  <tr><td colSpan={9} style={{ padding: '20px', textAlign: 'center', color: '#90a4ae' }}>Aucune facture assurance pour cette période</td></tr>
                 ) : detailAssur.map((f: any, i: number) => {
                   const solde = f.etat_facture;
                   const depose = !!f.DateDepot;
@@ -274,12 +376,40 @@ export default function TableauDeBordFacturation() {
                       <td style={{ padding: '5px 10px', textAlign: 'right', color: '#2e7d32' }}>{fmt(f.totalPaye)}</td>
                       <td style={{ padding: '5px 10px', textAlign: 'right', color: solde ? '#2e7d32' : '#b71c1c', fontWeight: 700 }}>{fmt(f.resteAPayer)}</td>
                       <td style={{ padding: '5px 10px', whiteSpace: 'nowrap', color: depose ? '#1565c0' : '#90a4ae', fontSize: '0.68rem' }}>
-                        {depose ? new Date(f.DateDepot).toLocaleDateString('fr-FR') : '—'}
+                        {depose ? <><span>{new Date(f.DateDepot).toLocaleDateString('fr-FR')}</span>{f.DepotPar && <span style={{ display: 'block', fontSize: '0.6rem', color: '#78909c' }}>{f.DepotPar}</span>}</> : '—'}
                       </td>
                       <td style={{ padding: '5px 10px', textAlign: 'center' }}>
                         <span style={{ background: solde ? '#e8f5e9' : depose ? '#e3f2fd' : '#fff3e0', color: solde ? '#2e7d32' : depose ? '#1565c0' : '#e65100', borderRadius: 10, fontSize: '0.62rem', fontWeight: 700, padding: '2px 8px', whiteSpace: 'nowrap' }}>
                           {solde ? 'Recouvré' : depose ? 'Déposé' : 'À déposer'}
                         </span>
+                      </td>
+                      <td style={{ padding: '4px 6px', textAlign: 'center', whiteSpace: 'nowrap' }}>
+                        <div style={{ display: 'flex', gap: 3, justifyContent: 'center' }}>
+                          <button
+                            onClick={() => setModalAnnuler(f)}
+                            title="Annuler le bordereau"
+                            disabled={depose || solde}
+                            style={{ background: (!depose && !solde) ? '#ffebee' : '#f5f5f5', border: '1px solid #ef9a9a', borderRadius: 4, padding: '2px 6px', cursor: (!depose && !solde) ? 'pointer' : 'not-allowed', fontSize: '0.68rem', color: (!depose && !solde) ? '#b71c1c' : '#bdbdbd', opacity: (!depose && !solde) ? 1 : 0.5 }}
+                          >
+                            <i className="bi bi-x-circle"></i>
+                          </button>
+                          <button
+                            onClick={() => { setModalDeposer(f); setDepotPar(utilisateur); }}
+                            title="Déposer"
+                            disabled={depose || solde}
+                            style={{ background: (!depose && !solde) ? '#e3f2fd' : '#f5f5f5', border: '1px solid #90caf9', borderRadius: 4, padding: '2px 6px', cursor: (!depose && !solde) ? 'pointer' : 'not-allowed', fontSize: '0.68rem', color: (!depose && !solde) ? '#1565c0' : '#bdbdbd', opacity: (!depose && !solde) ? 1 : 0.5 }}
+                          >
+                            <i className="bi bi-send"></i>
+                          </button>
+                          <button
+                            onClick={() => { setModalRecouvrer(f); setRecouvreMontant(String(f.resteAPayer || 0)); setRecouvrePar(utilisateur); }}
+                            title="Recouvrer"
+                            disabled={!depose || solde}
+                            style={{ background: (depose && !solde) ? '#e8f5e9' : '#f5f5f5', border: '1px solid #a5d6a7', borderRadius: 4, padding: '2px 6px', cursor: (depose && !solde) ? 'pointer' : 'not-allowed', fontSize: '0.68rem', color: (depose && !solde) ? '#2e7d32' : '#bdbdbd', opacity: (depose && !solde) ? 1 : 0.5 }}
+                          >
+                            <i className="bi bi-cash-stack"></i>
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -290,6 +420,99 @@ export default function TableauDeBordFacturation() {
         )}
       </div>
 
+      {/* ===== MODAL ANNULER ===== */}
+      <Modal show={!!modalAnnuler} onHide={() => setModalAnnuler(null)} centered size="sm">
+        <Modal.Header closeButton style={{ background: '#ffebee', borderBottom: '2px solid #ef9a9a' }}>
+          <Modal.Title style={{ fontSize: '0.85rem', fontWeight: 800, color: '#b71c1c' }}>
+            <i className="bi bi-exclamation-triangle-fill me-2"></i>Annuler le bordereau
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ fontSize: '0.78rem', color: '#37474f' }}>
+            Voulez-vous vraiment annuler le bordereau <strong>{modalAnnuler?.Reference}</strong> ?
+          </p>
+          <p style={{ fontSize: '0.72rem', color: '#b71c1c' }}>
+            <i className="bi bi-info-circle me-1"></i>
+            Cette action supprimera définitivement ce bordereau et toutes ses lignes associées.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" size="sm" onClick={() => setModalAnnuler(null)}>Non</Button>
+          <Button variant="danger" size="sm" onClick={handleAnnuler} disabled={actionLoading}>
+            {actionLoading ? <Spinner size="sm" animation="border" /> : <><i className="bi bi-trash me-1"></i>Oui, annuler</>}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ===== MODAL DÉPOSER ===== */}
+      <Modal show={!!modalDeposer} onHide={() => setModalDeposer(null)} centered size="sm">
+        <Modal.Header closeButton style={{ background: '#e3f2fd', borderBottom: '2px solid #90caf9' }}>
+          <Modal.Title style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1565c0' }}>
+            <i className="bi bi-send-fill me-2"></i>Déposer le bordereau
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ fontSize: '0.75rem', color: '#37474f', marginBottom: 10 }}>
+            Bordereau : <strong>{modalDeposer?.Reference}</strong> — {modalDeposer?.Assurance}
+          </p>
+          <Form.Group>
+            <Form.Label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#546e7a' }}>Déposé par</Form.Label>
+            <Form.Control size="sm" value={depotPar} onChange={e => setDepotPar(e.target.value)} placeholder="Nom du déposant" />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" size="sm" onClick={() => setModalDeposer(null)}>Annuler</Button>
+          <Button variant="primary" size="sm" onClick={handleDeposer} disabled={actionLoading}>
+            {actionLoading ? <Spinner size="sm" animation="border" /> : <><i className="bi bi-send me-1"></i>Déposer</>}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* ===== MODAL RECOUVRER ===== */}
+      <Modal show={!!modalRecouvrer} onHide={() => setModalRecouvrer(null)} centered>
+        <Modal.Header closeButton style={{ background: '#e8f5e9', borderBottom: '2px solid #a5d6a7' }}>
+          <Modal.Title style={{ fontSize: '0.85rem', fontWeight: 800, color: '#2e7d32' }}>
+            <i className="bi bi-cash-stack me-2"></i>Recouvrer le bordereau
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p style={{ fontSize: '0.75rem', color: '#37474f', marginBottom: 10 }}>
+            Bordereau : <strong>{modalRecouvrer?.Reference}</strong> — {modalRecouvrer?.Assurance}<br />
+            Part assurance : <strong>{fmt(modalRecouvrer?.PartAssurance || 0)} F</strong> — Reste : <strong style={{ color: '#b71c1c' }}>{fmt(modalRecouvrer?.resteAPayer || 0)} F</strong>
+          </p>
+          <Form.Group className="mb-2">
+            <Form.Label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#546e7a' }}>Montant reçu (F)</Form.Label>
+            <Form.Control size="sm" type="number" value={recouvreMontant} onChange={e => setRecouvreMontant(e.target.value)} min={1} max={modalRecouvrer?.resteAPayer || 0} />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#546e7a' }}>Mode de paiement</Form.Label>
+            <Form.Select size="sm" value={recouvreModePaiement} onChange={e => setRecouvreModePaiement(e.target.value)}>
+              <option value="">-- Sélectionner --</option>
+              {modesPaiement.map(m => <option key={m._id} value={m.Modepaiement}>{m.Modepaiement}</option>)}
+            </Form.Select>
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#546e7a' }}>Reçu par</Form.Label>
+            <Form.Control size="sm" value={recouvrePar} onChange={e => setRecouvrePar(e.target.value)} />
+          </Form.Group>
+          <Form.Group className="mb-2">
+            <Form.Label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#546e7a' }}>N° Chèque (optionnel)</Form.Label>
+            <Form.Control size="sm" value={recouvreNumCheque} onChange={e => setRecouvreNumCheque(e.target.value)} />
+          </Form.Group>
+          <Form.Group>
+            <Form.Label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#546e7a' }}>Banque (optionnel)</Form.Label>
+            <Form.Control size="sm" value={recouvreBanque} onChange={e => setRecouvreBanque(e.target.value)} />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" size="sm" onClick={() => setModalRecouvrer(null)}>Annuler</Button>
+          <Button variant="success" size="sm" onClick={handleRecouvrer} disabled={actionLoading || !recouvreMontant || Number(recouvreMontant) <= 0}>
+            {actionLoading ? <Spinner size="sm" animation="border" /> : <><i className="bi bi-check-circle me-1"></i>Valider le paiement</>}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </div>
+    </LicenceModuleGuard>
   );
 }

@@ -4,6 +4,7 @@
 import React, { useState, useEffect } from 'react';
 import { Card, Row, Col, Button, Container, Form, ButtonGroup, Table, Modal } from 'react-bootstrap';
 import SaisieResultat from '../../SaisieResultat/page';
+import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 export default function Dashboard() {
   // Par défaut : premier et dernier jour du mois en cours
@@ -133,6 +134,7 @@ export default function Dashboard() {
  
 
   return (
+    <LicenceModuleGuard module="biologiste">
     <Container className="py-4">
        {/* Bande défilante de notifications */}
       <div
@@ -391,5 +393,6 @@ export default function Dashboard() {
         }
       `}</style>
     </Container>
+    </LicenceModuleGuard>
   );
 }

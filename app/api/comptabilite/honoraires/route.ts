@@ -7,7 +7,7 @@ import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
 import { IMedecin } from '@/models/medecin';
 import mongoose from 'mongoose';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'adminsuper', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function GET(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
@@ -147,7 +147,7 @@ export async function POST(request: NextRequest) {
         HonoraireMed: honoraireId,
         BanqueC: banque || '',
         NCheque: numeroCheque || '',
-        Modepaiement: modePaiement || 'ESPECE',
+        Modepaiement: modePaiement || 'Espèce',
         entrepriseId: entrepriseId || honoraire.entrepriseId || '',
       });
 
