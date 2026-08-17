@@ -5,9 +5,13 @@ export const ALERT_THRESHOLDS_DAYS = [30, 15, 7, 1];
 
 type LicenceStatusInput = {
   _id?: unknown;
-  licenceType?: "trial" | "paid" | "maintenance_overdue";
+  licenceType?: "trial" | "paid";
   licenceStatus?: "active" | "suspended" | "resiliated";
+  // Date de fin d'essai uniquement (la licence achetée est perpétuelle, sans date de fin).
   licenceEndDate?: Date | string | null;
+  // Interrupteur : l'entreprise a-t-elle accepté/souscrit la maintenance annuelle ?
+  maintenanceAccepted?: boolean | null;
+  // Date d'expiration de la maintenance en cours (pertinente uniquement si maintenanceAccepted).
   maintenanceDueDate?: Date | string | null;
   gracePeriodDays?: number | null;
   modules?: string[] | null;
@@ -130,86 +134,99 @@ export function getLicenceStatus(entreprise: LicenceStatusInput): LicenceStatusR
     };
   }
 
-  const licenceEnd = entreprise.licenceEndDate
-    ? startOfDay(new Date(entreprise.licenceEndDate))
-    : null;
-  const maintenanceDue = entreprise.maintenanceDueDate
-    ? startOfDay(new Date(entreprise.maintenanceDueDate))
-    : null;
+  // ------------------------------------------------------------------
+  // Cas 1 : licence en période d'essai — blocage uniquement à l'expiration
+  // de l'essai (la licence n'a pas encore été achetée).
+  // ------------------------------------------------------------------
+  if (entreprise.licenceType === "trial") {
+    const trialEnd = entreprise.licenceEndDate
+      ? startOfDay(new Date(entreprise.licenceEndDate))
+      : null;
+    const daysUntilExpiration = trialEnd ? diffDays(now, trialEnd) : null;
 
-  const daysUntilExpiration = licenceEnd ? diffDays(now, licenceEnd) : null;
-  const daysUntilMaintenance = maintenanceDue ? diffDays(now, maintenanceDue) : null;
-
-  // Maintenance obligatoire
-  if (maintenanceDue && now > maintenanceDue) {
-    const graceDays = entreprise.gracePeriodDays ?? 15;
-    const daysOverdue = diffDays(maintenanceDue, now);
-    if (daysOverdue > graceDays) {
+    if (trialEnd && now > trialEnd) {
       return {
-        effectiveStatus: "maintenance_overdue",
+        effectiveStatus: "expired",
         isBlocked: true,
         daysUntilExpiration,
-        daysUntilMaintenance,
+        daysUntilMaintenance: null,
         alerts: [
           {
-            code: "MAINTENANCE_OVERDUE_BLOCKED",
+            code: "TRIAL_EXPIRED",
             level: "danger",
-            message: `Votre maintenance annuelle est en retard de ${daysOverdue} jours. L'accès est bloqué.`,
+            message: "Votre période d'essai a expiré. Contactez l'administrateur pour acheter votre licence.",
           },
         ],
       };
     }
-    alerts.push({
-      code: "MAINTENANCE_OVERDUE_GRACE",
-      level: "danger",
-      message: `Votre maintenance annuelle est en retard de ${daysOverdue} jours. Régularisez sous ${graceDays - daysOverdue + 1} jours pour éviter le blocage.`,
-    });
-  }
 
-  // Licence expirée
-  if (licenceEnd && now > licenceEnd) {
-    return {
-      effectiveStatus: "expired",
-      isBlocked: true,
-      daysUntilExpiration,
-      daysUntilMaintenance,
-      alerts: [
-        {
-          code: "LICENCE_EXPIRED",
-          level: "danger",
-          message: "Votre licence a expiré. Renouvelez pour retrouver l'accès.",
-        },
-      ],
-    };
-  }
-
-  // Alertes expiration
-  if (daysUntilExpiration !== null && daysUntilExpiration >= 0) {
-    if (ALERT_THRESHOLDS_DAYS.includes(daysUntilExpiration)) {
+    if (daysUntilExpiration !== null && ALERT_THRESHOLDS_DAYS.includes(daysUntilExpiration)) {
       const level: LicenceAlertLevel = daysUntilExpiration <= 7 ? "danger" : "warning";
       alerts.push({
-        code: "LICENCE_EXPIRING_SOON",
+        code: "TRIAL_EXPIRING_SOON",
         level,
         message:
           daysUntilExpiration === 1
-            ? "Votre licence expire demain."
+            ? "Votre période d'essai expire demain."
             : daysUntilExpiration === 0
-            ? "Votre licence expire aujourd'hui."
-            : `Votre licence expire dans ${daysUntilExpiration} jours.`,
+            ? "Votre période d'essai expire aujourd'hui."
+            : `Votre période d'essai expire dans ${daysUntilExpiration} jours.`,
       });
-    } else if (entreprise.licenceType === "trial") {
+    } else if (daysUntilExpiration !== null) {
+      // 4.1 — message informatif : en essai
       alerts.push({
         code: "TRIAL_ACTIVE",
         level: "info",
-        message: `Vous êtes en période d'essai. ${daysUntilExpiration} jours restants.`,
+        message: `Vous êtes en période d'essai. ${daysUntilExpiration} jour(s) restant(s).`,
       });
     }
+
+    return {
+      effectiveStatus: "trial",
+      isBlocked: false,
+      daysUntilExpiration,
+      daysUntilMaintenance: null,
+      alerts,
+    };
   }
 
-  // Alertes maintenance
-  if (daysUntilMaintenance !== null && daysUntilMaintenance >= 0) {
-    if (ALERT_THRESHOLDS_DAYS.includes(daysUntilMaintenance)) {
-      const level: LicenceAlertLevel = daysUntilMaintenance <= 7 ? "danger" : "warning";
+  // ------------------------------------------------------------------
+  // Cas 2 : licence achetée (perpétuelle). Pas de date de fin : l'accès
+  // aux modules inclus n'est jamais bloqué par l'ancienneté de la licence.
+  // Seule la maintenance (si acceptée par l'entreprise) peut entraîner un
+  // blocage, à son expiration.
+  // ------------------------------------------------------------------
+  const maintenanceDue = entreprise.maintenanceDueDate
+    ? startOfDay(new Date(entreprise.maintenanceDueDate))
+    : null;
+  const daysUntilMaintenance = maintenanceDue ? diffDays(now, maintenanceDue) : null;
+
+  if (entreprise.maintenanceAccepted && maintenanceDue) {
+    if (now > maintenanceDue) {
+      const graceDays = entreprise.gracePeriodDays ?? 15;
+      const daysOverdue = diffDays(maintenanceDue, now);
+      if (daysOverdue > graceDays) {
+        return {
+          effectiveStatus: "maintenance_overdue",
+          isBlocked: true,
+          daysUntilExpiration: null,
+          daysUntilMaintenance,
+          alerts: [
+            {
+              code: "MAINTENANCE_OVERDUE_BLOCKED",
+              level: "danger",
+              message: `Votre maintenance annuelle est en retard de ${daysOverdue} jours. L'accès est bloqué.`,
+            },
+          ],
+        };
+      }
+      alerts.push({
+        code: "MAINTENANCE_OVERDUE_GRACE",
+        level: "danger",
+        message: `Votre maintenance annuelle est en retard de ${daysOverdue} jours. Régularisez sous ${graceDays - daysOverdue + 1} jours pour éviter le blocage.`,
+      });
+    } else if (ALERT_THRESHOLDS_DAYS.includes(daysUntilMaintenance as number)) {
+      const level: LicenceAlertLevel = (daysUntilMaintenance as number) <= 7 ? "danger" : "warning";
       alerts.push({
         code: "MAINTENANCE_DUE_SOON",
         level,
@@ -220,27 +237,26 @@ export function getLicenceStatus(entreprise: LicenceStatusInput): LicenceStatusR
             ? "La maintenance annuelle est due aujourd'hui."
             : `La maintenance annuelle est due dans ${daysUntilMaintenance} jours.`,
       });
+    } else {
+      // 4.2 — message informatif : maintenance active
+      alerts.push({
+        code: "MAINTENANCE_ACTIVE",
+        level: "info",
+        message: `Maintenance active jusqu'au ${maintenanceDue.toLocaleDateString("fr-FR")}.`,
+      });
     }
-  }
-
-  // Licence payée active sans alerte critique
-  if (entreprise.licenceType === "paid" && alerts.length === 0) {
+  } else if (alerts.length === 0) {
     alerts.push({
       code: "LICENCE_ACTIVE",
       level: "info",
-      message: `Votre licence est active jusqu'au ${licenceEnd?.toLocaleDateString("fr-FR")}.`,
+      message: "Votre licence est active (licence perpétuelle, sans date d'expiration).",
     });
   }
 
   return {
-    effectiveStatus:
-      entreprise.licenceType === "trial"
-        ? "trial"
-        : entreprise.licenceType === "paid"
-        ? "active"
-        : "active",
+    effectiveStatus: "active",
     isBlocked: false,
-    daysUntilExpiration,
+    daysUntilExpiration: null,
     daysUntilMaintenance,
     alerts,
   };

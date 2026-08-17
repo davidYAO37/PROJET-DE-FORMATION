@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
-import { requireAuth } from "@/lib/auth";
+import { requireAuth, getImpersonateEntrepriseId } from "@/lib/auth";
 import { Entreprise } from "@/models/entreprise";
 import { getLicenceStatus } from "@/lib/licence";
 import { User } from "@/models/users.model";
@@ -12,7 +12,13 @@ export async function GET(req: NextRequest) {
   try {
     await db();
 
-    const entrepriseId = user?.entrepriseId;
+    // Un adminsuper qui impersonne un tenant doit voir le statut de licence
+    // de l'entreprise impersonnée (pas la sienne, qu'il n'a pas), pour que les
+    // bannières/sidebars reflètent correctement l'entreprise en cours de test.
+    const entrepriseId =
+      user!.type === "adminsuper"
+        ? (await getImpersonateEntrepriseId(req)) || user?.entrepriseId
+        : user?.entrepriseId;
     if (!entrepriseId) {
       return NextResponse.json(
         { error: "Aucune entreprise associée" },
@@ -37,6 +43,8 @@ export async function GET(req: NextRequest) {
       licencePlan: entreprise.licencePlan || null,
       licenceStartDate: entreprise.licenceStartDate || null,
       licenceEndDate: entreprise.licenceEndDate || null,
+      licensePurchasedAt: entreprise.licensePurchasedAt || null,
+      maintenanceAccepted: !!entreprise.maintenanceAccepted,
       maintenanceDueDate: entreprise.maintenanceDueDate || null,
       gracePeriodDays: entreprise.gracePeriodDays ?? 15,
       modules: entreprise.modules || [],

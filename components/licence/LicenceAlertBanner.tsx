@@ -19,6 +19,8 @@ interface LicenceStatusResponse {
 export default function LicenceAlertBanner() {
   const [status, setStatus] = useState<LicenceStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const [visible, setVisible] = useState(true);
+  const [index, setIndex] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -31,6 +33,16 @@ export default function LicenceAlertBanner() {
       .catch(() => setStatus(null))
       .finally(() => setLoading(false));
   }, []);
+
+  useEffect(() => {
+    if (!status || !visible) return;
+    if (!status.alerts || status.alerts.length <= 1) return;
+
+    const id = setInterval(() => {
+      setIndex((i) => (i + 1) % status.alerts.length);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [status, visible]);
 
   if (loading) {
     return (
@@ -53,28 +65,49 @@ export default function LicenceAlertBanner() {
 
   if (status.alerts.length === 0) return null;
 
-  const highestLevel = status.alerts.reduce((acc, alert) => {
+  // Show only actionable alerts (warnings/dangers). Do not display informational messages
+  // such as activation notices (`TRIAL_ACTIVE`, `LICENCE_ACTIVE`). This ensures the banner
+  // appears for suspension / approaching mise en demeure but not on activation.
+  const actionableAlerts = status.alerts.filter((a) => a.level !== "info");
+  if (actionableAlerts.length === 0) return null;
+
+  const highestLevel = actionableAlerts.reduce((acc, alert) => {
     const priority = { info: 0, warning: 1, danger: 2 };
     return priority[alert.level] > priority[acc] ? alert.level : acc;
-  }, "info" as "info" | "warning" | "danger");
+  }, "warning" as "info" | "warning" | "danger");
+
+  if (!visible) return null; // closed for this page load (not persisted)
+
+  const variant = highestLevel === "danger" ? "danger" : highestLevel === "warning" ? "warning" : "info";
+  const currentAlert = actionableAlerts[index] || actionableAlerts[0];
 
   return (
-    <Alert
-      variant={highestLevel === "danger" ? "danger" : highestLevel === "warning" ? "warning" : "info"}
-      className="m-0 rounded-0"
-    >
+    <Alert variant={variant} className="m-0 rounded-0">
       <div className="d-flex justify-content-between align-items-center container-fluid">
-        <div>
-          {status.alerts.map((alert) => (
-            <div key={alert.code}>{alert.message}</div>
-          ))}
+        <div style={{ overflow: "hidden", whiteSpace: "nowrap", flex: 1 }}>
+          <div
+            style={{
+              display: "inline-block",
+              transition: "opacity 300ms",
+            }}
+            key={currentAlert.code}
+          >
+            {currentAlert.message}
+          </div>
         </div>
-        <div>
+        <div className="d-flex align-items-center gap-2">
           <button
             className="btn btn-sm btn-outline-dark"
             onClick={() => router.push("/dashboard/licence")}
           >
             Gérer ma licence
+          </button>
+          <button
+            aria-label="Fermer bannière licence"
+            className="btn btn-sm btn-outline-secondary"
+            onClick={() => setVisible(false)}
+          >
+            ✕
           </button>
         </div>
       </div>

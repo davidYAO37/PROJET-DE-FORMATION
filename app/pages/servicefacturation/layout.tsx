@@ -1,5 +1,6 @@
 import FacturationShell from './FacturationShell';
 import Verifconnecion from '@/components/verifconnecion';
+import RoleGuard from '@/components/RoleGuard';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const metadata = {
@@ -10,7 +11,9 @@ export const metadata = {
 export default function FacturationLayout({ children }: { children: React.ReactNode }) {
   return (
     <Verifconnecion>
-      <FacturationShell>{children}</FacturationShell>
+      <RoleGuard allowedRoles={['facturation', 'admin']}>
+        <FacturationShell>{children}</FacturationShell>
+      </RoleGuard>
     </Verifconnecion>
   );
 }

@@ -26,6 +26,9 @@ export default function AjouterEntreprise({
   const [NCC, setNCC] = useState("");
   const [dbName, setDbName] = useState("");
   const [dbNameEdited, setDbNameEdited] = useState(false);
+  const [maintenancePrice, setMaintenancePrice] = useState<number | string>(0);
+  const [licencePrice, setLicencePrice] = useState<number | string>(0);
+  const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleNomSocieteChange = (value: string) => {
@@ -59,6 +62,9 @@ export default function AjouterEntreprise({
       formData.append("LogoE", LogoE);
       formData.append("NCC", NCC);
       formData.append("dbName", dbName);
+      formData.append("maintenancePrice", String(maintenancePrice ?? 0));
+      formData.append("licencePrice", String(licencePrice ?? 0));
+      formData.append("maintenanceAccepted", String(maintenanceAccepted));
 
       if (LogoEFile) {
         formData.append("logoFile", LogoEFile);
@@ -81,6 +87,9 @@ export default function AjouterEntreprise({
         setNCC("");
         setDbName("");
         setDbNameEdited(false);
+        setMaintenancePrice(0);
+        setLicencePrice(0);
+        setMaintenanceAccepted(false);
         onHide();
       }
     } catch (error) {
@@ -163,6 +172,51 @@ export default function AjouterEntreprise({
                         />
                         <Form.Text className="text-muted">
                           Générée automatiquement à partir du nom. Modifiable avant validation, mais non modifiable après création.
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold text-secondary">
+                          Prix maintenance (XOF)
+                        </Form.Label>
+                        <Form.Control
+                          type="number"
+                          value={maintenancePrice as any}
+                          onChange={(e) => setMaintenancePrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          min={0}
+                          className="shadow-sm"
+                        />
+                        <Form.Text className="text-muted">Prix de la maintenance annuelle pour cette entreprise.</Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold text-secondary">
+                          Prix licence (XOF)
+                        </Form.Label>
+                        <Form.Control
+                          type="number"
+                          value={licencePrice as any}
+                          onChange={(e) => setLicencePrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          min={0}
+                          className="shadow-sm"
+                        />
+                        <Form.Text className="text-muted">Prix annuel de la licence pour cette entreprise.</Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="maintenance-accepted-switch"
+                          label="Maintenance annuelle acceptée par l'entreprise"
+                          checked={maintenanceAccepted}
+                          onChange={(e) => setMaintenanceAccepted(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Activé = l&apos;entreprise a accepté la maintenance : l&apos;accès sera bloqué si la maintenance expire sans être renouvelée.
+                          Désactivé = aucun blocage lié à la maintenance (licence perpétuelle utilisable sans limite).
                         </Form.Text>
                       </Form.Group>
                     </Col>

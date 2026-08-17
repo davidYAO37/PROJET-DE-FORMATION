@@ -16,7 +16,6 @@ export interface TrialInput {
 
 export interface PurchaseInput {
   entrepriseId: string;
-  durationMonths: number;
   modules?: LicenceModuleCode[];
   price?: number;
   currency?: string;
@@ -27,10 +26,18 @@ export interface PurchaseInput {
 export interface OrderInput {
   entrepriseId: string;
   initiatedBy: string;
-  action: "purchase" | "renewal" | "maintenance";
+  action: "purchase" | "maintenance";
   planCode?: string;
-  durationMonths: number;
+  // Informatif uniquement : 0 pour un achat (licence perpétuelle), 12 pour la maintenance annuelle.
+  durationMonths?: number;
   modules?: LicenceModuleCode[];
+  items?: Array<{
+    code?: string;
+    name: string;
+    qty: number;
+    unit: number;
+    total: number;
+  }>;
   amount: number;
   currency?: string;
   paymentMethod: "wave" | "manual" | "bank_transfer";
@@ -103,7 +110,6 @@ export async function activateTrial(input: TrialInput): Promise<IEntreprise> {
       isActive: true,
       licenceStartDate: start,
       licenceEndDate: end,
-      maintenanceDueDate: end,
       modules,
     },
     { new: true }
@@ -120,7 +126,6 @@ export async function activateTrial(input: TrialInput): Promise<IEntreprise> {
   await saveLicenceHistory("trial_started", {
     entrepriseId: input.entrepriseId,
     newEndDate: end,
-    newMaintenanceDueDate: end,
     modules,
     notes: input.notes,
     createdBy: input.createdBy,
@@ -129,70 +134,79 @@ export async function activateTrial(input: TrialInput): Promise<IEntreprise> {
   return entreprise;
 }
 
+// Achat de la licence perpétuelle : opération unique par entreprise (pas de durée, pas de
+// date de fin). La 1ère année de maintenance est incluse et démarre le jour de l'achat.
 export async function purchaseLicence(input: PurchaseInput): Promise<IEntreprise> {
   const existing = await Entreprise.findById(input.entrepriseId);
   if (!existing) {
     throw new Error("Entreprise introuvable");
   }
 
-  const now = startOfDay(new Date());
-  const previousEndDate = existing.licenceEndDate
-    ? new Date(existing.licenceEndDate)
-    : undefined;
-  const previousMaintenanceDueDate = existing.maintenanceDueDate
-    ? new Date(existing.maintenanceDueDate)
-    : undefined;
-
-  const start = previousEndDate && previousEndDate > now ? previousEndDate : now;
-  const end = addMonths(start, input.durationMonths);
-  const maintenanceDue = addMonths(start, 12); // maintenance due 1 an après le début de la période payée
-
-  const modules = input.modules?.length ? input.modules : [...ALL_MODULE_CODES];
-
-  const updated = await Entreprise.findByIdAndUpdate(
-    input.entrepriseId,
-    {
-      licenceType: "paid",
-      licenceStatus: "active",
-      statut: "active",
-      isActive: true,
-      licenceStartDate: start,
-      licenceEndDate: end,
-      maintenanceDueDate: maintenanceDue,
-      modules,
-    },
-    { new: true }
-  );
-
-  if (!updated) {
-    throw new Error("Échec mise à jour entreprise");
+  if (existing.licenceType === "paid") {
+    throw new Error("La licence de cette entreprise a déjà été achetée (licence perpétuelle).");
   }
 
-  updated.licenceKey = generateLicenceKey(updated);
-  updated.dateExpiration = updated.licenceEndDate;
-  await updated.save();
+  const wasTrial = existing.licenceType === "trial";
+  const now = startOfDay(new Date());
+  const maintenanceDue = addMonths(now, 12); // 1ère année de maintenance incluse
+  const modules = input.modules?.length ? input.modules : [...ALL_MODULE_CODES];
 
-  await saveLicenceHistory(
-    existing.licenceType === "trial" ? "trial_converted" : "purchased",
-    {
-      entrepriseId: input.entrepriseId,
-      previousEndDate,
-      newEndDate: end,
-      previousMaintenanceDueDate,
-      newMaintenanceDueDate: maintenanceDue,
-      modules,
-      price: input.price,
-      currency: input.currency,
-      notes: input.notes,
-      createdBy: input.createdBy,
-    }
-  );
+  existing.licenceType = "paid";
+  existing.licenceStatus = "active";
+  existing.statut = "active";
+  existing.isActive = true;
+  existing.licenceStartDate = now;
+  existing.licensePurchasedAt = now;
+  existing.licenceEndDate = undefined;
+  existing.dateExpiration = undefined;
+  existing.maintenanceAccepted = true;
+  existing.maintenanceDueDate = maintenanceDue;
+  existing.modules = modules;
+  existing.licenceKey = generateLicenceKey(existing);
 
-  return updated;
+  await existing.save();
+
+  await saveLicenceHistory(wasTrial ? "trial_converted" : "purchased", {
+    entrepriseId: input.entrepriseId,
+    newMaintenanceDueDate: maintenanceDue,
+    modules,
+    price: input.price,
+    currency: input.currency,
+    notes: input.notes,
+    createdBy: input.createdBy,
+  });
+
+  return existing;
 }
 
-export async function renewLicence(input: PurchaseInput): Promise<IEntreprise> {
-  return purchaseLicence(input);
+// Modification des modules inclus dans une licence déjà achetée. Purement forfaitaire :
+// aucun recalcul de montant ni de date, la licence reste perpétuelle.
+export async function updateLicenceModules(
+  entrepriseId: string,
+  modules: LicenceModuleCode[],
+  createdBy?: string,
+  notes?: string
+): Promise<IEntreprise> {
+  const existing = await Entreprise.findById(entrepriseId);
+  if (!existing) {
+    throw new Error("Entreprise introuvable");
+  }
+  if (existing.licenceType !== "paid") {
+    throw new Error("Seule une entreprise ayant acheté sa licence peut voir ses modules modifiés.");
+  }
+
+  existing.modules = modules?.length ? modules : [...ALL_MODULE_CODES];
+  existing.licenceKey = generateLicenceKey(existing);
+  await existing.save();
+
+  await saveLicenceHistory("modules_changed", {
+    entrepriseId,
+    modules: existing.modules,
+    notes,
+    createdBy,
+  });
+
+  return existing;
 }
 
 export async function payMaintenance(
@@ -213,27 +227,17 @@ export async function payMaintenance(
   const previousMaintenanceDueDate = existing.maintenanceDueDate
     ? new Date(existing.maintenanceDueDate)
     : undefined;
-  const base = previousMaintenanceDueDate
+  const now = startOfDay(new Date());
+  const base = previousMaintenanceDueDate && previousMaintenanceDueDate > now
     ? startOfDay(previousMaintenanceDueDate)
-    : startOfDay(new Date());
+    : now;
   const newMaintenanceDueDate = addMonths(base, options.months || 12);
 
-  const updated = await Entreprise.findByIdAndUpdate(
-    entrepriseId,
-    {
-      licenceType: "paid",
-      licenceStatus: "active",
-      maintenanceDueDate: newMaintenanceDueDate,
-    },
-    { new: true }
-  );
-
-  if (!updated) {
-    throw new Error("Échec mise à jour maintenance");
-  }
-
-  updated.licenceKey = generateLicenceKey(updated);
-  await updated.save();
+  // Le paiement (validé) de la maintenance vaut acceptation de la maintenance par l'entreprise.
+  existing.maintenanceAccepted = true;
+  existing.maintenanceDueDate = newMaintenanceDueDate;
+  existing.licenceKey = generateLicenceKey(existing);
+  await existing.save();
 
   await saveLicenceHistory("maintenance_paid", {
     entrepriseId,
@@ -245,22 +249,53 @@ export async function payMaintenance(
     createdBy: options.createdBy,
   });
 
-  return updated;
+  return existing;
 }
 
 export async function createLicenceOrder(
   input: OrderInput
 ): Promise<{ order: ILicenceOrder; paymentUrl?: string }> {
   const modules = input.modules?.length ? input.modules : [...ALL_MODULE_CODES];
+  // La licence et la maintenance sont forfaitaires : un montant fixe, pas de calcul
+  // par module ni par mois.
+  const durationMonths = input.action === "maintenance" ? 12 : 0;
+
+  let items: OrderInput["items"] = [];
+  if (Array.isArray((input as any).items) && (input as any).items.length > 0) {
+    items = (input as any).items.map((it: any) => ({
+      code: it.code,
+      name: it.name || it.label || String(it.code || "Module"),
+      qty: Number(it.qty || 1),
+      unit: Number(it.unit || it.unitPrice || 0),
+      total: Number(it.total ?? (Number(it.qty || 1) * Number(it.unit || it.unitPrice || 0))),
+    }));
+  } else {
+    const entreprise = await Entreprise.findById(input.entrepriseId).lean();
+    const flatPrice = input.action === "maintenance"
+      ? (entreprise?.maintenancePrice || input.amount || 0)
+      : (entreprise?.licencePrice || input.amount || 0);
+
+    items = [
+      {
+        name: input.action === "maintenance" ? "Maintenance annuelle" : "Licence perpétuelle",
+        qty: 1,
+        unit: flatPrice,
+        total: flatPrice,
+      },
+    ];
+  }
+
+  const amount = input.amount || (items || []).reduce((s, it) => s + (it?.total || 0), 0);
 
   const order = await LicenceOrder.create({
     entrepriseId: new Types.ObjectId(input.entrepriseId),
     initiatedBy: new Types.ObjectId(input.initiatedBy),
     action: input.action,
     planCode: input.planCode,
-    durationMonths: input.durationMonths,
+    durationMonths,
     modules,
-    amount: input.amount,
+    items,
+    amount,
     currency: input.currency || "XOF",
     status: "pending",
     paymentMethod: input.paymentMethod,
@@ -272,7 +307,7 @@ export async function createLicenceOrder(
     orderId: order._id.toString(),
     newEndDate: undefined,
     modules,
-    price: input.amount,
+    price: amount,
     currency: input.currency || "XOF",
     createdBy: input.initiatedBy,
     notes: input.notes,
@@ -285,9 +320,9 @@ export async function createLicenceOrder(
       process.env.WAVE_CALLBACK_URL ||
       `${process.env.NEXT_PUBLIC_BASE_URL || ""}/api/licence/payment-callback`;
     const checkout = await createWaveCheckout({
-      amount: input.amount,
+      amount,
       currency: input.currency || "XOF",
-      description: `Easy Medical - ${input.action} licence ${input.durationMonths} mois`,
+      description: `Easy Medical - ${input.action === "maintenance" ? "maintenance annuelle" : "achat licence"}`,
       orderId: order._id.toString(),
       callbackUrl,
     });
@@ -322,7 +357,7 @@ export async function validateOrder(
 
   if (order.action === "maintenance") {
     entreprise = await payMaintenance(order.entrepriseId.toString(), {
-      months: order.durationMonths,
+      months: 12,
       price: order.amount,
       currency: order.currency,
       createdBy: validatedBy,
@@ -331,7 +366,6 @@ export async function validateOrder(
   } else {
     entreprise = await purchaseLicence({
       entrepriseId: order.entrepriseId.toString(),
-      durationMonths: order.durationMonths,
       modules,
       price: order.amount,
       currency: order.currency,
@@ -355,6 +389,31 @@ export async function validateOrder(
   });
 
   return entreprise;
+}
+
+export async function cancelOrder(orderId: string, cancelledBy: string) {
+  const order = await LicenceOrder.findById(orderId);
+  if (!order) throw new Error("Commande introuvable");
+
+  if (order.status === "validated") {
+    throw new Error("Impossible d'annuler une commande déjà validée");
+  }
+
+  order.status = "cancelled";
+  order.cancelledBy = new Types.ObjectId(cancelledBy);
+  order.cancelledAt = new Date();
+  await order.save();
+
+  await saveLicenceHistory("order_cancelled", {
+    entrepriseId: order.entrepriseId.toString(),
+    orderId: order._id.toString(),
+    price: order.amount,
+    currency: order.currency,
+    notes: `Commande annulée par ${cancelledBy}`,
+    createdBy: cancelledBy,
+  });
+
+  return order;
 }
 
 export async function suspendEntreprise(

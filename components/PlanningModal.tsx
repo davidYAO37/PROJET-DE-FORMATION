@@ -89,7 +89,20 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
           setMedecins(data);
           setMedecinsLoaded(true);
         } else {
-          console.error('Erreur API médecins:', response.status);
+          const errorJson = await response.json().catch(() => null);
+          const message = (errorJson && (errorJson.message || errorJson.error)) || `Erreur API médecins: ${response.status}`;
+          if (response.status === 403) {
+            // Blocage de licence (essai expiré, suspension, maintenance impayée...) :
+            // cas attendu déjà signalé par la bannière globale (LicenceAlertBanner).
+            // On utilise warn (pas error) pour ne pas déclencher l'overlay d'erreur Next.js,
+            // et on n'affiche pas d'alert() redondant.
+            console.warn('Accès médecins refusé (licence):', message);
+          } else {
+            console.error('Erreur API médecins:', response.status, errorJson || '');
+            if (typeof window !== 'undefined') alert(message);
+          }
+          // Mark as loaded to avoid retrying continuously
+          setMedecinsLoaded(true);
         }
       } catch (error) {
         console.error('Erreur lors du chargement des médecins:', error);

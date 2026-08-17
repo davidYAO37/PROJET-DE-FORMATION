@@ -2,6 +2,7 @@
 
 import Sidebar from '@/components/Sidebar';
 import Verifconnecion from '@/components/verifconnecion';
+import RoleGuard from '@/components/RoleGuard';
 import ImpersonationBanner from '@/components/ImpersonationBanner';
 import LicenceAlertBanner from '@/components/licence/LicenceAlertBanner';
 import 'bootstrap/dist/css/bootstrap.min.css';
@@ -14,7 +15,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <Verifconnecion>
-
+            <RoleGuard allowedRoles={['admin']}>
             <div className="d-flex flex-column min-vh-100" style={{ minHeight: '100vh' }}>
                 <ImpersonationBanner />
                 <LicenceAlertBanner />
@@ -26,7 +27,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     </main>
                 </div>
             </div>
-
+            </RoleGuard>
         </Verifconnecion>
 
     );

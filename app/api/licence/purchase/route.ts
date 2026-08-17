@@ -11,11 +11,11 @@ export async function POST(req: NextRequest) {
   try {
     await db();
     const body = await req.json();
-    const { entrepriseId, durationMonths, modules, price, currency, notes } = body;
+    const { entrepriseId, modules, price, currency, notes } = body;
 
-    if (!entrepriseId || typeof durationMonths !== "number" || durationMonths <= 0) {
+    if (!entrepriseId) {
       return NextResponse.json(
-        { error: "entrepriseId et durationMonths (nombre positif) requis" },
+        { error: "entrepriseId requis" },
         { status: 400 }
       );
     }
@@ -29,7 +29,6 @@ export async function POST(req: NextRequest) {
 
     const updated = await purchaseLicence({
       entrepriseId,
-      durationMonths,
       modules: selectedModules,
       price,
       currency: currency || "XOF",
@@ -40,6 +39,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(updated);
   } catch (err) {
     const message = err instanceof Error ? err.message : "Erreur achat licence";
-    return NextResponse.json({ error: message }, { status: 500 });
+    const status = message.includes("déjà été achetée") ? 409 : 500;
+    return NextResponse.json({ error: message }, { status });
   }
 }

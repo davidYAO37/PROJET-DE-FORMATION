@@ -1,6 +1,6 @@
 import mongoose, { Schema, Document, Model, Types } from "mongoose";
 
-export type LicenceOrderAction = "purchase" | "renewal" | "maintenance";
+export type LicenceOrderAction = "purchase" | "maintenance";
 export type LicenceOrderStatus =
   | "pending"
   | "paid_awaiting_validation"
@@ -15,7 +15,14 @@ export interface ILicenceOrder extends Document {
   action: LicenceOrderAction;
   planCode?: string;
   modules: string[];
-  durationMonths: number;
+  items?: Array<{
+    code?: string;
+    name: string;
+    qty: number;
+    unit: number;
+    total: number;
+  }>;
+  durationMonths?: number;
   amount: number;
   currency: string;
   status: LicenceOrderStatus;
@@ -26,6 +33,12 @@ export interface ILicenceOrder extends Document {
   paidAt?: Date;
   validatedBy?: Types.ObjectId;
   validatedAt?: Date;
+  cancelledBy?: Types.ObjectId;
+  cancelledAt?: Date;
+  orderFormUrl?: string;
+  paymentReceiptUrl?: string;
+  acquisitionContractUrl?: string;
+  maintenanceContractUrl?: string;
   notes?: string;
   createdAt?: Date;
   updatedAt?: Date;
@@ -46,12 +59,25 @@ const LicenceOrderSchema = new Schema<ILicenceOrder>(
     },
     action: {
       type: String,
-      enum: ["purchase", "renewal", "maintenance"],
+      enum: ["purchase", "maintenance"],
       required: true,
     },
     planCode: { type: String },
     modules: { type: [String], default: [] },
-    durationMonths: { type: Number, required: true, min: 1 },
+    items: {
+      type: [
+        {
+          code: { type: String },
+          name: { type: String, required: true },
+          qty: { type: Number, required: true, default: 1 },
+          unit: { type: Number, required: true, default: 0 },
+          total: { type: Number, required: true, default: 0 },
+        },
+      ],
+      default: [],
+    },
+    // Informatif uniquement : 0 pour un achat (licence perpétuelle), 12 pour la maintenance annuelle.
+    durationMonths: { type: Number, default: 0, min: 0 },
     amount: { type: Number, required: true, min: 0 },
     currency: { type: String, required: true, default: "XOF" },
     status: {
@@ -71,6 +97,13 @@ const LicenceOrderSchema = new Schema<ILicenceOrder>(
     paidAt: { type: Date },
     validatedBy: { type: Schema.Types.ObjectId, ref: "User" },
     validatedAt: { type: Date },
+    cancelledBy: { type: Schema.Types.ObjectId, ref: "User" },
+    cancelledAt: { type: Date },
+    // Documents related to the order
+    orderFormUrl: { type: String },
+    paymentReceiptUrl: { type: String },
+    acquisitionContractUrl: { type: String },
+    maintenanceContractUrl: { type: String },
     notes: { type: String },
   },
   { timestamps: true, collection: "licenceorders" }

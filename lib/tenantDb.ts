@@ -44,6 +44,25 @@ export async function getTenantConnection(entrepriseId?: string): Promise<Connec
     return getPrimaryConnection();
   }
 
+  // Le statut de licence est revérifié à CHAQUE appel, même si la connexion
+  // tenant est déjà en cache : sans ça, une entreprise dont la connexion a été
+  // établie avant son blocage (essai expiré, suspension, maintenance impayée)
+  // continuerait d'accéder à ses données tant que le connection cache n'est
+  // pas invalidé (ex: redémarrage serveur). Le message est le même que celui
+  // utilisé partout ailleurs (bannière, login) pour rester cohérent.
+  await getPrimaryConnection();
+  const entreprise = await Entreprise.findById(entrepriseId).lean<IEntreprise | null>();
+
+  if (!entreprise) {
+    throw new Error("Entreprise introuvable");
+  }
+
+  const licenceStatus = getLicenceStatus(entreprise);
+  if (licenceStatus.isBlocked) {
+    const message = licenceStatus.alerts[0]?.message || "Licence invalide ou expirée";
+    throw new Error(message);
+  }
+
   const cached = tenantConnections.get(entrepriseId);
   if (cached && cached.readyState === 1) {
     return cached;
@@ -56,18 +75,6 @@ export async function getTenantConnection(entrepriseId?: string): Promise<Connec
 
   const promise = (async (): Promise<Connection> => {
     const primaryConn = await getPrimaryConnection();
-    const entreprise = await Entreprise.findById(entrepriseId).lean<IEntreprise | null>();
-
-    if (!entreprise) {
-      throw new Error("Entreprise introuvable");
-    }
-
-    const licenceStatus = getLicenceStatus(entreprise);
-    if (licenceStatus.isBlocked) {
-      const message = licenceStatus.alerts[0]?.message || "Licence invalide ou expirée";
-      throw new Error(message);
-    }
-
     const mongoUri = entreprise.mongoUri || process.env.MONGO_URI;
     const dbName = entreprise.dbName || extractDbNameFromUri(mongoUri || "") || "bd_esaymed";
 

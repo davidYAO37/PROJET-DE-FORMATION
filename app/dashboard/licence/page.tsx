@@ -14,6 +14,7 @@ import {
   ListGroup,
 } from "react-bootstrap";
 import { LICENCE_MODULES, LicenceModuleCode } from "@/lib/licenceModules";
+import { useAuthUser } from '@/hooks/useAuthUser';
 
 interface LicenceStatus {
   effectiveStatus: string;
@@ -23,6 +24,8 @@ interface LicenceStatus {
   alerts: Array<{ code: string; level: string; message: string }>;
   licenceType: string | null;
   licenceEndDate: string | null;
+  licensePurchasedAt: string | null;
+  maintenanceAccepted: boolean;
   maintenanceDueDate: string | null;
   modules: string[];
   userCount: number;
@@ -42,18 +45,56 @@ interface LicencePlan {
 export default function LicencePage() {
   const [status, setStatus] = useState<LicenceStatus | null>(null);
   const [plans, setPlans] = useState<LicencePlan[]>([]);
+  const [companyMaintenancePrice, setCompanyMaintenancePrice] = useState<number>(0);
+  const [companyLicencePrice, setCompanyLicencePrice] = useState<number>(0);
+  const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [ordering, setOrdering] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [selectedAction, setSelectedAction] = useState<"purchase" | "renewal" | "maintenance">("renewal");
+  const [selectedAction, setSelectedAction] = useState<"purchase" | "maintenance">("purchase");
   const [selectedModules, setSelectedModules] = useState<string[]>([]);
-  const [durationMonths, setDurationMonths] = useState(12);
   const [amount, setAmount] = useState(100000);
+  const { user, loading: userLoading } = useAuthUser();
+
+  const isSuperAdmin = !!user && user.type === 'adminsuper';
+  const alreadyPurchased = status?.licenceType === "paid";
+
+  useEffect(() => {
+    if (!user) return;
+    if (user.type !== 'adminsuper' || alreadyPurchased) {
+      setSelectedAction('maintenance');
+    } else {
+      setSelectedAction('purchase');
+    }
+  }, [user?.type, alreadyPurchased]);
 
   useEffect(() => {
     fetchStatus();
     fetchPlans();
   }, []);
+
+  useEffect(() => {
+    if (!user || !user.entrepriseId) return;
+    fetchOrders();
+  }, [user]);
+
+  useEffect(() => {
+    // fetch entreprise data when user is available
+    if (!user || !user.entrepriseId) return;
+    const fetchEntreprise = async () => {
+      try {
+        const res = await fetch(`/api/entreprise/${user.entrepriseId}`);
+        if (res.ok) {
+          const data = await res.json();
+          setCompanyMaintenancePrice(Number(data.maintenancePrice || 0));
+          setCompanyLicencePrice(Number(data.licencePrice || 0));
+        }
+      } catch (e) {
+        // ignore
+      }
+    };
+    fetchEntreprise();
+  }, [user]);
 
   const fetchStatus = async () => {
     try {
@@ -80,32 +121,50 @@ export default function LicencePage() {
     }
   };
 
+  const fetchOrders = async () => {
+    if (!user || !user.entrepriseId) return;
+    try {
+      const res = await fetch(`/api/licence/orders`);
+      if (res.ok) {
+        const data = await res.json();
+        setOrders(data || []);
+      }
+    } catch (e) {
+      // ignore
+    }
+  };
+
   const handleCreateOrder = async () => {
     setOrdering(true);
     setMessage(null);
     try {
+      // For non super-admins, create the order in manual mode so they cannot initiate payment directly.
+      const paymentMethod = isSuperAdmin ? 'wave' : 'manual';
+
       const res = await fetch("/api/licence/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: selectedAction,
-          durationMonths,
           modules: selectedModules,
           amount,
           currency: "XOF",
-          paymentMethod: "wave",
+          paymentMethod,
         }),
       });
 
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        if (data.paymentUrl) {
+        if (isSuperAdmin && data.paymentUrl) {
+          // Super-admins can be redirected to Wave to complete payment.
           window.location.href = data.paymentUrl;
-        } else {
-          setMessage(
-            "Demande enregistrée. L'administrateur validera votre paiement manuellement."
-          );
+          return;
         }
+        // For regular admins, or when no paymentUrl is provided, just show a message.
+        setMessage(
+          "Commande créée. Elle sera validée par un super-admin avant paiement."
+        );
+        fetchOrders();
       } else {
         setMessage(data.error || "Erreur lors de la création de la commande");
       }
@@ -115,6 +174,20 @@ export default function LicencePage() {
       setOrdering(false);
     }
   };
+
+  // Montants forfaitaires (pas de calcul par mois ni par module).
+  const computedMaintenanceAmount = Math.round(companyMaintenancePrice || 0);
+  const computedLicenceAmount = Math.round(companyLicencePrice || 0);
+
+  useEffect(() => {
+    if (!isSuperAdmin) {
+      if (selectedAction === "maintenance") {
+        setAmount(computedMaintenanceAmount);
+      } else if (selectedAction === "purchase") {
+        setAmount(computedLicenceAmount);
+      }
+    }
+  }, [selectedAction, isSuperAdmin, computedMaintenanceAmount, computedLicenceAmount]);
 
   const toggleModule = (code: string) => {
     setSelectedModules((prev) =>
@@ -137,6 +210,33 @@ export default function LicencePage() {
       </Container>
     );
   }
+
+  // open a pdf url in new window and try to trigger print
+  const openAndPrint = (url: string) => {
+    try {
+      const w = window.open(url, "_blank");
+      if (!w) return;
+      // try to print when loaded
+      const interval = setInterval(() => {
+        try {
+          if (w.document && (w.document.readyState === "complete" || w.document.body)) {
+            clearInterval(interval as any);
+            try {
+              w.focus();
+              w.print();
+            } catch (e) {
+              // ignore
+            }
+          }
+        } catch (e) {
+          // cross-origin might block access; can't auto-print then
+          clearInterval(interval as any);
+        }
+      }, 500);
+    } catch (e) {
+      // ignore
+    }
+  };
 
   if (!status) {
     return (
@@ -184,22 +284,43 @@ export default function LicencePage() {
                   {status.licenceType === "trial"
                     ? "Essai"
                     : status.licenceType === "paid"
-                    ? "Payée"
-                    : status.licenceType === "maintenance_overdue"
-                    ? "Maintenance en retard"
-                    : "Non activée"}
+                      ? "Licence perpétuelle (achetée)"
+                      : "Non activée"}
+                </ListGroup.Item>
+                {status.licenceType === "trial" ? (
+                  <ListGroup.Item>
+                    <strong>Fin de l&apos;essai :</strong>{" "}
+                    {status.licenceEndDate
+                      ? new Date(status.licenceEndDate).toLocaleDateString("fr-FR")
+                      : "—"}
+                  </ListGroup.Item>
+                ) : (
+                  <ListGroup.Item>
+                    <strong>Achetée le :</strong>{" "}
+                    {status.licensePurchasedAt
+                      ? new Date(status.licensePurchasedAt).toLocaleDateString("fr-FR")
+                      : "—"}{" "}
+                    <span className="text-muted small">(sans date d&apos;expiration)</span>
+                  </ListGroup.Item>
+                )}
+                <ListGroup.Item>
+                  <strong>Maintenance :</strong>{" "}
+                  {status.maintenanceAccepted ? (
+                    <>
+                      <Badge bg="success" className="me-2">Acceptée</Badge>
+                      Échéance : {status.maintenanceDueDate
+                        ? new Date(status.maintenanceDueDate).toLocaleDateString("fr-FR")
+                        : "—"}
+                    </>
+                  ) : (
+                    <Badge bg="secondary">Non souscrite</Badge>
+                  )}
                 </ListGroup.Item>
                 <ListGroup.Item>
-                  <strong>Expire le :</strong>{" "}
-                  {status.licenceEndDate
-                    ? new Date(status.licenceEndDate).toLocaleDateString("fr-FR")
-                    : "—"}
+                  <strong>Prix maintenance :</strong> {companyMaintenancePrice.toLocaleString("fr-FR")} XOF / an
                 </ListGroup.Item>
                 <ListGroup.Item>
-                  <strong>Maintenance due le :</strong>{" "}
-                  {status.maintenanceDueDate
-                    ? new Date(status.maintenanceDueDate).toLocaleDateString("fr-FR")
-                    : "—"}
+                  <strong>Prix licence :</strong> {companyLicencePrice.toLocaleString("fr-FR")} XOF (forfait unique)
                 </ListGroup.Item>
                 <ListGroup.Item>
                   <strong>Modules actifs :</strong>{" "}
@@ -230,7 +351,7 @@ export default function LicencePage() {
         <Col md={6}>
           <Card className="shadow-sm h-100">
             <Card.Header className="bg-success text-white">
-              Renouveler / Acheter
+              Acheter / Maintenance
             </Card.Header>
             <Card.Body>
               {message && <Alert variant="info">{message}</Alert>}
@@ -239,14 +360,24 @@ export default function LicencePage() {
                 <Form.Label>Action</Form.Label>
                 <Form.Select
                   value={selectedAction}
-                  onChange={(e) =>
-                    setSelectedAction(e.target.value as "purchase" | "renewal" | "maintenance")
-                  }
+                  onChange={(e) => setSelectedAction(e.target.value as "purchase" | "maintenance")}
                 >
-                  <option value="renewal">Renouveler la licence</option>
-                  <option value="purchase">Acheter une licence</option>
-                  <option value="maintenance">Payer la maintenance</option>
+                  {isSuperAdmin ? (
+                    <>
+                      <option value="purchase" disabled={alreadyPurchased}>
+                        {alreadyPurchased ? "Licence déjà achetée" : "Acheter la licence (perpétuelle)"}
+                      </option>
+                      <option value="maintenance">Payer la maintenance annuelle</option>
+                    </>
+                  ) : (
+                    <option value="maintenance">Payer la maintenance annuelle</option>
+                  )}
                 </Form.Select>
+                {alreadyPurchased && (
+                  <Form.Text className="text-muted d-block">
+                    La licence est perpétuelle et a déjà été achetée : seule la maintenance annuelle peut être commandée.
+                  </Form.Text>
+                )}
               </Form.Group>
 
               {selectedAction !== "maintenance" && (
@@ -281,34 +412,35 @@ export default function LicencePage() {
               )}
 
               <Form.Group className="mb-3">
-                <Form.Label>Durée (mois)</Form.Label>
-                <Form.Control
-                  type="number"
-                  value={durationMonths}
-                  onChange={(e) => setDurationMonths(Number(e.target.value))}
-                  min={1}
-                />
-              </Form.Group>
-
-              <Form.Group className="mb-3">
-                <Form.Label>Montant (XOF)</Form.Label>
+                <Form.Label>Montant (XOF, forfaitaire)</Form.Label>
                 <Form.Control
                   type="number"
                   value={amount}
                   onChange={(e) => setAmount(Number(e.target.value))}
+                  disabled={!isSuperAdmin}
                   min={0}
                 />
+                {!isSuperAdmin && (
+                  <Form.Text className="text-muted d-block">
+                    Montant calculé automatiquement : {(selectedAction === "maintenance" ? computedMaintenanceAmount : computedLicenceAmount).toLocaleString("fr-FR")} XOF
+                  </Form.Text>
+                )}
               </Form.Group>
 
               <Button
                 variant="success"
                 onClick={handleCreateOrder}
-                disabled={ordering || selectedModules.length === 0}
+                disabled={
+                  ordering ||
+                  (selectedAction === "purchase" && (alreadyPurchased || selectedModules.length === 0))
+                }
               >
                 {ordering ? (
                   <Spinner animation="border" size="sm" />
-                ) : (
+                ) : isSuperAdmin ? (
                   "Procéder au paiement"
+                ) : (
+                  "Demander commande"
                 )}
               </Button>
 
@@ -325,6 +457,62 @@ export default function LicencePage() {
                     ))}
                   </ListGroup>
                 </div>
+              )}
+            </Card.Body>
+          </Card>
+        </Col>
+      </Row>
+
+      <Row className="mt-4">
+        <Col>
+          <Card>
+            <Card.Header>Historique des commandes</Card.Header>
+            <Card.Body>
+              {orders.length === 0 ? (
+                <div>Aucune commande</div>
+              ) : (
+                <ListGroup>
+                  {orders.map((o) => (
+                    <ListGroup.Item key={o._id} className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <div><strong>#{o._id}</strong> — {o.action} — {o.status}</div>
+                        <div className="small text-muted">Montant: {o.amount?.toLocaleString?.("fr-FR") || o.amount} {o.currency}</div>
+                      </div>
+                      <div className="d-flex gap-2">
+                        {o.orderFormUrl && (
+                          <Button variant="outline-primary" size="sm" onClick={() => window.open(o.orderFormUrl, "_blank")}>
+                            Voir bon de commande
+                          </Button>
+                        )}
+                        {o.acquisitionContractUrl && (
+                          <>
+                            <Button variant="outline-secondary" size="sm" onClick={() => window.open(o.acquisitionContractUrl, "_blank")}>
+                              Voir contrat
+                            </Button>
+                            <Button variant="outline-success" size="sm" onClick={() => openAndPrint(o.acquisitionContractUrl)}>
+                              Imprimer
+                            </Button>
+                          </>
+                        )}
+                        {o.maintenanceContractUrl && (
+                          <Button variant="outline-info" size="sm" onClick={() => window.open(o.maintenanceContractUrl, "_blank")}>
+                            Contrat maintenance
+                          </Button>
+                        )}
+                        {o.paymentReceiptUrl && (
+                          <>
+                            <Button variant="outline-warning" size="sm" onClick={() => window.open(o.paymentReceiptUrl, "_blank")}>
+                              Voir reçu
+                            </Button>
+                            <Button variant="outline-dark" size="sm" onClick={() => openAndPrint(o.paymentReceiptUrl)}>
+                              Imprimer reçu
+                            </Button>
+                          </>
+                        )}
+                      </div>
+                    </ListGroup.Item>
+                  ))}
+                </ListGroup>
               )}
             </Card.Body>
           </Card>

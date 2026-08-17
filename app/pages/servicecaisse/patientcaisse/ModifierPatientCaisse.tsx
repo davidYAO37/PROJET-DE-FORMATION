@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 import { Modal, Button, Form, Row, Col } from "react-bootstrap";
 import SocietePatientModal from "@/components/SocietePatientModal";
+import { logFetchIssue } from "@/lib/clientFetchLog";
 
 interface Assurance {
   _id: string;
@@ -34,10 +35,16 @@ export default function ModifierPatientCaisse({ show, handleClose, patient, onUp
     const fetchAssurances = async () => {
       try {
         const res = await fetch("/api/assurances");
+        if (!res.ok) {
+          logFetchIssue(res.status, "Erreur lors du chargement des assurances");
+          setAssurances([]);
+          return;
+        }
         const data = await res.json();
-        setAssurances(data);
+        setAssurances(Array.isArray(data) ? data : []);
       } catch (err) {
         console.error("Erreur lors du chargement des assurances", err);
+        setAssurances([]);
       }
     };
     fetchAssurances();

@@ -5,6 +5,7 @@ import { Nav, Badge } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import { useRouter } from 'next/navigation';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
 const menu = [
   { label: 'Tableau de bord',      path: '/pages/serviceinfirmier/tinfirmier',                    icon: <i className="bi bi-speedometer2 me-2 text-info"></i> },
@@ -86,6 +87,7 @@ export default function SidebarInfirmier() {
 
         <hr className="sidebar-separator-medical" />
 
+        <SidebarBlockOverlay module="infirmier">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
             <Nav.Item key={index} className="mb-2">
@@ -114,6 +116,7 @@ export default function SidebarInfirmier() {
             </Nav.Item>
           ))}
         </Nav>
+        </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">
           <button
             className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"

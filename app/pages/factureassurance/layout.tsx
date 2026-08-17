@@ -1,5 +1,6 @@
 import React from 'react';
 import Verifconnecion from '@/components/verifconnecion';
+import RoleGuard from '@/components/RoleGuard';
 import SidebarComptabilite from '@/components/SidebarComptabilite';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -11,12 +12,14 @@ export const metadata = {
 export default function FactureAssuranceLayout({ children }: { children: React.ReactNode }) {
   return (
     <Verifconnecion>
+      <RoleGuard allowedRoles={['comptable', 'admin']}>
       <div className="d-flex flex-column flex-md-row min-vh-100">
         <SidebarComptabilite />
         <main className="flex-grow-1 p-3">
           {children}
         </main>
       </div>
+      </RoleGuard>
     </Verifconnecion>
   );
 }

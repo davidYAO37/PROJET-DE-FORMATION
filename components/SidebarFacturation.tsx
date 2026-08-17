@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { useEffect, useState } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
 const BASE = '/pages/servicefacturation';
 
@@ -76,6 +77,7 @@ export default function SidebarFacturation() {
           </span>
         </div>
 
+        <SidebarBlockOverlay module="facturation">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => {
             const isActive = pathname === item.path || pathname.startsWith(item.path + '/');
@@ -104,6 +106,7 @@ export default function SidebarFacturation() {
             );
           })}
         </Nav>
+        </SidebarBlockOverlay>
 
         <div className="mt-auto px-3 pb-3">
           {user && (

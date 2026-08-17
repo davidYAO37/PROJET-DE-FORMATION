@@ -38,19 +38,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     // Vérifier si c'est du FormData ou du JSON
     const contentType = req.headers.get("content-type") || "";
-    
+
     let updateData: any;
-    
+
     if (contentType.includes("multipart/form-data")) {
       // Gérer FormData
       const formData = await req.formData();
-      
+
       // Extraire les données du formulaire
       const NomSociete = formData.get("NomSociete") as string;
       const EnteteSociete = formData.get("EnteteSociete") as string;
       const PiedPageSociete = formData.get("PiedPageSociete") as string;
       const LogoE = formData.get("LogoE") as string;
       const NCC = formData.get("NCC") as string;
+      const maintenancePriceRaw = formData.get("maintenancePrice") as string | null;
+      const maintenancePrice = maintenancePriceRaw ? parseFloat(maintenancePriceRaw as string) || 0 : undefined;
+      const licencePriceRaw = formData.get("licencePrice") as string | null;
+      const licencePrice = licencePriceRaw ? parseFloat(licencePriceRaw as string) || 0 : undefined;
+      const maintenanceAcceptedRaw = formData.get("maintenanceAccepted") as string | null;
+      const maintenanceAccepted = maintenanceAcceptedRaw !== null ? maintenanceAcceptedRaw === "true" : undefined;
       const logoFile = formData.get("logoFile") as File | null;
 
       let logoPath = LogoE; // Par défaut, garde le chemin existant
@@ -79,9 +85,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         EnteteSociete,
         PiedPageSociete,
         LogoE: logoPath,
-        NCC
+        NCC,
       };
-     
+      if (typeof maintenancePrice !== "undefined") updateData.maintenancePrice = maintenancePrice;
+      if (typeof licencePrice !== "undefined") updateData.licencePrice = licencePrice;
+      if (typeof maintenanceAccepted !== "undefined") updateData.maintenanceAccepted = maintenanceAccepted;
     } else {
       // Gérer JSON (ancien format)
       const body = await req.json();
@@ -99,7 +107,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       projection: { mongoUri: 0, licenceKey: 0 },
     });
     if (!updated) return NextResponse.json({ error: "Entreprise non trouvée" }, { status: 404 });
-    
+
     console.log("Entreprise modifiée:", updated);
     return NextResponse.json(updated);
   } catch (error) {

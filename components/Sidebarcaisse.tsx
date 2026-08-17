@@ -14,6 +14,8 @@ import ListeFacturesAnnuleesModal from '@/app/pages/servicecaisse/components/Lis
 import MenuImpressionFactureModal from '@/app/pages/servicecaisse/components/MenuImpressionFactureModal';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import { useRouter } from 'next/navigation';
+import { logFetchIssue } from '@/lib/clientFetchLog';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
 
 const menu = [
@@ -52,7 +54,11 @@ export default function Sidebarcaisse() {
   const chargerFacturesASolder = async () => {
     try {
       const response = await fetch('/api/facturesnonsoldees', { cache: 'no-store' });
-      if (!response.ok) throw new Error('Erreur lors du chargement des factures à solder');
+      if (!response.ok) {
+        logFetchIssue(response.status, 'Erreur lors du chargement des factures à solder');
+        setFacturesASolderCount(0);
+        return;
+      }
 
       const data = await response.json();
       const factures = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
@@ -257,6 +263,7 @@ export default function Sidebarcaisse() {
           <span className="sidebar-title-medical ms-2">EasyMedical</span>
         </div>
         <hr className="sidebar-separator-medical" />
+        <SidebarBlockOverlay module="caisse">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
             <Nav.Item key={index} className="mb-2" style={{ cursor: 'pointer' }}>
@@ -313,6 +320,7 @@ export default function Sidebarcaisse() {
             </Nav.Item>
           ))}
         </Nav>
+        </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">
           <button
             className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"

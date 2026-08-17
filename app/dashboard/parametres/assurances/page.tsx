@@ -5,6 +5,7 @@ import ListeAssurance from "./ListeAssurance";
 import AjouterAssurance from "./AjouterAssurance";
 import ModifierAssurance from "./ModifierAssurance";
 import { Assurance } from "@/types/assurance";
+import { logFetchIssue } from "@/lib/clientFetchLog";
 
 export default function AssurancePage() {
     const [assurances, setAssurances] = useState<Assurance[]>([]);
@@ -14,8 +15,15 @@ export default function AssurancePage() {
 
     useEffect(() => {
         fetch("/api/assurances")
-            .then((res) => res.json())
-            .then(setAssurances);
+            .then(async (res) => {
+                if (!res.ok) {
+                    logFetchIssue(res.status, "Erreur lors du chargement des assurances");
+                    return [];
+                }
+                return res.json();
+            })
+            .then((data) => setAssurances(Array.isArray(data) ? data : []))
+            .catch(() => setAssurances([]));
     }, []);
 
     const handleAdd = (a: Assurance) => {

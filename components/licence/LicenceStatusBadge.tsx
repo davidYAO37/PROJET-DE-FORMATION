@@ -9,9 +9,6 @@ interface LicenceStatusBadgeProps {
 
 export default function LicenceStatusBadge({ entreprise }: LicenceStatusBadgeProps) {
   const today = new Date();
-  const endDate = entreprise.licenceEndDate
-    ? new Date(entreprise.licenceEndDate)
-    : null;
 
   if (entreprise.licenceStatus === "resiliated" || entreprise.statut === "resiliee") {
     return <Badge bg="dark">Résiliée</Badge>;
@@ -26,19 +23,21 @@ export default function LicenceStatusBadge({ entreprise }: LicenceStatusBadgePro
   }
 
   if (entreprise.licenceType === "trial") {
-    if (endDate && endDate < today) {
+    const trialEnd = entreprise.licenceEndDate ? new Date(entreprise.licenceEndDate) : null;
+    if (trialEnd && trialEnd < today) {
       return <Badge bg="danger">Essai expiré</Badge>;
     }
     return <Badge bg="info">Essai</Badge>;
   }
 
-  if (entreprise.licenceType === "maintenance_overdue") {
-    return <Badge bg="warning" text="dark">Maintenance en retard</Badge>;
+  // Licence perpétuelle achetée : le seul motif de blocage possible est la maintenance
+  // expirée (si l'entreprise l'a acceptée).
+  if (entreprise.maintenanceAccepted) {
+    const maintenanceDue = entreprise.maintenanceDueDate ? new Date(entreprise.maintenanceDueDate) : null;
+    if (maintenanceDue && maintenanceDue < today) {
+      return <Badge bg="warning" text="dark">Maintenance expirée</Badge>;
+    }
   }
 
-  if (endDate && endDate < today) {
-    return <Badge bg="danger">Expirée</Badge>;
-  }
-
-  return <Badge bg="success">Active</Badge>;
+  return <Badge bg="success">Active (perpétuelle)</Badge>;
 }

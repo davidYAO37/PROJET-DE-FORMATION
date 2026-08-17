@@ -2,7 +2,23 @@ import jwt from "jsonwebtoken";
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { User } from "@/models/users.model";
+import { Entreprise } from "@/models/entreprise";
+import { getLicenceStatus } from "@/lib/licence";
 import { db } from "@/db/mongoConnect";
+
+// Chemins toujours accessibles même si la licence de l'entreprise est bloquée :
+// l'utilisateur doit pouvoir consulter son statut et régulariser sa situation
+// (achat de licence, paiement de maintenance, déconnexion...).
+const LICENCE_EXEMPT_PATH_PREFIXES = [
+  "/api/licence",
+  "/api/login",
+  "/api/logout",
+  "/api/me",
+];
+
+function isLicenceExemptPath(pathname: string): boolean {
+  return LICENCE_EXEMPT_PATH_PREFIXES.some((prefix) => pathname.startsWith(prefix));
+}
 
 function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET || process.env.NEXTAUTH_SECRET;
@@ -83,6 +99,26 @@ export async function requireAuth(req: NextRequest, allowedRoles?: string[]) {
 
   if (allowedRoles && !allowedRoles.includes(user.type) && user.type !== "adminsuper") {
     return { error: NextResponse.json({ message: "Accès interdit" }, { status: 403 }), user: null };
+  }
+
+  // Blocage de licence : appliqué de façon centrale ici pour que TOUTES les
+  // routes passant par requireAuth() (pas seulement celles utilisant
+  // withTenant()/getTenantConnection()) réagissent de la même façon et avec
+  // le même message clair, dès qu'une entreprise est en essai expiré,
+  // suspendue, résiliée ou en maintenance impayée.
+  if (user.type !== "adminsuper" && user.entrepriseId && !isLicenceExemptPath(req.nextUrl.pathname)) {
+    const entreprise = await Entreprise.findById(user.entrepriseId).lean();
+    if (!entreprise) {
+      return {
+        error: NextResponse.json({ message: "Entreprise associée introuvable" }, { status: 403 }),
+        user: null,
+      };
+    }
+    const licenceStatus = getLicenceStatus(entreprise);
+    if (licenceStatus.isBlocked) {
+      const message = licenceStatus.alerts[0]?.message || "Licence invalide ou expirée";
+      return { error: NextResponse.json({ message }, { status: 403 }), user: null };
+    }
   }
 
   return { user, error: null };

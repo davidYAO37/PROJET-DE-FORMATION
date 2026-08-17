@@ -29,13 +29,18 @@ export async function POST(req: NextRequest) {
   await db();
   try {
     const formData = await req.formData();
-    
+
     // Extraire les données du formulaire
     const NomSociete = formData.get("NomSociete") as string;
     const EnteteSociete = formData.get("EnteteSociete") as string;
     const PiedPageSociete = formData.get("PiedPageSociete") as string;
     const LogoE = formData.get("LogoE") as string;
     const NCC = formData.get("NCC") as string;
+    const maintenancePriceRaw = formData.get("maintenancePrice") as string | null;
+    const maintenancePrice = maintenancePriceRaw ? parseFloat(maintenancePriceRaw) || 0 : 0;
+    const licencePriceRaw = formData.get("licencePrice") as string | null;
+    const licencePrice = licencePriceRaw ? parseFloat(licencePriceRaw) || 0 : 0;
+    const maintenanceAccepted = formData.get("maintenanceAccepted") === "true";
     const requestedDbName = (formData.get("dbName") as string) || "";
     const logoFile = formData.get("logoFile") as File | null;
 
@@ -101,6 +106,9 @@ export async function POST(req: NextRequest) {
       PiedPageSociete,
       LogoE: logoPath,
       NCC,
+      maintenancePrice,
+      licencePrice,
+      maintenanceAccepted,
       dbName,
       mongoUri,
     };

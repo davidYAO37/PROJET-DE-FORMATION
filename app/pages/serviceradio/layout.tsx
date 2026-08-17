@@ -1,5 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Verifconnecion from '@/components/verifconnecion';
+import RoleGuard from '@/components/RoleGuard';
 import SidebarRadio from '@/components/SidebarRadio';
 
 export const metadata = {
@@ -9,6 +10,7 @@ export const metadata = {
 export default function Layout({ children }: { children: React.ReactNode }) {
   return (
     <Verifconnecion>
+    <RoleGuard allowedRoles={['radiologue', 'admin']}>
     <div className="d-flex flex-column flex-md-row min-vh-100">
       <aside className="bg-light border-end">
         <SidebarRadio/>
@@ -19,6 +21,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </main>
       </div>
     </div>
+    </RoleGuard>
     </Verifconnecion>
   );
 }

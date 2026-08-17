@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
 const MENU = [
     { key: 'dashboard',         label: 'Tableau de bord',          icon: 'bi bi-speedometer2',      color: 'text-primary' },
@@ -89,6 +90,7 @@ export default function SidebarPharmacie() {
                 </div>
                 <hr className="sidebar-separator-medical" />
 
+                <SidebarBlockOverlay module="pharmacie">
                 <Nav className="flex-column px-3">
                     {MENU.map(item => (
                         <Nav.Item key={item.key} className="mb-2">
@@ -114,6 +116,7 @@ export default function SidebarPharmacie() {
                         </Nav.Item>
                     ))}
                 </Nav>
+                </SidebarBlockOverlay>
 
                 <div className="mt-auto px-3 pb-3">
                     {user && (

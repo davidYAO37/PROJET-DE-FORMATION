@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { requireAuth } from "@/lib/auth";
-import { renewLicence } from "@/lib/licenceService";
+import { updateLicenceModules } from "@/lib/licenceService";
 import { LicenceModuleCode, ALL_MODULE_CODES } from "@/lib/licenceModules";
 
+// La licence étant perpétuelle et forfaitaire, ce endpoint ne sert plus qu'à modifier
+// les modules inclus dans une licence déjà achetée : pas de durée ni de montant à recalculer.
 export async function POST(req: NextRequest) {
   const { user, error } = await requireAuth(req, ["adminsuper"]);
   if (error) return error;
@@ -11,13 +13,10 @@ export async function POST(req: NextRequest) {
   try {
     await db();
     const body = await req.json();
-    const { entrepriseId, durationMonths, modules, price, currency, notes } = body;
+    const { entrepriseId, modules, notes } = body;
 
-    if (!entrepriseId || typeof durationMonths !== "number" || durationMonths <= 0) {
-      return NextResponse.json(
-        { error: "entrepriseId et durationMonths (nombre positif) requis" },
-        { status: 400 }
-      );
+    if (!entrepriseId) {
+      return NextResponse.json({ error: "entrepriseId requis" }, { status: 400 });
     }
 
     const selectedModules: LicenceModuleCode[] =
@@ -25,21 +24,13 @@ export async function POST(req: NextRequest) {
         ? modules.filter((m): m is LicenceModuleCode =>
             ALL_MODULE_CODES.includes(m as LicenceModuleCode)
           )
-        : [];
+        : [...ALL_MODULE_CODES];
 
-    const updated = await renewLicence({
-      entrepriseId,
-      durationMonths,
-      modules: selectedModules,
-      price,
-      currency: currency || "XOF",
-      createdBy: user?._id,
-      notes,
-    });
+    const updated = await updateLicenceModules(entrepriseId, selectedModules, user?._id, notes);
 
     return NextResponse.json(updated);
   } catch (err) {
-    const message = err instanceof Error ? err.message : "Erreur renouvellement licence";
+    const message = err instanceof Error ? err.message : "Erreur modification des modules";
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

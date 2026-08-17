@@ -9,6 +9,7 @@ import ActeBiologie from '@/app/dashboard/parametres/acteBiologie/page';
 import ListeResultatValides from '@/app/pages/ResultatValides/page';
 import AutomatExamen from './AutomatExamen';
 import { useRouter } from 'next/navigation';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
 
 
@@ -127,6 +128,7 @@ export default function SidebarBiologiste() {
                     <span className="sidebar-title-medical ms-2">EasyMedical</span>
                 </div>
                 <hr className="sidebar-separator-medical" />
+                <SidebarBlockOverlay module="biologiste">
                 <Nav className="flex-column px-3">
                     {menu.map((item, index) => (
                         <Nav.Item key={index} className="mb-2">
@@ -174,6 +176,7 @@ export default function SidebarBiologiste() {
                         </Nav.Item>
                     ))}
                 </Nav>
+                </SidebarBlockOverlay>
                 <div className="mt-auto px-3 pb-3">
                     <button
                         className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"

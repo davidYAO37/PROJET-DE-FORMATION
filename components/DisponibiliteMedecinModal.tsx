@@ -6,6 +6,7 @@ import { FaCalendarAlt, FaPlus, FaTrash } from 'react-icons/fa';
 import { useEntreprise } from '@/hooks/useEntreprise';
 import { generatePrintHeader, generatePrintFooter, createPrintWindow } from '@/utils/printRecu';
 import { IMedecin } from '@/models/medecin';
+import { logFetchIssue } from '@/lib/clientFetchLog';
 import styles from './DisponibiliteMedecinModal.module.css';
 
 interface DisponibiliteMedecinModalProps {
@@ -69,7 +70,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
           const data = await response.json();
           setMedecins(data);
         } else {
-          console.error('Erreur API médecins:', response.status);
+          logFetchIssue(response.status, 'Erreur API médecins:');
         }
       } catch (error) {
         console.error('Erreur lors du chargement des médecins:', error);
@@ -164,7 +165,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
         });
         setRdvStatutSwitch(initialSwitchState);
       } else {
-        console.error('Erreur lors du chargement des rendez-vous');
+        logFetchIssue(response.status, 'Erreur lors du chargement des rendez-vous');
         setRendezVous([]);
         setRdvStatutSwitch({});
       }

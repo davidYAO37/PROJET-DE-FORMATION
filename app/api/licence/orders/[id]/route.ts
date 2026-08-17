@@ -27,7 +27,17 @@ export async function GET(
       return NextResponse.json({ error: "Accès interdit" }, { status: 403 });
     }
 
-    return NextResponse.json(order);
+    // Masquer les documents sensibles pour l'entreprise tant que la commande n'est pas validée
+    const orderObj: any = order.toObject();
+    if (user?.type !== "adminsuper" && orderObj.status !== "validated") {
+      delete orderObj.paymentReceiptUrl;
+      delete orderObj.acquisitionContractUrl;
+      delete orderObj.maintenanceContractUrl;
+      // order form can be visible even before validation, keep as is or hide depending on policy
+      delete orderObj.orderFormUrl;
+    }
+
+    return NextResponse.json(orderObj);
   } catch (err) {
     console.error("Erreur consultation commande:", err);
     return NextResponse.json(

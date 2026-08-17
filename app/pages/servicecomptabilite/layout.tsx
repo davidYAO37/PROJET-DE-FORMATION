@@ -1,5 +1,6 @@
 // app/pages/servicecomptabilite/layout.tsx
 import Verifconnecion from '@/components/verifconnecion';
+import RoleGuard from '@/components/RoleGuard';
 import ComptabiliteShell from './ComptabiliteShell';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
@@ -11,9 +12,11 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <Verifconnecion>
-      <ComptabiliteShell>
-        {children}
-      </ComptabiliteShell>
+      <RoleGuard allowedRoles={['comptable', 'admin']}>
+        <ComptabiliteShell>
+          {children}
+        </ComptabiliteShell>
+      </RoleGuard>
     </Verifconnecion>
   );
 }

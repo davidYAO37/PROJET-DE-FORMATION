@@ -16,6 +16,7 @@ import {
   Modal,
   Badge,
   Card,
+  Alert,
 } from "react-bootstrap";
 import {
   FaEdit,
@@ -29,6 +30,7 @@ import {
 import { Entreprise } from "@/types/entreprise";
 import LicenceStatusBadge from "@/components/licence/LicenceStatusBadge";
 import ModuleLabels from "@/components/licence/ModuleLabels";
+import OrdersManager from "@/components/licence/OrdersManager";
 import { LICENCE_MODULES, LicenceModuleCode } from "@/lib/licenceModules";
 
 const ITEMS_PER_PAGE = 10;
@@ -65,22 +67,32 @@ export default function LicencesPage() {
   const [toastVariant, setToastVariant] = useState<"success" | "info" | "danger">("info");
 
   const [selectedEntreprise, setSelectedEntreprise] = useState<Entreprise | null>(null);
+  const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [confirmPayload, setConfirmPayload] = useState<{
+    url: string;
+    body: any;
+    successMessage: string;
+    title?: string;
+    confirmLabel?: string;
+  } | null>(null);
 
   // Modals
   const [showTrialModal, setShowTrialModal] = useState(false);
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
+  const [showModulesModal, setShowModulesModal] = useState(false);
   const [showMaintenanceModal, setShowMaintenanceModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showOrdersModal, setShowOrdersModal] = useState(false);
 
   const [trialDays, setTrialDays] = useState(14);
-  const [purchaseMonths, setPurchaseMonths] = useState(12);
   const [purchasePrice, setPurchasePrice] = useState(100000);
-  const [maintenanceMonths, setMaintenanceMonths] = useState(12);
+  const [computedPurchaseAmount, setComputedPurchaseAmount] = useState<number | null>(null);
+  const [computedMaintenanceAmount, setComputedMaintenanceAmount] = useState<number | null>(null);
   const [selectedModules, setSelectedModules] = useState<LicenceModuleCode[]>(
     LICENCE_MODULES.map((m) => m.code)
   );
   const [pendingOrders, setPendingOrders] = useState<LicenceOrderLight[]>([]);
+  const [editedAmounts, setEditedAmounts] = useState<Record<string, number>>({});
   const [history, setHistory] = useState<LicenceHistoryEntry[]>([]);
 
   useEffect(() => {
@@ -96,6 +108,9 @@ export default function LicencesPage() {
       if (res.ok) {
         const data = await res.json();
         setPendingOrders(data);
+        const initial: Record<string, number> = {};
+        data.forEach((o: any) => (initial[o._id] = o.amount));
+        setEditedAmounts(initial);
       }
     } catch {
       // ignore
@@ -148,6 +163,11 @@ export default function LicencesPage() {
     }
   };
 
+  const openConfirm = (params: { url: string; body: any; successMessage: string; title?: string; confirmLabel?: string; }) => {
+    setConfirmPayload(params);
+    setShowConfirmModal(true);
+  };
+
   const openTrialModal = (entreprise: Entreprise) => {
     setSelectedEntreprise(entreprise);
     setTrialDays(14);
@@ -155,17 +175,27 @@ export default function LicencesPage() {
     setShowTrialModal(true);
   };
 
-  const openPurchaseModal = (entreprise: Entreprise, isRenewal = false) => {
+  const openPurchaseModal = (entreprise: Entreprise) => {
     setSelectedEntreprise(entreprise);
-    setPurchaseMonths(12);
-    setPurchasePrice(100000);
-    setSelectedModules(entreprise.modules || LICENCE_MODULES.map((m) => m.code));
+    // Forfait unique : initialise le prix depuis entreprise.licencePrice.
+    const licencePrice = Number(entreprise.licencePrice || 0);
+    setPurchasePrice(licencePrice > 0 ? licencePrice : 100000);
+    setComputedPurchaseAmount(licencePrice > 0 ? licencePrice : null);
+    setSelectedModules(entreprise.modules?.length ? entreprise.modules : LICENCE_MODULES.map((m) => m.code));
     setShowPurchaseModal(true);
+  };
+
+  const openModulesModal = (entreprise: Entreprise) => {
+    setSelectedEntreprise(entreprise);
+    setSelectedModules(entreprise.modules?.length ? entreprise.modules : LICENCE_MODULES.map((m) => m.code));
+    setShowModulesModal(true);
   };
 
   const openMaintenanceModal = (entreprise: Entreprise) => {
     setSelectedEntreprise(entreprise);
-    setMaintenanceMonths(12);
+    // Maintenance forfaitaire annuelle : montant fixe, pas de calcul au mois.
+    const maintenancePrice = Number(entreprise.maintenancePrice || 0);
+    setComputedMaintenanceAmount(maintenancePrice > 0 ? maintenancePrice : null);
     setShowMaintenanceModal(true);
   };
 
@@ -190,10 +220,24 @@ export default function LicencesPage() {
   };
 
   const validateOrder = async (orderId: string) => {
+    const body: any = {};
+    if (editedAmounts[orderId] !== undefined) body.amount = editedAmounts[orderId];
     await handleAction(
       `/api/licence/orders/${orderId}/validate`,
-      {},
+      body,
       "Commande validée et licence activée",
+      () => {
+        openOrdersModal();
+        fetchEntreprises();
+      }
+    );
+  };
+
+  const cancelOrderAction = async (orderId: string) => {
+    await handleAction(
+      `/api/licence/orders/${orderId}/cancel`,
+      {},
+      "Commande annulée",
       () => {
         openOrdersModal();
         fetchEntreprises();
@@ -366,8 +410,8 @@ export default function LicencesPage() {
                   <th>Entreprise</th>
                   <th>Statut licence</th>
                   <th>Type</th>
-                  <th>Expire le</th>
-                  <th>Maintenance due</th>
+                  <th>Achetée le / Fin essai</th>
+                  <th>Maintenance</th>
                   <th>Modules</th>
                   <th>Actions</th>
                 </tr>
@@ -391,11 +435,24 @@ export default function LicencesPage() {
                         {entreprise.licenceType === "trial"
                           ? "Essai"
                           : entreprise.licenceType === "paid"
-                          ? "Payée"
-                          : "—"}
+                            ? "Perpétuelle"
+                            : "—"}
                       </td>
-                      <td>{formatDate(entreprise.licenceEndDate)}</td>
-                      <td>{formatDate(entreprise.maintenanceDueDate)}</td>
+                      <td>
+                        {entreprise.licenceType === "trial"
+                          ? formatDate(entreprise.licenceEndDate)
+                          : formatDate(entreprise.licensePurchasedAt)}
+                      </td>
+                      <td>
+                        {entreprise.maintenanceAccepted ? (
+                          <>
+                            <Badge bg="success" className="me-1">Acceptée</Badge>
+                            <div className="small">{formatDate(entreprise.maintenanceDueDate)}</div>
+                          </>
+                        ) : (
+                          <Badge bg="secondary">Non souscrite</Badge>
+                        )}
+                      </td>
                       <td>
                         <ModuleLabels modules={entreprise.modules} max={3} />
                       </td>
@@ -412,17 +469,21 @@ export default function LicencesPage() {
                           size="sm"
                           variant="success"
                           className="me-1 mb-1"
+                          disabled={entreprise.licenceType === "paid"}
+                          title={entreprise.licenceType === "paid" ? "Licence déjà achetée (perpétuelle)" : undefined}
                           onClick={() => openPurchaseModal(entreprise)}
                         >
-                          <FaEdit /> Licence
+                          <FaEdit /> {entreprise.licenceType === "paid" ? "Licence achetée" : "Licence"}
                         </Button>
                         <Button
                           size="sm"
                           variant="warning"
                           className="me-1 mb-1"
-                          onClick={() => openPurchaseModal(entreprise, true)}
+                          disabled={entreprise.licenceType !== "paid"}
+                          title={entreprise.licenceType !== "paid" ? "Disponible après l'achat de la licence" : "Modifier les modules inclus"}
+                          onClick={() => openModulesModal(entreprise)}
                         >
-                          <FaEdit /> Renouv.
+                          <FaEdit /> Modules
                         </Button>
                         <Button
                           size="sm"
@@ -445,14 +506,53 @@ export default function LicencesPage() {
                           variant="danger"
                           className="me-1 mb-1"
                           onClick={() =>
-                            handleAction(
-                              "/api/licence/suspend",
-                              { entrepriseId: entreprise._id },
-                              "Entreprise suspendue"
-                            )
+                            openConfirm({
+                              url: "/api/licence/suspend",
+                              body: { entrepriseId: entreprise._id },
+                              successMessage: "Entreprise suspendue",
+                              title: `Suspendre ${entreprise.NomSociete}`,
+                              confirmLabel: "Suspendre",
+                            })
                           }
                         >
                           <FaPause />
+                        </Button>
+                        {/* Resume (lever suspension) - visible when suspended */}
+                        {entreprise.licenceStatus === "suspended" && (
+                          <Button
+                            size="sm"
+                            variant="success"
+                            className="me-1 mb-1"
+                            onClick={() =>
+                              openConfirm({
+                                url: "/api/licence/resume",
+                                body: { entrepriseId: entreprise._id },
+                                successMessage: "Suspension levée",
+                                title: `Lever la suspension - ${entreprise.NomSociete}`,
+                                confirmLabel: "Lever suspension",
+                              })
+                            }
+                          >
+                            <FaCheck /> Lever suspension
+                          </Button>
+                        )}
+
+                        {/* Quick initialize licence: activate a default trial (30 jours) */}
+                        <Button
+                          size="sm"
+                          variant="dark"
+                          className="me-1 mb-1"
+                          onClick={() =>
+                            openConfirm({
+                              url: "/api/licence/activate-trial",
+                              body: { entrepriseId: entreprise._id, durationDays: 30, modules: entreprise.modules || LICENCE_MODULES.map(m => m.code) },
+                              successMessage: "Licence initialisée (essai 30 jours)",
+                              title: `Initialiser licence - ${entreprise.NomSociete}`,
+                              confirmLabel: "Initialiser",
+                            })
+                          }
+                        >
+                          <FaPlus /> Initialiser
                         </Button>
                       </td>
                     </tr>
@@ -530,7 +630,7 @@ export default function LicencesPage() {
           </Modal.Footer>
         </Modal>
 
-        {/* Modal Achat/Renouvellement */}
+        {/* Modal Achat de licence (perpétuelle) */}
         <Modal
           show={showPurchaseModal}
           onHide={() => setShowPurchaseModal(false)}
@@ -540,28 +640,20 @@ export default function LicencesPage() {
           <Modal.Header closeButton className="bg-success text-white">
             <Modal.Title>
               <i className="bi bi-credit-card me-2"></i>
-              Licence / Renouvellement — {selectedEntreprise?.NomSociete}
+              Achat de la licence perpétuelle — {selectedEntreprise?.NomSociete}
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
             <Card className="border-0 shadow-sm mb-3">
               <Card.Body>
+                <Alert variant="info" className="small">
+                  La licence est <strong>perpétuelle</strong> (achat unique, sans date d&apos;expiration).
+                  La 1<sup>ère</sup> année de maintenance est incluse automatiquement.
+                </Alert>
                 <Row className="g-3 mb-3">
-                  <Col md={6}>
+                  <Col md={12}>
                     <Form.Group>
-                      <Form.Label className="fw-semibold">Durée (mois)</Form.Label>
-                      <Form.Control
-                        type="number"
-                        value={purchaseMonths}
-                        onChange={(e) => setPurchaseMonths(Number(e.target.value))}
-                        min={1}
-                        className="shadow-sm"
-                      />
-                    </Form.Group>
-                  </Col>
-                  <Col md={6}>
-                    <Form.Group>
-                      <Form.Label className="fw-semibold">Prix (XOF)</Form.Label>
+                      <Form.Label className="fw-semibold">Prix (XOF, forfait unique)</Form.Label>
                       <Form.Control
                         type="number"
                         value={purchasePrice}
@@ -569,6 +661,11 @@ export default function LicencesPage() {
                         min={0}
                         className="shadow-sm"
                       />
+                      {computedPurchaseAmount !== null && (
+                        <Form.Text className="text-muted d-block">
+                          Montant calculé depuis le tarif société: {computedPurchaseAmount.toLocaleString("fr-FR")} XOF
+                        </Form.Text>
+                      )}
                     </Form.Group>
                   </Col>
                 </Row>
@@ -589,18 +686,66 @@ export default function LicencesPage() {
                     "/api/licence/purchase",
                     {
                       entrepriseId: selectedEntreprise._id,
-                      durationMonths: purchaseMonths,
                       price: purchasePrice,
                       currency: "XOF",
                       modules: selectedModules,
                     },
-                    "Licence activée",
+                    "Licence perpétuelle activée",
                     () => setShowPurchaseModal(false)
                   );
                 }
               }}
             >
-              Valider
+              Valider l&apos;achat
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
+        {/* Modal Modification des modules (licence déjà achetée) */}
+        <Modal
+          show={showModulesModal}
+          onHide={() => setShowModulesModal(false)}
+          centered
+          size="lg"
+        >
+          <Modal.Header closeButton className="bg-warning">
+            <Modal.Title>
+              <i className="bi bi-grid-3x3-gap me-2"></i>
+              Modifier les modules — {selectedEntreprise?.NomSociete}
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Card className="border-0 shadow-sm">
+              <Card.Body>
+                <Alert variant="info" className="small">
+                  Modification forfaitaire : aucun recalcul de montant ni de date, la licence reste perpétuelle.
+                </Alert>
+                <ModuleSelector />
+              </Card.Body>
+            </Card>
+          </Modal.Body>
+          <Modal.Footer className="bg-light">
+            <Button variant="outline-secondary" onClick={() => setShowModulesModal(false)}>
+              Annuler
+            </Button>
+            <Button
+              variant="warning"
+              disabled={selectedModules.length === 0}
+              onClick={() => {
+                if (selectedEntreprise) {
+                  handleAction(
+                    "/api/licence/renew",
+                    {
+                      entrepriseId: selectedEntreprise._id,
+                      modules: selectedModules,
+                    },
+                    "Modules mis à jour",
+                    () => setShowModulesModal(false)
+                  );
+                }
+              }}
+            >
+              Enregistrer
             </Button>
           </Modal.Footer>
         </Modal>
@@ -620,16 +765,15 @@ export default function LicencesPage() {
           <Modal.Body>
             <Card className="border-0 shadow-sm">
               <Card.Body>
-                <Form.Group>
-                  <Form.Label className="fw-semibold">Durée maintenance (mois)</Form.Label>
-                  <Form.Control
-                    type="number"
-                    value={maintenanceMonths}
-                    onChange={(e) => setMaintenanceMonths(Number(e.target.value))}
-                    min={1}
-                    className="shadow-sm"
-                  />
-                </Form.Group>
+                <Alert variant="info" className="small mb-0">
+                  Maintenance forfaitaire annuelle (12 mois) : le paiement/validation active
+                  automatiquement l&apos;interrupteur « maintenance acceptée » de l&apos;entreprise.
+                </Alert>
+                {computedMaintenanceAmount !== null && (
+                  <Form.Text className="text-muted d-block mt-2">
+                    Montant : {computedMaintenanceAmount.toLocaleString("fr-FR")} XOF
+                  </Form.Text>
+                )}
               </Card.Body>
             </Card>
           </Modal.Body>
@@ -645,7 +789,7 @@ export default function LicencesPage() {
                     "/api/licence/pay-maintenance",
                     {
                       entrepriseId: selectedEntreprise._id,
-                      months: maintenanceMonths,
+                      price: computedMaintenanceAmount ?? undefined,
                     },
                     "Maintenance enregistrée",
                     () => setShowMaintenanceModal(false)
@@ -703,79 +847,21 @@ export default function LicencesPage() {
         </Modal>
 
         {/* Modal Commandes à valider */}
-        <Modal
-          show={showOrdersModal}
-          onHide={() => setShowOrdersModal(false)}
-          centered
-          size="lg"
-        >
+        <Modal show={showOrdersModal} onHide={() => setShowOrdersModal(false)} centered size="xl">
           <Modal.Header closeButton className="bg-warning">
             <Modal.Title>
               <i className="bi bi-basket me-2"></i>
-              Commandes à traiter
+              Gestion commandes — Commandes à traiter
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <Table striped bordered hover size="sm" className="align-middle">
-              <thead className="table-dark">
-                <tr>
-                  <th>Date</th>
-                  <th>Entreprise</th>
-                  <th>Action</th>
-                  <th>Montant</th>
-                  <th>Durée</th>
-                  <th>Statut</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                {pendingOrders.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="text-center">
-                      Aucune commande en attente.
-                    </td>
-                  </tr>
-                ) : (
-                  pendingOrders.map((o) => (
-                    <tr key={o._id}>
-                      <td>{new Date(o.createdAt).toLocaleString("fr-FR")}</td>
-                      <td>
-                        {entreprises.find((e) => e._id === o.entrepriseId)?.NomSociete ||
-                          o.entrepriseId}
-                      </td>
-                      <td>{o.action}</td>
-                      <td>
-                        {o.amount} {o.currency}
-                      </td>
-                      <td>{o.durationMonths} mois</td>
-                      <td>
-                        <Badge
-                          bg={
-                            o.status === "paid_awaiting_validation"
-                              ? "warning"
-                              : o.status === "pending"
-                              ? "info"
-                              : "secondary"
-                          }
-                          text={o.status === "paid_awaiting_validation" ? "dark" : undefined}
-                        >
-                          {o.status}
-                        </Badge>
-                      </td>
-                      <td>
-                        <Button
-                          size="sm"
-                          variant="success"
-                          onClick={() => validateOrder(o._id)}
-                        >
-                          <FaCheck /> Valider
-                        </Button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </Table>
+            <div>
+              {/* OrdersManager component */}
+              <React.Suspense fallback={<div className="text-center"><Spinner animation="border" /></div>}>
+                {/* eslint-disable-next-line @next/next/no-before-interactive */}
+                <OrdersManager onUpdated={() => { fetchPendingOrders(); fetchEntreprises(); }} />
+              </React.Suspense>
+            </div>
           </Modal.Body>
         </Modal>
 
@@ -790,6 +876,34 @@ export default function LicencesPage() {
             <Toast.Body className="text-white">{toastMessage}</Toast.Body>
           </Toast>
         </ToastContainer>
+        {/* Confirmation modal for super-admin actions */}
+        <Modal
+          show={showConfirmModal}
+          onHide={() => setShowConfirmModal(false)}
+          centered
+        >
+          <Modal.Header closeButton>
+            <Modal.Title>{confirmPayload?.title || "Confirmer l'action"}</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <p>Êtes-vous sûr de vouloir continuer ?</p>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="outline-secondary" onClick={() => setShowConfirmModal(false)}>
+              Annuler
+            </Button>
+            <Button
+              variant="primary"
+              onClick={async () => {
+                if (!confirmPayload) return;
+                setShowConfirmModal(false);
+                await handleAction(confirmPayload.url, confirmPayload.body, confirmPayload.successMessage);
+              }}
+            >
+              {confirmPayload?.confirmLabel || "Confirmer"}
+            </Button>
+          </Modal.Footer>
+        </Modal>
       </Container>
     </div>
   );

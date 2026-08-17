@@ -12,6 +12,7 @@ import PlanningModal from './PlanningModal';
 import DisponibiliteMedecinModal from './DisponibiliteMedecinModal';
 import ModalPointSaisieAccueil from './ModalPointSaisieAccueil';
 import { useRouter } from 'next/navigation';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
   { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
@@ -138,6 +139,7 @@ export default function Sidebaracceuil() {
           <span className="sidebar-title-medical ms-2">EasyMedical</span>
         </div>
         <hr className="sidebar-separator-medical" />
+        <SidebarBlockOverlay module="accueil">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
             <Nav.Item key={index} className="mb-2">
@@ -172,6 +174,7 @@ export default function Sidebaracceuil() {
             </Nav.Item>
           ))}
         </Nav>
+        </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">
           <button
             className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"

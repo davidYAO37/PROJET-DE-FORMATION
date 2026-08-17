@@ -24,6 +24,9 @@ export default function ModifierEntreprise({
   const [LogoEPreview, setLogoEPreview] = useState<string>("");
   const [PiedPageSociete, setPiedPageSociete] = useState("");
   const [NCC, setNCC] = useState("");
+  const [maintenancePrice, setMaintenancePrice] = useState<number | string>(0);
+  const [licencePrice, setLicencePrice] = useState<number | string>(0);
+  const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -46,6 +49,9 @@ export default function ModifierEntreprise({
       setLogoE(entreprise?.LogoE!);
       setPiedPageSociete(entreprise?.PiedPageSociete!);
       setNCC(entreprise?.NCC!);
+      setMaintenancePrice(entreprise?.maintenancePrice ?? 0);
+      setLicencePrice(entreprise?.licencePrice ?? 0);
+      setMaintenanceAccepted(!!entreprise?.maintenanceAccepted);
 
       // Configurer le preview du logo existant
       if (entreprise.LogoE) {
@@ -77,6 +83,9 @@ export default function ModifierEntreprise({
       formData.append("PiedPageSociete", PiedPageSociete);
       formData.append("LogoE", LogoE);
       formData.append("NCC", NCC);
+      formData.append("maintenancePrice", String(maintenancePrice ?? 0));
+      formData.append("licencePrice", String(licencePrice ?? 0));
+      formData.append("maintenanceAccepted", String(maintenanceAccepted));
 
       // Ajouter le fichier seulement si un nouveau fichier est sélectionné
       if (LogoEFile) {
@@ -155,6 +164,51 @@ export default function ModifierEntreprise({
                           required
                           className="shadow-sm"
                         />
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold text-secondary">
+                          Prix maintenance (XOF)
+                        </Form.Label>
+                        <Form.Control
+                          type="number"
+                          value={maintenancePrice as any}
+                          onChange={(e) => setMaintenancePrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          min={0}
+                          className="shadow-sm"
+                        />
+                        <Form.Text className="text-muted">Prix de la maintenance annuelle pour cette entreprise.</Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold text-secondary">
+                          Prix licence (XOF)
+                        </Form.Label>
+                        <Form.Control
+                          type="number"
+                          value={licencePrice as any}
+                          onChange={(e) => setLicencePrice(e.target.value === '' ? '' : Number(e.target.value))}
+                          min={0}
+                          className="shadow-sm"
+                        />
+                        <Form.Text className="text-muted">Prix annuel de la licence pour cette entreprise.</Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="maintenance-accepted-switch-edit"
+                          label="Maintenance annuelle acceptée par l'entreprise"
+                          checked={maintenanceAccepted}
+                          onChange={(e) => setMaintenanceAccepted(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Activé = l&apos;entreprise a accepté la maintenance : l&apos;accès sera bloqué si la maintenance expire sans être renouvelée.
+                          Désactivé = aucun blocage lié à la maintenance (licence perpétuelle utilisable sans limite).
+                        </Form.Text>
                       </Form.Group>
                     </Col>
                     {entreprise?.dbName && (

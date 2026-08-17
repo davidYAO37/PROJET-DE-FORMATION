@@ -13,8 +13,8 @@ interface EntrepriseHeaderFooterProps {
   style?: React.CSSProperties;
 }
 
-const EntrepriseHeaderFooter: React.FC<EntrepriseHeaderFooterProps> = ({ 
-  type = 'both', 
+const EntrepriseHeaderFooter: React.FC<EntrepriseHeaderFooterProps> = ({
+  type = 'both',
   showFallback = true,
   className = '',
   style = {}
@@ -156,7 +156,7 @@ const EntrepriseHeaderFooter: React.FC<EntrepriseHeaderFooterProps> = ({
 
   if (type === 'header') return renderHeader();
   if (type === 'footer') return renderFooter();
-  
+
   return (
     <>
       {renderHeader()}

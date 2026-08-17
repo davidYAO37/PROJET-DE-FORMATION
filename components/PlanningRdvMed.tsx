@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Card, Spinner, Form } from "react-bootstrap";
 import { FaCalendarAlt } from "react-icons/fa";
+import { logFetchIssue } from "@/lib/clientFetchLog";
 
 // Interface pour les rendez-vous
 interface RendezVous {
@@ -64,8 +65,11 @@ export default function PlanningRdvMed() {
       const response = await fetch(
         `/api/rendezvous?startDate=${startDate}&endDate=${endDate}`,
       );
-      if (!response.ok)
-        throw new Error("Erreur lors du chargement des rendez-vous");
+      if (!response.ok) {
+        logFetchIssue(response.status, "Erreur lors du chargement des rendez-vous");
+        setPlanningError("Impossible de charger les rendez-vous");
+        return;
+      }
 
       const data = await response.json();
       setRendezVous(data);

@@ -1,6 +1,7 @@
 import { Suspense } from 'react';
 import SidebarPharmacie from '@/components/SidebarPharmacie';
 import Verifconnecion from '@/components/verifconnecion';
+import RoleGuard from '@/components/RoleGuard';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const metadata = {
@@ -11,6 +12,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <Verifconnecion>
+      <RoleGuard allowedRoles={['pharmacien', 'admin']}>
       <div className="d-flex flex-column flex-md-row min-vh-100" style={{ minHeight: '100vh' }}>
         <Suspense fallback={<aside className="sidebar-medical" />}>
           <SidebarPharmacie />
@@ -19,6 +21,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           {children}
         </main>
       </div>
+      </RoleGuard>
     </Verifconnecion>
   );
 }

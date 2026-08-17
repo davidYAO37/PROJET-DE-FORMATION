@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
 import { useEffect, useState } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
 const BASE = '/pages/servicecomptabilite';
 const BASE_FACTURE_ASSUR = '/pages/factureassurance';
@@ -77,6 +78,7 @@ export default function SidebarComptabilite() {
 
         <hr className="sidebar-separator-medical" />
 
+        <SidebarBlockOverlay module="comptabilite">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => {
             const isActive = pathname === item.path || pathname.startsWith(item.path + '/');
@@ -105,6 +107,7 @@ export default function SidebarComptabilite() {
             );
           })}
         </Nav>
+        </SidebarBlockOverlay>
 
         <div className="mt-auto px-3 pb-3">
           {user && (

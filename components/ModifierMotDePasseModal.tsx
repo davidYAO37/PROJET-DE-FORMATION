@@ -139,28 +139,12 @@ export default function ModifierMotDePasseModal({ show, onHide }: ModifierMotDeP
                 return;
             }
 
-            // Vérifier l'ancien mot de passe via API
-            try {
-                const verifyResponse = await axios.post('/api/login', {
-                    email: user.email,
-                    password: ancienMotDePasse,
-                });
-
-                if (verifyResponse.status !== 200) {
-                    setError('L\'ancien mot de passe saisi est incorrect. Veuillez vérifier et réessayer.');
-                    setLoading(false);
-                    return;
-                }
-            } catch (verifyError: any) {
-                setError('L\'ancien mot de passe saisi est incorrect. Veuillez vérifier et réessayer.');
-                setLoading(false);
-                return;
-            }
-
-            // Mettre à jour le mot de passe via API
+            // Mettre à jour le mot de passe via API (l'ancien mot de passe est
+            // désormais vérifié côté serveur dans ce même appel).
             try {
                 const updateResponse = await axios.post('/api/update-password', {
                     email: user.email,
+                    oldPassword: ancienMotDePasse,
                     newPassword: nouveauMotDePasse,
                 });
 
@@ -179,7 +163,9 @@ export default function ModifierMotDePasseModal({ show, onHide }: ModifierMotDeP
                     setError('Impossible de mettre à jour le mot de passe. Veuillez réessayer.');
                 }
             } catch (updateError: any) {
-                if (updateError.response?.status === 400) {
+                if (updateError.response?.status === 401) {
+                    setError('L\'ancien mot de passe saisi est incorrect. Veuillez vérifier et réessayer.');
+                } else if (updateError.response?.status === 400) {
                     setError(updateError.response.data.message || 'Le nouveau mot de passe ne respecte pas les critères de sécurité requis.');
                 } else {
                     setError('Impossible de mettre à jour le mot de passe. Veuillez réessayer.');

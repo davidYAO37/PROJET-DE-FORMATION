@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import DisponibilitePrescriptuerModalRadio from '@/app/pages/serviceradio/tradio/components/DisponibilitePrescripteurModalRadio';
 import { useRouter } from 'next/navigation';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
 interface Statistiques {
   patientsEnAttente: number;
@@ -185,6 +186,7 @@ export default function SidebarRadio() {
           <span className="sidebar-title-medical ms-2">EasyMedical</span>
         </div>
         <hr className="sidebar-separator-medical" />
+        <SidebarBlockOverlay module="radio">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
             <Nav.Item key={index} className="mb-2">
@@ -225,6 +227,7 @@ export default function SidebarRadio() {
             </Nav.Item>
           ))}
         </Nav>
+        </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">
           <button
             className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"

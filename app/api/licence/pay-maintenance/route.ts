@@ -10,7 +10,7 @@ export async function POST(req: NextRequest) {
   try {
     await db();
     const body = await req.json();
-    const { entrepriseId, months, price, currency, notes } = body;
+    const { entrepriseId, price, currency, notes } = body;
 
     if (!entrepriseId) {
       return NextResponse.json(
@@ -19,8 +19,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Maintenance forfaitaire annuelle : toujours 12 mois, pas de calcul au mois.
     const updated = await payMaintenance(entrepriseId, {
-      months: typeof months === "number" && months > 0 ? months : 12,
+      months: 12,
       price,
       currency: currency || "XOF",
       createdBy: user?._id,

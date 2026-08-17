@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import SocietePatientModal from '@/components/SocietePatientModal';
 import { Modal, Button, Form, Alert, Spinner, Row, Col } from 'react-bootstrap';
 import { Patient } from '@/types/patient';
+import { logFetchIssue } from '@/lib/clientFetchLog';
 
 type Assurance = {
   _id: string;
@@ -62,7 +63,9 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
         const res = await fetch('/api/assurances');
         if (res.ok) {
           const data = await res.json();
-          setAssurances(data);
+          setAssurances(Array.isArray(data) ? data : []);
+        } else {
+          logFetchIssue(res.status, "Erreur de chargement des assurances");
         }
       } catch (err) {
         console.error("Erreur de chargement des assurances", err);

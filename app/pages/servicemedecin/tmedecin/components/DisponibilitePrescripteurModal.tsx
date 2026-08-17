@@ -6,6 +6,7 @@ import { FaCalendarAlt, FaPlus, FaTrash } from 'react-icons/fa';
 import { useEntreprise } from '@/hooks/useEntreprise';
 import { generatePrintHeader, generatePrintFooter, createPrintWindow } from '@/utils/printRecu';
 import { IMedecin } from '@/models/medecin';
+import { logFetchIssue } from '@/lib/clientFetchLog';
 import styles from './DisponibilitePrescriptuerModal.module.css';
 
 interface DisponibilitePrescriptuerModalProps {
@@ -88,7 +89,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
               console.warn('Aucun médecin correspondant trouvé pour le profil:', profil);
             }
           } else {
-            console.error('Erreur API médecins:', response.status);
+            logFetchIssue(response.status, 'Erreur API médecins:');
           }
         } else {
           console.warn('Aucun profil trouvé dans le localStorage');
@@ -186,7 +187,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
         });
         setRdvStatutSwitch(initialSwitchState);
       } else {
-        console.error('Erreur lors du chargement des rendez-vous');
+        logFetchIssue(response.status, 'Erreur lors du chargement des rendez-vous');
         setRendezVous([]);
         setRdvStatutSwitch({});
       }

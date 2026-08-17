@@ -2,6 +2,7 @@
 import Sidebaraccueil from '@/components/Sidebaracceuil';
 import SidebarLabo from '@/components/SidebarLabo';
 import Verifconnecion from '@/components/verifconnecion';
+import RoleGuard from '@/components/RoleGuard';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const metadata = {
@@ -12,13 +13,14 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <Verifconnecion>
+      <RoleGuard allowedRoles={['technicienlabo', 'admin']}>
       <div className="d-flex flex-column flex-md-row min-vh-100" style={{ minHeight: '100vh' }}>
         <SidebarLabo />
         <main className="flex-grow-1 p-3">
           {children}
         </main>
       </div>
-
+      </RoleGuard>
     </Verifconnecion>
   );
 }

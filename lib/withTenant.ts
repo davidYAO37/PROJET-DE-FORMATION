@@ -78,11 +78,16 @@ export async function withTenant(
       response: null,
     };
   } catch (error) {
-    const message =
-      error instanceof Error ? error.message : "Erreur de connexion tenant";
+    const message = error instanceof Error ? error.message : "Erreur de connexion tenant";
+    // If the error message is related to licence (blocked/suspended/expired/maintenance),
+    // return 403 (forbidden) so client code can handle it specifically instead of a generic 500.
+    const lower = String(message).toLowerCase();
+    const licenceIndicators = ["licence", "maintenance", "suspend", "resili", "resilié", "résili", "mise en demeure", "expir"];
+    const isLicenceIssue = licenceIndicators.some((kw) => lower.includes(kw));
+    const status = isLicenceIssue ? 403 : 500;
     return {
       context: null,
-      response: NextResponse.json({ message }, { status: 500 }),
+      response: NextResponse.json({ message }, { status }),
     };
   }
 }

@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import DisponibilitePrescriptuerModal from '@/app/pages/servicemedecin/tmedecin/components/DisponibilitePrescripteurModal';
 import ServiceRadioModal from '@/components/ServiceRadioModal';
+import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 import { useRouter } from 'next/navigation';
 
 interface Statistiques {
@@ -151,6 +152,7 @@ export default function SidebarMedecin() {
           <span className="sidebar-title-medical ms-2">EasyMedical</span>
         </div>
         <hr className="sidebar-separator-medical" />
+        <SidebarBlockOverlay module="medecin">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
             <Nav.Item key={index} className="mb-2">
@@ -198,6 +200,7 @@ export default function SidebarMedecin() {
             </Nav.Item>
           ))}
         </Nav>
+        </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">
           <button
             className="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2 fw-semibold"
