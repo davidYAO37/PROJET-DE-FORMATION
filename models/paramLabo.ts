@@ -33,7 +33,7 @@ export interface IParamLabo extends Omit<Document, '_id'> {
 const ParamLaboSchema = new Schema<IParamLabo>({
     NUM_PARAM: { type: Number },
     ParamAbrege: { type: String, maxlength: 50 },
-    Param_designation: { type: String, maxlength: 500 },
+    Param_designation: { type: String, maxlength: 5000 },
     PlageRefMinNe: { type: Number },
     PlageRefMaxNé: { type: Number },
     UnitéParam: { type: String, maxlength: 10 },

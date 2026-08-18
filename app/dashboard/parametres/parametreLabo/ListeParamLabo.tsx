@@ -28,7 +28,7 @@ const ListeParamLabo: React.FC<Props> = ({ ParamLabos, onEdit, onDelete, onAdd }
     const [importError, setImportError] = useState("");
     const [showImportModal, setShowImportModal] = useState(false);
     const [showValidationModal, setShowValidationModal] = useState(false);
-    const [importedData, setImportedData] = useState<any[]>([]);
+    const [importedData, setImportedData] = useState<unknown[][]>([]);
 
     const handleSort = (key: keyof ParamLabo) => {
         setSortConfig((prev) => {
@@ -82,48 +82,45 @@ const ListeParamLabo: React.FC<Props> = ({ ParamLabos, onEdit, onDelete, onAdd }
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        
+
         setImportLoading(true);
         setImportError("");
-        
+
         try {
             const data = await file.arrayBuffer();
             const workbook = XLSX.read(data);
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            let rows = XLSX.utils.sheet_to_json(sheet);
-            
-            // Process rows - only take columns 1 and 2 (index 0 and 1)
-            const processedRows: any[] = [];
-            rows.forEach((row: any, index: number) => {
-                // Get the first two columns
-                const values = Object.values(row);
-                if (values.length >= 2 && values[0] && values[0].toString().trim() !== "") {
-                    processedRows.push({
-                        Param_designation: values[0].toString().trim(),
-                        ValeurNormale: values[1] ? values[1].toString().trim() : ""
-                    });
-                }
+            const rows = XLSX.utils.sheet_to_json<unknown[]>(sheet, {
+                header: 1,
+                defval: "",
+                raw: true,
             });
-            
+
+            const processedRows = rows.slice(1).filter((row) => {
+                const designation = String(row[0] ?? "").trim();
+                return row.length >= 18 && designation !== "";
+            });
+
             if (processedRows.length === 0) {
-                setImportError("Aucune donnée valide trouvée dans le fichier");
+                setImportError("Aucune ligne valide de 18 colonnes trouvée dans le fichier");
                 return;
             }
-            
+
             setImportedData(processedRows);
             setShowValidationModal(true);
-            
+
         } catch (err: any) {
             setImportError(err.message || "Erreur lors de la lecture du fichier Excel. Vérifiez que le fichier n'est pas déjà ouvert.");
         } finally {
             setImportLoading(false);
+            e.target.value = "";
         }
     };
 
     const validateImport = async () => {
         setShowValidationModal(false);
         setImportLoading(true);
-        
+
         try {
             await axios.post("/api/paramlabo/import", { rows: importedData });
             window.location.reload();
@@ -222,13 +219,13 @@ const ListeParamLabo: React.FC<Props> = ({ ParamLabos, onEdit, onDelete, onAdd }
                         ) : (
                             paginated.map((param, idx) => (
                                 <tr key={param._id ? param._id : `row-${(currentPage - 1) * itemsPerPage + idx}`}>
-                                    <td 
-    className="fw-semibold" 
-    dangerouslySetInnerHTML={{ 
-      __html: param.Param_designation || '' 
-    }}
-    onClick={(e) => e.stopPropagation()}
-/>
+                                    <td
+                                        className="fw-semibold"
+                                        dangerouslySetInnerHTML={{
+                                            __html: param.Param_designation || ''
+                                        }}
+                                        onClick={(e) => e.stopPropagation()}
+                                    />
                                     <td>{param.ValeurNormale}</td>
                                     <td>{param.PlageMinMaxNé}</td>
                                     <td>{param.PlageMinMaxEnfant}</td>
@@ -236,28 +233,28 @@ const ListeParamLabo: React.FC<Props> = ({ ParamLabos, onEdit, onDelete, onAdd }
                                     <td>{param.PlageMinMaxHomme}</td>
                                     <td>{param.TypeTexte ? "Oui" : "Non"}</td>
                                     <td className="d-flex bg-primary bg-opacity-10">
-                                        <Button 
-                                            size="sm" 
-                                            variant="outline-primary" 
-                                            className="me-2" 
+                                        <Button
+                                            size="sm"
+                                            variant="outline-primary"
+                                            className="me-2"
                                             title="Modifier le paramètre"
-                                            onClick={() => { setActionLoading('edit-' + param._id); onEdit(param); }} 
+                                            onClick={() => { setActionLoading('edit-' + param._id); onEdit(param); }}
                                             disabled={actionLoading === 'edit-' + param._id}
                                         >
                                             <FaEdit />
                                         </Button>
                                         {param._id && (
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline-danger" 
+                                            <Button
+                                                size="sm"
+                                                variant="outline-danger"
                                                 title="Supprimer le paramètre"
-                                                disabled={actionLoading === 'delete-' + param._id} 
-                                                onClick={async () => { 
-                                                    if (window.confirm(`Supprimer "${param.Param_designation}" ?`)) { 
-                                                        setActionLoading('delete-' + param._id); 
-                                                        await onDelete(param._id as string); 
-                                                        setActionLoading(null); 
-                                                    } 
+                                                disabled={actionLoading === 'delete-' + param._id}
+                                                onClick={async () => {
+                                                    if (window.confirm(`Supprimer "${param.Param_designation}" ?`)) {
+                                                        setActionLoading('delete-' + param._id);
+                                                        await onDelete(param._id as string);
+                                                        setActionLoading(null);
+                                                    }
                                                 }}
                                             >
                                                 <FaTrash />
@@ -324,15 +321,15 @@ const ListeParamLabo: React.FC<Props> = ({ ParamLabos, onEdit, onDelete, onAdd }
                         <Table bordered size="sm">
                             <thead>
                                 <tr>
-                                    <th>Paramètre</th>
-                                    <th>Valeur Normale</th>
+                                    <th>Param_designation</th>
+                                    <th>ValeurNormale</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {importedData.slice(0, 10).map((row, idx) => (
                                     <tr key={idx}>
-                                        <td>{row.Param_designation}</td>
-                                        <td>{row.ValeurNormale}</td>
+                                        <td>{String(row[0] ?? "")}</td>
+                                        <td>{String(row[14] ?? "")}</td>
                                     </tr>
                                 ))}
                                 {importedData.length > 10 && (
