@@ -16,6 +16,7 @@ interface Statistiques {
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceradio/tradio', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
   { label: 'Mes Rendez-Vous', path: '#', isModal: true, modalType: 'rendezvous', icon: <i className="bi bi-calendar-check-fill me-2 text-success"></i>, showNotification: true, notificationKey: 'rendezVousDuJour' },
+  { label: 'Guide d\'utilisation', path: '/pages/serviceradio/guide', icon: <i className="bi bi-book-half me-2 text-primary"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 

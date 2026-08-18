@@ -94,6 +94,15 @@ export default function Sidebar() {
               Tableau de bord
             </Link>
           </li>
+          <li>
+            <Link
+              href="/dashboard/guide"
+              className="sidebar-link-medical d-flex align-items-center"
+            >
+              <i className="bi bi-book-half me-2 text-primary"></i>
+              Guide d&apos;utilisation
+            </Link>
+          </li>
         </ul>
         <Accordion alwaysOpen className="w-100 px-2">
           <ProtectedAccordionItem

@@ -30,6 +30,7 @@ const menu = [
   { label: 'Liste encaissement', path: '#', isModal: true, icon: <i className="bi bi-card-list me-2 text-info"></i>, style: { cursor: 'pointer' } },
   { label: 'Liste Facture Annulée', path: '#', isModal: true, icon: <i className="bi bi-receipt-cutoff me-2 text-danger"></i>, style: { cursor: 'pointer' } },
   { label: 'Imprimer Facture', path: '#', isModal: true, icon: <i className="bi bi-printer-fill me-2 text-primary"></i>, style: { cursor: 'pointer' } },
+  { label: 'Guide d\'utilisation', path: '/pages/servicecaisse/guide', icon: <i className="bi bi-book-half me-2 text-primary"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-secondary"></i>, style: { cursor: 'pointer' } },
 ];
 

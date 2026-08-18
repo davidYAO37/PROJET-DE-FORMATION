@@ -11,6 +11,7 @@ const menu = [
   { label: 'Tableau de bord',      path: '/pages/serviceinfirmier/tinfirmier',                    icon: <i className="bi bi-speedometer2 me-2 text-info"></i> },
   { label: 'Liste des patients',   path: '/pages/serviceinfirmier/tinfirmier/patients',           icon: <i className="bi bi-people-fill me-2 text-primary"></i> },
   { label: 'Patients hospitalisés', path: '/pages/serviceinfirmier/tinfirmier/patientsHospitalises', icon: <i className="bi bi-hospital me-2 text-warning"></i> },
+  { label: 'Guide d\'utilisation', path: '/pages/serviceinfirmier/guide', icon: <i className="bi bi-book-half me-2 text-primary"></i> },
   { label: 'Mot de passe',         path: '#', isModal: true,                                      icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 

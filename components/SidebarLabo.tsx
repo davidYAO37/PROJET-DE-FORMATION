@@ -18,6 +18,7 @@ const menu = [
     { label: 'Gestion des automates', path: '#',isModal: true, icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
     { label: 'Paramètres Examens', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
     { label: 'Paramètres Biochimie', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
+    { label: 'Guide d\'utilisation', path: '/pages/servicelaboratoire/guide', icon: <i className="bi bi-book-half me-2 text-primary"></i> },
     { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 

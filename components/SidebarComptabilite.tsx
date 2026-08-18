@@ -28,6 +28,7 @@ const menu: MenuItem[] = [
   { label: 'Recette / Dépense', path: `${BASE}/recettedepense`, icon: 'bi-file-earmark-bar-graph-fill', color: 'text-primary' },
   { label: 'Débiteurs', path: `${BASE}/debiteurs`, icon: 'bi-people-fill', color: 'text-warning' },
   { label: 'Facturation assurances', path: `${BASE_FACTURE_ASSUR}`, icon: 'bi-shield-fill-check', color: 'text-danger' },
+  { label: 'Guide d\'utilisation', path: `${BASE}/guide`, icon: 'bi-book-half', color: 'text-primary' },
   { label: 'Mot de passe', path: '#', icon: 'bi-key-fill', color: 'text-secondary', isMdp: true },
 ];
 

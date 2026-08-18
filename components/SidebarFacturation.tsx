@@ -20,6 +20,7 @@ const menu: MenuItem[] = [
   { label: 'Tableau de bord', path: `${BASE}/tfacturation`, icon: 'bi-speedometer2', color: 'text-primary' },
   { label: 'Honoraires Médecins', path: `${BASE}/honoraires`, icon: 'bi-person-badge-fill', color: 'text-warning' },
   { label: 'Facturation assurances', path: `${BASE}/factureassurance`, icon: 'bi-shield-fill-check', color: 'text-danger' },
+  { label: 'Guide d\'utilisation', path: `${BASE}/guide`, icon: 'bi-book-half', color: 'text-primary' },
   { label: 'Mot de passe', path: '#', icon: 'bi-key-fill', color: 'text-secondary', isMdp: true },
 ];
 

@@ -22,6 +22,7 @@ const menu = [
     { label: 'Paramètres Biochimie', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
     { label: 'Statistiques Labo', path: '/pages/servicebiologiste/statistiques', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
     { label: 'Relevé de Compte', path: '/pages/servicebiologiste/releveCompte', icon: <i className="bi bi-receipt me-2 text-success"></i> },
+    { label: 'Guide d\'utilisation', path: '/pages/servicebiologiste/guide', icon: <i className="bi bi-book-half me-2 text-primary"></i> },
     { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 

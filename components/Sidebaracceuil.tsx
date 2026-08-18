@@ -23,6 +23,7 @@ const menu = [
   { label: 'Disponibilité Médecin', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
  // { label: 'Gestion Rendez-Vous', path: '/rendez-vous', icon: <i className="bi bi-clock-fill me-2 text-info"></i> },
   { label: 'Point de saisie', path: '#', isModal: true, icon: <i className="bi bi-pencil-square me-2 text-secondary"></i> },
+  { label: 'Guide d\'utilisation', path: '/pages/serviceaccueil/guide', icon: <i className="bi bi-book-half me-2 text-primary"></i> },
   { label: 'Mot de passe', path: '#', isModal: true, icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
 
