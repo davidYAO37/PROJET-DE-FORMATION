@@ -27,7 +27,14 @@ export default function ImpersonationBanner() {
   };
 
   useEffect(() => {
-    fetchStatus();
+    // Only super-admins can impersonate a tenant; avoid a 403 for regular admins.
+    fetch('/api/me', { credentials: 'include' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user?.type === 'adminsuper') {
+          fetchStatus();
+        }
+      });
   }, []);
 
   const handleQuitter = async () => {

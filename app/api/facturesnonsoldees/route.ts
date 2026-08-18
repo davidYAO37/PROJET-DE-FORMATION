@@ -22,10 +22,16 @@ export async function GET(req: NextRequest) {
         let facturationsNonSoldées: any[] = [];
         let consultationsNonSoldées: any[] = [];
 
-        // Récupérer les facturations avec reste à payer > 0
+        // Récupérer les facturations avec reste réel à payer > 0
+        // Le reste est calculé : Montanttotal - MontantRecu (ou TotalPaye)
         try {
             facturationsNonSoldées = await Facturation.find({
-                Restapayer: { $gt: 0, $exists: true } // reste à payer > 0 et existe
+                $expr: {
+                    $gt: [
+                        { $subtract: [{ $ifNull: ["$Montanttotal", 0] }, { $ifNull: ["$MontantRecu", { $ifNull: ["$TotalPaye", 0] }] }] },
+                        0
+                    ]
+                }
             })
             .populate({
                 path: 'IdPatient',
@@ -38,11 +44,17 @@ export async function GET(req: NextRequest) {
             console.error("Erreur lors de la récupération des facturations:", factError);
         }
 
-        // Récupérer les consultations avec statutPrescriptionMedecin = 3 et reste à payer > 0
+        // Récupérer les consultations facturées avec reste réel > 0
+        // Le reste est calculé : PrixClinique - Montantencaisse
         try {
             consultationsNonSoldées = await Consultation.find({
                 statutPrescriptionMedecin: 3, // 3 = facturé mais non soldé
-                Restapayer: { $gt: 0, $exists: true } // reste à payer > 0 et existe
+                $expr: {
+                    $gt: [
+                        { $subtract: [{ $ifNull: ["$PrixClinique", { $ifNull: ["$montantapayer", 0] }] }, { $ifNull: ["$Montantencaisse", 0] }] },
+                        0
+                    ]
+                }
             })
             .populate({
                 path: 'IdPatient',
@@ -70,7 +82,7 @@ export async function GET(req: NextRequest) {
                         idPatient: f.IdPatient?._id?.toString() || f.IdPatient?.toString() || "",
                         patient: f.PatientP || (f.IdPatient ? `${f.IdPatient?.Nom || ''} ${f.IdPatient?.Prenoms || ''}`.trim() : "Patient inconnu"),
                         designation: f.Designationtypeacte || "Facturation",
-                        montantRestant: Number(f.Restapayer || 0),
+                        montantRestant: Number((f.Montanttotal || 0) - (f.MontantRecu || f.TotalPaye || 0)),
                         type: 'facturation',
                         medecin: f.NomMed || "Medecin inconnu",
                         statut: f.StatutPaiement || "En attente",
@@ -90,7 +102,7 @@ export async function GET(req: NextRequest) {
                         idPatient: c.IdPatient?._id?.toString() || c.IdPatient?.toString() || "",
                         patient: c.PatientP || (c.IdPatient ? `${c.IdPatient?.Nom || ''} ${c.IdPatient?.Prenoms || ''}`.trim() : "Patient inconnu"),
                         designation: c.designationC || "Consultation",
-                        montantRestant: Number(c.Restapayer || 0),
+                        montantRestant: Number((c.PrixClinique || c.montantapayer || 0) - (c.Montantencaisse || 0)),
                         type: 'consultation',
                         medecin: c.Medecin || (c.IDMEDECIN ? c.IDMEDECIN?.nom : ""),
                         assure: c.Assure || "Non assuré",

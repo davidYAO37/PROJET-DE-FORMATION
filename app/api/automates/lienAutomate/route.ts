@@ -3,7 +3,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { ILienAutomate } from "@/models/lienAutomate";
 
-const ROLES = ["admin"];
+const ROLES = ["admin", "adminsuper", "biologiste", "technicienlabo"];
 
 export async function GET(req: NextRequest) {
     const { context, response } = await withTenant(req, ROLES);

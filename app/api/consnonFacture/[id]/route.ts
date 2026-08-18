@@ -5,7 +5,7 @@ import { IConsultation } from "@/models/consultation";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin","medecin","accueil","infirmier","biologiste","technicienlabo","caisse","comptable","facturation","radiologue","pharmacien"];
 
 // Fonction pour valider les ObjectIds
 const isValidObjectId = (value: any): boolean => {

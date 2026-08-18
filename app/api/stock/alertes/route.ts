@@ -4,7 +4,7 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IStock } from "@/models/Stock";
 import { IEntreeStock } from "@/models/EntreeStock";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien"];
 
 // GET /api/stock/alertes
 // Retourne: ruptures, seuils min dépassés, lots proches péremption (30 jours)

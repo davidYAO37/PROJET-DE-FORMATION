@@ -6,6 +6,8 @@ export interface IPatientPrescription extends Omit<Document, '_id'> {
     PatientP: string
     IdPatient: string;
     QteP: number;
+    QteConditionnement?: number;
+    ModeVente?: "DETAIL" | "BOITE";
     posologie: string;
     DatePres: Date;
     heureFacturation?: string;
@@ -41,6 +43,8 @@ const PatientPrescriptionSchema = new Schema<IPatientPrescription>({
     PatientP: String,
     IdPatient: String,
     QteP: Number,
+    QteConditionnement: Number,
+    ModeVente: { type: String, enum: ["DETAIL", "BOITE"] },
     posologie: String,
     DatePres: Date,
     heureFacturation: String,

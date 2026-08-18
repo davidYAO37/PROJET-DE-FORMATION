@@ -7,7 +7,7 @@ import { IConsultation } from '@/models/consultation';
 import { IFacturation } from '@/models/Facturation';
 import { ILignePrestation } from '@/models/lignePrestation';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function POST(
   request: NextRequest,

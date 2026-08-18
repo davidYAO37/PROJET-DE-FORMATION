@@ -8,7 +8,7 @@ import { IActeParamBiochimie } from "@/models/acteParamBiochimie";
 import { IActeParamLabo } from "@/models/acteParamLabo";
 import { IHormoneTraitement } from "@/models/HormoneTraitement";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "biologiste", "technicienlabo"];
 
 export async function POST(req: NextRequest) {
     const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);

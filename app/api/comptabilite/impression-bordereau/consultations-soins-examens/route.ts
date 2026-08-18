@@ -5,7 +5,7 @@ import { ILigneFacture } from '@/models/ligneFacture';
 import { IFactureAssur } from '@/models/factureAssur';
 import mongoose from 'mongoose';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function GET(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);

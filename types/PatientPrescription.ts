@@ -3,6 +3,8 @@ export interface PatientPrescription {
     PatientP: string;
     IdPatient?: string;
     quantite: number;
+    QteConditionnement?: number;
+    ModeVente?: "DETAIL" | "BOITE";
     posologie: string;
     DatePres: Date;
     heureFacturation?: string;

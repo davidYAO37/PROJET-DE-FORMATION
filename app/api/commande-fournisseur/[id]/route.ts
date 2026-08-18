@@ -3,7 +3,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { ICommandeFournisseur } from "@/models/CommandeFournisseur";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin","medecin","accueil","infirmier","pharmacien"];
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { context, response } = await withTenant(_req, ROLES);

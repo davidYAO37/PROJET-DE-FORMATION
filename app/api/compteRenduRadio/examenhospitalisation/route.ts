@@ -3,7 +3,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IExamenHospitalisation } from "@/models/examenHospit";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "radiologue"];
 
 export async function GET(req: NextRequest) {
   const { context, response } = await withTenant(req, ROLES);

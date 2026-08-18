@@ -422,13 +422,14 @@ const SignupFormDev = () => {
                   <option value="admin">Administrateur</option>
                   <option value="accueil">Service Accueil</option>
                   <option value="biologiste">Biologiste</option>
-                  <option value="caisse">Caisse</option>
-                  <option value="comptable">Comptable</option>
+                  <option value="caisse">Caissière</option>
+                  <option value="comptable">Comptabilité</option>
                   <option value="infirmier">Infirmier</option>
-                  <option value="medecin">Médecin</option>
+                  <option value="medecin">Medecin</option>
                   <option value="pharmacien">Pharmacie</option>
-                  <option value="radiologue">Radiologue</option>
+                  <option value="radiologue">Radiologie</option>
                   <option value="technicienlabo">Technicien laboratoire</option>
+                  <option value="facturation">Facturation</option>
                 </select>
               </div>
               <div className="col-md-6">
@@ -831,13 +832,14 @@ const SignupFormDev = () => {
                         <option value="admin">Administrateur</option>
                         <option value="accueil">Service Accueil</option>
                         <option value="biologiste">Biologiste</option>
-                        <option value="caisse">Caisse</option>
-                        <option value="comptable">Comptable</option>
+                        <option value="caisse">Caissière</option>
+                        <option value="comptable">Comptabilité</option>
                         <option value="infirmier">Infirmier</option>
-                        <option value="medecin">Médecin</option>
+                        <option value="medecin">Medecin</option>
                         <option value="pharmacien">Pharmacie</option>
-                        <option value="radiologue">Radiologue</option>
+                        <option value="radiologue">Radiologie</option>
                         <option value="technicienlabo">Technicien laboratoire</option>
+                        <option value="facturation">Facturation</option>
                       </select>
                     </div>
                   </>

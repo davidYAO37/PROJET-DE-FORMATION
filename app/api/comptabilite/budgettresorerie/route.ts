@@ -6,7 +6,7 @@ import { IFacturation } from '@/models/Facturation';
 import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
 import { ICaisse } from '@/models/caisse';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 const MOIS_LABELS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const MODES_EXCLUS = ['chèque', 'carte de crédit'];

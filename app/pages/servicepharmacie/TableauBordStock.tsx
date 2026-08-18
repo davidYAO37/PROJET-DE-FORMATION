@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { Card, Row, Col, Table, Badge, Spinner, Button, Form } from "react-bootstrap";
 import { FaExclamationTriangle, FaBoxOpen, FaCalendarTimes, FaSync, FaCubes } from "react-icons/fa";
+import { logFetchIssue } from "@/lib/clientFetchLog";
 import PharmacieModalPharmAccueil from "../PharmacieAccueil/PharmacieModalPharmAccueil";
 
 interface AlertesStock {
@@ -28,7 +29,16 @@ export default function TableauBordStock() {
         setLoading(true);
         try {
             const res = await fetch(`/api/stock/alertes?joursPeremption=${joursPeremption}`);
+            if (!res.ok) {
+                logFetchIssue(res.status, "Chargement des alertes stock");
+                setAlertes(null);
+                return;
+            }
             const data = await res.json();
+            if (!data || typeof data !== "object" || Array.isArray(data)) {
+                setAlertes(null);
+                return;
+            }
             setAlertes(data);
         } catch (err) {
             console.error("Erreur chargement alertes:", err);
@@ -55,11 +65,11 @@ export default function TableauBordStock() {
 
     const lignesOnglet = () => {
         if (!alertes) return [];
-        if (onglet === "ruptures") return alertes.rupturesListe;
-        if (onglet === "seuil") return alertes.sousSeuilMinListe;
-        if (onglet === "peremption") return alertes.lotsProchesPeremptionListe;
-        if (onglet === "perimes") return alertes.lotsPerimesListe;
-        return [];
+        const list = onglet === "ruptures" ? alertes.rupturesListe :
+            onglet === "seuil" ? alertes.sousSeuilMinListe :
+            onglet === "peremption" ? alertes.lotsProchesPeremptionListe :
+            onglet === "perimes" ? alertes.lotsPerimesListe : [];
+        return Array.isArray(list) ? list : [];
     };
 
     return (

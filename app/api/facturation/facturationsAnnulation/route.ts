@@ -5,7 +5,7 @@ import { IFacturation } from "@/models/Facturation";
 
 export const dynamic = 'force-dynamic';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'facturation', 'caisse'];
 
 export async function GET(request: NextRequest) {
     const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);

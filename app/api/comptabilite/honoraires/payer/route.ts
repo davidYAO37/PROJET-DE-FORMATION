@@ -5,7 +5,7 @@ import { IHonoraireMed } from '@/models/HonoraireMed';
 import { IHonorairePaye } from '@/models/HonorairePaye';
 import mongoose from 'mongoose';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function POST(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);

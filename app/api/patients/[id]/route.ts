@@ -5,7 +5,7 @@ import mongoose from "mongoose";
 import { IPatient } from "@/models/patient";
 import { IConsultation } from "@/models/consultation";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin","medecin","accueil","infirmier","caisse","comptable","facturation","radiologue","biologiste","technicienlabo","pharmacien"];
 
 export async function GET(
   req: NextRequest,

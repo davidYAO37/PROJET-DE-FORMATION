@@ -4,7 +4,7 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IFacturation } from "@/models/Facturation";
 import mongoose from "mongoose";
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'facturation'];
 
 // GET /api/facturation/search
 // Params: patient, codePrestation, dateDebut, dateFin, typefacture, statut, page, limit

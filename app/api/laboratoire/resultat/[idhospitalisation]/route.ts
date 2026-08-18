@@ -6,7 +6,7 @@ import { ILignePrestation } from "@/models/lignePrestation";
 import { IPatient } from "@/models/patient";
 import { IResultatLignePrestation } from "@/models/resultatLignePrestation";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "biologiste", "technicienlabo"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ idhospitalisation: string }> }) {
     const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);

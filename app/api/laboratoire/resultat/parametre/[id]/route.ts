@@ -3,7 +3,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IResultatLignePrestation } from "@/models/resultatLignePrestation";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "biologiste", "technicienlabo"];
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { context, response } = await withTenant(req, ROLES);

@@ -1,14 +1,18 @@
 import mongoose, { Model, Schema, Types } from "mongoose";
 
+export type ModeVente = "DETAIL" | "BOITE";
+
 export interface ISortieStock extends Omit<Document, '_id'> {
     _id?: string;
     DateSortie?: Date;
     Reference?: string;
     Quantite?: number;
+    QteConditionnement?: number;
     Prix_unitaire?: number;
     Prix_TotalS?: number;
     Motif?: string;
     TypeMouvement?: string;
+    ModeVente?: ModeVente;
     Observations?: string;
     SaisiPar?: string;
     SaisiLe?: Date;
@@ -26,6 +30,7 @@ const SortieStockSchema = new Schema<ISortieStock>({
     DateSortie: { type: Date },
     Reference: { type: String, maxlength: 100 },
     Quantite: { type: Number },
+    QteConditionnement: { type: Number },
     Prix_unitaire: { type: Number },
     Prix_TotalS: { type: Number },
     Motif: { type: String, maxlength: 40 },
@@ -34,6 +39,7 @@ const SortieStockSchema = new Schema<ISortieStock>({
     SaisiLe: { type: Date },
     ArticleS: { type: String, maxlength: 60 },
     TypeMouvement: { type: String, maxlength: 60 },
+    ModeVente: { type: String, enum: ["DETAIL", "BOITE"] },
     IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
     Prescription: { type: Schema.Types.ObjectId, ref: 'Prescription', required: false },
     Patient: { type: Schema.Types.ObjectId, ref: 'Patient', required: false },

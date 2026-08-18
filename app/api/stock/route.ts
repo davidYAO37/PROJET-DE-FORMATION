@@ -3,7 +3,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IStock } from "@/models/Stock";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien", "caisse"];
 
 // GET /api/stock?reference=xxx&IDMEDICAMENT=xxx
 export async function GET(request: NextRequest) {

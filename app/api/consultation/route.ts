@@ -6,12 +6,15 @@ import { IPatient } from "@/models/patient";
 import { IAssurance } from "@/models/assurance";
 import { IMedecin } from "@/models/medecin";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin","medecin","accueil","infirmier","biologiste","technicienlabo","caisse","comptable","facturation"];
 
 export async function GET(req: NextRequest) {
     const { context, response } = await withTenant(req, ROLES);
     if (!context) return response;
     const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    getTenantModel(context.connection, "Patient");
+    getTenantModel(context.connection, "Assurance");
+    getTenantModel(context.connection, "Medecin");
     try {
         const { searchParams } = new URL(req.url);
         const patientId = searchParams.get("patientId");

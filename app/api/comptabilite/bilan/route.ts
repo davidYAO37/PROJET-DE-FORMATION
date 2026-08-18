@@ -5,7 +5,7 @@ import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
 import { IFacturation } from '@/models/Facturation';
 import { IConsultation } from '@/models/consultation';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function GET(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);

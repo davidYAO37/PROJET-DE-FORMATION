@@ -207,12 +207,17 @@ export default function Home() {
       <Navbar bg="white" expand="lg" className="shadow-sm fixed-top js-fade" style={{ zIndex: 1030 }}>
         <Container>
           <Navbar.Brand style={{ fontWeight: 700, color: '#0d6efd', display: 'flex', alignItems: 'center', gap: 8 }}>
-            <HeartPulse size={28} />
+            <img
+              src="/images/logo-easy.png"
+              alt="Easy Medical"
+              style={{ height: 32, width: 'auto' }}
+            />
             EasyMedical
           </Navbar.Brand>
           <Navbar.Toggle aria-controls="main-navbar" />
           <Navbar.Collapse id="main-navbar">
             <Nav className="ms-auto align-items-center">
+              <Nav.Link onClick={() => scrollToSection('accueil')}>Accueil</Nav.Link>
               <Nav.Link onClick={() => scrollToSection('overview')}>Vue d’ensemble</Nav.Link>
               <Nav.Link onClick={() => scrollToSection('data')}>Données</Nav.Link>
               <Nav.Link onClick={() => scrollToSection('benefits')}>Avantages</Nav.Link>
@@ -225,6 +230,7 @@ export default function Home() {
 
       {/* --- Hero --- */}
       <section
+      id='accueil'
         className="position-relative overflow-hidden d-flex align-items-center hero-gradient-animated"
         style={{ minHeight: '100vh', paddingTop: 80 }}
       >
@@ -274,24 +280,12 @@ export default function Home() {
             </Col>
             <Col lg={6} className="text-center animate__animated animate__fadeInRight">
               <div className="hero-illustration position-relative d-inline-block">
-                <svg width="520" height="420" viewBox="0 0 520 420" fill="none" xmlns="http://www.w3.org/2000/svg" className="img-fluid">
-                  <rect x="60" y="60" width="400" height="300" rx="24" fill="#fff" stroke="#e5e7eb" strokeWidth="2" />
-                  <rect x="90" y="100" width="120" height="16" rx="8" fill="#0d6efd" opacity="0.15" />
-                  <rect x="90" y="132" width="80" height="12" rx="6" fill="#94a3b8" />
-                  <rect x="90" y="160" width="180" height="12" rx="6" fill="#cbd5e1" />
-                  <rect x="90" y="190" width="160" height="12" rx="6" fill="#cbd5e1" />
-                  <rect x="90" y="230" width="340" height="100" rx="12" fill="#f1f5f9" />
-                  <circle cx="135" cy="280" r="24" fill="#0dcaf0" opacity="0.2" />
-                  <path d="M128 280h14M135 273v14" stroke="#0d6efd" strokeWidth="3" strokeLinecap="round" />
-                  <rect x="180" y="265" width="100" height="10" rx="5" fill="#64748b" />
-                  <rect x="180" y="285" width="70" height="8" rx="4" fill="#94a3b8" />
-                  <rect x="310" y="265" width="90" height="32" rx="8" fill="#198754" opacity="0.15" />
-                  <rect x="325" y="273" width="60" height="16" rx="4" fill="#198754" />
-                  <circle cx="420" cy="120" r="40" fill="#0d6efd" opacity="0.08" />
-                  <circle cx="420" cy="120" r="28" fill="#0d6efd" opacity="0.12" />
-                  <rect x="405" y="108" width="30" height="8" rx="4" fill="#0d6efd" opacity="0.6" />
-                  <rect x="405" y="124" width="30" height="8" rx="4" fill="#0d6efd" opacity="0.6" />
-                </svg>
+                <img
+                  src="/images/hero-easy.png"
+                  alt="Easy Medical - Système intégré de gestion hospitalière"
+                  className="img-fluid rounded-4 shadow"
+                  style={{ maxHeight: 520, objectFit: 'contain' }}
+                />
                 <div className="hero-floating-card d-none d-md-block" style={{ position: 'absolute', bottom: 40, left: -30, background: '#fff', padding: '14px 18px', borderRadius: 16, boxShadow: '0 12px 32px rgba(0,0,0,0.08)' }}>
                   <div className="d-flex align-items-center gap-3">
                     <div className="rounded-circle d-flex align-items-center justify-content-center" style={{ width: 44, height: 44, background: 'rgba(25,135,84,0.1)' }}>
@@ -626,7 +620,11 @@ export default function Home() {
           <Row className="gy-4">
             <Col md={4}>
               <div className="d-flex align-items-center gap-2 mb-3">
-                <HeartPulse size={28} />
+                <img
+                  src="/images/logo-easy.png"
+                  alt="Easy Medical"
+                  style={{ height: 40, width: 'auto' }}
+                />
                 <h5 className="fw-bold mb-0">EasyMedical</h5>
               </div>
               <p className="opacity-75 small">
@@ -636,6 +634,7 @@ export default function Home() {
             <Col md={4}>
               <h6 className="fw-bold mb-3">Liens rapides</h6>
               <ul className="list-unstyled small opacity-75">
+                <li><Nav.Link onClick={() => scrollToSection('accueil')} className="text-white p-0 mb-2 d-inline-block">Accueil</Nav.Link></li>
                 <li><Nav.Link onClick={() => scrollToSection('overview')} className="text-white p-0 mb-2 d-inline-block">Vue d’ensemble</Nav.Link></li>
                 <li><Nav.Link onClick={() => scrollToSection('benefits')} className="text-white p-0 mb-2 d-inline-block">Avantages</Nav.Link></li>
                 <li><Nav.Link onClick={() => scrollToSection('how')} className="text-white p-0 mb-2 d-inline-block">Comment ça marche</Nav.Link></li>

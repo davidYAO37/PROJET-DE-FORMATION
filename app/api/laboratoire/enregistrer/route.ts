@@ -5,7 +5,7 @@ import { ILignePrestation } from "@/models/lignePrestation";
 import { IResultatLignePrestation } from "@/models/resultatLignePrestation";
 import { IExamenHospitalisation } from "@/models/examenHospit";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "biologiste", "technicienlabo"];
 
 interface ParametreResultat {
     _id?: string;

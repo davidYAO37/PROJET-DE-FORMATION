@@ -6,7 +6,7 @@ import { IConsultation } from '@/models/consultation';
 import { IFacturation } from '@/models/Facturation';
 import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 const MODES_EXCLUS = ['chèque', 'carte de crédit'];
 

@@ -5,7 +5,7 @@ import { IFacturation } from "@/models/Facturation";
 import { IPatient } from "@/models/patient";
 import mongoose from "mongoose";
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'facturation', 'caisse'];
 
 // GET /api/facturation?hospitalId=XXX
 // Récupère les facturations liées à une hospitalisation donnée

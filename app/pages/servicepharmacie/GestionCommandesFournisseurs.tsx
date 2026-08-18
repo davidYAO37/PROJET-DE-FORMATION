@@ -33,7 +33,9 @@ interface LigneForm extends LigneCommande {
 interface ReceptionLigneForm {
     ligneId: string;
     QteRecue: number;
+    QteConditionnement: number;
     PrixAchat: number;
+    PrixAchatConditionnement: number;
     PrixVente: number;
     TVA: number;
     NumeroLot: string;
@@ -44,6 +46,7 @@ interface ReceptionLigneForm {
     Medicament?: string;
     QteCommandee?: number;
     QteDejaRecue?: number;
+    QteParConditionnement?: number;
 }
 
 const STATUT_LABELS: Record<StatutCommande, { label: string; variant: string }> = {
@@ -415,6 +418,7 @@ export default function GestionCommandesFournisseurs() {
                 show={showReception}
                 onHide={() => { setShowReception(false); setReceptionCommande(null); }}
                 commande={receptionCommande}
+                medicaments={medicaments}
                 onSaved={loadData}
                 setError={setError}
             />
@@ -897,12 +901,14 @@ function ReceptionModal({
     show,
     onHide,
     commande,
+    medicaments,
     onSaved,
     setError,
 }: {
     show: boolean;
     onHide: () => void;
     commande: CommandeFournisseur | null;
+    medicaments: Pharmacie[];
     onSaved: () => void;
     setError: (msg: string) => void;
 }) {
@@ -916,27 +922,56 @@ function ReceptionModal({
             setNumeroFacture("");
             setObservations(commande.Observations || "");
             setLignes(
-                (commande.lignes || []).map((l) => ({
-                    ligneId: l._id || "",
-                    QteRecue: 0,
-                    PrixAchat: l.PrixAchat || 0,
-                    PrixVente: l.PrixVente || 0,
-                    TVA: l.TVA || 0,
-                    NumeroLot: "",
-                    DatePeremption: "",
-                    QteMinimum: 0,
-                    QteMaximum: 0,
-                    Reference: l.Reference,
-                    Medicament: l.Medicament,
-                    QteCommandee: l.QteCommandee,
-                    QteDejaRecue: l.QteRecue || 0,
-                }))
+                (commande.lignes || []).map((l) => {
+                    const med = medicaments.find((m) => m._id === (l.IDMEDICAMENT as any)?.toString?.());
+                    const qteParCond = med?.QteParConditionnement || 1;
+                    const prixAchatCond = (l.PrixAchat || 0) * qteParCond;
+                    return {
+                        ligneId: l._id || "",
+                        QteRecue: 0,
+                        QteConditionnement: 0,
+                        PrixAchat: l.PrixAchat || 0,
+                        PrixAchatConditionnement: prixAchatCond,
+                        PrixVente: l.PrixVente || 0,
+                        TVA: l.TVA || 0,
+                        NumeroLot: "",
+                        DatePeremption: "",
+                        QteMinimum: 0,
+                        QteMaximum: 0,
+                        Reference: l.Reference,
+                        Medicament: l.Medicament,
+                        QteCommandee: l.QteCommandee,
+                        QteDejaRecue: l.QteRecue || 0,
+                        QteParConditionnement: qteParCond,
+                    };
+                })
             );
         }
-    }, [show, commande]);
+    }, [show, commande, medicaments]);
 
     const updateLigne = (ligneId: string, updates: Partial<ReceptionLigneForm>) => {
-        setLignes((prev) => prev.map((l) => (l.ligneId === ligneId ? { ...l, ...updates } : l)));
+        setLignes((prev) =>
+            prev.map((l) => {
+                if (l.ligneId !== ligneId) return l;
+                const qteParCond = l.QteParConditionnement || 1;
+                const merged = { ...l, ...updates };
+                if (updates.QteConditionnement !== undefined) {
+                    merged.QteRecue = (Number(updates.QteConditionnement) || 0) * qteParCond;
+                } else if (updates.QteRecue !== undefined) {
+                    merged.QteConditionnement = qteParCond > 0
+                        ? Math.ceil((Number(updates.QteRecue) || 0) / qteParCond)
+                        : Number(updates.QteRecue) || 0;
+                }
+                if (updates.PrixAchatConditionnement !== undefined) {
+                    merged.PrixAchat = qteParCond > 0
+                        ? (Number(updates.PrixAchatConditionnement) || 0) / qteParCond
+                        : Number(updates.PrixAchatConditionnement) || 0;
+                } else if (updates.PrixAchat !== undefined) {
+                    merged.PrixAchatConditionnement = (Number(updates.PrixAchat) || 0) * qteParCond;
+                }
+                return merged;
+            })
+        );
     };
 
     const handleSave = async () => {
@@ -965,7 +1000,9 @@ function ReceptionModal({
                 lignes: lignesARecevoir.map((l) => ({
                     ligneId: l.ligneId,
                     QteRecue: l.QteRecue,
+                    QteConditionnement: l.QteConditionnement,
                     PrixAchat: l.PrixAchat,
+                    PrixAchatConditionnement: l.PrixAchatConditionnement,
                     PrixVente: l.PrixVente,
                     TVA: l.TVA,
                     NumeroLot: l.NumeroLot,
@@ -1019,8 +1056,9 @@ function ReceptionModal({
                                 <th>Médicament</th>
                                 <th>Commandée</th>
                                 <th>Déjà reçue</th>
-                                <th>Qté reçue</th>
-                                <th>Prix achat</th>
+                                <th>Qté cond.</th>
+                                <th>Qté unités</th>
+                                <th>Prix achat cond.</th>
                                 <th>Prix vente</th>
                                 <th>TVA</th>
                                 <th>N° Lot</th>
@@ -1032,20 +1070,26 @@ function ReceptionModal({
                         <tbody>
                             {lignes.map((l) => {
                                 const reste = (l.QteCommandee || 0) - (l.QteDejaRecue || 0);
+                                const qteParCond = l.QteParConditionnement || 1;
+                                const resteCond = Math.ceil(reste / qteParCond);
                                 return (
                                     <tr key={l.ligneId}>
                                         <td className="fw-semibold">{l.Medicament || "—"} <span className="text-muted small">({l.Reference})</span></td>
                                         <td className="text-center">{l.QteCommandee}</td>
                                         <td className="text-center">{l.QteDejaRecue}</td>
                                         <td>
-                                            <Form.Control size="sm" type="number" min={0} max={reste}
-                                                value={l.QteRecue}
-                                                onChange={(e) => updateLigne(l.ligneId, { QteRecue: Math.min(Number(e.target.value) || 0, reste) })}
+                                            <Form.Control size="sm" type="number" min={0} max={resteCond}
+                                                value={l.QteConditionnement}
+                                                onChange={(e) => updateLigne(l.ligneId, { QteConditionnement: Math.min(Number(e.target.value) || 0, resteCond) })}
                                             />
-                                            <small className="text-muted">Reste: {reste}</small>
+                                            <small className="text-muted">Reste: {resteCond} cond.</small>
+                                        </td>
+                                        <td className="text-center">
+                                            <small className="text-muted">{l.QteRecue}</small>
                                         </td>
                                         <td>
-                                            <Form.Control size="sm" type="number" min={0} value={l.PrixAchat} onChange={(e) => updateLigne(l.ligneId, { PrixAchat: Number(e.target.value) || 0 })} />
+                                            <Form.Control size="sm" type="number" min={0} value={l.PrixAchatConditionnement} onChange={(e) => updateLigne(l.ligneId, { PrixAchatConditionnement: Number(e.target.value) || 0 })} />
+                                            <small className="text-muted">{formatNumber(l.PrixAchat)} / u</small>
                                         </td>
                                         <td>
                                             <Form.Control size="sm" type="number" min={0} value={l.PrixVente} onChange={(e) => updateLigne(l.ligneId, { PrixVente: Number(e.target.value) || 0 })} />

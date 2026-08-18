@@ -297,7 +297,7 @@ export async function PATCH(request: NextRequest) {
 // Garder DELETE pour l'annulation effective si nécessaire plus tard
 export async function DELETE(request: NextRequest) {
   try {
-    const { context, response } = await withTenant(request, ["admin"]);
+    const { context, response } = await withTenant(request, ["admin", "caisse", "comptable"]);
     if (!context) return response;
     const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
     const EncaissementCaisseAnnule = getTenantModel<IEncaissementCaisseAnnule>(context.connection, "EncaissementCaisseAnnule");

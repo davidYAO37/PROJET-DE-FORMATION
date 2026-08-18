@@ -66,6 +66,7 @@ interface FormData {
     observations: string;
     numeroLot: string;
     datePeremption: string;
+    modeVente: "DETAIL" | "BOITE";
 }
 
 const formDefaut: FormData = {
@@ -77,6 +78,7 @@ const formDefaut: FormData = {
     observations: "",
     numeroLot: "",
     datePeremption: "",
+    modeVente: "DETAIL",
 };
 
 export default function MouvementsStock() {
@@ -139,12 +141,17 @@ export default function MouvementsStock() {
         if (!form.IDMEDICAMENT) { setError("Sélectionnez un médicament."); return; }
         if (!form.motif) { setError("Sélectionnez un motif."); return; }
         if (form.quantite <= 0) { setError("La quantité doit être > 0."); return; }
-        if (form.type === "SORTIE" && stockInfo && form.quantite > stockInfo.QteEnStock) {
-            setError(`Stock insuffisant (disponible : ${stockInfo.QteEnStock}).`); return;
+
+        const med = medicaments.find(m => m._id === form.IDMEDICAMENT);
+        const qteParCond = med?.QteParConditionnement || 1;
+        const qteEnUnites = form.modeVente === "BOITE" ? form.quantite * qteParCond : form.quantite;
+
+        if (form.type === "SORTIE" && stockInfo && qteEnUnites > stockInfo.QteEnStock) {
+            const condDispo = Math.floor(stockInfo.QteEnStock / qteParCond);
+            setError(`Stock insuffisant (disponible : ${stockInfo.QteEnStock} unités${qteParCond > 1 ? `, soit ${condDispo} conditionnements` : ""}).`); return;
         }
 
         setSubmitting(true);
-        const med = medicaments.find(m => m._id === form.IDMEDICAMENT);
         const utilisateur = localStorage.getItem("nom_utilisateur") || "Utilisateur";
         const now = new Date().toISOString();
 
@@ -159,6 +166,7 @@ export default function MouvementsStock() {
                         ArticleS: med?.Designation || "",
                         IDMEDICAMENT: form.IDMEDICAMENT,
                         Quantite: form.quantite,
+                        ModeVente: form.modeVente,
                         Prix_unitaire: form.prixUnitaire,
                         Prix_TotalS: form.quantite * form.prixUnitaire,
                         Motif: form.motif,
@@ -178,8 +186,9 @@ export default function MouvementsStock() {
                         Medicament: med?.Designation || "",
                         IDMEDICAMENT: form.IDMEDICAMENT,
                         Quantite: form.quantite,
+                        ModeVente: form.modeVente,
                         PrixAchat: form.prixUnitaire,
-                        PrixVente: med?.PrixVente || 0,
+                        PrixVente: (form.modeVente === "BOITE" ? med?.PrixVenteConditionnement : med?.PrixVenteUnite) || med?.PrixVente || 0,
                         PRIXTHT: form.quantite * form.prixUnitaire,
                         MontantTTCE: form.quantite * form.prixUnitaire,
                         Motif: form.motif,
@@ -418,6 +427,19 @@ export default function MouvementsStock() {
                                 </Form.Select>
                             </Col>
 
+                            {/* Mode */}
+                            <Col md={3}>
+                                <Form.Label className="fw-semibold">Mode</Form.Label>
+                                <Form.Select
+                                    size="sm"
+                                    value={form.modeVente}
+                                    onChange={e => setForm(f => ({ ...f, modeVente: e.target.value as "DETAIL" | "BOITE" }))}
+                                >
+                                    <option value="DETAIL">Détail</option>
+                                    <option value="BOITE">Boîte / conditionnement</option>
+                                </Form.Select>
+                            </Col>
+
                             {/* Quantité */}
                             <Col md={3}>
                                 <Form.Label className="fw-semibold">Quantité *</Form.Label>
@@ -429,11 +451,22 @@ export default function MouvementsStock() {
                                     onChange={e => setForm(f => ({ ...f, quantite: Number(e.target.value) || 1 }))}
                                     required
                                 />
+                                {(() => {
+                                    const med = medicaments.find(m => m._id === form.IDMEDICAMENT);
+                                    if (med?.QteParConditionnement && med.QteParConditionnement > 1) {
+                                        return (
+                                            <Form.Text className="text-muted" style={{ fontSize: 11 }}>
+                                                {form.modeVente === "BOITE" ? `1 = ${med.QteParConditionnement} unités` : "En unités de détail"}
+                                            </Form.Text>
+                                        );
+                                    }
+                                    return null;
+                                })()}
                             </Col>
 
                             {/* Prix */}
                             <Col md={3}>
-                                <Form.Label className="fw-semibold">Prix unitaire</Form.Label>
+                                <Form.Label className="fw-semibold">{form.modeVente === "BOITE" ? "Prix conditionnement" : "Prix unitaire"}</Form.Label>
                                 <Form.Control
                                     size="sm"
                                     type="number"

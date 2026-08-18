@@ -3,7 +3,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IStock } from "@/models/Stock";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien"];
 
 // PUT /api/stock/[id] - Mettre à jour un stock
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {

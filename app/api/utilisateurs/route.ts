@@ -1,14 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db/mongoConnect";
 import { UserCollection } from "@/models/users.model";
+import { requireAuth } from "@/lib/auth";
 
 export async function GET(req: NextRequest) {
   try {
+    const { user: currentUser, error } = await requireAuth(req, ["admin","caisse"]);
+    if (error) return error;
+
     await db();
 
     // Récupérer l'ID entreprise depuis les paramètres
     const { searchParams } = new URL(req.url);
-    const entrepriseId = searchParams.get('entrepriseId');
+    let entrepriseId = searchParams.get('entrepriseId');
+
+    // Un admin normal ne peut voir que les utilisateurs de sa propre entreprise
+    if (currentUser!.type !== "adminsuper") {
+      entrepriseId = currentUser!.entrepriseId || null;
+    }
 
     if (!entrepriseId) {
       return NextResponse.json(

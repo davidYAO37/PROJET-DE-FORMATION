@@ -2,7 +2,9 @@ export interface EntreeStock {
     _id?:String;
     DateAppro?: Date;
     Quantite?: number;
+    QteConditionnement?: number;
     PrixAchat?: number;
+    PrixAchatConditionnement?: number;
     PRIXTHT?: number;
     TVAEntree?: number;
     MontantTTCE?: number;

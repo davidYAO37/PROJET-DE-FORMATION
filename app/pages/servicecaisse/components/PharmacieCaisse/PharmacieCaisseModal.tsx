@@ -744,6 +744,8 @@ export default function PharmacieCaisseModal({
         reference: (ligne.reference || "").trim(),
         IDPARTIENT: patient._id || "",
         QteP: Number(ligne.quantite) || 1,
+        QteConditionnement: ligne.modeVente === "BOITE" ? Number(ligne.quantite) : undefined,
+        ModeVente: ligne.modeVente || "DETAIL",
         posologie: (ligne.posologie || "").trim(),
         DatePres: lineDate,
         heureFacturation: toTimeHHMMSS(now),
@@ -838,6 +840,8 @@ export default function PharmacieCaisseModal({
     const lignesPayees = lignesValides.filter((l) => l.paye && (l.reference || "").trim() !== "");
     for (const ligne of lignesPayees) {
       const reference = (ligne.reference || "").trim();
+      const qteParCond = medicaments.find((m) => m._id === ligne.medicamentId)?.QteParConditionnement || 1;
+      const qteEnUnites = ligne.modeVente === "BOITE" ? (Number(ligne.quantite) * qteParCond) : Number(ligne.quantite);
       const sortiesExistantes = await getSortiesForLine(reference);
       const ancienneQuantite = sortiesExistantes?.[0]?.Quantite ? Number(sortiesExistantes[0].Quantite) : 0;
 
@@ -845,6 +849,7 @@ export default function PharmacieCaisseModal({
         DateSortie: now,
         Reference: reference,
         Quantite: Number(ligne.quantite) || 0,
+        ModeVente: ligne.modeVente || "DETAIL",
         Prix_unitaire: Number(ligne.prixUnitaire) || 0,
         Prix_TotalS: Number(ligne.total) || 0,
         Motif: "Vente",
@@ -873,8 +878,8 @@ export default function PharmacieCaisseModal({
       await updateStockForReference(reference, (stockActuel) => {
         const qteStock = Number(stockActuel.QteEnStock || 0);
         const qteVirtuel = Number(stockActuel.QteStockVirtuel || 0);
-        const nouvelleQteEnStock = qteStock - (Number(ligne.quantite) || 0) + ancienneQuantite;
-        const nouveauQteStockVirtuel = qteVirtuel + (Number(ligne.quantite) || 0) - ancienneQuantite;
+        const nouvelleQteEnStock = qteStock - qteEnUnites + ancienneQuantite;
+        const nouveauQteStockVirtuel = qteVirtuel + qteEnUnites - ancienneQuantite;
         return { QteEnStock: nouvelleQteEnStock, QteStockVirtuel: nouveauQteStockVirtuel };
       });
     }

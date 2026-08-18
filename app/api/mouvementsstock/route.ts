@@ -4,7 +4,7 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IEntreeStock } from "@/models/EntreeStock";
 import { ISortieStock } from "@/models/SortieStock";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien"];
 
 // GET /api/mouvementsstock?IDMEDICAMENT=xxx&reference=xxx
 // Retourne l'historique unifié entrées + sorties triées par date

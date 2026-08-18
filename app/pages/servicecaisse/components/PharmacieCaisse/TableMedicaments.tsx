@@ -10,6 +10,12 @@ export interface IMedicament {
   Reference?: string;
   CodeBarre?: string;
   PrixVente?: number;
+  PrixVenteConditionnement?: number;
+  PrixVenteUnite?: number;
+  QteParConditionnement?: number;
+  ConditionnementAchat?: string;
+  UniteVente?: string;
+  VenteParDetail?: boolean;
   StockDisponible?: number;
   SeuilAlert?: number; // Seuil d'alerte de stock (optionnel)
   SeuilCritique?: number; // Seuil critique de stock (optionnel)
@@ -34,6 +40,7 @@ export interface ILigneMedicament {
   payeA?: string;
   DATE?: string; // Ajout du champ DATE
   reference?: string; // Ajout du champ reference
+  modeVente?: "DETAIL" | "BOITE";
 }
 
 // Fonction pour déterminer le statut du stock
@@ -200,25 +207,35 @@ function generateLineId(): string {
   return Math.random().toString(36).substr(2, 9);
 }
 
+// Fonction utilitaire pour obtenir le prix unitaire selon le mode de vente
+function getPrixUnitaire(medicament: IMedicament | undefined, mode: "DETAIL" | "BOITE"): number {
+  if (!medicament) return 0;
+  if (mode === "BOITE") return medicament.PrixVenteConditionnement || medicament.PrixVente || 0;
+  return medicament.PrixVenteUnite || medicament.PrixVente || 0;
+}
+
 // Fonction pour créer une nouvelle ligne vide
 function emptyLigne(medicament?: IMedicament): ILigneMedicament {
+  const mode = medicament?.VenteParDetail === false ? "BOITE" : "DETAIL";
+  const prix = getPrixUnitaire(medicament, mode);
   return {
     id: generateLineId(),
     medicamentId: medicament?._id || "",
     designation: medicament?.Designation || "",
     quantite: 1,
     posologie: "",
-    prixUnitaire: medicament?.PrixVente || 0,
-    total: medicament?.PrixVente || 0,
+    prixUnitaire: prix,
+    total: prix,
     paye: false,
     refuse: false,
     partAssurance: 0,
-    partAssure: medicament?.PrixVente || 0,
+    partAssure: prix,
     payePar: "",
     payeLe: "",
     payeA: "",
     DATE: new Date().toISOString().split('T')[0], // Date du jour par défaut
-    reference: medicament?.Reference || "" // Ajouter la référence du médicament
+    reference: medicament?.Reference || "", // Ajouter la référence du médicament
+    modeVente: mode,
   };
 }
 
@@ -398,7 +415,9 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
 
   // Gérer la sélection d'un médicament
   const handleSelectMedicament = (id: string, medicament: IMedicament) => {
-    const prixUnitaire = medicament.PrixVente || 0;
+    const qteParCond = medicament.QteParConditionnement || 1;
+    const mode = medicament.VenteParDetail === false ? "BOITE" : "DETAIL";
+    const prixUnitaire = getPrixUnitaire(medicament, mode);
     const quantite = 1;
     const total = prixUnitaire * quantite;
 
@@ -409,6 +428,7 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
       quantite: quantite,
       total: total,
       reference: medicament.Reference || medicament.CodeBarre || "", // Utiliser la référence du médicament (ex: RIV-3)
+      modeVente: mode,
       // Calculer les parts assurance/patient selon le taux
       partAssurance: Math.round((total * tauxAssurance) / 100),
       partAssure: total - Math.round((total * tauxAssurance) / 100)
@@ -431,6 +451,29 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
         partAssure: !ligne.refuse ? newTotal - Math.round((newTotal * tauxAssurance) / 100) : newTotal
       });
       // Recalculer les totaux généraux
+      setTimeout(() => calculerTotaux(), 0);
+    }
+  };
+
+  // Changer le mode de vente (détail / boîte) et recalculer le prix
+  const handleModeVenteChange = (id: string, mode: "DETAIL" | "BOITE") => {
+    const ligne = lignes.find(l => l.id === id);
+    const medicament = medicamentsEnStock.find(m => m._id === ligne?.medicamentId);
+    if (ligne && medicament) {
+      const prix = getPrixUnitaire(medicament, mode);
+      const qteParCond = medicament.QteParConditionnement || 1;
+      const newQuantite = mode === "BOITE" && ligne.modeVente === "DETAIL" && qteParCond > 1
+        ? Math.max(1, Math.ceil(ligne.quantite / qteParCond))
+        : (mode === "DETAIL" && ligne.modeVente === "BOITE" ? Math.max(1, ligne.quantite * qteParCond) : ligne.quantite);
+      const newTotal = newQuantite * prix;
+      updateLigne(id, {
+        modeVente: mode,
+        prixUnitaire: prix,
+        quantite: newQuantite,
+        total: newTotal,
+        partAssurance: !ligne.refuse ? Math.round((newTotal * tauxAssurance) / 100) : 0,
+        partAssure: !ligne.refuse ? newTotal - Math.round((newTotal * tauxAssurance) / 100) : newTotal
+      });
       setTimeout(() => calculerTotaux(), 0);
     }
   };
@@ -541,9 +584,10 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
             <tr>
               <th style={{ width: '5%' }}>#</th>
               <th style={{ width: '120px' }}>Date</th>
-              <th style={{ width: '40%' }}>Médicament</th>
+              <th style={{ width: '30%' }}>Médicament</th>
+              <th style={{ width: '12%' }}>Mode</th>
               <th style={{ width: '10%' }}>Qté</th>
-              <th style={{ width: '15%' }}>P.U (FCFA)</th>
+              <th style={{ width: '13%' }}>P.U (FCFA)</th>
               <th style={{ width: '15%' }}>Total (FCFA)</th>
               <th style={{ width: '10%', textAlign: 'center' }}>
                 <div className="d-flex flex-column align-items-center">
@@ -579,6 +623,17 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
                     selectedId={ligne.medicamentId}
                     onSelect={(medicament: IMedicament) => handleSelectMedicament(ligne.id, medicament)}
                   />
+                </td>
+                <td>
+                  <Form.Select
+                    size="sm"
+                    value={ligne.modeVente || "DETAIL"}
+                    onChange={(e) => handleModeVenteChange(ligne.id, e.target.value as "DETAIL" | "BOITE")}
+                    disabled={!ligne.medicamentId}
+                  >
+                    <option value="DETAIL">Détail</option>
+                    <option value="BOITE">Boîte</option>
+                  </Form.Select>
                 </td>
                 <td>
                   <Form.Control

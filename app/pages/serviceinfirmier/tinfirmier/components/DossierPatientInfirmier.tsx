@@ -91,7 +91,7 @@ export default function DossierPatientInfirmier({
     try {
       const [patRes, consRes, obsRes, prescRes] = await Promise.all([
         fetch(`/api/patients/${patientId}`),
-        fetch(`/api/consultations?patientId=${patientId}`),
+        fetch(`/api/consultation?patientId=${patientId}`),
         fetch(`/api/observations?patientId=${patientId}`),
         fetch(`/api/prescriptions?patientId=${patientId}`),
       ]);

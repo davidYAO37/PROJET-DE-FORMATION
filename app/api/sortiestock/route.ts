@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ISortieStock } from "@/models/SortieStock";
 import { IStock } from "@/models/Stock";
+import { IPharmacie } from "@/models/Pharmacie";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
@@ -43,6 +44,7 @@ export async function POST(request: NextRequest) {
     if (!context) return response;
     const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
+    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
 
     try {
         const body = await request.json();
@@ -64,19 +66,53 @@ export async function POST(request: NextRequest) {
         } else {
             delete sortieStockData.Patient;
         }
+
+        // Gestion vente au détail ou en conditionnement (boîte)
+        const idMed = sortieStockData.IDMEDICAMENT;
+        const mode = sortieStockData.ModeVente || "DETAIL";
+        const qteInput = Number(sortieStockData.Quantite) || 0;
+        let qteUnite = qteInput;
+        let qteCond = null as number | null;
+        let prixUnitaire = 0;
+
+        if (idMed) {
+            const med = await Pharmacie.findById(idMed).lean();
+            const qteParCond = med?.QteParConditionnement || 1;
+
+            if (mode === "BOITE" && qteParCond > 1) {
+                qteCond = qteInput;
+                qteUnite = qteInput * qteParCond;
+                prixUnitaire = Number(sortieStockData.PrixVenteConditionnement)
+                    || Number(sortieStockData.Prix_unitaire)
+                    || med?.PrixVenteConditionnement
+                    || med?.PrixVente
+                    || 0;
+            } else {
+                prixUnitaire = Number(sortieStockData.Prix_unitaire)
+                    || med?.PrixVenteUnite
+                    || med?.PrixVente
+                    || 0;
+            }
+        } else {
+            prixUnitaire = Number(sortieStockData.Prix_unitaire) || 0;
+        }
+
+        sortieStockData.Quantite = qteUnite;
+        sortieStockData.QteConditionnement = qteCond;
+        sortieStockData.Prix_unitaire = prixUnitaire;
+        sortieStockData.Prix_TotalS = qteCond !== null ? (qteCond * prixUnitaire) : (qteUnite * prixUnitaire);
+        sortieStockData.ModeVente = mode;
         
         // Créer une nouvelle sortie de stock
         const newSortieStock = await SortieStock.create(sortieStockData);
 
         // Mise à jour du stock physique uniquement si IDMEDICAMENT est fourni
         // (les ventes caisse gèrent leur propre décrément via /api/stock/:id)
-        const idMed = sortieStockData.IDMEDICAMENT;
-        const qte   = Number(sortieStockData.Quantite) || 0;
-        if (idMed && qte > 0) {
+        if (idMed && qteUnite > 0) {
             const stock = await Stock.findOne({ IDMEDICAMENT: idMed });
             if (stock) {
                 await Stock.findByIdAndUpdate(stock._id, {
-                    QteEnStock: Math.max(0, (stock.QteEnStock ?? 0) - qte),
+                    QteEnStock: Math.max(0, (stock.QteEnStock ?? 0) - qteUnite),
                     AuteurModif: sortieStockData.SaisiPar || "Système",
                     DateModif: new Date(),
                 });

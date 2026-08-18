@@ -4,7 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
-const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
+const READ_ROLES = ["admin","medecin","accueil","caisse","comptable","biologiste","technicienlabo","radiologue","pharmacien"];
 const WRITE_ROLES = ["admin"];
 
 // ✅ Récupération des tarifs ou initialisation si vides

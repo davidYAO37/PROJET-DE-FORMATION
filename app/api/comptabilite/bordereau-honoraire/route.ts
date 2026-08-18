@@ -9,7 +9,7 @@ import { IHonoraireMed } from '@/models/HonoraireMed';
 import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
 import mongoose from 'mongoose';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 const TAUX_TAXE = 7.5;
 

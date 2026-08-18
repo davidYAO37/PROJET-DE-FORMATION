@@ -3,8 +3,9 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { ISortieStock } from "@/models/SortieStock";
 import { IStock } from "@/models/Stock";
+import { IPharmacie } from "@/models/Pharmacie";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien"];
 
 export async function GET(req: NextRequest) {
     const { context, response } = await withTenant(req, ROLES);
@@ -29,15 +30,31 @@ export async function POST(req: NextRequest) {
     if (!context) return response;
     const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
+    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     try {
         const body = await req.json();
-        const sortie = await SortieStock.create(body);
+
+        // Récupérer le conditionnement du médicament
+        const med = body.IDMEDICAMENT ? await Pharmacie.findById(body.IDMEDICAMENT).lean() : null;
+        const qteParCond = med?.QteParConditionnement || 1;
+        const mode = body.ModeVente === "BOITE" ? "BOITE" : "DETAIL";
+        const qteCond = Number(body.Quantite) || 0;
+        const qteUnites = mode === "BOITE" ? qteCond * qteParCond : qteCond;
+
+        const sortieData = {
+            ...body,
+            Quantite: qteUnites,
+            QteConditionnement: mode === "BOITE" ? qteCond : undefined,
+            ModeVente: mode,
+        };
+
+        const sortie = await SortieStock.create(sortieData);
 
         // Mise à jour du stock physique
-        if (body.IDMEDICAMENT && body.Quantite) {
+        if (body.IDMEDICAMENT && qteUnites) {
             const stock = await Stock.findOne({ IDMEDICAMENT: body.IDMEDICAMENT });
             if (stock) {
-                const nouvelleQte = Math.max(0, (stock.QteEnStock ?? 0) - body.Quantite);
+                const nouvelleQte = Math.max(0, (stock.QteEnStock ?? 0) - qteUnites);
                 await Stock.findByIdAndUpdate(stock._id, {
                     QteEnStock: nouvelleQte,
                     AuteurModif: body.SaisiPar,

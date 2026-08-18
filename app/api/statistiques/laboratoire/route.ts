@@ -5,7 +5,7 @@ import { IExamenHospitalisation } from '@/models/examenHospit';
 import { ILignePrestation } from '@/models/lignePrestation';
 import { IResultatLignePrestation } from '@/models/resultatLignePrestation';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ["admin","medecin","accueil","infirmier","biologiste","technicienlabo","caisse","comptable","facturation","radiologue","pharmacien"];
 
 const startOfDay = (d: Date) => { const v = new Date(d); v.setHours(0, 0, 0, 0); return v; };
 const endOfDay = (d: Date) => { const v = new Date(d); v.setHours(23, 59, 59, 999); return v; };

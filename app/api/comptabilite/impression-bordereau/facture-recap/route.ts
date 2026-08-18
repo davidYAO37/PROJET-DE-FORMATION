@@ -5,7 +5,7 @@ import { IFactureRecap } from '@/models/factureRecap';
 import { IFactureAssur } from '@/models/factureAssur';
 import mongoose from 'mongoose';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 // SELECT Facture_Recap.* FROM Facture_Recap WHERE Facture_Recap.IDFactureAssur = {ParamIDFactureAssur}
 export async function GET(request: NextRequest) {

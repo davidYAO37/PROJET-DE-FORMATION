@@ -248,7 +248,7 @@ export default function ListePatientAttentes() {
   const commencerConsultation = async (patient: PatientEnAttente) => {
     try {
       // Mettre à jour le statut de la consultation
-      const response = await fetch(`/api/consultations/${patient._id}`, {
+      const response = await fetch(`/api/consultation/${patient._id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

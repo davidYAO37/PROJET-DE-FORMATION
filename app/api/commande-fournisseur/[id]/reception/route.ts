@@ -5,8 +5,9 @@ import { ICommandeFournisseur } from "@/models/CommandeFournisseur";
 import { IApprovisionnement } from "@/models/Approvisionnement";
 import { IEntreeStock } from "@/models/EntreeStock";
 import { IStock } from "@/models/Stock";
+import { IPharmacie } from "@/models/Pharmacie";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin","medecin","accueil","infirmier","pharmacien"];
 
 /**
  * POST /api/commande-fournisseur/[id]/reception
@@ -29,6 +30,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const Approvisionnement = getTenantModel<IApprovisionnement>(connection, "Approvisionnement");
     const EntreeStock = getTenantModel<IEntreeStock>(connection, "EntreeStock");
     const Stock = getTenantModel<IStock>(connection, "Stock");
+    const Pharmacie = getTenantModel<IPharmacie>(connection, "Pharmacie");
 
     const { id } = await params;
     const body = await req.json();
@@ -70,7 +72,20 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         const ligne = commande.lignes?.find((l: any) => l._id?.toString() === lr.ligneId);
         if (!ligne) continue;
 
-        const ht  = lr.QteRecue * (lr.PrixAchat ?? ligne.PrixAchat ?? 0);
+        // Récupérer le conditionnement du médicament
+        const med = ligne.IDMEDICAMENT ? await Pharmacie.findById(ligne.IDMEDICAMENT).lean() : null;
+        const qteParCond = med?.QteParConditionnement || 1;
+
+        // Priorité à la saisie en conditionnement (boîte), sinon en unités
+        const qteCond = lr.QteConditionnement !== undefined ? Number(lr.QteConditionnement) : 0;
+        const qteRecueUnite = qteCond > 0 ? qteCond * qteParCond : Number(lr.QteRecue || 0);
+
+        const prixAchatCond = lr.PrixAchatConditionnement !== undefined
+            ? Number(lr.PrixAchatConditionnement)
+            : (lr.PrixAchat ?? ligne.PrixAchat ?? 0) * qteParCond;
+        const prixAchatUnite = qteParCond > 0 ? prixAchatCond / qteParCond : (lr.PrixAchat ?? ligne.PrixAchat ?? 0);
+
+        const ht = qteCond > 0 ? qteCond * prixAchatCond : qteRecueUnite * prixAchatUnite;
         const tva = lr.TVA ?? ligne.TVA ?? 0;
         const ttc = ht + tva;
 
@@ -81,9 +96,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             Reference:      ligne.Reference,
             IDMEDICAMENT:   ligne.IDMEDICAMENT,
             Medicament:     ligne.Medicament,
-            Quantite:       lr.QteRecue,
-            PrixAchat:      lr.PrixAchat ?? ligne.PrixAchat,
-            PrixVente:      lr.PrixVente ?? ligne.PrixVente ?? 0,
+            Quantite:       qteRecueUnite,
+            QteConditionnement: qteCond > 0 ? qteCond : null,
+            PrixAchat:      prixAchatUnite,
+            PrixAchatConditionnement: qteCond > 0 ? prixAchatCond : null,
+            PrixVente:      lr.PrixVente ?? ligne.PrixVente ?? med?.PrixVente ?? 0,
             PRIXTHT:        ht,
             TVAEntree:      tva,
             MontantTTCE:    ttc,
@@ -108,7 +125,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             }
             if (stock?._id) {
                 await Stock.findByIdAndUpdate(stock._id, {
-                    QteEnStock: (stock.QteEnStock || 0) + lr.QteRecue,
+                    QteEnStock: (stock.QteEnStock || 0) + qteRecueUnite,
                     AuteurModif: SaisiPar || "",
                     DateModif: now,
                 });
@@ -117,7 +134,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
                     IDMEDICAMENT: medId,
                     Reference: ligne.Reference || "",
                     Medicament: ligne.Medicament || "",
-                    QteEnStock: lr.QteRecue,
+                    QteEnStock: qteRecueUnite,
                     QteMinimum: lr.QteMinimum ?? 0,
                     QteMaximum: lr.QteMaximum ?? 0,
                     AuteurModif: SaisiPar || "",
@@ -127,7 +144,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         } catch { /* non bloquant */ }
 
         // Mettre à jour QteRecue sur la ligne de commande
-        ligne.QteRecue = (ligne.QteRecue || 0) + lr.QteRecue;
+        ligne.QteRecue = (ligne.QteRecue || 0) + qteRecueUnite;
         totalHT  += ht;
         totalTVA += tva;
         totalTTC += ttc;

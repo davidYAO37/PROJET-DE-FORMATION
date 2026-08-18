@@ -5,7 +5,9 @@ export interface IEntreeStock extends Omit<Document, '_id'> {
     _id: string;
     DateAppro?: Date;
     Quantite?: number;
+    QteConditionnement?: number;
     PrixAchat?: number;
+    PrixAchatConditionnement?: number;
     PRIXTHT?: number;
     TVAEntree?: number;
     MontantTTCE?: number;
@@ -30,7 +32,9 @@ export interface IEntreeStock extends Omit<Document, '_id'> {
 const EntreeStockSchema = new Schema<IEntreeStock>({
     DateAppro: { type: Date },
     Quantite: { type: Number },
+    QteConditionnement: { type: Number },
     PrixAchat: { type: Number },
+    PrixAchatConditionnement: { type: Number },
     PRIXTHT: { type: Number },
     TVAEntree: { type: Number },
     MontantTTCE: { type: Number },

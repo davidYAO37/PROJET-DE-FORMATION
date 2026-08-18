@@ -3,7 +3,7 @@ import { withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { ILignePrestation } from '@/models/lignePrestation';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'radiologue'];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);

@@ -4,7 +4,7 @@ import { getTenantModel } from '@/lib/tenantModels';
 import { ILignePrestation } from '@/models/lignePrestation';
 import { IParametreCRendu } from '@/models/ParametreCRendu';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'radiologue'];
 
 export async function GET(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);

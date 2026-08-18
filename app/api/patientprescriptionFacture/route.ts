@@ -79,6 +79,8 @@ export async function POST(request: NextRequest) {
             PatientP: body.PatientP || "",
             IdPatient: body.IdPatient || body.IDPARTIENT || "",
             QteP: Number(body.QteP) || 1,
+            QteConditionnement: body.QteConditionnement !== undefined ? Number(body.QteConditionnement) : undefined,
+            ModeVente: body.ModeVente === "BOITE" || body.ModeVente === "DETAIL" ? body.ModeVente : undefined,
             posologie: body.posologie || "",
             DatePres: body.DatePres ? new Date(body.DatePres) : new Date(),
             prixUnitaire: Number(body.prixUnitaire) || 0,

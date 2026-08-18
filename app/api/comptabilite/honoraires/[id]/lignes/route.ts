@@ -4,7 +4,7 @@ import { getTenantModel } from '@/lib/tenantModels';
 import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
 import { IHonoraireMed } from '@/models/HonoraireMed';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function GET(
   request: NextRequest,

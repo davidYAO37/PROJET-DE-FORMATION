@@ -4,7 +4,7 @@ import { getTenantModel } from '@/lib/tenantModels';
 import { IHonoraireMed } from '@/models/HonoraireMed';
 import { IHonorairePaye } from '@/models/HonorairePaye';
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function PUT(
   request: NextRequest,

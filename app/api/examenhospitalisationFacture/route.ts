@@ -10,7 +10,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
-const WRITE_ROLES = ["admin", "medecin", "biologiste", "infirmier"];
+const WRITE_ROLES = ["admin", "medecin", "biologiste", "infirmier", "caisse"];
 
 export async function GET(req: NextRequest) {
     try {

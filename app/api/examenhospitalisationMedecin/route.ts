@@ -7,7 +7,7 @@ import { IAssurance } from "@/models/assurance";
 import { IConsultation } from "@/models/consultation";
 import mongoose from "mongoose";
 
-const ROLES = ["admin", "medecin", "accueil"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 export async function GET(req: NextRequest) {
     const { context, response } = await withTenant(req, ROLES);

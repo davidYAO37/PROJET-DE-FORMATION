@@ -12,15 +12,9 @@ export async function GET(req: NextRequest) {
     if (!context) return response;
     const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
 
-    const { searchParams } = new URL(req.url);
-    const entrepriseId = searchParams.get('entrepriseId');
-
-    const filter: any = {};
-    if (entrepriseId) {
-        filter.entrepriseId = entrepriseId;
-    }
-
-    const modepaiements = await ModeDePaiement.find(filter).lean();
+    // Pas de filtre entrepriseId ici : les modes de paiement sont isolés par tenant DB.
+    // Si un jour un mode est marqué entrepriseId, on peut le réintroduire.
+    const modepaiements = await ModeDePaiement.find({}).lean();
 
     return NextResponse.json({
         success: true,

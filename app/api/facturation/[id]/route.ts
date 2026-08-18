@@ -4,7 +4,7 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IFacturation } from "@/models/Facturation";
 
-const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
+const ROLES = ["admin","medecin","accueil","infirmier","facturation","caisse"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);

@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
-const WRITE_ROLES = ["admin", "medecin", "accueil"];
+const WRITE_ROLES = ["admin", "medecin", "accueil", "radiologue"];
 
 export async function POST(req: NextRequest) {
   const { context, response } = await withTenant(req, WRITE_ROLES);
