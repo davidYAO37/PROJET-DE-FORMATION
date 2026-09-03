@@ -1,6 +1,7 @@
 import { db } from "@/db/mongoConnect";
 import { UserCollection } from "@/models/users.model";
 import { IMedecin } from "@/models/medecin";
+import { Entreprise } from "@/models/entreprise";
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword, generateLocalUID } from "@/utils/auth";
 import { requireAuth, getImpersonateEntrepriseId } from "@/lib/auth";
@@ -16,12 +17,23 @@ export const POST = async (req: NextRequest) => {
     const user = await req.json();
 
     const impersonatedEntrepriseId = await getImpersonateEntrepriseId(req);
+    const requestedEntrepriseId = user.entrepriseId;
     const tenantEntrepriseId = currentUser!.type === "adminsuper"
-      ? (impersonatedEntrepriseId || currentUser!.entrepriseId)
+      ? (impersonatedEntrepriseId || requestedEntrepriseId || currentUser!.entrepriseId)
       : currentUser!.entrepriseId;
 
     if (!tenantEntrepriseId) {
       return NextResponse.json({ message: "Aucune entreprise valide pour ce tenant." }, { status: 400 });
+    }
+
+    const entreprise = await Entreprise.findOne({
+      _id: tenantEntrepriseId,
+      isActive: true,
+      statut: "active",
+    }).select("_id").lean();
+
+    if (!entreprise) {
+      return NextResponse.json({ message: "L'entreprise sélectionnée est introuvable ou inactive." }, { status: 400 });
     }
 
     if (user.entrepriseId && String(user.entrepriseId) !== String(tenantEntrepriseId)) {

@@ -12,11 +12,12 @@ type Props = {
     actes: ActeClinique[];
     onEdit: (a: ActeClinique) => void;
     onDelete: (id: string) => void;
+    onDeleteDuplicates: (ids: string[]) => Promise<void>;
 };
 
 const PAGE_SIZE_OPTIONS = [25, 50, 75, 100];
 
-const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
+const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete, onDeleteDuplicates }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(PAGE_SIZE_OPTIONS[0]);
     const [search, setSearch] = useState("");
@@ -48,6 +49,14 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
         a.designationacte?.toLowerCase().includes(search.toLowerCase())
     );
 
+    const duplicateIds = Object.values(actes.reduce<Record<string, string[]>>((groups, acte) => {
+        const key = acte.designationacte?.trim().toLocaleLowerCase();
+        if (key && acte._id) {
+            groups[key] = [...(groups[key] || []), acte._id];
+        }
+        return groups;
+    }, {})).filter((ids) => ids.length > 1).flatMap((ids) => ids.slice(1));
+
     // Tri
     if (sortConfig) {
         filteredActes = [...filteredActes].sort((a, b) => {
@@ -67,6 +76,22 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
     const handleItemsPerPageChange = (value: number) => {
         setItemsPerPage(value);
         setCurrentPage(1);
+    };
+
+    const handleDeleteDuplicates = async () => {
+        if (!duplicateIds.length) return;
+
+        const confirmed = window.confirm(
+            `Supprimer ${duplicateIds.length} acte(s) en double ? La première occurrence de chaque désignation sera conservée.`
+        );
+        if (!confirmed) return;
+
+        setActionLoading("delete-duplicates");
+        try {
+            await onDeleteDuplicates(duplicateIds);
+        } finally {
+            setActionLoading(null);
+        }
     };
 
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -176,6 +201,19 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                     <input type="file" accept=".xlsx,.xls" ref={fileInputRef} style={{ display: "none" }} onChange={handleFileChange} />
                     {importError && <span className="ms-2 text-danger">{importError}</span>}
                 </div>
+                {duplicateIds.length > 0 && (
+                    <div className="col-auto">
+                        <Button
+                            variant="outline-danger"
+                            size="sm"
+                            onClick={handleDeleteDuplicates}
+                            disabled={actionLoading === "delete-duplicates"}
+                        >
+                            {actionLoading === "delete-duplicates" && <Spinner as="span" animation="border" size="sm" className="me-2" />}
+                            <FaTrash className="me-1" /> Supprimer les doublons ({duplicateIds.length})
+                        </Button>
+                    </div>
+                )}
                 <div className="col-auto">
                     <Form.Control
                         type="text"
@@ -245,37 +283,37 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                                     <td>{a.prixMutuel}</td>
                                     <td>{a.prixPreferentiel}</td>
                                     <td className="bg-primary bg-opacity-10 d-flex justify-content-center">
-                                        <Button 
-                                            size="sm" 
-                                            variant="outline-info" 
-                                            className="me-2" 
+                                        <Button
+                                            size="sm"
+                                            variant="outline-info"
+                                            className="me-2"
                                             title="Saisir le résultat"
                                             onClick={() => handleOpenResultatModal(a)}
                                         >
                                             <FaFileMedical />
                                         </Button>
-                                        <Button 
-                                            size="sm" 
-                                            variant="outline-primary" 
-                                            className="me-2" 
+                                        <Button
+                                            size="sm"
+                                            variant="outline-primary"
+                                            className="me-2"
                                             title="Modifier l'acte"
-                                            onClick={() => { setActionLoading('edit-' + a._id); onEdit(a); }} 
+                                            onClick={() => { setActionLoading('edit-' + a._id); onEdit(a); }}
                                             disabled={actionLoading === 'edit-' + a._id}
                                         >
                                             <FaEdit />
                                         </Button>
                                         {a._id && (
-                                            <Button 
-                                                size="sm" 
-                                                variant="outline-danger" 
+                                            <Button
+                                                size="sm"
+                                                variant="outline-danger"
                                                 title="Supprimer l'acte"
-                                                disabled={actionLoading === 'delete-' + a._id} 
-                                                onClick={async () => { 
-                                                    if (window.confirm(`Supprimer "${a.designationacte}" ?`)) { 
-                                                        setActionLoading('delete-' + a._id); 
-                                                        await onDelete(a._id as string); 
-                                                        setActionLoading(null); 
-                                                    } 
+                                                disabled={actionLoading === 'delete-' + a._id}
+                                                onClick={async () => {
+                                                    if (window.confirm(`Supprimer "${a.designationacte}" ?`)) {
+                                                        setActionLoading('delete-' + a._id);
+                                                        await onDelete(a._id as string);
+                                                        setActionLoading(null);
+                                                    }
                                                 }}
                                             >
                                                 <FaTrash />
@@ -313,7 +351,7 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete }) => {
                     </Pagination>
                 </div>
             )}
-            <ResultatActe 
+            <ResultatActe
                 show={showResultatModal}
                 acte={selectedActe}
                 onClose={handleCloseResultatModal}

@@ -54,6 +54,15 @@ export default function ActesPage() {
         }
     };
 
+    const handleDeleteDuplicates = async (ids: string[]) => {
+        try {
+            await Promise.all(ids.map((id) => axios.delete(`/api/actes/${id}`)));
+            setActes((prev) => prev.filter((acte) => !acte._id || !ids.includes(acte._id)));
+        } catch (err: any) {
+            alert("Erreur lors de la suppression des doublons : " + (err.response?.data?.error || err.message));
+        }
+    };
+
     return (
         <div className="container py-4">
             <div className="d-flex justify-content-between align-items-center">
@@ -71,14 +80,19 @@ export default function ActesPage() {
                 </div>
             ) : (
                 <>
-                  {/*   <Button variant="success" onClick={() => setShowAdd(true)} className="mb-3">
+                    {/*   <Button variant="success" onClick={() => setShowAdd(true)} className="mb-3">
                         + Ajouter un acte
                     </Button> */}
 
                     {actes.length === 0 ? (
                         <p className="text-muted">Aucun acte disponible.</p>
                     ) : (
-                        <ListeActe actes={actes} onEdit={handleEditClick} onDelete={handleDelete} />
+                        <ListeActe
+                            actes={actes}
+                            onEdit={handleEditClick}
+                            onDelete={handleDelete}
+                            onDeleteDuplicates={handleDeleteDuplicates}
+                        />
                     )}
                 </>
             )}
