@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button, Table, Badge, Spinner, Form, Modal } from "react-bootstrap";
-import { FaEdit, FaTrash, FaBed, FaPlus } from "react-icons/fa";
+import { FaEdit, FaTrash, FaBed, FaPlus, FaInfoCircle } from "react-icons/fa";
 
 interface ChambreItem {
     _id: string;
@@ -24,6 +24,23 @@ interface LitItem {
     chambreId: string;
     etat: string;
     observation?: string;
+}
+
+interface PatientInfo {
+    Nom: string;
+    Prenoms: string;
+    Code_dossier?: string;
+    Assurance?: string;
+    SOCIETE_PATIENT?: string;
+}
+
+interface PatientHospitItem {
+    _id: string;
+    IdPatient?: PatientInfo | null;
+    Entrele?: string;
+    SortieLe?: string;
+    statutHospitalisation?: string;
+    Chambre?: string;
 }
 
 type Props = {
@@ -60,6 +77,13 @@ export default function ListeChambre({ chambres, onEdit, onDelete }: Props) {
     const [editingLit, setEditingLit] = useState<LitItem | null>(null);
     const [litLoading, setLitLoading] = useState(false);
     const [litError, setLitError] = useState("");
+
+    // Détail des patients par lit
+    const [showDetailLit, setShowDetailLit] = useState(false);
+    const [detailLit, setDetailLit] = useState<LitItem | null>(null);
+    const [detailPatients, setDetailPatients] = useState<PatientHospitItem[]>([]);
+    const [loadingDetail, setLoadingDetail] = useState(false);
+    const [detailError, setDetailError] = useState("");
 
     const filteredChambres = chambres.filter((c) =>
         c.numero?.toLowerCase().includes(search.toLowerCase()) ||
@@ -197,6 +221,38 @@ export default function ListeChambre({ chambres, onEdit, onDelete }: Props) {
             await refreshAllLits();
         } catch {
             alert("Erreur lors de la suppression du lit");
+        }
+    };
+
+    const handleDetailLit = async (lit: LitItem) => {
+        if (!selectedChambre) return;
+        setDetailLit(lit);
+        setShowDetailLit(true);
+        setLoadingDetail(true);
+        setDetailError("");
+        setDetailPatients([]);
+        try {
+            const res = await fetch(`/api/hospitalisations?litId=${lit._id}&chambreId=${selectedChambre._id}`);
+            if (res.ok) {
+                const data = await res.json();
+                setDetailPatients(Array.isArray(data) ? data : []);
+            } else {
+                setDetailError("Impossible de charger les patients pour ce lit.");
+            }
+        } catch {
+            setDetailError("Erreur lors du chargement des patients.");
+        } finally {
+            setLoadingDetail(false);
+        }
+    };
+
+    const getStatutBadge = (statut?: string) => {
+        switch (statut) {
+            case "en_cours": return "danger";
+            case "sortie": return "success";
+            case "transfere": return "warning";
+            case "decede": return "dark";
+            default: return "secondary";
         }
     };
 
@@ -344,6 +400,15 @@ export default function ListeChambre({ chambres, onEdit, onDelete }: Props) {
                                             <td>
                                                 <Button
                                                     size="sm"
+                                                    variant="outline-info"
+                                                    className="me-1"
+                                                    title="Détail — patients ayant utilisé ce lit"
+                                                    onClick={() => handleDetailLit(lit)}
+                                                >
+                                                    <FaInfoCircle />
+                                                </Button>
+                                                <Button
+                                                    size="sm"
                                                     variant="outline-primary"
                                                     className="me-1"
                                                     title={lit.etat === "occupe" ? "Lit occupé — modification impossible" : "Modifier"}
@@ -439,6 +504,60 @@ export default function ListeChambre({ chambres, onEdit, onDelete }: Props) {
                         </Button>
                     </Modal.Footer>
                 </Form>
+            </Modal>
+
+            {/* Modal Détail patients du lit */}
+            <Modal show={showDetailLit} onHide={() => setShowDetailLit(false)} size="lg">
+                <Modal.Header closeButton>
+                    <Modal.Title>
+                        Patients — Lit N° {detailLit?.numero} (Chambre {selectedChambre?.numero})
+                    </Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    {loadingDetail ? (
+                        <div className="text-center py-3">
+                            <Spinner animation="border" size="sm" /> Chargement des patients...
+                        </div>
+                    ) : detailError ? (
+                        <div className="text-danger">{detailError}</div>
+                    ) : detailPatients.length === 0 ? (
+                        <p className="text-muted">Aucun patient n'a utilisé ce lit.</p>
+                    ) : (
+                        <div className="table-responsive">
+                            <Table bordered hover size="sm" className="text-center">
+                                <thead className="table-info">
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Prénoms</th>
+                                        <th>Dossier</th>
+                                        <th>Entrée</th>
+                                        <th>Sortie</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {detailPatients.map((h) => (
+                                        <tr key={h._id}>
+                                            <td className="fw-bold">{h.IdPatient?.Nom || "—"}</td>
+                                            <td>{h.IdPatient?.Prenoms || "—"}</td>
+                                            <td>{h.IdPatient?.Code_dossier || "—"}</td>
+                                            <td>{h.Entrele ? new Date(h.Entrele).toLocaleDateString("fr-FR") : "—"}</td>
+                                            <td>{h.SortieLe ? new Date(h.SortieLe).toLocaleDateString("fr-FR") : "—"}</td>
+                                            <td>
+                                                <Badge bg={getStatutBadge(h.statutHospitalisation)}>
+                                                    {h.statutHospitalisation || "—"}
+                                                </Badge>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </Table>
+                        </div>
+                    )}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setShowDetailLit(false)}>Fermer</Button>
+                </Modal.Footer>
             </Modal>
         </>
     );
