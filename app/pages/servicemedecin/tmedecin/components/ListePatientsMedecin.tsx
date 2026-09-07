@@ -158,7 +158,7 @@ export default function ListePatientMedecin() {
         <Col xs={12} md={6}>
           <InputGroup>
             <Form.Control
-              placeholder="Rechercher par nom ou prénoms..."
+              placeholder="Rechercher par nom, prénom ou code dossier..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);

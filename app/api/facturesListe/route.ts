@@ -14,22 +14,33 @@ export async function GET(request: NextRequest) {
 
         const { searchParams } = new URL(request.url);
         const idHospitalisation = searchParams.get('idHospitalisation');
+        const codePrestation = searchParams.get('codePrestation');
+        const patientId = searchParams.get('patientId');
 
         // Vérifier les paramètres requis
-        if (!idHospitalisation) {
+        if (!idHospitalisation && !(codePrestation && patientId)) {
             return NextResponse.json(
-                { success: false, message: 'Les paramètres idHospitalisation est requis' },
+                { success: false, message: 'idHospitalisation ou (codePrestation et patientId) requis' },
                 { status: 400 }
             );
         }
 
+        // Construire une requête de fallback pour supporter les données importées
+        const orConditions: any[] = [];
+        if (idHospitalisation) {
+            orConditions.push({ idHospitalisation });
+        }
+        if (codePrestation) {
+            orConditions.push({ CodePrestation: codePrestation });
+        }
+        if (codePrestation && patientId) {
+            orConditions.push({ CodePrestation: codePrestation, IdPatient: patientId });
+        }
+
         // Récupérer les factures correspondantes
-            
-        const factures = await Facturation.find({
-            'idHospitalisation': idHospitalisation,
-        })
-        .sort({ date: -1 }) // Tri par date décroissante
-        .lean();
+        const factures = await Facturation.find({ $or: orConditions })
+            .sort({ DatePres: -1 }) // Tri par date décroissante
+            .lean();
 
 
         return NextResponse.json(factures);

@@ -1,0 +1,135 @@
+import { NextRequest } from 'next/server';
+import { withTenant } from '@/lib/withTenant';
+import { getTenantModel } from '@/lib/tenantModels';
+import { sendExport, formatDateFr, formatMontant } from '@/lib/exportUtils';
+import { ICaisse } from '@/models/caisse';
+import { IConsultation } from '@/models/consultation';
+import { IFacturation } from '@/models/Facturation';
+import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
+
+const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
+
+export async function GET(request: NextRequest) {
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  if (!context) return tenantErrorResponse;
+  const { connection } = context;
+  const caisse = getTenantModel<ICaisse>(connection, 'Caisse');
+  const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+  const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(connection, 'EncaissementCaisse');
+
+  try {
+    const { searchParams } = new URL(request.url);
+    const dateDebut = searchParams.get('dateDebut');
+    const dateFin = searchParams.get('dateFin');
+    const format = (searchParams.get('format') || 'csv') as 'csv' | 'xlsx';
+
+    if (!dateDebut || !dateFin) {
+      return new Response('dateDebut et dateFin sont requis', { status: 400 });
+    }
+
+    const debut = new Date(dateDebut);
+    const fin = new Date(dateFin);
+    fin.setHours(23, 59, 59, 999);
+
+    const lignes: any[] = [];
+
+    const docsCaisse = await caisse.find({ dAteC: { $gte: debut, $lte: fin } }).lean();
+    for (const c of docsCaisse) {
+      const isEntree = (c.typeC || '').toLowerCase().includes('entrée');
+      lignes.push({
+        date: c.dAteC,
+        libelle: c.Operation || '',
+        motif: c.MOtif || '',
+        nomPrenoms: c.NomPrenoms || '',
+        recette: isEntree ? (c.MOntantC || 0) : 0,
+        depense: isEntree ? 0 : (c.MOntantC || 0),
+        source: isEntree ? 'CAISSE ENTRÉE' : 'CAISSE SORTIE',
+      });
+    }
+
+    const consultations = await Consultation.find({
+      Date_consulation: { $gte: debut, $lte: fin },
+      StatutC: true,
+      PrixClinique: { $ne: 0 },
+    }).lean();
+
+    for (const c of consultations) {
+      const mode = (c.Modepaiement || '').toLowerCase();
+      if (['chèque', 'carte de crédit'].some(m => mode.includes(m))) continue;
+      lignes.push({
+        date: c.Date_consulation,
+        libelle: c.designationC || 'CONSULTATION',
+        motif: 'CONSULTATION',
+        nomPrenoms: c.PatientP || '',
+        recette: c.Montantencaisse || 0,
+        depense: 0,
+        source: 'CONSULTATION',
+      });
+    }
+
+    const facturations = await Facturation.find({
+      DateFacturation: { $gte: debut, $lte: fin },
+    }).lean();
+
+    for (const f of facturations) {
+      const mode = (f.Modepaiement || '').toLowerCase();
+      if (['chèque', 'carte de crédit'].some(m => mode.includes(m))) continue;
+      lignes.push({
+        date: f.DateFacturation,
+        libelle: f.Designationtypeacte || '',
+        motif: 'PRESTATION',
+        nomPrenoms: f.PatientP || '',
+        recette: f.MontantRecu || 0,
+        depense: 0,
+        source: 'FACTURATION',
+      });
+    }
+
+    const encaissements = await EncaissementCaisse.find({
+      DateEncaissement: { $gte: debut, $lte: fin },
+    }).lean();
+
+    for (const e of encaissements) {
+      const mode = (e.Modepaiement || '').toLowerCase();
+      if (['chèque', 'carte de crédit'].some(m => mode.includes(m))) continue;
+      lignes.push({
+        date: e.DateEncaissement,
+        libelle: e.Designation || '',
+        motif: 'ENCAISSEMENT',
+        nomPrenoms: e.Patient || '',
+        recette: e.Montantencaisse || 0,
+        depense: 0,
+        source: 'ENCAISSEMENT',
+      });
+    }
+
+    lignes.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+
+    const headers = ['date', 'libelle', 'motif', 'nomPrenoms', 'recette', 'depense', 'source'];
+    const labels: Record<string, string> = {
+      date: 'Date',
+      libelle: 'Libellé',
+      motif: 'Motif',
+      nomPrenoms: 'Nom / Prénoms',
+      recette: 'Recette',
+      depense: 'Dépense',
+      source: 'Source',
+    };
+
+    const rows = lignes.map((l: any) => ({
+      date: formatDateFr(l.date),
+      libelle: l.libelle,
+      motif: l.motif,
+      nomPrenoms: l.nomPrenoms,
+      recette: formatMontant(l.recette),
+      depense: formatMontant(l.depense),
+      source: l.source,
+    }));
+
+    return sendExport(rows, headers, `recettes_depenses_${dateDebut}_${dateFin}`, format, labels);
+  } catch (error) {
+    console.error('Erreur export recettes/dépenses:', error);
+    return new Response('Erreur serveur', { status: 500 });
+  }
+}

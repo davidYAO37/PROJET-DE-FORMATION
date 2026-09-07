@@ -175,6 +175,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const idFacturation = searchParams.get('idFacturation');
     const idConsultation = searchParams.get('idConsultation');
+    const idFacturations = searchParams.get('idFacturations');
+    const idConsultations = searchParams.get('idConsultations');
     const all = searchParams.get('all');
     const patient = searchParams.get('patient');
 
@@ -187,6 +189,16 @@ export async function GET(request: NextRequest) {
       encaissements = await EncaissementCaisse.find({ 
         Patient: { $regex: patient.trim(), $options: 'i' } 
       }).sort({ DateEncaissement: -1 });
+    } else if (idConsultations && idConsultations.trim() !== '') {
+      const ids = idConsultations.split(',').map(s => s.trim()).filter(Boolean);
+      if (ids.length) {
+        encaissements = await EncaissementCaisse.find({ IDCONSULTATION: { $in: ids } }).sort({ DateEncaissement: -1 });
+      }
+    } else if (idFacturations && idFacturations.trim() !== '') {
+      const ids = idFacturations.split(',').map(s => s.trim()).filter(Boolean);
+      if (ids.length) {
+        encaissements = await EncaissementCaisse.find({ IDFACTURATION: { $in: ids } }).sort({ DateEncaissement: -1 });
+      }
     } else if (idConsultation && idConsultation.trim() !== '') {
       encaissements = await EncaissementCaisse.find({ IDCONSULTATION: idConsultation.trim() }).sort({ DateEncaissement: -1 });
     } else if (idFacturation && idFacturation.trim() !== '') {

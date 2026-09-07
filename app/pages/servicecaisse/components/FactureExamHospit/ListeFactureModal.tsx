@@ -33,12 +33,16 @@ interface ListeFactureModalProps {
     show: boolean;
     onHide: () => void;
     idHospitalisation: string;
+    codePrestation?: string;
+    patientId?: string;
 }
 
 export default function ListeFactureModal({
     show,
     onHide,
-    idHospitalisation
+    idHospitalisation,
+    codePrestation,
+    patientId
 }: ListeFactureModalProps) {
     const [factures, setFactures] = useState<Facture[]>([]);
     const [loading, setLoading] = useState(false);
@@ -46,12 +50,16 @@ export default function ListeFactureModal({
     const [selectedFactureId, setSelectedFactureId] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!show || !idHospitalisation) return;
+        if (!show || (!idHospitalisation && !(codePrestation && patientId))) return;
 
         const fetchFactures = async () => {
             setLoading(true);
             try {
-                const response = await fetch(`/api/facturesListe?idHospitalisation=${idHospitalisation}`);
+                const params = new URLSearchParams();
+                if (idHospitalisation) params.set('idHospitalisation', idHospitalisation);
+                if (codePrestation) params.set('codePrestation', codePrestation);
+                if (patientId) params.set('patientId', patientId);
+                const response = await fetch(`/api/facturesListe?${params.toString()}`);
 
                 if (!response.ok) {
                     const errorData = await response.json().catch(() => ({}));
@@ -74,7 +82,7 @@ export default function ListeFactureModal({
         };
 
         fetchFactures();
-    }, [show, idHospitalisation]);
+    }, [show, idHospitalisation, codePrestation, patientId]);
 
     // Fonction pour convertir l'ID MongoDB en format court
     const formatFactureId = (id?: string) => {

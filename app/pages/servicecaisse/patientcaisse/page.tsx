@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
+import { Button, Table, Container, Form, InputGroup, Row, Col, Toast, ToastContainer, Spinner } from 'react-bootstrap';
+import Pagination from '@/components/Pagination';
 import { FaEdit, FaTrash, FaHospitalUser, FaPrescription, FaList, FaLock, FaWallet } from 'react-icons/fa';
 
 import { Patient } from '@/types/patient';
@@ -13,8 +14,6 @@ import PatientServicesModal from '../components/PatientServicesModal';
 import FicheConsultationUpdateCaisse from '../components/factureAttenteConsult/FicheConsultationUpdateCaisse';
 
 
-const ITEMS_PER_PAGE = 10;
-
 export default function Page() {
   const router = useRouter();
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -24,6 +23,7 @@ export default function Page() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   const [toastMessage, setToastMessage] = useState('');
   const [showToast, setShowToast] = useState(false);
@@ -75,26 +75,28 @@ export default function Page() {
   const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   const [patientsWithConsultations, setPatientsWithConsultations] = useState<Set<string>>(new Set());
 
-  // Vérifier quels patients ont des consultations
+  // Vérifier quels patients ont des consultations (un seul appel API pour éviter N+1)
   useEffect(() => {
     const checkPatientsConsultations = async () => {
-      const patientsWithConsults = new Set<string>();
-      
-      for (const patient of patients) {
-        try {
-          const response = await fetch(`/api/consultation?patientId=${patient._id}`);
-          if (response.ok) {
-            const consultations = await response.json();
-            if (consultations.length > 0 && patient._id) {
-              patientsWithConsults.add(patient._id);
-            }
-          }
-        } catch (error) {
-          console.error('Erreur vérification consultations:', error);
+      try {
+        const response = await fetch('/api/consultation');
+        if (!response.ok) return;
+        const consultations = await response.json();
+        const consultationPatientIds = new Set<string>();
+        for (const c of consultations) {
+          const id = c.IdPatient?._id?.toString?.() || c.IdPatient?.toString?.();
+          if (id) consultationPatientIds.add(String(id));
         }
+        const patientsWithConsults = new Set<string>();
+        for (const patient of patients) {
+          if (patient._id && consultationPatientIds.has(String(patient._id))) {
+            patientsWithConsults.add(patient._id as string);
+          }
+        }
+        setPatientsWithConsultations(patientsWithConsults);
+      } catch (error) {
+        console.error('Erreur vérification consultations:', error);
       }
-      
-      setPatientsWithConsultations(patientsWithConsults);
     };
 
     if (patients.length > 0) {
@@ -141,19 +143,13 @@ export default function Page() {
 
   );
 
-  const totalPages = Math.ceil(filteredPatients.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filteredPatients.length / itemsPerPage);
   const paginatedPatients = filteredPatients.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
   );
 
-  const goToPreviousPage = () => {
-    if (currentPage > 1) setCurrentPage(currentPage - 1);
-  };
 
-  const goToNextPage = () => {
-    if (currentPage < totalPages) setCurrentPage(currentPage + 1);
-  };
 
   return (
     <Container className="py-4">
@@ -169,7 +165,7 @@ export default function Page() {
         <Col xs={12} md={6}>
           <InputGroup>
             <Form.Control
-              placeholder="Rechercher par nom ou prénoms..."
+              placeholder="Rechercher par nom, prénom ou code dossier..."
               value={searchTerm}
               onChange={(e) => {
                 setSearchTerm(e.target.value);
@@ -215,7 +211,7 @@ export default function Page() {
               ) : (
                 paginatedPatients.map((patient, index) => (
                   <tr key={patient._id}>
-                    <td>{index + 1 + (currentPage - 1) * ITEMS_PER_PAGE}</td>
+                    <td>{index + 1 + (currentPage - 1) * itemsPerPage}</td>
                     <td>{patient.Nom}</td>
                     <td>{patient.Prenoms}</td>
                     <td>{patient.Age_partient}</td>
@@ -295,25 +291,26 @@ export default function Page() {
       )}
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="d-flex justify-content-center mt-3">
-          <Pagination>
-            <Pagination.Prev
-              onClick={goToPreviousPage}
-              disabled={currentPage === 1}
-            >
-              Précédent
-            </Pagination.Prev>
-
-            <Pagination.Next
-              onClick={goToNextPage}
-              disabled={currentPage === totalPages}
-            >
-              Suivant
-            </Pagination.Next>
-          </Pagination>
-        </div>
-      )}
+      <div className="d-flex justify-content-center align-items-center gap-3 mt-3 flex-wrap">
+        <Form.Select
+          value={String(itemsPerPage)}
+          onChange={(e) => {
+            setItemsPerPage(Number(e.target.value));
+            setCurrentPage(1);
+          }}
+          style={{ width: 'auto' }}
+        >
+          <option value="25">25 lignes</option>
+          <option value="50">50 lignes</option>
+          <option value="75">75 lignes</option>
+          <option value="100">100 lignes</option>
+        </Form.Select>
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      </div>
 
       {/* Toast */}
       <ToastContainer position="bottom-end" className="p-3">

@@ -386,7 +386,7 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
                     <td>${enc.Assurance || ''}</td>
                     <td>${enc.Designation || ''}</td>
                     <td class="text-center">${enc.Taux || 0}%</td>
-                    <td class="text-right">${enc.PartPatient?.toLocaleString() || 0}</td>
+                    <td class="text-right">${enc.PartPatient?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
                     <td>${enc.Medecin || ''}</td>
                 </tr>
             ` : `
@@ -395,13 +395,13 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
                     <td>${enc.Patient || ''}</td>
                     <td>${enc.Assurance || ''}</td>
                     <td>${enc.Designation || ''}</td>
-                    <td class="text-end">${enc.Totalacte?.toLocaleString() || 0}</td>
+                    <td class="text-end">${enc.Totalacte?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
                     <td class="text-center">${enc.Taux || 0}%</td>
-                    <td class="text-end">${enc.PartAssurance?.toLocaleString() || 0}</td>
-                    <td class="text-end">${enc.PartPatient?.toLocaleString() || 0}</td>
-                    <td class="text-end">${enc.Montantencaisse?.toLocaleString() || 0}</td>
-                    <td class="text-end">${enc.REMISE?.toLocaleString() || 0}</td>
-                    <td class="text-end">${enc.Restapayer?.toLocaleString() || 0}</td>
+                    <td class="text-end">${enc.PartAssurance?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
+                    <td class="text-end">${enc.PartPatient?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
+                    <td class="text-end">${enc.Montantencaisse?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
+                    <td class="text-end">${enc.REMISE?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
+                    <td class="text-end">${enc.Restapayer?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
                     <td>${enc.Medecin || ''}</td>
                 </tr>
             `).join('')}
@@ -410,7 +410,7 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
         <tfoot>
             <tr class="total-row">
                 <td colspan="5" class="text-right">TOTAL PART PATIENT :</td>
-                <td class="text-right">${donnees.reduce((sum, enc) => sum + (enc.PartPatient || 0), 0).toLocaleString()}</td>
+                <td class="text-right">${donnees.reduce((sum, enc) => sum + (enc.PartPatient || 0), 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
                 <td></td>
             </tr>
         </tfoot>
@@ -418,13 +418,13 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
         <tfoot>
             <tr class="total-row">
                 <td colspan="4" class="text-right">TOTAL :</td>
-                <td class="text-right">${totaux.totalActe?.toLocaleString() || 0}</td>
+                <td class="text-right">${totaux.totalActe?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
                 <td></td>
-                <td class="text-right">${totaux.totalAssurance?.toLocaleString() || 0}</td>
-                <td class="text-right">${totaux.totalPatient?.toLocaleString() || 0}</td>
-                <td class="text-right">${totaux.totalEncaisse?.toLocaleString() || 0}</td>
-                <td class="text-right">${totaux.totalRemise?.toLocaleString() || 0}</td>
-                <td class="text-right">${totaux.totalReste?.toLocaleString() || 0}</td>
+                <td class="text-right">${totaux.totalAssurance?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
+                <td class="text-right">${totaux.totalPatient?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
+                <td class="text-right">${totaux.totalEncaisse?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
+                <td class="text-right">${totaux.totalRemise?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
+                <td class="text-right">${totaux.totalReste?.toLocaleString('fr-FR', { maximumFractionDigits: 0 }) || 0}</td>
                 <td></td>
             </tr>
         </tfoot>
@@ -753,56 +753,17 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
                             onChange={(e) => {
                               const newCaissiere = e.target.value;
 
-                              // Logique WinDev : SI MoiMême..ValeurAffichée="" ALORS
                               if (!newCaissiere) {
-                                // ExécuteTraitement(BTN_Affiche_tous,trtClic)
                                 setCaissiere("");
                                 setModePaiement("TOUS LES PAIEMENTS");
-
-                                // Simuler BTN_Affiche_tous
                                 setEncaissements([]);
                                 setTimeout(() => chargerEncaissements({ caissiere: "", modePaiement: "TOUS LES PAIEMENTS" }), 100);
                                 return;
                               }
 
-                              // SINON SI COMBO_Choisir_le_mode_de_paiement..ValeurAffichée="" ALORS
-                              if (!modePaiement || modePaiement === "" || modePaiement === "TOUS LES PAIEMENTS") {
-                                alert("Veuillez sélectionner le mode de paiement");
-                                return;
-                              }
-
                               setCaissiere(newCaissiere);
-
-                              // Logique WinDev : Mise à jour du libellé
-                              // SI COMBO_Choisir_la_caissière..ValeurAffichée="" ALORS
-                              //   TABLE_ESPECE..Libellé="LISTE DES ENCAISSEMENTS"+" "+Majuscule(COMBO_Choisir_le_mode_de_paiement..ValeurAffichée)
-                              // SINON
-                              //   TABLE_ESPECE..Libellé="LISTE DES ENCAISSEMENTS"+" "+Majuscule(COMBO_Choisir_le_mode_de_paiement..ValeurAffichée)+" "+" DE"+" "+Majuscule(COMBO_Choisir_la_caissière..ValeurAffichée)
-                              // FIN
-                              // TABLE_ESPECE.SupprimeTout()
-
                               setEncaissements([]);
-
-                              // Logique WinDev : SELON SEL_AFFICHAGE_ACTE
-                              if (modeAffichage === 'famille') {
-                                // CAS 1 - PAR FAMILLE
-                                if (modePaiement === 'TOUS LES PAIEMENTS') {
-                                  // Tous_paiement_par_caissiere()
-                                  setTimeout(() => chargerEncaissements({ caissiere: newCaissiere }), 100);
-                                } else {
-                                  // Par_mode_par_caissiere()
-                                  setTimeout(() => chargerEncaissements({ caissiere: newCaissiere }), 100);
-                                }
-                              } else {
-                                // CAS 2 - PAR DETAIL
-                                if (modePaiement === 'TOUS LES PAIEMENTS') {
-                                  // Tous_paiement_par_caissiere_detail()
-                                  setTimeout(() => chargerEncaissements({ caissiere: newCaissiere }), 100);
-                                } else {
-                                  // Par_mode_par_caissiere_detail()
-                                  setTimeout(() => chargerEncaissements({ caissiere: newCaissiere }), 100);
-                                }
-                              }
+                              setTimeout(() => chargerEncaissements({ caissiere: newCaissiere }), 100);
                             }}
                             className="border-primary-subtle shadow-sm"
                           >
@@ -1004,13 +965,13 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
                       >
                         {encaissement.Designation}
                       </td>
-                      <td className="text-end fw-semibold">{encaissement.Totalacte?.toLocaleString()}</td>
+                      <td className="text-end fw-semibold">{encaissement.Totalacte?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
                       <td className="text-center">{encaissement.Taux}%</td>
-                      <td className="text-end">{encaissement.PartAssurance?.toLocaleString()}</td>
-                      <td className="text-end">{encaissement.PartPatient?.toLocaleString()}</td>
-                      <td className="text-end fw-bold text-success">{encaissement.Montantencaisse?.toLocaleString()}</td>
-                      <td className="text-end">{encaissement.REMISE?.toLocaleString()}</td>
-                      <td className="text-end text-danger">{encaissement.Restapayer?.toLocaleString()}</td>
+                      <td className="text-end">{encaissement.PartAssurance?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
+                      <td className="text-end">{encaissement.PartPatient?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
+                      <td className="text-end fw-bold text-success">{encaissement.Montantencaisse?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
+                      <td className="text-end">{encaissement.REMISE?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
+                      <td className="text-end text-danger">{encaissement.Restapayer?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
                       <td>{encaissement.Medecin}</td>
                       <td>{encaissement.Caissiere}</td>
                     </tr>
@@ -1019,13 +980,13 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
                 <tfoot className="table-secondary fw-bold">
                   <tr>
                     <td colSpan={5} className="text-end">TOTAUX :</td>
-                    <td className="text-end">{totaux.totalActe?.toLocaleString()}</td>
+                    <td className="text-end">{totaux.totalActe?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
                     <td></td>
-                    <td className="text-end">{totaux.totalAssurance?.toLocaleString()}</td>
-                    <td className="text-end">{totaux.totalPatient?.toLocaleString()}</td>
-                    <td className="text-end">{totaux.totalEncaisse?.toLocaleString()}</td>
-                    <td className="text-end">{totaux.totalRemise?.toLocaleString()}</td>
-                    <td className="text-end">{totaux.totalReste?.toLocaleString()}</td>
+                    <td className="text-end">{totaux.totalAssurance?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
+                    <td className="text-end">{totaux.totalPatient?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
+                    <td className="text-end">{totaux.totalEncaisse?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
+                    <td className="text-end">{totaux.totalRemise?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
+                    <td className="text-end">{totaux.totalReste?.toLocaleString('fr-FR', { maximumFractionDigits: 0 })}</td>
                     <td colSpan={2}></td>
                   </tr>
                 </tfoot>

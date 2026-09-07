@@ -71,68 +71,63 @@ export default function FacturesNonSoldesModal({ show, onHide, onPaiementSuccess
         const data = await response.json();
         const facturesBrutes = extraireListeFacturesApi(data);
 
-        // Appliquer la logique de vérification des encaissements
-        const facturesFiltrees = await Promise.all(
-          facturesBrutes.map(async (facture) => {
-            // Si le reste à payer est <= 0, on n'affiche pas
-            if (facture.montantRestant <= 0) {
-              return null;
-            }
+        // Appliquer la logique de vérification des encaissements (un seul appel API)
+        const facturesUtiles = facturesBrutes.filter((facture) => Number(facture.montantRestant) > 0 && facture.id);
+        const factureIds: string[] = [];
+        const consultationIds: string[] = [];
+        for (const f of facturesUtiles) {
+          const id = String(f.id).trim();
+          if (f.type === 'consultation') consultationIds.push(id);
+          else factureIds.push(id);
+        }
 
-            const idBrut = facture.id != null ? String(facture.id).trim() : '';
-            if (!idBrut) {
-              return facture;
-            }
+        const queryParts: string[] = [];
+        if (factureIds.length) queryParts.push(`idFacturations=${encodeURIComponent(factureIds.join(','))}`);
+        if (consultationIds.length) queryParts.push(`idConsultations=${encodeURIComponent(consultationIds.join(','))}`);
+        const encaissementsQuery = queryParts.length ? `/api/encaissementcaisse?${queryParts.join('&')}` : null;
 
-            const idEnc = encodeURIComponent(idBrut);
-            let encaissements: Response;
-            if (facture.type === 'consultation') {
-              encaissements = await fetch(
-                `/api/encaissementcaisse?idConsultation=${idEnc}`,
-                fetchOptsNoCache
-              );
-            } else {
-              encaissements = await fetch(
-                `/api/encaissementcaisse?idFacturation=${idEnc}`,
-                fetchOptsNoCache
-              );
-            }
-
-            if (encaissements.ok) {
-              const encaissementsData = await encaissements.json();
-              const sommeEncaissements = encaissementsData.data?.reduce(
-                (sum: number, enc: any) => sum + (enc.Montantencaisse || 0),
-                0
-              ) || 0;
-
-              // Calculer le reste réel à payer
-              const resteReel = facture.montantRestant - sommeEncaissements;
-
-              // Si le reste à payer - la somme des encaissements = 0, on n'affiche pas
-              if (resteReel <= 0) {
-                return null;
+        const encaissementsByKey: Record<string, number> = {};
+        if (encaissementsQuery) {
+          const encaissements = await fetch(encaissementsQuery, fetchOptsNoCache);
+          if (encaissements.ok) {
+            const encaissementsData = await encaissements.json();
+            for (const enc of (encaissementsData.data || [])) {
+              const key = enc.IDFACTURATION || enc.IDCONSULTATION;
+              if (key) {
+                encaissementsByKey[key] = (encaissementsByKey[key] || 0) + (Number(enc.Montantencaisse) || 0);
               }
-
-              // Sinon on affiche avec le reste réel
-              return {
-                ...facture,
-                montantRestant: resteReel
-              };
-            } else {
-              // Si pas trouvé dans encaissements, on affiche directement
-              return facture;
             }
-          })
-        );
+          }
+        }
 
-        // Filtrer les null et mettre à jour les factures
-        const facturesValidées = facturesFiltrees.filter((f): f is NonNullable<typeof f> => f !== null);
-        setFactures(facturesValidées);
+        const facturesFiltrees: any[] = [];
+        for (const facture of facturesUtiles) {
+          const sommeEncaissements = encaissementsByKey[String(facture.id).trim()] || 0;
+          const resteReel = Number(facture.montantRestant) - sommeEncaissements;
+
+          // Si le reste à payer - la somme des encaissements = 0, on n'affiche pas
+          if (resteReel <= 0) continue;
+
+          // Sinon on affiche avec le reste réel
+          facturesFiltrees.push({
+            ...facture,
+            montantRestant: resteReel
+          });
+        }
+
+        // Inclure aussi les factures sans ID connues (sans encaissement)
+        for (const facture of facturesBrutes) {
+          if (!facture.id && Number(facture.montantRestant) > 0) {
+            facturesFiltrees.push(facture);
+          }
+        }
+
+        setFactures(facturesFiltrees);
 
         if (
           options?.retryIfSuspiciousEmpty &&
           (options.countBefore ?? 0) > 1 &&
-          facturesValidées.length === 0
+          facturesFiltrees.length === 0
         ) {
           await new Promise((r) => setTimeout(r, 900));
           await chargerFactures();
@@ -151,9 +146,11 @@ export default function FacturesNonSoldesModal({ show, onHide, onPaiementSuccess
 
   // Fonction de tri et filtrage
   const getSortedAndFilteredFactures = () => {
+    const term = searchTerm.toLowerCase().trim();
     let filteredFactures = factures.filter(facture =>
-      facture.patient.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      facture.designation.toLowerCase().includes(searchTerm.toLowerCase())
+      facture.patient.toLowerCase().includes(term) ||
+      facture.designation.toLowerCase().includes(term) ||
+      (facture.code || '').toLowerCase().includes(term) 
     );
 
     return filteredFactures.sort((a, b) => {

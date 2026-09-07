@@ -1,50 +1,82 @@
-"use client";
-import { Pagination as BSPagination, Form } from "react-bootstrap";
+'use client';
 
-interface Props {
-    page: number;
-    totalPages: number;
-    total: number;
-    pageSize: number;
-    onPage: (p: number) => void;
-    onPageSize?: (n: number) => void;
-    pageSizes?: number[];
+import { Pagination as BsPagination, Form } from 'react-bootstrap';
+
+interface PaginationProps {
+  currentPage?: number;
+  page?: number;
+  totalPages?: number;
+  total?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPage?: (page: number) => void;
+  onPageSize?: (size: number) => void;
 }
 
-export default function Pagination({ page, totalPages, total, pageSize, onPage, onPageSize, pageSizes = [10, 15, 25, 50] }: Props) {
-    if (totalPages <= 1 && total <= pageSizes[0]) return null;
+export default function Pagination({
+  currentPage,
+  page,
+  totalPages,
+  total,
+  pageSize,
+  onPageChange,
+  onPage,
+  onPageSize,
+}: PaginationProps) {
+  const activePage = currentPage ?? page ?? 1;
+  const pagesCount = totalPages ?? 1;
+  const handlePageChange = onPageChange ?? onPage;
 
-    const pages: (number | "...")[] = [];
-    if (totalPages <= 7) {
-        for (let i = 1; i <= totalPages; i++) pages.push(i);
-    } else {
-        pages.push(1);
-        if (page > 3) pages.push("...");
-        for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i);
-        if (page < totalPages - 2) pages.push("...");
-        pages.push(totalPages);
-    }
+  if (pagesCount <= 1 && !onPageSize) return null;
 
-    return (
-        <div className="d-flex align-items-center justify-content-between flex-wrap gap-2 mt-3">
-            <div className="text-muted small">
-                {total} enregistrement{total > 1 ? "s" : ""} — page {page}/{totalPages}
-            </div>
-            <div className="d-flex align-items-center gap-2">
-                {onPageSize && (
-                    <Form.Select size="sm" style={{ width: 80 }} value={pageSize} onChange={e => { onPageSize(Number(e.target.value)); onPage(1); }}>
-                        {pageSizes.map(s => <option key={s} value={s}>{s}</option>)}
-                    </Form.Select>
-                )}
-                <BSPagination size="sm" className="mb-0">
-                    <BSPagination.Prev disabled={page === 1} onClick={() => onPage(page - 1)} />
-                    {pages.map((p, i) =>
-                        p === "..." ? <BSPagination.Ellipsis key={`e${i}`} disabled /> :
-                        <BSPagination.Item key={p} active={p === page} onClick={() => onPage(p as number)}>{p}</BSPagination.Item>
-                    )}
-                    <BSPagination.Next disabled={page === totalPages} onClick={() => onPage(page + 1)} />
-                </BSPagination>
-            </div>
-        </div>
-    );
+  const pages: (number | string)[] = [];
+  const delta = 2;
+  const start = Math.max(1, activePage - delta);
+  const end = Math.min(pagesCount, activePage + delta);
+
+  if (start > 1) pages.push(1);
+  if (start > 2) pages.push('...');
+  for (let i = start; i <= end; i += 1) pages.push(i);
+  if (end < pagesCount - 1) pages.push('...');
+  if (end < pagesCount) pages.push(pagesCount);
+
+  return (
+    <div className="d-flex justify-content-center align-items-center gap-3 mt-3 flex-wrap">
+      {onPageSize && pageSize !== undefined && (
+        <Form.Select
+          value={String(pageSize)}
+          onChange={(e) => onPageSize(Number(e.target.value))}
+          style={{ width: 'auto' }}
+        >
+          <option value="25">25 lignes</option>
+          <option value="50">50 lignes</option>
+          <option value="75">75 lignes</option>
+          <option value="100">100 lignes</option>
+        </Form.Select>
+      )}
+
+      <BsPagination>
+        <BsPagination.First onClick={() => handlePageChange?.(1)} disabled={activePage === 1} />
+        <BsPagination.Prev onClick={() => handlePageChange?.(activePage - 1)} disabled={activePage === 1} />
+        {pages.map((p, idx) => {
+          if (p === '...') {
+            return <BsPagination.Ellipsis key={idx} />;
+          }
+          return (
+            <BsPagination.Item
+              key={idx}
+              active={p === activePage}
+              onClick={() => handlePageChange?.(p as number)}
+            >
+              {p}
+            </BsPagination.Item>
+          );
+        })}
+        <BsPagination.Next onClick={() => handlePageChange?.(activePage + 1)} disabled={activePage === pagesCount} />
+        <BsPagination.Last onClick={() => handlePageChange?.(pagesCount)} disabled={activePage === pagesCount} />
+      </BsPagination>
+
+      {total !== undefined && <span className="text-muted small">{total} résultat(s)</span>}
+    </div>
+  );
 }

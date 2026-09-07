@@ -63,22 +63,44 @@ export default function Sidebarcaisse() {
 
       const data = await response.json();
       const factures = Array.isArray(data) ? data : Array.isArray(data.data) ? data.data : [];
-      const facturesASolder = await Promise.all(factures.map(async (facture: any) => {
-        if (Number(facture.montantRestant) <= 0 || !facture.id) return false;
+      const facturesUtiles = factures.filter((facture: any) => Number(facture.montantRestant) > 0 && facture.id);
+      if (facturesUtiles.length === 0) {
+        setFacturesASolderCount(0);
+        return;
+      }
 
-        const parametre = facture.type === 'consultation' ? 'idConsultation' : 'idFacturation';
-        const encaissementsResponse = await fetch(`/api/encaissementcaisse?${parametre}=${encodeURIComponent(String(facture.id))}`, { cache: 'no-store' });
-        if (!encaissementsResponse.ok) return true;
+      const factureIds: string[] = [];
+      const consultationIds: string[] = [];
+      for (const f of facturesUtiles) {
+        if (f.type === 'consultation') consultationIds.push(String(f.id));
+        else factureIds.push(String(f.id));
+      }
 
-        const encaissementsData = await encaissementsResponse.json();
-        const montantEncaisse = (encaissementsData.data || []).reduce(
-          (total: number, encaissement: any) => total + (Number(encaissement.Montantencaisse) || 0),
-          0
-        );
-        return Number(facture.montantRestant) - montantEncaisse > 0;
-      }));
+      const queryParts: string[] = [];
+      if (factureIds.length) queryParts.push(`idFacturations=${encodeURIComponent(factureIds.join(','))}`);
+      if (consultationIds.length) queryParts.push(`idConsultations=${encodeURIComponent(consultationIds.join(','))}`);
+      const encaissementsQuery = queryParts.length ? `/api/encaissementcaisse?${queryParts.join('&')}` : null;
 
-      setFacturesASolderCount(facturesASolder.filter(Boolean).length);
+      const encaissementsByKey: Record<string, number> = {};
+      if (encaissementsQuery) {
+        const encaissementsResponse = await fetch(encaissementsQuery, { cache: 'no-store' });
+        if (encaissementsResponse.ok) {
+          const encaissementsData = await encaissementsResponse.json();
+          for (const enc of (encaissementsData.data || [])) {
+            const key = enc.IDFACTURATION || enc.IDCONSULTATION;
+            if (key) {
+              encaissementsByKey[key] = (encaissementsByKey[key] || 0) + (Number(enc.Montantencaisse) || 0);
+            }
+          }
+        }
+      }
+
+      const count = facturesUtiles.reduce((acc: number, facture: any) => {
+        const montantEncaisse = encaissementsByKey[String(facture.id)] || 0;
+        return acc + (Number(facture.montantRestant) - montantEncaisse > 0 ? 1 : 0);
+      }, 0);
+
+      setFacturesASolderCount(count);
     } catch (error) {
       console.error('Erreur lors du chargement des factures à solder:', error);
       setFacturesASolderCount(0);

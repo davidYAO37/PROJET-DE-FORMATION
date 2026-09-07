@@ -425,65 +425,50 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       const data = await response.json();
       const facturesBrutes = extraireListeFacturesApi(data);
 
-      // Appliquer la logique exacte de FacturesNonSoldesModal
-      const facturesFiltrees = await Promise.all(
-        facturesBrutes.map(async (facture) => {
-          // Si le reste à payer est <= 0, on n'affiche pas
-          if (facture.montantRestant <= 0) {
-            return null;
-          }
+      // Appliquer la logique exacte de FacturesNonSoldesModal (un seul appel API)
+      const facturesUtiles = facturesBrutes.filter((facture: any) => Number(facture.montantRestant) > 0 && facture.id);
+      const factureIds: string[] = [];
+      const consultationIds: string[] = [];
+      for (const f of facturesUtiles) {
+        const id = String(f.id).trim();
+        if (f.type === "consultation") consultationIds.push(id);
+        else factureIds.push(id);
+      }
 
-          const idBrut = facture.id != null ? String(facture.id).trim() : "";
-          if (!idBrut) {
-            return facture;
-          }
+      const queryParts: string[] = [];
+      if (factureIds.length) queryParts.push(`idFacturations=${encodeURIComponent(factureIds.join(','))}`);
+      if (consultationIds.length) queryParts.push(`idConsultations=${encodeURIComponent(consultationIds.join(','))}`);
+      const encaissementsQuery = queryParts.length ? `/api/encaissementcaisse?${queryParts.join('&')}` : null;
 
-          const idEnc = encodeURIComponent(idBrut);
-          let encaissements: Response;
-          if (facture.type === "consultation") {
-            encaissements = await fetch(
-              `/api/encaissementcaisse?idConsultation=${idEnc}`,
-              fetchOptsNoCache,
-            );
-          } else {
-            encaissements = await fetch(
-              `/api/encaissementcaisse?idFacturation=${idEnc}`,
-              fetchOptsNoCache,
-            );
-          }
-
-          if (encaissements.ok) {
-            const encaissementsData = await encaissements.json();
-            const sommeEncaissements =
-              encaissementsData.data?.reduce(
-                (sum: number, enc: any) => sum + (enc.Montantencaisse || 0),
-                0,
-              ) || 0;
-
-            // Calculer le reste réel à payer
-            const resteReel = facture.montantRestant - sommeEncaissements;
-
-            // Si le reste à payer - la somme des encaissements = 0, on n'affiche pas
-            if (resteReel <= 0) {
-              return null;
+      const encaissementsByKey: Record<string, number> = {};
+      if (encaissementsQuery) {
+        const encaissements = await fetch(encaissementsQuery, fetchOptsNoCache);
+        if (encaissements.ok) {
+          const encaissementsData = await encaissements.json();
+          for (const enc of (encaissementsData.data || [])) {
+            const key = enc.IDFACTURATION || enc.IDCONSULTATION;
+            if (key) {
+              encaissementsByKey[key] = (encaissementsByKey[key] || 0) + (Number(enc.Montantencaisse) || 0);
             }
-
-            // Sinon on affiche avec le reste réel
-            return {
-              ...facture,
-              montantRestant: resteReel,
-            };
-          } else {
-            // Si pas trouvé dans encaissements, on affiche directement
-            return facture;
           }
-        }),
-      );
+        }
+      }
 
-      // Filtrer les null
-      const facturesValidées = facturesFiltrees.filter(
-        (f): f is NonNullable<typeof f> => f !== null,
-      );
+      const facturesFiltrees: any[] = [];
+      for (const facture of facturesUtiles) {
+        const sommeEncaissements = encaissementsByKey[String(facture.id).trim()] || 0;
+        const resteReel = Number(facture.montantRestant) - sommeEncaissements;
+        if (resteReel > 0) {
+          facturesFiltrees.push({ ...facture, montantRestant: resteReel });
+        }
+      }
+      for (const facture of facturesBrutes) {
+        if (!facture.id && Number(facture.montantRestant) > 0) {
+          facturesFiltrees.push(facture);
+        }
+      }
+
+      const facturesValidées = facturesFiltrees;
 
       // Filtrer pour le code visiteur spécifique
       const facturesVisiteur = facturesValidées.filter(

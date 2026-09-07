@@ -23,6 +23,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const dateDebut = searchParams.get('dateDebut');
     const dateFin = searchParams.get('dateFin');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '1000', 10));
     if (!dateDebut || !dateFin) {
       return NextResponse.json({ success: false, message: 'dateDebut et dateFin sont requis' }, { status: 400 });
     }
@@ -32,6 +34,10 @@ export async function GET(request: NextRequest) {
     fin.setHours(23, 59, 59, 999);
 
     const lignes: any[] = [];
+
+    // TODO: ce cahier additionne plusieurs sources (Caisse, Consultation, Facturation, EncaissementCaisse)
+    // qui peuvent se recouvrir. Pour des totaux fiables, il faudrait choisir une base unique
+    // (mouvements de caisse réels OU facturations encaissées) et éviter le double comptage.
 
     // ── 1. CAISSE : Entrées → RECETTE, Sorties → DEPENSE ──────────────────────
     const docsCaisse = await caisse.find({
@@ -117,11 +123,18 @@ export async function GET(request: NextRequest) {
     const totalDepense = lignes.reduce((s, l) => s + l.depense, 0);
     const solde = totalRecette - totalDepense;
 
+    const total = lignes.length;
+    const start = (page - 1) * limit;
+    const paginatedLignes = lignes.slice(start, start + limit);
+
     return NextResponse.json({
       success: true,
-      data: lignes,
+      data: paginatedLignes,
       totaux: { totalRecette, totalDepense, solde },
-      count: lignes.length,
+      count: paginatedLignes.length,
+      total,
+      page,
+      limit,
     });
   } catch (error) {
     console.error('Erreur recette/dépense:', error);

@@ -1,5 +1,7 @@
 {
     "codeiumEnterprise.portalUrl": "https://codeium.customer.com",
     "CodeGPT.apiKey": "Claude Code",
-    "chatgpt.gpt3.provider": "Anthropic"
+    "chatgpt.gpt3.provider": "Anthropic",
+    "js/ts.tsdk.path": "node_modules/typescript/lib",
+    "js/ts.tsdk.promptToUseWorkspaceVersion": true
 }

@@ -43,6 +43,9 @@
     "@types/pdfkit": "^0.13.0",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "csv-parse": "^5.5.3",
+    "csv-parser": "^3.2.1",
+    "iconv-lite": "^0.7.3",
     "typescript": "^5",
     "webpack": "^5.101.0"
   }

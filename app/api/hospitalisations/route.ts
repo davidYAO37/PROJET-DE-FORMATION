@@ -37,10 +37,12 @@ export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url);
     const statut = searchParams.get('statut');
     const patientId = searchParams.get('patientId');
+    const litId = searchParams.get('litId');
 
     const query: Record<string, any> = {};
     if (statut) query.statutHospitalisation = statut;
     if (patientId) query.IdPatient = patientId;
+    if (litId) query.litId = litId;
 
     ensurePopulateModels(connection);
     const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');

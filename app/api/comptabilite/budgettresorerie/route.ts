@@ -257,6 +257,19 @@ export async function GET(request: NextRequest) {
         if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qN1E['Modepaiement'] = modePaiement;
         const encaissN1 = await EncaissementCaisse.find(qN1E).lean();
         for (const e of encaissN1) soldeOuvertureBase += (e.Montantencaisse as number) || 0;
+      } else if (optionPart === 2) {
+        const consultN1 = await Consultation.find({
+          Date_consulation: { $gte: debutN1, $lte: finN1 },
+          StatutC: true,
+        }).lean();
+        for (const c of consultN1) {
+          soldeOuvertureBase += (c.PartAssurance as number) || 0;
+        }
+        const factDateN1 = facturationDateFilter(debutN1, finN1);
+        const factN1 = await Facturation.find(factDateN1 as any).lean();
+        for (const f of factN1) {
+          soldeOuvertureBase += (f.PartAssuranceP as number) || 0;
+        }
       } else {
         const consultN1 = await Consultation.find({
           Date_consulation: { $gte: debutN1, $lte: finN1 },

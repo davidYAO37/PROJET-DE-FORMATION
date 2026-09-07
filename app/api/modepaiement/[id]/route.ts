@@ -12,6 +12,20 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const body = await req.json();
     const { id } = await params;
     try {
+        // Empêcher la duplication par valeur
+        if (body?.Modepaiement) {
+            const existant = await ModeDePaiement.findOne({
+                _id: { $ne: id },
+                Modepaiement: body.Modepaiement
+            }).lean();
+            if (existant) {
+                return NextResponse.json({
+                    success: false,
+                    error: 'Ce mode de paiement existe déjà'
+                }, { status: 409 });
+            }
+        }
+
         const modepaiements = await ModeDePaiement.findByIdAndUpdate(id, body, { new: true });
         return NextResponse.json(modepaiements);
     } catch (e: any) {

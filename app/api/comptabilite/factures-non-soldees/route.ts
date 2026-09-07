@@ -19,6 +19,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const dateDebut = searchParams.get('dateDebut');
     const dateFin = searchParams.get('dateFin');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '1000', 10));
 
     if (!dateDebut || !dateFin) {
       return NextResponse.json({ error: 'Paramètres manquants' }, { status: 400 });
@@ -33,27 +35,16 @@ export async function GET(request: NextRequest) {
     // Récupérer les consultations avec statutPrescriptionMedecin >= 2 et resteAPayer <> 0
     const consultations = await (Consultation as any).find({
       statutPrescriptionMedecin: { $gte: 2 },
-      Restapayer: { $ne: 0 },
+      Restapayer: { $gt: 0 },
       Date_consulation: { $gte: debutDate, $lte: finDate }
     });
 
     for (const consultation of consultations) {
-      const encaissements = await EncaissementCaisse.find({
-        IDCONSULTATION: String(consultation._id)
-      });
-
-      const nMonencaissement = encaissements.reduce((sum, e) => sum + (e.Montantencaisse || 0), 0);
-      const nResteapayer = (consultation.Restapayer || 0) - nMonencaissement;
-      const montantEncaisse = (consultation.Montantencaisse || 0) + nMonencaissement;
       const montantTotal = consultation.montantapayer || 0;
+      const nResteapayer = consultation.Restapayer || 0;
+      const montantEncaisse = Math.max(0, montantTotal - nResteapayer);
 
-      const derniereDatePaiement = [
-        consultation.DateFacturation,
-        ...encaissements.map(e => e.DateEncaissement)
-      ]
-        .map(d => d ? new Date(d) : undefined)
-        .filter((d): d is Date => d !== undefined && !isNaN(d.getTime()))
-        .sort((a, b) => b.getTime() - a.getTime())[0];
+      const derniereDatePaiement = consultation.DateFacturation || consultation.Date_consulation;
 
       if (nResteapayer > 0) {
         result.push({
@@ -75,35 +66,23 @@ export async function GET(request: NextRequest) {
     }
 
     // ===== PARTIE 2: FACTURATIONS =====
-    // Récupérer les facturations avec resteAPayer <> 0
     const facturations = await (Facturation as any).find({
-      Restapayer: { $ne: 0 },
-      DateModif: { $gte: debutDate, $lte: finDate }
+      Restapayer: { $gt: 0 },
+      DateFacturation: { $gte: debutDate, $lte: finDate }
     });
 
     for (const facturation of facturations) {
-      const encaissements = await EncaissementCaisse.find({
-        IDFACTURATION: String(facturation._id)
-      });
-
-      const nMonencaissement = encaissements.reduce((sum, e) => sum + (e.Montantencaisse || 0), 0);
-      const nResteapayer = (facturation.Restapayer || 0) - nMonencaissement;
-      const montantEncaisse = (facturation.MontantRecu || 0) + nMonencaissement;
       const montantTotal = facturation.TotalapayerPatient || 0;
+      const nResteapayer = facturation.Restapayer || 0;
+      const montantEncaisse = Math.max(0, montantTotal - nResteapayer);
 
-      const derniereDatePaiement = [
-        facturation.DateFacturation,
-        ...encaissements.map(e => e.DateEncaissement)
-      ]
-        .map(d => d ? new Date(d) : undefined)
-        .filter((d): d is Date => d !== undefined && !isNaN(d.getTime()))
-        .sort((a, b) => b.getTime() - a.getTime())[0];
+      const derniereDatePaiement = facturation.DateFacturation || facturation.DatePres;
 
       if (nResteapayer > 0) {
         result.push({
           id: facturation._id?.toString() || '',
           type: 'FACTURATION',
-          date: facturation.DateFacturation || facturation.DatePres || facturation.DateModif,
+          date: facturation.DateFacturation || facturation.DatePres,
           codePrestation: facturation.CodePrestation || '',
           designation: facturation.Designationtypeacte || '',
           patient: facturation.PatientP || 'Inconnu',
@@ -121,10 +100,17 @@ export async function GET(request: NextRequest) {
     // Trier par date décroissante
     result.sort((a, b) => (b.date ? new Date(b.date).getTime() : 0) - (a.date ? new Date(a.date).getTime() : 0));
 
-    return NextResponse.json({ 
-      success: true, 
-      data: result,
-      count: result.length
+    const total = result.length;
+    const start = (page - 1) * limit;
+    const paginated = result.slice(start, start + limit);
+
+    return NextResponse.json({
+      success: true,
+      data: paginated,
+      count: paginated.length,
+      total,
+      page,
+      limit,
     });
 
   } catch (error) {

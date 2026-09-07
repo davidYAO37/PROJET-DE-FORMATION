@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner, Modal } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaPlus, FaEye, FaUsers } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaEye, FaUsers, FaSync, FaStop } from 'react-icons/fa';
 import AjouterEntreprise from './AjouterEntreprise';
 import ModifierEntreprise from './ModifierEntreprise';
 import GererUtilisateursEntreprise from './GererUtilisateursEntreprise';
@@ -25,6 +25,10 @@ export default function Entreprises() {
   const [entrepriseForUsers, setEntrepriseForUsers] = useState<Entreprise | null>(null);
   const [selectedEntreprise, setSelectedEntreprises] = useState<Entreprise | null>(null);
   const [entrepriseToDelete, setEntrepriseToDelete] = useState<string | null>(null);
+  const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateEntrepriseId, setUpdateEntrepriseId] = useState('');
+  const [updateLoading, setUpdateLoading] = useState(false);
+  const [updateJob, setUpdateJob] = useState<{ _id?: string; status?: string; progress?: number; currentStep?: string; error?: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -126,6 +130,58 @@ export default function Entreprises() {
     }
   };
 
+  const refreshUpdateStatus = async (entrepriseId: string) => {
+    const response = await fetch(`/api/adminsuper/windev-update?entrepriseId=${entrepriseId}`, { credentials: 'include' });
+    if (!response.ok) return;
+    const data = await response.json();
+    setUpdateJob(data.job || null);
+    if (['running', 'pending', 'cancelling'].includes(data.job?.status)) {
+      setTimeout(() => refreshUpdateStatus(entrepriseId), 3000);
+    } else {
+      setUpdateLoading(false);
+      if (data.job?.status === 'completed') showNotification('Mise à jour terminée avec succès', 'success');
+      if (data.job?.status === 'failed') showNotification(data.job.error || 'Échec de la mise à jour', 'danger');
+      if (data.job?.status === 'cancelled') showNotification('Mise à jour arrêtée', 'info');
+    }
+  };
+
+  const startUpdate = async () => {
+    if (!updateEntrepriseId) return;
+    setUpdateLoading(true);
+    setUpdateJob({ status: 'pending', progress: 0 });
+    try {
+      const response = await fetch('/api/adminsuper/windev-update', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ entrepriseId: updateEntrepriseId }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Impossible de lancer la mise à jour');
+      showNotification(data.message, 'info');
+      refreshUpdateStatus(updateEntrepriseId);
+    } catch (err) {
+      setUpdateLoading(false);
+      showNotification(err instanceof Error ? err.message : 'Erreur de mise à jour', 'danger');
+    }
+  };
+
+  const stopUpdate = async () => {
+    if (!updateJob?._id) return;
+    try {
+      const response = await fetch(`/api/adminsuper/windev-update?jobId=${updateJob._id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Impossible d\'arrêter la mise à jour');
+      showNotification(data.message, 'info');
+      setUpdateJob((prev) => (prev ? { ...prev, status: 'cancelling' } : null));
+    } catch (err) {
+      showNotification(err instanceof Error ? err.message : 'Erreur lors de l\'arrêt', 'danger');
+    }
+  };
+
   const filtered = entreprises.filter((m) =>
     m?.NomSociete?.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -146,6 +202,11 @@ export default function Entreprises() {
             </InputGroup>
           </Col>
           <Col md={6} className="text-end">
+            {isAdminSuper && (
+              <Button variant="primary" className="me-2" onClick={() => setShowUpdateModal(true)}>
+                <FaSync className="me-2" />Mise à jour
+              </Button>
+            )}
             <Button variant="success" onClick={() => setShowAddModal(true)}><FaPlus className="me-2" />Ajouter une Entreprise</Button>
           </Col>
         </Row>
@@ -334,6 +395,56 @@ export default function Entreprises() {
           entreprise={entrepriseForUsers}
         />
         
+        <Modal show={showUpdateModal} onHide={() => !updateLoading && setShowUpdateModal(false)} centered backdrop="static">
+          <Modal.Header closeButton={!updateLoading}>
+            <Modal.Title>Mise à jour des données WinDev</Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            <Form.Group>
+              <Form.Label>Base de données à mettre à jour</Form.Label>
+              <Form.Select
+                value={updateEntrepriseId}
+                disabled={updateLoading}
+                onChange={(event) => {
+                  setUpdateEntrepriseId(event.target.value);
+                  setUpdateJob(null);
+                }}
+              >
+                <option value="">Choisir une entreprise et sa base</option>
+                {entreprises.filter(item => item._id && item.dbName).map(item => (
+                  <option key={item._id} value={item._id}>{item.NomSociete} — {item.dbName}</option>
+                ))}
+              </Form.Select>
+            </Form.Group>
+            <div className="alert alert-warning mt-3 mb-0">
+              Vérifiez la base sélectionnée avant de continuer. L’import utilise les fichiers configurés sur le serveur et ne copie jamais les mots de passe WinDev.
+            </div>
+            {updateJob && (
+              <div className="mt-3">
+                <div className="d-flex justify-content-between">
+                  <span>{updateJob.currentStep || updateJob.status}</span>
+                  <span>{updateJob.progress || 0}%</span>
+                </div>
+                <div className="progress">
+                  <div className="progress-bar" style={{ width: `${updateJob.progress || 0}%` }} />
+                </div>
+                {updateJob.error && <div className="text-danger mt-2">{updateJob.error}</div>}
+              </div>
+            )}
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" disabled={updateLoading} onClick={() => setShowUpdateModal(false)}>Annuler</Button>
+            {updateJob?._id && ['running', 'pending', 'cancelling'].includes(updateJob.status || '') && (
+              <Button variant="danger" onClick={stopUpdate} disabled={updateJob.status === 'cancelling'}>
+                <FaStop className="me-2" />Arrêter
+              </Button>
+            )}
+            <Button variant="primary" disabled={!updateEntrepriseId || updateLoading} onClick={startUpdate}>
+              {updateLoading ? <><Spinner animation="border" size="sm" className="me-2" />Mise à jour en cours</> : <><FaSync className="me-2" />Lancer la mise à jour</>}
+            </Button>
+          </Modal.Footer>
+        </Modal>
+
         {/* Modal de confirmation de suppression */}
         <Modal 
           show={showDeleteModal} 

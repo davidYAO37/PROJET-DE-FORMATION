@@ -5,7 +5,6 @@ import { IHonoraireMed } from '@/models/HonoraireMed';
 import { IHonorairePaye } from '@/models/HonorairePaye';
 import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
 import { IMedecin } from '@/models/medecin';
-import mongoose from 'mongoose';
 
 const ROLES = ['admin', 'adminsuper', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
@@ -25,6 +24,8 @@ export async function GET(request: NextRequest) {
     const medecinId = searchParams.get('medecinId') || '';
     const entrepriseId = searchParams.get('entrepriseId') || '';
     const action = searchParams.get('action') || 'liste';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '1000', 10));
 
     const filtreEntreprise = entrepriseId ? { entrepriseId } : {};
 
@@ -49,7 +50,15 @@ export async function GET(request: NextRequest) {
       ...filtreEntreprise,
     })
       .populate('Medecin', 'nom prenoms specialite TauxHonoraire TauxPrescription TauxExecution TauxAideOperatoire TauxAnesthesiste')
+      .skip((page - 1) * limit)
+      .limit(limit)
       .lean();
+
+    const total = await HonoraireMed.countDocuments({
+      ...filtreDate,
+      ...filtreMedecin,
+      ...filtreEntreprise,
+    });
 
     const honoraireIds = honoraires.map(h => h._id);
 
@@ -95,7 +104,7 @@ export async function GET(request: NextRequest) {
       totalReste: data.reduce((s, h) => s + (h.resteAPayer || 0), 0),
     };
 
-    return NextResponse.json({ success: true, data, totaux, count: data.length });
+    return NextResponse.json({ success: true, data, totaux, count: data.length, total, page, limit });
   } catch (error) {
     console.error('Erreur honoraires:', error);
     return NextResponse.json(
@@ -105,73 +114,4 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
-  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
-  if (!context) return tenantErrorResponse;
-  const { connection } = context;
-  const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
-  const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
 
-  try {
-    const body = await request.json();
-    const { action } = body;
-
-    if (action === 'payer') {
-      const { honoraireId, montant, modePaiement, banque, numeroCheque, payePar, entrepriseId } = body;
-      if (!honoraireId || typeof montant !== 'number' || montant <= 0) {
-        return NextResponse.json({ success: false, message: 'Données manquantes ou montant invalide' }, { status: 400 });
-      }
-
-      const honoraire = await HonoraireMed.findById(honoraireId);
-      if (!honoraire) {
-        return NextResponse.json({ success: false, message: 'Honoraire introuvable' }, { status: 404 });
-      }
-
-      const resteActuel = honoraire.Restapayer ?? honoraire.Totalnetapayer ?? 0;
-      if (montant > resteActuel) {
-        return NextResponse.json({ success: false, message: 'Le montant payé dépasse le reste à payer' }, { status: 400 });
-      }
-
-      const nouveauReste = Math.max(0, resteActuel - montant);
-      const nouveauPaye = (honoraire.MontantPayé || 0) + montant;
-
-      const paiement = new HonorairePaye({
-        Date: new Date(),
-        Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-        MontantJour: honoraire.MontantJour || 0,
-        MontantPayé: montant,
-        Restapayer: nouveauReste,
-        PayéPar: payePar || '',
-        Recupar: payePar || '',
-        Medecin: honoraire.Medecin,
-        HonoraireMed: honoraireId,
-        BanqueC: banque || '',
-        NCheque: numeroCheque || '',
-        Modepaiement: modePaiement || 'Espèce',
-        entrepriseId: entrepriseId || honoraire.entrepriseId || '',
-      });
-
-      await paiement.save();
-
-      try {
-        await HonoraireMed.findByIdAndUpdate(
-          honoraireId,
-          { MontantPayé: nouveauPaye, Restapayer: nouveauReste }
-        );
-      } catch (updateError) {
-        await HonorairePaye.findByIdAndDelete(paiement._id);
-        throw updateError;
-      }
-
-      return NextResponse.json({ success: true, message: 'Paiement enregistré', data: paiement });
-    }
-
-    return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });
-  } catch (error) {
-    console.error('Erreur POST honoraires:', error);
-    return NextResponse.json(
-      { success: false, message: 'Erreur serveur', error: error instanceof Error ? error.message : 'Erreur' },
-      { status: 500 }
-    );
-  }
-}

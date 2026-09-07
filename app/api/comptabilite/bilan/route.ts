@@ -22,6 +22,8 @@ export async function GET(request: NextRequest) {
     const modePaiement = searchParams.get('modePaiement') || '';
     const typePatient = searchParams.get('typePatient') || '';
     const entrepriseId = searchParams.get('entrepriseId') || '';
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.max(1, parseInt(searchParams.get('limit') || '1000', 10));
 
     if (!dateDebut || !dateFin) {
       return NextResponse.json({ success: false, message: 'dateDebut et dateFin sont requis' }, { status: 400 });
@@ -135,7 +137,7 @@ export async function GET(request: NextRequest) {
     // Tri par date
     lignes.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    // Totaux
+    // Totaux globaux
     const totaux = {
       montantTotal: lignes.reduce((s, l) => s + (l.montantTotal || 0), 0),
       partAssurance: lignes.reduce((s, l) => s + (l.partAssurance || 0), 0),
@@ -155,12 +157,19 @@ export async function GET(request: NextRequest) {
       parTypeActe[type].encaisse += l.montantEncaisse || 0;
     }
 
+    const total = lignes.length;
+    const start = (page - 1) * limit;
+    const paginatedLignes = lignes.slice(start, start + limit);
+
     return NextResponse.json({
       success: true,
-      data: lignes,
+      data: paginatedLignes,
       totaux,
       parTypeActe,
-      count: lignes.length,
+      count: paginatedLignes.length,
+      total,
+      page,
+      limit,
     });
   } catch (error) {
     console.error('Erreur bilan financier:', error);

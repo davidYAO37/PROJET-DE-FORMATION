@@ -9,6 +9,14 @@ import { getTenantModel } from '@/lib/tenantModels';
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 
+const formatDateToIso = (value: any): string => {
+  if (!value) return '';
+  if (value instanceof Date) return value.toISOString().split('T')[0];
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return '';
+  return d.toISOString().split('T')[0];
+};
+
 export async function POST(request: NextRequest) {
     try {
         const { context, response } = await withTenant(request, READ_ROLES);
@@ -19,7 +27,7 @@ export async function POST(request: NextRequest) {
         const Prescription = getTenantModel<IPrescription>(context.connection, "Prescription");
         const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
 
-        const { dateDebut, dateFin } = await request.json();
+        const { dateDebut, dateFin, saisiPar } = await request.json();
 
         // Validation des paramètres - correspond au code WinDev
         if (!dateDebut || !dateFin) {
@@ -43,7 +51,7 @@ export async function POST(request: NextRequest) {
         }
 
         // Initialiser le tableau des résultats - correspond à TABLE_POINT_DE_SAISIE.SupprimeTout()
-        const results: any[] = [];
+        let results: any[] = [];
 
         // 1. Parcourir toutes les consultations dans la période POUR TOUT CONSULTATION
         // SI CONSULTATION.Date_consulation>= SAI_Debut ET CONSULTATION.Date_consulation<= SAI_Fin ALORS
@@ -71,7 +79,7 @@ export async function POST(request: NextRequest) {
                     }
             results.push({
                 id: `CONS_${consultation._id}`,
-                date: consultation.Date_consulation.toISOString().split('T')[0],
+                date: formatDateToIso(consultation.Date_consulation),
                 patientPrestation: `${consultation.PatientP}=>${consultation.CodePrestation}`,
                 designation: consultation.designationC || '',
                 prixClinique: consultation.PrixClinique?.toString() || '0',
@@ -98,7 +106,7 @@ export async function POST(request: NextRequest) {
                 // SI EXAMENS_HOSPITALISATION.DatePres>= SAI_Debut ET EXAMENS_HOSPITALISATION.DatePres<= SAI_Fin ALORS
                 results.push({
                     id: `EXAM_${examen._id}`,
-                    date: examen.DatePres?.toISOString().split('T')[0] || '',
+                    date: formatDateToIso(examen.DatePres),
                     patientPrestation: `${examen.PatientP}=>${examen.CodePrestation}`,
                     designation: examen.Designationtypeacte || '',
                     prixClinique: '',
@@ -138,14 +146,14 @@ export async function POST(request: NextRequest) {
 
                         results.push({
                             id: `LIGNE_${ligne._id}`,
-                            date: ligne.dateLignePrestation?.toISOString().split('T')[0] || '',
+                            date: formatDateToIso(ligne.dateLignePrestation),
                             patientPrestation: '',
                             designation: ligne.prestation || '',
                             prixClinique: ((ligne.prixTotal || 0) + (ligne.totalSurplus || 0)).toString(),
                             ticketModerateur: ligne.montantTotalAPayer?.toString() || '0',
                             partAssurance: ligne.partAssurance?.toString() || '0',
                             statutPaiement: statutPaiement,
-                            saisiPar: '',
+                            saisiPar: examen.SaisiPar || '',
                             type: 'LIGNE_PRESTATION',
                         });
                 });
@@ -167,7 +175,7 @@ export async function POST(request: NextRequest) {
                 // SI PRESCRIPTION.DatePres>= SAI_Debut ET PRESCRIPTION.DatePres<= SAI_Fin ALORS
                 results.push({
                     id: `PRES_${prescription._id}`,
-                    date: prescription.DatePres?.toISOString().split('T')[0] || '',
+                    date: formatDateToIso(prescription.DatePres),
                     patientPrestation: `${prescription.PatientP}=>${prescription.CodePrestation}`,
                     designation: prescription.Designation || '',
                     prixClinique: '',
@@ -207,14 +215,14 @@ export async function POST(request: NextRequest) {
 
                     results.push({
                         id: `LIGNE_PRES_${ligne._id}`,
-                        date: ligne.DatePres?.toISOString().split('T')[0] || '',
+                        date: formatDateToIso(ligne.DatePres),
                         patientPrestation: '',
                         designation: ligne.nomMedicament || '',
                         prixClinique: ligne.prixTotal?.toString() || '0',
                         ticketModerateur: ligne.partAssure?.toString() || '0',
                         partAssurance: ligne.partAssurance?.toString() || '0',
                         statutPaiement: statutPaiement,
-                        saisiPar: '',
+                        saisiPar: prescription.SaisiPar || '',
                         type: 'LIGNE_PRESCRIPTION',
                     });
                 });
@@ -222,7 +230,19 @@ export async function POST(request: NextRequest) {
         }
 
         // Trier les résultats par date
-        results.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        results.sort((a, b) => {
+            const da = new Date(a.date).getTime() || 0;
+            const db = new Date(b.date).getTime() || 0;
+            return da - db;
+        });
+
+        // Filtrer par utilisateur si spécifié
+        if (saisiPar && String(saisiPar).trim() !== '') {
+            const recherche = String(saisiPar).trim().toLowerCase();
+            results = results.filter(item =>
+                item.saisiPar && String(item.saisiPar).toLowerCase().includes(recherche)
+            );
+        }
 
         return NextResponse.json({
             success: true,

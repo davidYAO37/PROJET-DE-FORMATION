@@ -832,6 +832,8 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
                 show={showPrestationListeFactureModal}
                 onHide={() => setShowPrestationListeFactureModal(false)}
                 idHospitalisation={selectedPrestation?._id || ''}
+                codePrestation={selectedPrestation?.codePrestation || ''}
+                patientId={patientId}
                 key={`liste-facture-prestation-${selectedPrestation?._id || 'none'}`}
             />
         </Modal>

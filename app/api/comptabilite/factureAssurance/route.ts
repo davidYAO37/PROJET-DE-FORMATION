@@ -103,51 +103,11 @@ export async function POST(request: NextRequest) {
   const PaiementPartenaire = getTenantModel<IPaiementPartenaire>(connection, 'PaiementPartenaire');
   const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
 
+  const session = await connection.startSession();
+
   try {
     const body = await request.json();
     const { action } = body;
-
-    if (action === 'creer') {
-      const { reference, assurance, typeActe, debutF, finF, saisirpar, entrepriseId } = body;
-      if (!assurance) {
-        return NextResponse.json({ success: false, message: 'Assurance requise' }, { status: 400 });
-      }
-
-      // Récupérer les facturations de la plage correspondant à cette assurance
-      const debut = debutF ? new Date(debutF) : new Date();
-      const fin = finF ? new Date(finF) : new Date();
-      fin.setHours(23, 59, 59, 999);
-
-      const filtreFact: any = {
-        Assurance: assurance,
-        DateFacturation: { $gte: debut, $lte: fin },
-      };
-      if (typeActe) filtreFact.Designationtypeacte = typeActe;
-      if (entrepriseId) filtreFact.entrepriseId = entrepriseId;
-
-      const facturations = await Facturation.find(filtreFact).lean();
-      const montantTotal = facturations.reduce((s, f) => s + (f.Montanttotal || 0), 0);
-      const partAssurance = facturations.reduce((s, f) => s + (f.PartAssuranceP || 0), 0);
-      const partAssure = facturations.reduce((s, f) => s + (f.Partassure || 0), 0);
-
-      const nouvelleFacture = new FacturationAssur({
-        Reference: reference || `FA-${Date.now()}`,
-        Assurance: assurance,
-        TYPEACTE: typeActe || '',
-        Date: new Date(),
-        DebutF: debut,
-        FinF: fin,
-        MontantTotalFacture: montantTotal,
-        PartAssurance: partAssurance,
-        Partassure: partAssure,
-        etat_facture: false,
-        Saisirpar: saisirpar || '',
-        entrepriseId: entrepriseId || '',
-      });
-
-      await nouvelleFacture.save();
-      return NextResponse.json({ success: true, message: 'Facture assurance créée', data: nouvelleFacture });
-    }
 
     if (action === 'payer') {
       const { factureAssurId, montant, modePaiement, banque, numeroCheque, recuPar, datePaiement, entrepriseId } = body;
@@ -155,55 +115,91 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'Données manquantes' }, { status: 400 });
       }
 
-      const facture = await FacturationAssur.findById(factureAssurId);
-      if (!facture) {
-        return NextResponse.json({ success: false, message: 'Facture introuvable' }, { status: 404 });
-      }
+      let paiementResult: any;
 
-      const paiement = new PaiementPartenaire({
-        Assurance: facture.Assurance,
-        DatePaiement: datePaiement ? new Date(datePaiement) : new Date(),
-        Recupar: recuPar || '',
-        MontantRecu: montant,
-        SaisiLe: new Date(),
-        SaisiPar: recuPar || '',
-        Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-        FactureAssur: factureAssurId,
-        NumChèque: numeroCheque || '',
-        BanqueC: banque || '',
-        entrepriseId: entrepriseId || facture.entrepriseId || '',
+      await session.withTransaction(async () => {
+        const facture = await FacturationAssur.findById(factureAssurId).session(session);
+        if (!facture) {
+          throw new Error('Facture introuvable');
+        }
+
+        const [paiement] = await PaiementPartenaire.create(
+          [
+            {
+              Assurance: facture.Assurance,
+              DatePaiement: datePaiement ? new Date(datePaiement) : new Date(),
+              Recupar: recuPar || '',
+              MontantRecu: montant,
+              SaisiLe: new Date(),
+              SaisiPar: recuPar || '',
+              Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+              FactureAssur: factureAssurId,
+              NumChèque: numeroCheque || '',
+              BanqueC: banque || '',
+              entrepriseId: entrepriseId || facture.entrepriseId || '',
+            },
+          ],
+          { session }
+        );
+
+        const tousLesPaiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId })
+          .session(session)
+          .lean();
+        const totalPaye = tousLesPaiements.reduce((s, p) => s + (p.MontantRecu || 0), 0);
+        const estSolde = totalPaye >= (facture.PartAssurance || 0);
+
+        await FacturationAssur.findByIdAndUpdate(
+          factureAssurId,
+          {
+            TotalPaye: totalPaye,
+            Restapayer: Math.max(0, (facture.PartAssurance || 0) - totalPaye),
+            etat_facture: estSolde,
+          },
+          { session }
+        );
+
+        paiementResult = paiement;
       });
 
-      await paiement.save();
-
-      // Vérifier si la facture est soldée
-      const tousLesPaiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId }).lean();
-      const totalPaye = tousLesPaiements.reduce((s, p) => s + (p.MontantRecu || 0), 0);
-      const estSolde = totalPaye >= (facture.PartAssurance || 0);
-
-      await FacturationAssur.findByIdAndUpdate(factureAssurId, {
-        TotalPaye: totalPaye,
-        Restapayer: Math.max(0, (facture.PartAssurance || 0) - totalPaye),
-        etat_facture: estSolde,
-      });
-
-      return NextResponse.json({ success: true, message: 'Paiement enregistré', data: paiement });
+      return NextResponse.json({ success: true, message: 'Paiement enregistré', data: paiementResult });
     }
 
     if (action === 'depot') {
       const { factureAssurId, depotPar } = body;
-      await FacturationAssur.findByIdAndUpdate(factureAssurId, {
-        DateDepot: new Date(),
-        DepotPar: depotPar || '',
+      if (!factureAssurId) {
+        return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
+      }
+      await session.withTransaction(async () => {
+        const facture = await FacturationAssur.findById(factureAssurId).session(session);
+        if (!facture) throw new Error('Facture introuvable');
+        await FacturationAssur.findByIdAndUpdate(
+          factureAssurId,
+          {
+            DateDepot: new Date(),
+            DepotPar: depotPar || '',
+          },
+          { session }
+        );
       });
       return NextResponse.json({ success: true, message: 'Dépôt enregistré' });
     }
 
     if (action === 'retrait') {
       const { factureAssurId, retirePar } = body;
-      await FacturationAssur.findByIdAndUpdate(factureAssurId, {
-        DateRetrait: new Date(),
-        RetirePar: retirePar || '',
+      if (!factureAssurId) {
+        return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
+      }
+      await session.withTransaction(async () => {
+        const facture = await FacturationAssur.findById(factureAssurId).session(session);
+        if (!facture) throw new Error('Facture introuvable');
+        await FacturationAssur.findByIdAndUpdate(
+          factureAssurId,
+          {
+            DateRetrait: new Date(),
+            RetirePar: retirePar || '',
+          },
+          { session }
+        );
       });
       return NextResponse.json({ success: true, message: 'Retrait enregistré' });
     }
@@ -214,82 +210,69 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
       }
 
-      const facture = await FacturationAssur.findById(factureAssurId);
-      if (!facture) {
-        return NextResponse.json({ success: false, message: 'Bordereau introuvable' }, { status: 404 });
-      }
+      await session.withTransaction(async () => {
+        const facture = await FacturationAssur.findById(factureAssurId).session(session);
+        if (!facture) {
+          throw new Error('Bordereau introuvable');
+        }
 
-      // Vérifier qu'aucun paiement n'a été effectué
-      const paiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId }).lean();
-      const totalPaye = paiements.reduce((s: number, p: any) => s + (p.MontantRecu || 0), 0);
-      if (totalPaye > 0) {
-        return NextResponse.json({ success: false, message: 'Impossible d\'annuler : des paiements ont déjà été enregistrés' }, { status: 400 });
-      }
+        const paiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId })
+          .session(session)
+          .lean();
+        const totalPaye = paiements.reduce((s: number, p: any) => s + (p.MontantRecu || 0), 0);
+        if (totalPaye > 0) {
+          throw new Error('Impossible d\'annuler : des paiements ont déjà été enregistrés');
+        }
 
-      const reference = facture.Reference || '';
+        const reference = facture.Reference || '';
+        const LigneFacture = getTenantModel<ILigneFacture>(connection, 'LigneFacture');
+        const lignes = await LigneFacture.find({ FactureAssur: factureAssurId })
+          .session(session)
+          .lean();
 
-      // Récupérer les lignes pour retrouver les IDs des documents sources
-      const LigneFacture = getTenantModel<ILigneFacture>(connection, 'LigneFacture');
-      const lignes = await LigneFacture.find({ FactureAssur: factureAssurId }).lean();
+        const consultationsIds = lignes.filter(l => l.IDCONSULTATION).map(l => l.IDCONSULTATION!);
+        const prescriptionsIds = lignes.filter(l => l.IDPRESCRIPTION).map(l => l.IDPRESCRIPTION!);
+        const facturationsIds = lignes.filter(l => l.IDFACTURATION).map(l => l.IDFACTURATION!);
+        const hospitalisationsIds = lignes.filter(l => l.idHospitalisation).map(l => l.idHospitalisation!);
 
-      // Collecter les IDs des documents sources
-      const consultationsIds = lignes.filter(l => l.IDCONSULTATION).map(l => l.IDCONSULTATION!);
-      const prescriptionsIds = lignes.filter(l => l.IDPRESCRIPTION).map(l => l.IDPRESCRIPTION!);
-      const facturationsIds = lignes.filter(l => l.IDFACTURATION).map(l => l.IDFACTURATION!);
-      const hospitalisationsIds = lignes.filter(l => l.idHospitalisation).map(l => l.idHospitalisation!);
+        const resetFields = { $set: { StatutFacture: false, Numfacture: '' } };
 
-      // Réinitialiser StatutFacture et Numfacture sur les documents sources
-      const resetFields = { $set: { StatutFacture: false, Numfacture: '' } };
-
-      if (consultationsIds.length > 0) {
-        const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
-        await Consultation.updateMany({ _id: { $in: consultationsIds } }, resetFields);
-      }
-
-      if (prescriptionsIds.length > 0) {
-        const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
-        await Prescription.updateMany({ _id: { $in: prescriptionsIds } }, resetFields);
-      }
-
-      if (facturationsIds.length > 0) {
-        await Facturation.updateMany({ _id: { $in: facturationsIds } }, resetFields);
-      }
-
-      if (hospitalisationsIds.length > 0) {
-        const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
-        await ExamenHospitalisation.updateMany({ _id: { $in: hospitalisationsIds } }, resetFields);
-      }
-
-      // Aussi réinitialiser par référence (au cas où des lignes n'ont pas d'ID direct)
-      if (reference) {
-        try {
+        if (consultationsIds.length > 0) {
           const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
-          await Consultation.updateMany({ Numfacture: reference }, resetFields);
-        } catch { /* */ }
-        try {
+          await Consultation.updateMany({ _id: { $in: consultationsIds } }, resetFields, { session });
+        }
+
+        if (prescriptionsIds.length > 0) {
           const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
-          await Prescription.updateMany({ Numfacture: reference }, resetFields);
-        } catch { /* */ }
-        try {
-          await Facturation.updateMany({ Numfacture: reference }, resetFields);
-        } catch { /* */ }
-        try {
+          await Prescription.updateMany({ _id: { $in: prescriptionsIds } }, resetFields, { session });
+        }
+
+        if (facturationsIds.length > 0) {
+          await Facturation.updateMany({ _id: { $in: facturationsIds } }, resetFields, { session });
+        }
+
+        if (hospitalisationsIds.length > 0) {
           const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
-          await ExamenHospitalisation.updateMany({ Numfacture: reference }, resetFields);
-        } catch { /* */ }
-      }
+          await ExamenHospitalisation.updateMany({ _id: { $in: hospitalisationsIds } }, resetFields, { session });
+        }
 
-      // Supprimer les lignes du bordereau
-      await LigneFacture.deleteMany({ FactureAssur: factureAssurId });
+        if (reference) {
+          const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+          await Consultation.updateMany({ Numfacture: reference }, resetFields, { session });
+          const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
+          await Prescription.updateMany({ Numfacture: reference }, resetFields, { session });
+          await Facturation.updateMany({ Numfacture: reference }, resetFields, { session });
+          const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
+          await ExamenHospitalisation.updateMany({ Numfacture: reference }, resetFields, { session });
+        }
 
-      // Supprimer les récaps
-      try {
+        await LigneFacture.deleteMany({ FactureAssur: factureAssurId }, { session });
+
         const FactureRecap = getTenantModel(connection, 'FactureRecap');
-        await FactureRecap.deleteMany({ FactureAssur: factureAssurId });
-      } catch { /* */ }
+        await FactureRecap.deleteMany({ FactureAssur: factureAssurId }, { session });
 
-      // Supprimer le bordereau lui-même
-      await FacturationAssur.findByIdAndDelete(factureAssurId);
+        await FacturationAssur.findByIdAndDelete(factureAssurId, { session });
+      });
 
       return NextResponse.json({ success: true, message: 'Bordereau annulé avec succès' });
     }
@@ -297,9 +280,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Action inconnue' }, { status: 400 });
   } catch (error) {
     console.error('Erreur factureAssurance POST:', error);
-    return NextResponse.json(
-      { success: false, message: 'Erreur serveur', error: error instanceof Error ? error.message : 'Erreur' },
-      { status: 500 }
-    );
+    const msg = error instanceof Error ? error.message : 'Erreur';
+    const status = msg.includes('introuvable') ? 404 : msg.includes('annuler') || msg.includes('déjà été enregistrés') ? 400 : 500;
+    return NextResponse.json({ success: false, message: msg }, { status });
+  } finally {
+    await session.endSession();
   }
 }

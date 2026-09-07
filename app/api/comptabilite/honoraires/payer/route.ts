@@ -14,75 +14,87 @@ export async function POST(request: NextRequest) {
   const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
   const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
 
+  const body = await request.json();
+  const {
+    honoraireId,
+    montantClient,
+    recuPar,
+    modePaiement,
+    banque,
+    nCheque,
+    datePaiement,
+    payePar,
+  } = body;
+
+  if (!honoraireId || typeof montantClient !== 'number' || montantClient <= 0) {
+    return NextResponse.json(
+      { success: false, message: 'Données de paiement invalides.' },
+      { status: 400 }
+    );
+  }
+
+  const session = await connection.startSession();
+
   try {
-    const body = await request.json();
-    const {
-      honoraireId,
-      montantClient,
-      recuPar,
-      modePaiement,
-      banque,
-      nCheque,
-      datePaiement,
-      payePar,
-    } = body;
+    let result: any;
 
-    if (!honoraireId || typeof montantClient !== 'number' || montantClient <= 0) {
-      return NextResponse.json(
-        { success: false, message: 'Données de paiement invalides.' },
-        { status: 400 }
+    await session.withTransaction(async () => {
+      const honoraire = await HonoraireMed.findById(honoraireId).session(session).lean();
+      if (!honoraire) {
+        throw new Error('Bordereau introuvable.');
+      }
+
+      const reste = (honoraire.Restapayer as number) || 0;
+      if (montantClient > reste) {
+        throw new Error('Le montant saisi dépasse le reste à payer.');
+      }
+
+      const nouveauReste = reste - montantClient;
+      const montantPaye = ((honoraire.MontantPayé as number) || 0) + montantClient;
+
+      await HonoraireMed.findByIdAndUpdate(
+        honoraireId,
+        {
+          Restapayer: Math.round(nouveauReste),
+          MontantPayé: Math.round(montantPaye),
+        },
+        { session }
       );
-    }
 
-    const honoraire = await HonoraireMed.findById(honoraireId).lean();
-    if (!honoraire) {
-      return NextResponse.json(
-        { success: false, message: 'Bordereau introuvable.' },
-        { status: 404 }
+      await HonorairePaye.create(
+        [
+          {
+            Date: datePaiement ? new Date(datePaiement) : new Date(),
+            Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+            MontantJour: Math.round(montantClient),
+            MontantPayé: Math.round(montantClient),
+            Restapayer: Math.round(nouveauReste),
+            PayéPar: payePar || '',
+            Recupar: recuPar || '',
+            Medecin: honoraire.Medecin,
+            HonoraireMed: new mongoose.Types.ObjectId(honoraireId),
+            BanqueC: banque || '',
+            NCheque: nCheque || '',
+            Modepaiement: modePaiement || 'Espèce',
+          },
+        ],
+        { session }
       );
-    }
 
-    const reste = (honoraire.Restapayer as number) || 0;
-    if (montantClient > reste) {
-      return NextResponse.json(
-        { success: false, message: 'Le montant saisi dépasse le reste à payer.' },
-        { status: 400 }
-      );
-    }
-
-    const nouveauReste = reste - montantClient;
-    const montantPaye = ((honoraire.MontantPayé as number) || 0) + montantClient;
-
-    await HonoraireMed.findByIdAndUpdate(honoraireId, {
-      Restapayer: Math.round(nouveauReste),
-      MontantPayé: Math.round(montantPaye),
-    });
-
-    await HonorairePaye.create({
-      Date: datePaiement ? new Date(datePaiement) : new Date(),
-      Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-      MontantJour: Math.round(montantClient),
-      MontantPayé: Math.round(montantClient),
-      Restapayer: Math.round(nouveauReste),
-      PayéPar: payePar || '',
-      Recupar: recuPar || '',
-      Medecin: honoraire.Medecin,
-      HonoraireMed: new mongoose.Types.ObjectId(honoraireId),
-      BanqueC: banque || '',
-      NCheque: nCheque || '',
-      Modepaiement: modePaiement || 'Espèce',
+      result = { restapayer: Math.round(nouveauReste), montantPayé: Math.round(montantPaye) };
     });
 
     return NextResponse.json({
       success: true,
       message: 'Médecin payé avec succès.',
-      data: { restapayer: Math.round(nouveauReste), montantPayé: Math.round(montantPaye) },
+      data: result,
     });
   } catch (error) {
     console.error('Erreur paiement honoraire:', error);
-    return NextResponse.json(
-      { success: false, message: 'Erreur serveur', error: error instanceof Error ? error.message : 'Erreur' },
-      { status: 500 }
-    );
+    const message = error instanceof Error ? error.message : 'Erreur';
+    const status = message.includes('introuvable') ? 404 : message.includes('dépasse') ? 400 : 500;
+    return NextResponse.json({ success: false, message }, { status });
+  } finally {
+    await session.endSession();
   }
 }

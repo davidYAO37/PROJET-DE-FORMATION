@@ -40,6 +40,7 @@ export async function GET(request: NextRequest) {
     finDate.setHours(23, 59, 59, 999); // Inclure toute la journée de fin
 
     const normaliser = (valeur?: string) => (valeur || '').trim().toLowerCase();
+    const n = (valeur?: any) => Number(valeur) || 0;
 
     let donneesCompletees: any[] = [];
 
@@ -56,13 +57,13 @@ export async function GET(request: NextRequest) {
         Patient: consultation.PatientP,
         Assurance: consultation.assurance || '',
         Designation: consultation.designationC,
-        Totalacte: consultation.PrixClinique || 0,
-        Taux: consultation.tauxAssurance || 0,
-        PartAssurance: consultation.PartAssurance || 0,
-        PartPatient: consultation.montantapayer || 0,
-        Montantencaisse: consultation.Montantencaisse || 0,
+        Totalacte: n(consultation.PrixClinique),
+        Taux: n(consultation.tauxAssurance),
+        PartAssurance: n(consultation.PartAssurance),
+        PartPatient: n(consultation.montantapayer),
+        Montantencaisse: n(consultation.Montantencaisse),
         REMISE: 0,
-        Restapayer: consultation.Restapayer || 0,
+        Restapayer: n(consultation.Restapayer),
         Medecin: consultation.Medecin || '',
         Modepaiement: consultation.Modepaiement || '',
         Type: 'CONSULTATION',
@@ -141,13 +142,13 @@ export async function GET(request: NextRequest) {
         Patient: facturation.PatientP,
         Assurance: facturation.Assurance,
         Designation: designationDetaillee,
-        Totalacte: facturation.Montanttotal || 0,
-        Taux: facturation.Taux || 0,
-        PartAssurance: facturation.PartAssuranceP || 0,
-        PartPatient: facturation.TotalapayerPatient || 0,
-        Montantencaisse: facturation.TotalPaye || 0,
-        REMISE: facturation.reduction || 0,
-        Restapayer: facturation.Restapayer || 0,
+        Totalacte: n(facturation.Montanttotal),
+        Taux: n(facturation.Taux),
+        PartAssurance: n(facturation.PartAssuranceP),
+        PartPatient: n(facturation.TotalapayerPatient),
+        Montantencaisse: n(facturation.TotalPaye),
+        REMISE: n(facturation.reduction),
+        Restapayer: n(facturation.Restapayer),
         Medecin: facturation.NomMed || '',
         Modepaiement: facturation.Modepaiement || '',
         Type: 'FACTURATION',
@@ -169,13 +170,13 @@ export async function GET(request: NextRequest) {
         Patient: encaissement.Patient,
         Assurance: encaissement.Assurance,
         Designation: encaissement.Designation || '',
-        Totalacte: encaissement.Totalacte || 0,
-        Taux: encaissement.Taux || 0,
-        PartAssurance: encaissement.PartAssurance || 0,
+        Totalacte: n(encaissement.Totalacte),
+        Taux: n(encaissement.Taux),
+        PartAssurance: n(encaissement.PartAssurance),
         PartPatient: 0, // Champ n'existe pas dans le modèle
-        Montantencaisse: encaissement.Montantencaisse || 0,
-        REMISE: encaissement.REMISE || 0,
-        Restapayer: encaissement.Restapayer || 0,
+        Montantencaisse: n(encaissement.Montantencaisse),
+        REMISE: n(encaissement.REMISE),
+        Restapayer: n(encaissement.Restapayer),
         Medecin: encaissement.Medecin || '',
         Modepaiement: encaissement.Modepaiement || '',
         Type: 'ENCAISSEMENT',
@@ -195,7 +196,7 @@ export async function GET(request: NextRequest) {
         if (modePaiement !== 'TOUS LES PAIEMENTS' && modePaiement !== '') {
           // Logique WinDev: Paiement_par_mode_de_paiement()
           donneesFiltrees = donneesFiltrees.filter(item => 
-            item.Modepaiement === modePaiement
+            normaliser(item.Modepaiement) === normaliser(modePaiement)
           );
         }
         // Sinon: Logique WinDev: TOUS_LES_PAIEMENT_CAISSE()
@@ -206,11 +207,11 @@ export async function GET(request: NextRequest) {
           donneesFiltrees = donneesFiltrees.filter(item => {
             // Mapper les valeurs du type patient aux valeurs du champ Assure
             if (typePatient === 'NON ASSURE') {
-              return item.Assure === 'NON' || item.Assure === '';
+              return normaliser(item.Assure) === 'non' || normaliser(item.Assure) === '';
             } else if (typePatient === 'TARIF MUTUALISTE') {
-              return item.Assure === 'MUTUALISTE';
+              return normaliser(item.Assure) === 'mutualiste';
             } else if (typePatient === 'TARIF ASSURE') {
-              return item.Assure === 'OUI' || item.Assure === 'ASSURE';
+              return normaliser(item.Assure) === 'oui' || normaliser(item.Assure) === 'assure';
             }
             return false;
           });
@@ -222,7 +223,7 @@ export async function GET(request: NextRequest) {
         if (modePaiement !== 'TOUS LES PAIEMENTS' && modePaiement !== '') {
           // Logique WinDev: Paiement_par_mode_de_paiement_detail()
           donneesFiltrees = donneesFiltrees.filter(item => 
-            item.Modepaiement === modePaiement
+            normaliser(item.Modepaiement) === normaliser(modePaiement)
           );
         }
       } else if (ongletActif === 'statutPatient') {
@@ -231,11 +232,11 @@ export async function GET(request: NextRequest) {
           donneesFiltrees = donneesFiltrees.filter(item => {
             // Mapper les valeurs du type patient aux valeurs du champ Assure
             if (typePatient === 'NON ASSURE') {
-              return item.Assure === 'NON' || item.Assure === '';
+              return normaliser(item.Assure) === 'non' || normaliser(item.Assure) === '';
             } else if (typePatient === 'TARIF MUTUALISTE') {
-              return item.Assure === 'MUTUALISTE';
+              return normaliser(item.Assure) === 'mutualiste';
             } else if (typePatient === 'TARIF ASSURE') {
-              return item.Assure === 'OUI' || item.Assure === 'ASSURE';
+              return normaliser(item.Assure) === 'oui' || normaliser(item.Assure) === 'assure';
             }
             return false;
           });
@@ -250,7 +251,11 @@ export async function GET(request: NextRequest) {
     // FIN
     if (caissiere !== '') {
       const caissiereNormalisee = normaliser(caissiere);
-      donneesFiltrees = donneesFiltrees.filter(item => normaliser(item.Caissiere) === caissiereNormalisee);
+      const motsCaissiere = caissiereNormalisee.split(/\s+/).filter(Boolean);
+      donneesFiltrees = donneesFiltrees.filter(item => {
+        const itemNormalise = normaliser(item.Caissiere);
+        return motsCaissiere.every(mot => itemNormalise.includes(mot));
+      });
     }
 
     // Logique WinDev: TableTrie(TABLE_ESPECE,"+COL_DateActe")

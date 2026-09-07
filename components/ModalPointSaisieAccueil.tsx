@@ -4,6 +4,13 @@ import { Modal, Form, Button, Table, Row, Col } from 'react-bootstrap';
 import { useEntreprise } from "@/hooks/useEntreprise";
 import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader, extractContentWithoutHeaderAndFooter } from "@/utils/printRecu";
 
+const formatDateFr = (value: string | Date | undefined): string => {
+  if (!value) return '';
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return String(value);
+  return d.toLocaleDateString('fr-FR');
+};
+
 interface PointSaisieData {
   id: string;
   date: string;
@@ -26,6 +33,8 @@ interface ModalPointSaisieAccueilProps {
 export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPointSaisieAccueilProps) {
   const [dateDebut, setDateDebut] = useState('');
   const [dateFin, setDateFin] = useState('');
+  const [saisiPar, setSaisiPar] = useState('');
+  const [utilisateurs, setUtilisateurs] = useState<any[]>([]);
   const [donnees, setDonnees] = useState<PointSaisieData[]>([]);
   const [loading, setLoading] = useState(false);
   const { entreprise } = useEntreprise();
@@ -43,7 +52,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
       </div>
       <div class="info mb-3">
         <div class="d-flex justify-content-between mb-2">
-          <span><strong>Période:</strong> ${new Date(dateDebut).toLocaleDateString('fr-FR')} au ${new Date(dateFin).toLocaleDateString('fr-FR')}</span>
+          <span><strong>Période:</strong> ${formatDateFr(dateDebut)} au ${formatDateFr(dateFin)}</span>
           <span><strong>Date d'impression:</strong> ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</span>
         </div>
       </div>
@@ -64,12 +73,12 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
         <tbody>
           ${donnees.map(item => `
             <tr>
-              <td>${new Date(item.date).toLocaleDateString('fr-FR')}</td>
+              <td>${formatDateFr(item.date)}</td>
               <td>${item.patientPrestation}</td>
               <td>${item.designation}</td>
-              <td>${parseFloat(item.prixClinique || '0').toFixed(2)} FCFA</td>
-              <td>${parseFloat(item.ticketModerateur || '0').toFixed(2)} FCFA</td>
-              <td>${parseFloat(item.partAssurance || '0').toFixed(2)} FCFA</td>
+              <td>${parseFloat(item.prixClinique || '0').toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</td>
+              <td>${parseFloat(item.ticketModerateur || '0').toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</td>
+              <td>${parseFloat(item.partAssurance || '0').toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</td>
               <td>
                 <span class="badge ${
                   item.statutPaiement?.toLowerCase().includes('pas facturé') || item.statutPaiement === 'Pas Facturé' ? 'bg-secondary' : 
@@ -91,19 +100,19 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
       <div class="mt-4">
         <div class="d-flex justify-content-between mb-2">
           <span><strong>Total Prix Clinique:</strong></span>
-          <span><strong>${totalPrix.toFixed(2)} FCFA</strong></span>
+          <span><strong>${totalPrix.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</strong></span>
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span><strong>Total Ticket Modérateur:</strong></span>
-          <span><strong>${totalTicket.toFixed(2)} FCFA</strong></span>
+          <span><strong>${totalTicket.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</strong></span>
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span><strong>Total Part Assurance:</strong></span>
-          <span><strong>${totalAssurance.toFixed(2)} FCFA</strong></span>
+          <span><strong>${totalAssurance.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</strong></span>
         </div>
         <div class="d-flex justify-content-between fw-bold" style="border-top: 1px solid #000; padding-top: 5px;">
           <span><strong>TOTAL GÉNÉRAL:</strong></span>
-          <span><strong>${totalGeneral.toFixed(2)} FCFA</strong></span>
+          <span><strong>${totalGeneral.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</strong></span>
         </div>
       </div>
 
@@ -140,7 +149,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
       </div>
       <div class="info mb-3">
         <div class="d-flex justify-content-between mb-2">
-          <span><strong>Période:</strong> ${new Date(dateDebut).toLocaleDateString('fr-FR')} au ${new Date(dateFin).toLocaleDateString('fr-FR')}</span>
+          <span><strong>Période:</strong> ${formatDateFr(dateDebut)} au ${formatDateFr(dateFin)}</span>
           <span><strong>Date d'impression:</strong> ${new Date().toLocaleDateString('fr-FR')} à ${new Date().toLocaleTimeString('fr-FR')}</span>
         </div>
       </div>
@@ -161,12 +170,12 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
         <tbody>
           ${donnees.map(item => `
             <tr>
-              <td>${new Date(item.date).toLocaleDateString('fr-FR')}</td>
+              <td>${formatDateFr(item.date)}</td>
               <td>${item.patientPrestation}</td>
               <td>${item.designation}</td>
-              <td>${parseFloat(item.prixClinique || '0').toFixed(2)} FCFA</td>
-              <td>${parseFloat(item.ticketModerateur || '0').toFixed(2)} FCFA</td>
-              <td>${parseFloat(item.partAssurance || '0').toFixed(2)} FCFA</td>
+              <td>${parseFloat(item.prixClinique || '0').toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</td>
+              <td>${parseFloat(item.ticketModerateur || '0').toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</td>
+              <td>${parseFloat(item.partAssurance || '0').toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</td>
               <td>
                 <span class="badge ${
                   item.statutPaiement?.toLowerCase().includes('pas facturé') || item.statutPaiement === 'Pas Facturé' ? 'bg-secondary' : 
@@ -188,19 +197,19 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
       <div class="mt-4">
         <div class="d-flex justify-content-between mb-2">
           <span><strong>Total Prix Clinique:</strong></span>
-          <span><strong>${totalPrix.toFixed(2)} FCFA</strong></span>
+          <span><strong>${totalPrix.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</strong></span>
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span><strong>Total Ticket Modérateur:</strong></span>
-          <span><strong>${totalTicket.toFixed(2)} FCFA</strong></span>
+          <span><strong>${totalTicket.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</strong></span>
         </div>
         <div class="d-flex justify-content-between mb-2">
           <span><strong>Total Part Assurance:</strong></span>
-          <span><strong>${totalAssurance.toFixed(2)} FCFA</strong></span>
+          <span><strong>${totalAssurance.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</strong></span>
         </div>
         <div class="d-flex justify-content-between fw-bold" style="border-top: 1px solid #000; padding-top: 5px;">
           <span><strong>TOTAL GÉNÉRAL:</strong></span>
-          <span><strong>${totalGeneral.toFixed(2)} FCFA</strong></span>
+          <span><strong>${totalGeneral.toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA</strong></span>
         </div>
       </div>
 
@@ -227,7 +236,28 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
       const today = new Date().toISOString().split('T')[0];
       setDateDebut(today);
       setDateFin(today);
+      setSaisiPar('');
       setDonnees([]);
+    }
+  }, [show]);
+
+  // Charger la liste des utilisateurs pour le filtre
+  useEffect(() => {
+    const chargerUtilisateurs = async () => {
+      try {
+        const idEntreprise = localStorage.getItem('IdEntreprise');
+        if (!idEntreprise) return;
+        const response = await fetch(`/api/utilisateurs?entrepriseId=${idEntreprise}`);
+        if (response.ok) {
+          const data = await response.json();
+          setUtilisateurs(data.data || []);
+        }
+      } catch (error) {
+        console.error('Erreur chargement utilisateurs:', error);
+      }
+    };
+    if (show) {
+      void chargerUtilisateurs();
     }
   }, [show]);
 
@@ -252,7 +282,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
 
     try {
       // Appel API pour la recherche
-      await rechercherDonneesAPI(debut, fin);
+      await rechercherDonneesAPI(debut, fin, saisiPar);
     } catch (error) {
       console.error('Erreur lors de la recherche:', error);
       alert('Erreur lors de la recherche des données');
@@ -261,7 +291,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
     }
   };
 
-  const rechercherDonneesAPI = async (debut: Date, fin: Date) => {
+  const rechercherDonneesAPI = async (debut: Date, fin: Date, utilisateur: string = '') => {
     try {
       const response = await fetch('/api/point-saisie', {
         method: 'POST',
@@ -271,6 +301,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
         body: JSON.stringify({
           dateDebut: debut.toISOString().split('T')[0],
           dateFin: fin.toISOString().split('T')[0],
+          saisiPar: utilisateur,
         }),
       });
 
@@ -314,7 +345,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
       <Modal.Body>
         <Form>
           <Row className="mb-3">
-            <Col md={4}>
+            <Col md={3}>
               <Form.Group>
                 <Form.Label>Date de début</Form.Label>
                 <Form.Control
@@ -325,7 +356,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
                 />
               </Form.Group>
             </Col>
-            <Col md={4}>
+            <Col md={3}>
               <Form.Group>
                 <Form.Label>Date de fin</Form.Label>
                 <Form.Control
@@ -336,16 +367,32 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
                 />
               </Form.Group>
             </Col>
-            <Col md={4} className="d-flex align-items-end">
-              <Button 
-                variant="primary" 
+            <Col md={3}>
+              <Form.Group>
+                <Form.Label>Utilisateur</Form.Label>
+                <Form.Select
+                  value={saisiPar}
+                  onChange={(e) => setSaisiPar(e.target.value)}
+                >
+                  <option value="">Tous les utilisateurs</option>
+                  {utilisateurs.map((u: any) => (
+                    <option key={u._id || u.uid} value={`${u.nom || ''} ${u.prenom || ''}`.trim()}>
+                      {`${u.nom || ''} ${u.prenom || ''}`.trim()}
+                    </option>
+                  ))}
+                </Form.Select>
+              </Form.Group>
+            </Col>
+            <Col md={3} className="d-flex align-items-end">
+              <Button
+                variant="primary"
                 onClick={handleRechercher}
                 disabled={loading}
               >
                 {loading ? 'Recherche en cours...' : 'Rechercher'}
               </Button>
-              <Button 
-                variant="secondary" 
+              <Button
+                variant="secondary"
                 onClick={handleSupprimerTout}
                 className="ms-2"
                 disabled={donnees.length === 0}
@@ -366,7 +413,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
               <div className="border-bottom pb-2 mb-3">
                 <Row>
                   <Col md={6}>
-                    <strong>Période:</strong> {new Date(dateDebut).toLocaleDateString('fr-FR')} au {new Date(dateFin).toLocaleDateString('fr-FR')}
+                    <strong>Période:</strong> {formatDateFr(dateDebut)} au {formatDateFr(dateFin)}
                   </Col>
                   <Col md={6} className="text-end">
                     <strong>Date d'impression:</strong> {new Date().toLocaleDateString('fr-FR')} à {new Date().toLocaleTimeString('fr-FR')}
@@ -406,7 +453,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
                 <tbody>
                   {donnees.map((item) => (
                     <tr key={item.id}>
-                      <td>{new Date(item.date).toLocaleDateString('fr-FR')}</td>
+                      <td>{formatDateFr(item.date)}</td>
                       <td>{item.patientPrestation}</td>
                       <td>{item.designation}</td>
                       <td>{item.prixClinique}</td>
@@ -449,7 +496,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
                       <strong>Prix Clinique</strong>
                     </div>
                     <h4 className="mb-0 text-primary">
-                      {donnees.reduce((sum, item) => sum + parseFloat(item.prixClinique || '0'), 0).toFixed(2)} FCFA
+                      {donnees.reduce((sum, item) => sum + parseFloat(item.prixClinique || '0'), 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA
                     </h4>
                   </div>
                 </div>
@@ -461,7 +508,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
                       <strong>Ticket Modérateur</strong>
                     </div>
                     <h4 className="mb-0 text-warning">
-                      {donnees.reduce((sum, item) => sum + parseFloat(item.ticketModerateur || '0'), 0).toFixed(2)} FCFA
+                      {donnees.reduce((sum, item) => sum + parseFloat(item.ticketModerateur || '0'), 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA
                     </h4>
                   </div>
                 </div>
@@ -473,7 +520,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
                       <strong>Part Assurance</strong>
                     </div>
                     <h4 className="mb-0 text-info">
-                      {donnees.reduce((sum, item) => sum + parseFloat(item.partAssurance || '0'), 0).toFixed(2)} FCFA
+                      {donnees.reduce((sum, item) => sum + parseFloat(item.partAssurance || '0'), 0).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA
                     </h4>
                   </div>
                 </div>
@@ -491,7 +538,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
                           donnees.reduce((sum, item) => sum + parseFloat(item.prixClinique || '0'), 0) +
                           donnees.reduce((sum, item) => sum + parseFloat(item.ticketModerateur || '0'), 0) +
                           donnees.reduce((sum, item) => sum + parseFloat(item.partAssurance || '0'), 0)
-                        ).toFixed(2)} FCFA
+                        ).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA
                       </h3>
                     </div>
                   </div>
