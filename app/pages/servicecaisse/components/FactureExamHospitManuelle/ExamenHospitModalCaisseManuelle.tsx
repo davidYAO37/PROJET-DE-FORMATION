@@ -1,6 +1,13 @@
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import { Modal, Button } from "react-bootstrap";
+import dynamic from "next/dynamic";
 import HospitalisationPageCaisse from "./page";
+
+// Chargement dynamique du reçu d'examen (côté client uniquement)
+const RecuExamenPrint = dynamic(
+    () => import("@/app/pages/MesImpressions/recusacte/RecuExamenPrint"),
+    { ssr: false }
+);
 
 interface ExamenHospitalisationModalProps {
     show: boolean;
@@ -33,18 +40,30 @@ export default function ExamenHospitalisationModalCaisseManuelle({
 }: ExamenHospitalisationModalProps) {
 
     const [key, setKey] = useState(0);
+    const [showRecu, setShowRecu] = useState(false);
+    const [recuFactureId, setRecuFactureId] = useState<string | null>(null);
 
-    // Fermeture automatique après facturation réussie
-    const handleOnSuccess = () => {
-        if (onSuccess) {
-            onSuccess();
-        }
+    const closeAndNotify = () => {
+        setShowRecu(false);
+        setRecuFactureId(null);
         onPaiementSuccess?.();
+        onSuccess?.();
         setKey(prevKey => prevKey + 1);
         onHide();
     };
 
+    // Affichage automatique du reçu après facturation réussie
+    const handleOnSuccess = (factureId?: string) => {
+        if (factureId) {
+            setRecuFactureId(factureId);
+            setShowRecu(true);
+        } else {
+            closeAndNotify();
+        }
+    };
+
     return (
+        <>
         <Modal
             show={show}
             onHide={onHide}
@@ -95,5 +114,35 @@ export default function ExamenHospitalisationModalCaisseManuelle({
                 </Button>
             </Modal.Footer>
         </Modal>
+
+        {/* Modal pour l'aperçu du reçu d'examen */}
+        <Modal
+            show={showRecu}
+            onHide={() => {
+                setShowRecu(false);
+                closeAndNotify();
+            }}
+            size="xl"
+            centered
+            fullscreen="lg-down"
+        >
+            <Modal.Header closeButton>
+                <Modal.Title>Reçu d'examen</Modal.Title>
+            </Modal.Header>
+            <Modal.Body style={{ minHeight: '80vh' }}>
+                {recuFactureId && (
+                    <RecuExamenPrint params={{ id: recuFactureId }} />
+                )}
+            </Modal.Body>
+            <Modal.Footer>
+                <Button variant="secondary" onClick={() => {
+                    setShowRecu(false);
+                    closeAndNotify();
+                }}>
+                    Fermer
+                </Button>
+            </Modal.Footer>
+        </Modal>
+        </>
     );
 }

@@ -34,7 +34,7 @@ interface PageProps {
 type HospitalisationPageCaisseProps = {
     params: PageProps['params'];
     searchParams: PageProps['searchParams'];
-    onSuccess?: () => void;
+    onSuccess?: (factureId?: string) => void;
 };
 
 export default function HospitalisationPageCaisse({
@@ -849,10 +849,8 @@ export default function HospitalisationPageCaisse({
                             }
                             alert(out?.message || 'Facture enregistrée avec succès');
 
-                            // Appeler le callback onSuccess pour fermer le modal
-                            if (onSuccess) {
-                                onSuccess();
-                            }
+                            // Appeler le callback onSuccess avec l'ID de la facture pour afficher le reçu
+                            onSuccess?.(out?.factureId);
 
                             // Rafraîchir l'état depuis la base (mise à jour ou création)
                             if (out?.id) {

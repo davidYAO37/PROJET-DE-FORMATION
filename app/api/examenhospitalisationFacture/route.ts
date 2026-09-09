@@ -202,6 +202,7 @@ export async function POST(req: NextRequest) {
                 Rclinique: header.Rclinique || "",
                 Montanttotal: header.Montanttotal || header.factureTotal || 0,
                 MontantRecu: header.MontantRecu || 0,
+                Restapayer: header.Restapayer ?? Math.max(0, (header.TotalapayerPatient || 0) - (header.MontantRecu || 0)),
                 TotalapayerPatient: header.TotalapayerPatient || header.TotalapayerPatient || 0,
                 PartAssuranceP: header.PartAssuranceP || header.partAssurance || 0,
                 Partassure: header.Partassure || header.Partassure || 0,
@@ -401,6 +402,7 @@ export async function POST(req: NextRequest) {
             success: true,
             message: isUpdate ? "Examen mis à jour avec succès" : "Examen créé avec succès",
             id: hospId,
+            factureId: factureSaved?._id?.toString() || "",
             lignesCount: lignes.length,
         });
     } catch (e: any) {

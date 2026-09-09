@@ -389,7 +389,7 @@ if (params.id) {
           </div>
           <div className="d-flex justify-content-between">
             <span>Reste a payer</span>
-            <strong>{facturation.Restapayer?.toLocaleString()} FCFA</strong>
+            <strong>{(facturation.Restapayer ?? 0).toLocaleString()} FCFA</strong>
           </div>
             
             </Col>
