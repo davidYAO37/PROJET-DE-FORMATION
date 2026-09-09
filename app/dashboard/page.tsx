@@ -14,18 +14,26 @@ export default function DashboardPage() {
   });
   const [loading, setLoading] = useState(true);
 
-  // Charger les statistiques
+  // Charger les statistiques du tenant
   useEffect(() => {
     const chargerStats = async () => {
       try {
-        // Simuler des données réelles - à remplacer par vos API
+        const response = await fetch('/api/dashboard/stats');
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        const data = await response.json();
         setStats({
-          totalPatients: 258,
-          rendezVousAujourdhui: 12,
+          totalPatients: data.totalPatients || 0,
+          rendezVousAujourdhui: data.rendezVousAujourdhui || 0,
           utilisateurConnecte: localStorage.getItem('nom_utilisateur') || "Dr. KOUASSI David"
         });
       } catch (error) {
-        console.error('Erreur de chargement:', error);
+        console.error('Erreur de chargement des statistiques:', error);
+        setStats(prev => ({
+          ...prev,
+          utilisateurConnecte: localStorage.getItem('nom_utilisateur') || "Dr. KOUASSI David"
+        }));
       } finally {
         setLoading(false);
       }
