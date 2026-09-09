@@ -1,90 +1,12 @@
-import React, { forwardRef, useEffect, useState } from "react";
+import React, { forwardRef } from "react";
 import { Button } from "react-bootstrap";
 import { useEntreprise } from "@/hooks/useEntreprise";
-import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader, extractContentWithoutHeaderAndFooter } from "@/utils/printRecu";
+import { generatePrintHeader, generatePrintFooter, createPrintWindowA4, createPrintWindowA4WithoutHeader } from "@/utils/printRecu";
 
 interface RecuPharmaciePrintProps {
   facturation: any;
   lignes?: any[];
 }
-
-const styles = {
-  container: {
-    width: "800px",
-    margin: "0 auto",
-    fontFamily: "Arial, sans-serif",
-    background: "#fff",
-    color: "#000",
-    padding: "20px",
-    border: "2px solid #000",
-    boxShadow: "0 0 10px rgba(0,0,0,0.1)",
-  },
-  header: {
-    textAlign: "center" as const,
-    color: "#007bff",
-    fontWeight: "bold" as const,
-    fontSize: 24,
-    marginBottom: 15,
-    borderBottom: "2px solid #007bff",
-    paddingBottom: 10,
-  },
-  subHeader: {
-    textAlign: "center" as const,
-    fontSize: 18,
-    fontWeight: "bold" as const,
-    marginBottom: 20,
-    color: "#333",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse" as const,
-    marginTop: 20,
-    marginBottom: 20,
-    border: "1px solid #000",
-  },
-  th: {
-    border: "1px solid #000",
-    padding: "8px 4px",
-    background: "#f8f9fa",
-    fontSize: 14,
-    fontWeight: "bold" as const,
-    textAlign: "center" as const,
-  },
-  td: {
-    border: "1px solid #000",
-    padding: "6px 4px",
-    fontSize: 13,
-    textAlign: "center" as const,
-  },
-  info: {
-    fontSize: 14,
-    marginBottom: 5,
-    lineHeight: 1.4,
-  },
-  bold: {
-    fontWeight: "bold" as const,
-    fontSize: 16,
-  },
-  footer: {
-    marginTop: 20,
-    fontSize: 12,
-    textAlign: "center" as const,
-    borderTop: "1px solid #ccc",
-    paddingTop: 10,
-  },
-  totals: {
-    marginTop: 20,
-    padding: "10px",
-    background: "#f8f9fa",
-    border: "1px solid #ccc",
-    fontSize: 14,
-  },
-  totalRow: {
-    display: "flex",
-    justifyContent: "space-between",
-    marginBottom: 5,
-  },
-};
 
 const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
   ({ facturation, lignes = [] }, ref) => {
@@ -93,80 +15,96 @@ const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
     if (!facturation) return null;
 
     const lignesPayees = lignes || [];
+    const totalPrix = lignesPayees.reduce((s: number, l: any) => s + Number(l?.prixTotal || 0), 0);
 
-    // Utiliser directement les champs du modèle Facturation
-    const montantTotal = Number(facturation?.Montanttotal || 0);
-    const partAssurance = Number(facturation?.PartAssuranceP || 0);
-    const partAssure = Number(facturation?.Partassure || 0);
-    const remise = Number(facturation?.reduction || 0);
-    const montantRecu = Number(facturation?.MontantRecu || 0);
-    const reste = Number(facturation?.Restapayer || 0);
+    const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('fr-FR') : '-';
 
-    // Fonction pour convertir l'ID MongoDB en format court
-    const formatFactureId = (id?: string) => {
-      if (!id) return '';
-      // Prendre les 6 derniers caractères de l'ID et convertir en nombre
-      const lastChars = id.slice(-6);
-      const num = parseInt(lastChars, 16); // Convertir hexadécimal en décimal
-      return (num % 10000).toString(); // Limiter à 4 chiffres max
+    const getAge = (dob?: string | Date) => {
+      if (!dob) return null;
+      const birth = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) age--;
+      return age;
+    };
+
+    const renderDottedRow = (items: { label?: string; value?: string; boldValue?: boolean }[]) => (
+      <div style={{ display: 'flex', alignItems: 'baseline', marginBottom: 6, fontSize: 13, flexWrap: 'wrap' }}>
+        {items.map((item, idx) => (
+          <React.Fragment key={idx}>
+            {idx > 0 && (
+              <span style={{ flex: '1 0 20px', minWidth: 20, borderBottom: '1px dotted #000', margin: '0 8px' }}></span>
+            )}
+            <span style={{ whiteSpace: 'nowrap' }}>
+              {item.label && <strong>{item.label} </strong>}
+              {item.boldValue ? <strong>{item.value || '-'}</strong> : (item.value || '-')}
+            </span>
+          </React.Fragment>
+        ))}
+      </div>
+    );
+
+    const renderInfoBox = (label: string, value?: number, bold?: boolean) => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: '1 1 22%', minWidth: 150, marginBottom: 10 }}>
+        <strong style={{ whiteSpace: 'nowrap', fontSize: 13 }}>{label}</strong>
+        <span style={{
+          border: '1px solid #000',
+          borderRadius: 6,
+          padding: '4px 10px',
+          flex: 1,
+          textAlign: 'center',
+          fontWeight: bold ? 'bold' : 'normal',
+          fontSize: 14,
+          fontStyle: bold ? 'italic' : 'normal'
+        }}>
+          {(value ?? 0).toLocaleString()}
+        </span>
+      </div>
+    );
+
+    const getContent = () => {
+      const printContent = document.getElementById('print-content');
+      if (!printContent) return "";
+      return printContent.innerHTML;
+    };
+
+    const getFooterHTML = () => {
+      const saisiPar = facturation?.SaisiPar || facturation?.FacturéPar || "";
+      const societeFooter = generatePrintFooter(entreprise);
+      return `
+        <div>
+          <div style="margin-bottom:10px;">
+            <strong>Imprimé par:</strong> ${saisiPar} &nbsp;&nbsp;&nbsp;
+            <strong>Le:</strong> ${new Date().toLocaleDateString("fr-FR")} &nbsp;&nbsp;&nbsp;
+            <strong>À:</strong> ${new Date().toLocaleTimeString("fr-FR")}
+          </div>
+          <div style="font-style:italic;color:#666;">
+            <strong>Valable pour 15 jours</strong>
+          </div>
+          ${societeFooter}
+        </div>
+      `;
     };
 
     const handlePrint = () => {
-      const printContent = document.getElementById('print-content');
-      if (!printContent) return;
-      
+      const restContent = getContent();
+      if (!restContent) return;
       const headerHTML = generatePrintHeader(entreprise);
-      const footerHTML = generatePrintFooter(entreprise);
-      const restContent = extractContentWithoutHeaderAndFooter(printContent.innerHTML);
-      
-      createPrintWindow('Reçu Pharmacie', headerHTML, restContent, footerHTML);
+      const footerHTML = getFooterHTML();
+      createPrintWindowA4('Reçu Pharmacie', headerHTML, restContent, footerHTML);
     };
 
     const handlePrintWithoutHeader = () => {
-      const printContent = document.getElementById('print-content');
-      if (!printContent) return;
-      
-      // Extraire le contenu sans header ni footer pour l'impression sans entête
-      const restContent = extractContentWithoutHeaderAndFooter(printContent.innerHTML);
-      
-      createPrintWindowWithoutHeader('Reçu Pharmacie (sans entête)', restContent);
+      const restContent = getContent();
+      if (!restContent) return;
+      const footerHTML = getFooterHTML();
+      createPrintWindowA4WithoutHeader('Reçu Pharmacie (sans entête)', restContent, footerHTML);
     };
+
     return (
-      <div ref={ref} style={styles.container}>
-        <style>
-          {`
-                @media print {
-                    .no-print {
-                        display: none !important;
-                    }
-                    body {
-                        margin: 0;
-                        padding: 0;
-                    }
-                    .print-container {
-                        width: 100% !important;
-                        margin: 0 !important;
-                        padding: 10px !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                        font-size: 12px !important;
-                    }
-                    .print-container * {
-                        font-size: inherit !important;
-                    }
-                    .print-container table {
-                        font-size: 11px !important;
-                    }
-                    .print-container th, .print-container td {
-                        padding: 4px 2px !important;
-                    }
-                }
-                `}
-        </style>
-        <div
-          className="no-print"
-          style={{ textAlign: "center", marginBottom: 20 }}
-        >
+      <div ref={ref} style={{ fontFamily: 'Arial, sans-serif', background: '#fff', color: '#000', padding: 20 }}>
+        <div className="no-print" style={{ textAlign: 'center', marginBottom: 20 }}>
           {/* ===== BOUTONS (non imprimés) ===== */}
           <div className="text-end mb-3 no-print">
             <Button variant="primary" onClick={handlePrint} className="me-2">
@@ -177,175 +115,108 @@ const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
             </Button>
           </div>
         </div>
-        <div id="print-content" className="print-container">
-          {/* L'en-tête sera généré dynamiquement dans la fonction d'impression */}
-          <div style={styles.subHeader}>
-            REÇU DE PHARMACIE - {formatFactureId(facturation?._id)}
+
+        <div id="print-content" className="print-area p-4 text-dark" style={{ fontSize: '13px' }}>
+          {/* INFOS PATIENT - LIGNE 1 */}
+          {renderDottedRow([
+            { label: 'Patient', value: facturation?.PatientP || '-', boldValue: true },
+            { label: 'Dossier N°', value: facturation?.Code_dossier || '-', boldValue: true },
+            { label: 'Editée:', value: formatDate(facturation?.DatePres) }
+          ])}
+
+          {/* INFOS PATIENT - LIGNE 2 */}
+          {renderDottedRow([
+            { label: 'Sexe', value: facturation?.sexe || '-' },
+            { label: 'Age', value: facturation?.Age_partient ? `${facturation.Age_partient} ans` : (getAge(facturation?.Date_naisse) !== null ? `${getAge(facturation?.Date_naisse)} ans` : '-') },
+            { label: 'Contact', value: facturation?.Contact || '-' },
+            { label: 'Médecin Traitant:', value: facturation?.NomMed || '-' }
+          ])}
+
+          {/* INFOS ASSURANCE */}
+          {renderDottedRow([
+            { label: 'Assurance', value: facturation?.Assurance || '-' },
+            { label: 'Matricule:', value: facturation?.Numcarte || '-' },
+            { label: 'Taux', value: facturation?.Taux ? `${facturation.Taux}` : '-' }
+          ])}
+
+          {renderDottedRow([
+            { label: 'Souscripteur', value: facturation?.Souscripteur || '-' },
+            { label: 'Assurance/Société patient', value: facturation?.SOCIETE_PATIENT || facturation?.Assurance || '-' }
+          ])}
+
+          {renderDottedRow([
+            { label: 'Facturé(e) Par', value: facturation?.SaisiPar || facturation?.FacturéPar || '-' },
+            { label: 'Mode de paiement', value: facturation?.Modepaiement || 'Espèce' }
+          ])}
+
+          {/* TITRE ENCADRE */}
+          <div style={{
+            border: '2px dotted #000',
+            borderRadius: 8,
+            padding: '12px 15px',
+            textAlign: 'center',
+            marginBottom: 20,
+            marginTop: 15
+          }}>
+            <strong style={{ fontSize: 18, textTransform: 'uppercase' }}>
+              REÇU DE PHARMACIE N° {facturation?.CodePrestation || ''}
+            </strong>
           </div>
-          <div
-            style={{
-              marginBottom: 20,
-              borderBottom: "1px solid #ccc",
-              paddingBottom: 10,
-            }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 10,
-              }}
-            >
-              <div style={styles.bold}>
-                N° {facturation?.CodePrestation || ""}
-              </div>
-              <div style={styles.info}>
-                Date :{" "}
-                {facturation?.DatePres
-                  ? new Date(facturation.DatePres).toLocaleDateString("fr-FR")
-                  : ""}
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 10,
-              }}
-            >
-              <div style={styles.info}>
-                <strong>Patient :</strong> {facturation?.PatientP || ""}
-              </div>
-              <div style={styles.info}>
-                <strong>Dossier N° :</strong> {facturation?.Code_dossier || ""}
-              </div>
-            </div>
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 10,
-              }}
-            >
-              <div style={styles.info}>
-                <strong>Prescripteur :</strong> {facturation?.NomMed || ""}
-              </div>
-              <div style={styles.info}>
-                <strong>Assurance :</strong> {facturation?.Assurance || ""} (
-                {facturation?.Taux || 0}%)
-              </div>
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between" }}>
-              <div style={styles.info}>
-                <strong>Mode de paiement :</strong>{" "}
-                {facturation?.Modepaiement || "Espèce"}
-              </div>
-              <div style={styles.info}>
-                <strong>Facturé par :</strong>{" "}
-                {facturation?.SaisiPar || facturation?.FacturePar || ""}
-              </div>
-            </div>
-          </div>
-          <table style={styles.table}>
-            <thead>
+
+          {/* TABLE MEDICAMENTS */}
+          <table className="table" style={{ width: '100%', borderCollapse: 'collapse', margin: '15px 0' }}>
+            <thead className="text-center">
               <tr>
-                <th style={styles.th}>Médicament</th>
-                <th style={styles.th}>Qté</th>
-                <th style={styles.th}>PU (FCFA)</th>
-                <th style={styles.th}>Total (FCFA)</th>
-                <th style={styles.th}>Part Assurance (FCFA)</th>
-                <th style={styles.th}>Part Patient (FCFA)</th>
+                <th>Médicament</th>
+                <th>Qté</th>
+                <th>PU (FCFA)</th>
+                <th>Total (FCFA)</th>
+                <th>Part Assurance</th>
+                <th>Part Patient</th>
               </tr>
             </thead>
             <tbody>
               {lignesPayees.length > 0 ? (
-                lignesPayees.map((l) => (
-                  <tr key={String(l?._id || Math.random())}>
-                    <td style={{ ...styles.td, textAlign: "left" }}>
-                      {l?.nomMedicament || ""}
-                    </td>
-                    <td style={styles.td}>{Number(l?.QteP || 0)}</td>
-                    <td style={styles.td}>
-                      {Number(l?.prixUnitaire || 0).toLocaleString("fr-FR")}
-                    </td>
-                    <td style={styles.td}>
-                      {Number(l?.prixTotal || 0).toLocaleString("fr-FR")}
-                    </td>
-                    <td style={styles.td}>
-                      {Number(l?.partAssurance || 0).toLocaleString("fr-FR")}
-                    </td>
-                    <td style={styles.td}>
-                      {Number(l?.partAssure || 0).toLocaleString("fr-FR")}
-                    </td>
+                lignesPayees.map((l, i) => (
+                  <tr key={String(l?._id || `ligne-${i}`)}>
+                    <td style={{ textAlign: 'left' }}>{l?.nomMedicament || '-'}</td>
+                    <td className="text-center">{Number(l?.QteP || 0)}</td>
+                    <td className="text-center">{Number(l?.prixUnitaire || 0).toLocaleString('fr-FR')}</td>
+                    <td className="text-center">{Number(l?.prixTotal || 0).toLocaleString('fr-FR')}</td>
+                    <td className="text-center">{Number(l?.partAssurance || 0).toLocaleString('fr-FR')}</td>
+                    <td className="text-center">{Number(l?.partAssure || 0).toLocaleString('fr-FR')}</td>
                   </tr>
                 ))
               ) : (
                 <tr>
-                  <td
-                    colSpan={6}
-                    style={{
-                      ...styles.td,
-                      textAlign: "center",
-                      fontStyle: "italic",
-                    }}
-                  >
+                  <td colSpan={6} className="text-center" style={{ fontStyle: 'italic' }}>
                     Aucune ligne payée
                   </td>
                 </tr>
               )}
+              <tr style={{ fontWeight: 'bold', background: '#f0f0f0' }}>
+                <td colSpan={3} className="text-center">Totaux</td>
+                <td className="text-center">{totalPrix.toLocaleString('fr-FR')}</td>
+                <td className="text-center">{Number(facturation?.PartAssuranceP || 0).toLocaleString('fr-FR')}</td>
+                <td className="text-center">{Number(facturation?.Partassure || 0).toLocaleString('fr-FR')}</td>
+              </tr>
             </tbody>
           </table>
-          <div style={styles.totals}>
-            <div style={styles.totalRow}>
-              <span>
-                <strong>Total acte :</strong>
-              </span>
-              <span>{montantTotal.toLocaleString("fr-FR")} FCFA</span>
+
+          {/* INFO RECU */}
+          <div style={{ border: '1px solid #000', borderRadius: 8, padding: 15, marginTop: 20 }}>
+            <div style={{ textAlign: 'center', fontSize: 16, fontWeight: 'bold', marginBottom: 15, textDecoration: 'underline' }}>
+              INFO RECU
             </div>
-            <div style={styles.totalRow}>
-              <span>
-                <strong>Part assurance :</strong>
-              </span>
-              <span>{partAssurance.toLocaleString("fr-FR")} FCFA</span>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 15 }}>
+              {renderInfoBox('Part Patient', Number(facturation?.Partassure || 0))}
+              {renderInfoBox('Remise', Number(facturation?.reduction || 0))}
+              {renderInfoBox('Total a payer', Number(facturation?.TotalapayerPatient || facturation?.Partassure || 0), true)}
             </div>
-            <div style={styles.totalRow}>
-              <span>
-                <strong>Part patient :</strong>
-              </span>
-              <span>{partAssure.toLocaleString("fr-FR")} FCFA</span>
-            </div>
-            {remise > 0 && (
-              <div style={styles.totalRow}>
-                <span>
-                  <strong>Remise :</strong>
-                </span>
-                <span>{remise.toLocaleString("fr-FR")} FCFA</span>
-              </div>
-            )}
-            <div style={styles.totalRow}>
-              <span>
-                <strong>Montant reçu :</strong>
-              </span>
-              <span>{montantRecu.toLocaleString("fr-FR")} FCFA</span>
-            </div>
-            <div style={styles.totalRow}>
-              <span>
-                <strong>Reste à payer :</strong>
-              </span>
-              <span>{reste.toLocaleString("fr-FR")} FCFA</span>
-            </div>
-          </div>
-          <div style={styles.footer}>
-            <div style={{ marginBottom: 10 }}>
-              <strong>Imprimé par:</strong>{" "}
-              {facturation?.SaisiPar || facturation?.FacturéPar || ""}
-              &nbsp;&nbsp;&nbsp;
-              <strong>Le:</strong> {new Date().toLocaleDateString("fr-FR")}
-              &nbsp;&nbsp;&nbsp;
-              <strong>À:</strong> {new Date().toLocaleTimeString("fr-FR")}
-            </div>
-            <div style={{ fontStyle: "italic", color: "#666" }}>
-              <strong>Valable pour 15 jours</strong>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 15 }}>
+              {renderInfoBox('Part Assurance', Number(facturation?.PartAssuranceP || 0))}
+              {renderInfoBox('Total Payé', Number(facturation?.MontantRecu || 0))}
+              {renderInfoBox('Reste a payer', Number(facturation?.Restapayer || 0))}
             </div>
           </div>
         </div>

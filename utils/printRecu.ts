@@ -497,3 +497,235 @@ export const extractContentWithoutHeader = (contentHTML: string): string => {
 
   return restContent;
 };
+
+/**
+ * CSS de base pour une page A4 avec header / contenu / footer.
+ * Le contenu pousse le footer en bas grace a flexbox.
+ */
+export const getA4PrintCSS = (): string => {
+  return `
+    * {
+      box-sizing: border-box;
+    }
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      background: #fff;
+      color: #000;
+    }
+    @media print {
+      @page {
+        size: A4;
+        margin: 10mm;
+      }
+      body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+      /* Header / footer reperes sur chaque page via table layout */
+      .a4-wrapper {
+        display: table;
+        min-height: auto;
+        padding: 0;
+        width: 100%;
+      }
+      .a4-header {
+        display: table-header-group;
+        margin: 0 !important;
+        padding: 0 0 10mm 0 !important;
+      }
+      .a4-content {
+        display: table-row-group;
+        margin: 0;
+        padding: 0;
+      }
+      .a4-footer {
+        display: table-footer-group;
+        margin: 0 !important;
+        padding: 5px 0 0 0 !important;
+        border-top: 1px solid #ccc;
+      }
+    }
+    .a4-wrapper {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      width: 100%;
+      padding: 10mm;
+    }
+    .a4-header {
+      flex-shrink: 0;
+      margin-bottom: 30px;
+      padding-bottom: 10px;
+    }
+    .a4-header.no-header-space {
+      margin-bottom: 0;
+      padding-bottom: 0;
+      visibility: hidden;
+    }
+    .a4-header.no-header-space > div {
+      height: 25mm;
+    }
+    .a4-header .header,
+    .a4-header .header-static {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .a4-header .header .img,
+    .a4-header .header-static .img {
+      max-height: 80px;
+      max-width: 120px;
+      flex-shrink: 0;
+    }
+    .a4-header .header .img img,
+    .a4-header .header-static .img img {
+      max-height: 80px;
+      max-width: 120px;
+    }
+    .a4-header .header .header-text,
+    .a4-header .header-static .header-text {
+      font-size: 14px;
+      color: #666;
+      text-align: left;
+      flex: 1;
+      min-width: 200px;
+    }
+    .a4-content {
+      flex: 1 0 auto;
+      display: flex;
+      flex-direction: column;
+      padding-top: 10px;
+    }
+    .a4-footer {
+      flex-shrink: 0;
+      margin-top: auto;
+      padding-top: 15px;
+      border-top: 1px solid #ccc;
+      font-size: 12px;
+      text-align: center;
+    }
+    .text-center { text-align: center !important; }
+    .fw-bold { font-weight: bold !important; }
+    .table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      margin: 15px 0 !important;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      border: 1px solid #000;
+      padding: 6px 4px;
+      text-align: center;
+    }
+    th {
+      background: #f0f0f0;
+      font-weight: bold;
+    }
+  `;
+};
+
+/**
+ * Ouvre une fenetre d'impression A4 avec header / contenu / footer.
+ * Le footer est pousse en bas de la page grace au flexbox.
+ */
+export const createPrintWindowA4 = (
+  title: string,
+  headerHTML: string,
+  contentHTML: string,
+  footerHTML: string
+): Window | null => {
+  const printWindow = window.open('', '', 'width=900,height=700');
+  if (!printWindow) return null;
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${title}</title>
+        <style>
+          ${getA4PrintCSS()}
+        </style>
+      </head>
+      <body>
+        <div class="a4-wrapper">
+          <div class="a4-header">${headerHTML}</div>
+          <div class="a4-content">${contentHTML}</div>
+          <div class="a4-footer">${footerHTML}</div>
+        </div>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.onafterprint = () => {
+      printWindow.close();
+    };
+  }, 600);
+
+  return printWindow;
+};
+
+/**
+ * Version A4 sans entete, uniquement contenu + footer en bas de page.
+ */
+export const createPrintWindowA4WithoutHeader = (
+  title: string,
+  contentHTML: string,
+  footerHTML?: string
+): Window | null => {
+  const printWindow = window.open('', '', 'width=900,height=700');
+  if (!printWindow) return null;
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${title}</title>
+        <style>
+          ${getA4PrintCSS()}
+        </style>
+      </head>
+      <body>
+        <div class="a4-wrapper">
+          <div class="a4-header no-header-space" style="visibility: hidden;">
+            <div></div>
+          </div>
+          <div class="a4-content">${contentHTML}</div>
+          ${footerHTML ? `<div class="a4-footer">${footerHTML}</div>` : ''}
+        </div>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.onafterprint = () => {
+      printWindow.close();
+    };
+  }, 600);
+
+  return printWindow;
+};

@@ -623,7 +623,7 @@ export default function PharmacieCaisseModal({
       Rclinique: "",
       Montanttotal: totaux.montantTotal,
       PartAssuranceP: totaux.partAssurance,
-      Partassuré: totaux.partAssure,
+      Partassure: totaux.partAssure,
       MontantRecu: montantEncaisseFinal,
       Assurance: consultation.assurance || "",
       Taux: consultation.tauxAssurance || 0,
