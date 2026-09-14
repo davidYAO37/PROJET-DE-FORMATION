@@ -34,6 +34,7 @@ export default function ModifierParamActe({ show, onHide, ActeParamLabo, onSave 
         PlageMinMaxHomme: "",
         UnitéParam: "",
         TypeTexte: false,
+        EstLibelle: false,
         NUM_PARAM: null as number | null,
         // Ajouter les signes pour chaque section
         SigneNormale: "-",
@@ -70,6 +71,7 @@ export default function ModifierParamActe({ show, onHide, ActeParamLabo, onSave 
                 PlageMinMaxHomme: ActeParamLabo.PlageMinMaxHomme || "",
                 UnitéParam: ActeParamLabo.UnitéParam || "",
                 TypeTexte: ActeParamLabo.TypeTexte || false,
+                EstLibelle: ActeParamLabo.EstLibelle || false,
                 NUM_PARAM: ActeParamLabo.NUM_PARAM || 0,
                 // Ajouter les signes pour chaque section (valeurs par défaut car non présents dans le type)
                 SigneNormale: "-",
@@ -106,6 +108,7 @@ export default function ModifierParamActe({ show, onHide, ActeParamLabo, onSave 
                 PlageMinMaxHomme: "",
                 UnitéParam: "",
                 TypeTexte: false,
+                EstLibelle: false,
                 NUM_PARAM: 0,
                 // Ajouter les signes pour chaque section
                 SigneNormale: "-",
@@ -716,13 +719,25 @@ export default function ModifierParamActe({ show, onHide, ActeParamLabo, onSave 
                         </Card.Header>
                         <Card.Body className="p-4">
                             <Row>
-                                <Col md={12}>
+                                <Col md={6}>
                                     <Form.Group>
                                         <Form.Check 
                                             type="checkbox" 
                                             name="TypeTexte" 
                                             label="Cocher si c'est du texte simple (désactive les champs numériques)" 
                                             checked={form.TypeTexte} 
+                                            onChange={handleChange}
+                                            className="d-flex align-items-center"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group>
+                                        <Form.Check 
+                                            type="checkbox" 
+                                            name="EstLibelle" 
+                                            label="Cocher si c'est un libellé/titre" 
+                                            checked={form.EstLibelle} 
                                             onChange={handleChange}
                                             className="d-flex align-items-center"
                                         />

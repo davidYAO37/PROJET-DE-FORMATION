@@ -13,13 +13,14 @@ export default function AjouterParamBiochimie({ show, onHide, onAdd }: Props) {
     const [form, setForm] = useState({
         CodeB: "",
         LibelleB: "",
+        EstLibelle: false,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setForm(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -48,7 +49,7 @@ export default function AjouterParamBiochimie({ show, onHide, onAdd }: Props) {
             onAdd(newParam);
             
             // Réinitialiser le formulaire
-            setForm({ CodeB: "", LibelleB: "" });
+            setForm({ CodeB: "", LibelleB: "", EstLibelle: false });
             onHide();
         } catch (err: any) {
             setError(err.message || "Erreur lors de l'ajout du paramètre");
@@ -91,6 +92,16 @@ export default function AjouterParamBiochimie({ show, onHide, onAdd }: Props) {
                             maxLength={500}
                         />
                         <Form.Text className="text-muted">Obligatoire, maximum 500 caractères</Form.Text>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Check
+                            type="checkbox"
+                            name="EstLibelle"
+                            label="Cocher si c'est un libellé/titre"
+                            checked={form.EstLibelle}
+                            onChange={handleChange}
+                        />
                     </Form.Group>
                 </Form>
             </Modal.Body>

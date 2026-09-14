@@ -48,6 +48,7 @@ export async function GET(request: NextRequest) {
       ParamAbrege: param.ParamAbrege,
       UnitéParam: param.UnitéParam,
       TypeTexte: param.TypeTexte,
+      EstLibelle: param.EstLibelle,
       ORdonnacementAffichage: param.ORdonnacementAffichage
     }));
     
@@ -115,7 +116,7 @@ export async function PUT(request: NextRequest) {
       'PlageMaxFemme', 'PlageMinMaxFemme', 'PlageMinHomme', 'PlageMaxHomme',
       'PlageMinMaxHomme', 'PlageMinMaxNé', 'PlageRefMinNe', 'PlageRefMaxNé',
       'NUM_PARAM', 'Param_designation', 'ParamAbrege', 'UnitéParam',
-      'TypeTexte', 'ORdonnacementAffichage', 'IDACTEP'
+      'TypeTexte', 'EstLibelle', 'ORdonnacementAffichage', 'IDACTEP'
     ];
     
     updatableFields.forEach(field => {
@@ -152,6 +153,7 @@ export async function PUT(request: NextRequest) {
       ParamAbrege: param.ParamAbrege,
       UnitéParam: param.UnitéParam,
       TypeTexte: param.TypeTexte,
+      EstLibelle: param.EstLibelle,
       ORdonnacementAffichage: param.ORdonnacementAffichage
     };
     

@@ -23,6 +23,7 @@ export interface IParamLabo extends Omit<Document, '_id'> {
     ValeurMinNormale?: number;
     ValeurMaxNormale?: number;
     TypeTexte?: boolean;
+    EstLibelle?: boolean;
     SigneNormale?: string;
     SigneNé?: string;
     SigneEnfant?: string;
@@ -52,6 +53,7 @@ const ParamLaboSchema = new Schema<IParamLabo>({
     ValeurMinNormale: { type: Number },
     ValeurMaxNormale: { type: Number },
     TypeTexte: { type: Boolean, default: false },
+    EstLibelle: { type: Boolean, default: false },
     SigneNormale: { type: String, maxlength: 5, default: "-" },
     SigneNé: { type: String, maxlength: 5, default: "-" },
     SigneEnfant: { type: String, maxlength: 5, default: "-" },

@@ -79,9 +79,6 @@ const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
             <strong>Le:</strong> ${new Date().toLocaleDateString("fr-FR")} &nbsp;&nbsp;&nbsp;
             <strong>À:</strong> ${new Date().toLocaleTimeString("fr-FR")}
           </div>
-          <div style="font-style:italic;color:#666;">
-            <strong>Valable pour 15 jours</strong>
-          </div>
           ${societeFooter}
         </div>
       `;

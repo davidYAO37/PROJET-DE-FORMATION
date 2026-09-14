@@ -21,6 +21,7 @@ export interface ParamLabo {
     ValeurMinNormale?: number;
     ValeurMaxNormale?: number;
     TypeTexte?: boolean;
+    EstLibelle?: boolean;
     // Ajouter les champs de signe
     SigneNormale?: string;
     SigneNé?: string;

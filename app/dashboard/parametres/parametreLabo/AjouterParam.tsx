@@ -32,6 +32,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
         ValeurMinNormale: null,
         ValeurMaxNormale: null,
         TypeTexte: false,
+        EstLibelle: false,
         // Ajouter les signes pour chaque section
         SigneNormale: "-",
         SigneNé: "-",
@@ -190,6 +191,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                 ValeurMinNormale: null,
                 ValeurMaxNormale: null,
                 TypeTexte: false,
+                EstLibelle: false,
                 SigneNormale: "-",
                 SigneNé: "-",
                 SigneEnfant: "-",
@@ -656,13 +658,25 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
                         </Card.Header>
                         <Card.Body className="p-4">
                             <Row>
-                                <Col md={12}>
+                                <Col md={6}>
                                     <Form.Group>
                                         <Form.Check 
                                             type="checkbox" 
                                             name="TypeTexte" 
                                             label="Cocher si c'est du texte simple (désactive les champs numériques)" 
                                             checked={form.TypeTexte} 
+                                            onChange={handleChange}
+                                            className="d-flex align-items-center"
+                                        />
+                                    </Form.Group>
+                                </Col>
+                                <Col md={6}>
+                                    <Form.Group>
+                                        <Form.Check 
+                                            type="checkbox" 
+                                            name="EstLibelle" 
+                                            label="Cocher si c'est un libellé/titre" 
+                                            checked={form.EstLibelle} 
                                             onChange={handleChange}
                                             className="d-flex align-items-center"
                                         />

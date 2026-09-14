@@ -19,6 +19,7 @@ interface ParametreResultat {
     IDResultat?: string;
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     TypeTexte?: boolean;
+    EstLibelle?: boolean;
     ORdonnacementAffichage?: number;
     UnitéParam?: string;
 }
@@ -159,6 +160,7 @@ export async function POST(req: NextRequest) {
                 IDACTEP: param.IDACTEP,
                 IDFAMILLE_ACTE_BIOLOGIE: param.IDFAMILLE_ACTE_BIOLOGIE,
                 TypeTexte: param.TypeTexte,
+                EstLibelle: param.EstLibelle,
                 ORdonnacementAffichage: param.ORdonnacementAffichage,
                 unite: param.UnitéParam,
                 Interpretation: interpretation,

@@ -37,6 +37,7 @@ export default function ActeBiochimie() {
   const [searchTerm, setSearchTerm] = useState("");
   const [interpretation, setInterpretation] = useState("");
   const [acteCibleSelectionne, setActeCibleSelectionne] = useState<string>("");
+  const [ligneSelectionnee, setLigneSelectionnee] = useState<number | null>(null);
 
   // Charger les actes cliniques avec lettreCle="B"
   useEffect(() => {
@@ -237,34 +238,40 @@ export default function ActeBiochimie() {
     }
   };
 
-  const deplacerLigneVersHaut = (index: number) => {
-    if (index === 0) return;
-    
+  const deplacerLigneVersHaut = () => {
+    if (ligneSelectionnee === null || ligneSelectionnee === 0) return;
+
     const newActesParamBiochimie = [...actesParamBiochimie];
-    [newActesParamBiochimie[index - 1], newActesParamBiochimie[index]] = 
-      [newActesParamBiochimie[index], newActesParamBiochimie[index - 1]];
-    
+    [newActesParamBiochimie[ligneSelectionnee - 1], newActesParamBiochimie[ligneSelectionnee]] =
+      [newActesParamBiochimie[ligneSelectionnee], newActesParamBiochimie[ligneSelectionnee - 1]];
+
     // Mettre à jour ORdonnacementAffichage
     newActesParamBiochimie.forEach((param, i) => {
       param.ORdonnacementAffichage = i + 1;
     });
-    
+
+    setLigneSelectionnee(ligneSelectionnee - 1);
     setActesParamBiochimie(newActesParamBiochimie);
   };
 
-  const deplacerLigneVersBas = (index: number) => {
-    if (index === actesParamBiochimie.length - 1) return;
-    
+  const deplacerLigneVersBas = () => {
+    if (ligneSelectionnee === null || ligneSelectionnee === actesParamBiochimie.length - 1) return;
+
     const newActesParamBiochimie = [...actesParamBiochimie];
-    [newActesParamBiochimie[index], newActesParamBiochimie[index + 1]] = 
-      [newActesParamBiochimie[index + 1], newActesParamBiochimie[index]];
-    
+    [newActesParamBiochimie[ligneSelectionnee], newActesParamBiochimie[ligneSelectionnee + 1]] =
+      [newActesParamBiochimie[ligneSelectionnee + 1], newActesParamBiochimie[ligneSelectionnee]];
+
     // Mettre à jour ORdonnacementAffichage
     newActesParamBiochimie.forEach((param, i) => {
       param.ORdonnacementAffichage = i + 1;
     });
-    
+
+    setLigneSelectionnee(ligneSelectionnee + 1);
     setActesParamBiochimie(newActesParamBiochimie);
+  };
+
+  const selectionnerLigne = (index: number) => {
+    setLigneSelectionnee(index);
   };
 
   const associerParametres = async () => {
@@ -399,6 +406,31 @@ export default function ActeBiochimie() {
               <Card.Body>
                 {actesParamBiochimie.length > 0 ? (
                   <>
+                    <div className="d-flex align-items-center gap-2 mb-2 p-2 bg-light border rounded">
+                      <span className="fw-bold text-secondary small me-2">
+                        {ligneSelectionnee !== null
+                          ? `Ligne sélectionnée : ${ligneSelectionnee + 1} - ${actesParamBiochimie[ligneSelectionnee].param_designb || ''}`
+                          : "Cliquez sur une ligne pour la sélectionner"}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="outline-secondary"
+                        title="Monter la ligne sélectionnée"
+                        onClick={deplacerLigneVersHaut}
+                        disabled={loading || ligneSelectionnee === null || ligneSelectionnee === 0}
+                      >
+                        <FaArrowUp className="me-1" /> Monter
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline-secondary"
+                        title="Descendre la ligne sélectionnée"
+                        onClick={deplacerLigneVersBas}
+                        disabled={loading || ligneSelectionnee === null || ligneSelectionnee === actesParamBiochimie.length - 1}
+                      >
+                        <FaArrowDown className="me-1" /> Descendre
+                      </Button>
+                    </div>
                     <Table striped hover responsive>
                       <thead>
                         <tr>
@@ -409,27 +441,18 @@ export default function ActeBiochimie() {
                       </thead>
                       <tbody>
                         {actesParamBiochimie.map((param, index) => (
-                          <tr key={param._id}>
+                          <tr
+                            key={param._id}
+                            onClick={() => selectionnerLigne(index)}
+                            style={{
+                              cursor: "pointer",
+                              backgroundColor: ligneSelectionnee === index ? "#cfe2ff" : undefined
+                            }}
+                          >
                             <td>{param.ORdonnacementAffichage || index + 1}</td>
-                            <td>{param.param_designb}</td>
+                            <td onClick={(e) => { e.stopPropagation(); modifierParametre(param); }}>{param.param_designb}</td>
                             <td>
-                              <div className="d-flex gap-1">
-                                <Button
-                                  size="sm"
-                                  variant="outline-secondary"
-                                  onClick={() => deplacerLigneVersHaut(index)}
-                                  disabled={index === 0}
-                                >
-                                  <FaArrowUp />
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  variant="outline-secondary"
-                                  onClick={() => deplacerLigneVersBas(index)}
-                                  disabled={index === actesParamBiochimie.length - 1}
-                                >
-                                  <FaArrowDown />
-                                </Button>
+                              <div className="d-flex gap-1" onClick={(e) => e.stopPropagation()}>
                                 <Button
                                   size="sm"
                                   variant="outline-primary"

@@ -13,11 +13,12 @@ type Props = {
     onEdit: (a: ActeClinique) => void;
     onDelete: (id: string) => void;
     onDeleteDuplicates: (ids: string[]) => Promise<void>;
+    onUpdate?: (a: ActeClinique) => void;
 };
 
 const PAGE_SIZE_OPTIONS = [25, 50, 75, 100];
 
-const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete, onDeleteDuplicates }) => {
+const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete, onDeleteDuplicates, onUpdate }) => {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(PAGE_SIZE_OPTIONS[0]);
     const [search, setSearch] = useState("");
@@ -153,7 +154,11 @@ const ListeActe: React.FC<Props> = ({ actes, onEdit, onDelete, onDeleteDuplicate
         try {
             await axios.put(`/api/actes/${acteId}`, { resultatacte: resultat });
             alert("Résultat enregistré avec succès !");
-            window.location.reload();
+            if (selectedActe && onUpdate) {
+                onUpdate({ ...selectedActe, resultatacte: resultat });
+            }
+            setShowResultatModal(false);
+            setSelectedActe(null);
         } catch (error) {
             alert("Erreur lors de l'enregistrement du résultat");
         }

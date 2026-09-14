@@ -19,6 +19,7 @@ export interface IResultatLignePrestation extends Document {
     Externe_Interne?: string;
     NIdentificationExamen?: string;
     TypeTexte?: boolean;
+    EstLibelle?: boolean;
     AlignerActe?: number;
     unite?: string;
     ORdonnacementAffichage?: number;
@@ -45,6 +46,7 @@ const ResultatLignePrestationSchema = new Schema<IResultatLignePrestation>({
     Externe_Interne: { type: String, maxlength: 15 },
     NIdentificationExamen: { type: String, maxlength: 50 },
     TypeTexte: { type: Boolean, default: false },
+    EstLibelle: { type: Boolean, default: false },
     AlignerActe: { type: Number },
     unite: { type: String, maxlength: 50 },
     ORdonnacementAffichage: { type: Number },

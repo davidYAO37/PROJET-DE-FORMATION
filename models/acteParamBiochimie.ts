@@ -4,6 +4,7 @@ export interface IActeParamBiochimie extends Document {
     IDPARAM_BIOCHIME?: Types.ObjectId;
     IDACTEP?: Types.ObjectId;
     param_designb?: string;
+    EstLibelle?: boolean;
     ORdonnacementAffichage?: number;
 }
 
@@ -11,6 +12,7 @@ const ActeParamBiochimieSchema = new Schema<IActeParamBiochimie>({
     IDPARAM_BIOCHIME: { type: Schema.Types.ObjectId, ref: 'ParamBiochimie', required: true },
     IDACTEP: { type: Schema.Types.ObjectId, ref: 'Acte', required: true },
     param_designb: { type: String, maxlength: 150 },
+    EstLibelle: { type: Boolean, default: false },
     ORdonnacementAffichage: { type: Number },
 }, { timestamps: true });
 

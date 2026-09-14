@@ -55,6 +55,7 @@ export default function ActeBiologie() {
   const [searchTerm, setSearchTerm] = useState("");
   const [interpretation, setInterpretation] = useState("");
   const [acteCibleSelectionne, setActeCibleSelectionne] = useState<string>("");
+  const [ligneSelectionnee, setLigneSelectionnee] = useState<number | null>(null);
 
   // Charger les actes cliniques avec lettreCle="B"
   useEffect(() => {
@@ -442,33 +443,39 @@ export default function ActeBiologie() {
   };
 
   // Déplacer une ligne vers le haut
-  const deplacerLigneVersHaut = (index: number) => {
-    if (index === 0) return;
-    
+  const deplacerLigneVersHaut = () => {
+    if (ligneSelectionnee === null || ligneSelectionnee === 0) return;
+
     const newActesParamLabo = [...actesParamLabo];
-    [newActesParamLabo[index - 1], newActesParamLabo[index]] = [newActesParamLabo[index], newActesParamLabo[index - 1]];
-    
+    [newActesParamLabo[ligneSelectionnee - 1], newActesParamLabo[ligneSelectionnee]] = [newActesParamLabo[ligneSelectionnee], newActesParamLabo[ligneSelectionnee - 1]];
+
     // Réorganiser les numéros d'ordre
     newActesParamLabo.forEach((param, i) => {
       param.ORdonnacementAffichage = i + 1;
     });
-    
+
+    setLigneSelectionnee(ligneSelectionnee - 1);
     setActesParamLabo(newActesParamLabo);
   };
 
   // Déplacer une ligne vers le bas
-  const deplacerLigneVersBas = (index: number) => {
-    if (index === actesParamLabo.length - 1) return;
-    
+  const deplacerLigneVersBas = () => {
+    if (ligneSelectionnee === null || ligneSelectionnee === actesParamLabo.length - 1) return;
+
     const newActesParamLabo = [...actesParamLabo];
-    [newActesParamLabo[index], newActesParamLabo[index + 1]] = [newActesParamLabo[index + 1], newActesParamLabo[index]];
-    
+    [newActesParamLabo[ligneSelectionnee], newActesParamLabo[ligneSelectionnee + 1]] = [newActesParamLabo[ligneSelectionnee + 1], newActesParamLabo[ligneSelectionnee]];
+
     // Réorganiser les numéros d'ordre
     newActesParamLabo.forEach((param, i) => {
       param.ORdonnacementAffichage = i + 1;
     });
-    
+
+    setLigneSelectionnee(ligneSelectionnee + 1);
     setActesParamLabo(newActesParamLabo);
+  };
+
+  const selectionnerLigne = (index: number) => {
+    setLigneSelectionnee(index);
   };
 
   // Fonction pour associer les paramètres à un autre acte clinique
@@ -779,6 +786,31 @@ export default function ActeBiologie() {
                   </Row>
                 </div>
               )}
+              <div className="d-flex align-items-center gap-2 mb-2 p-2 bg-light border rounded">
+                <span className="fw-bold text-secondary small me-2">
+                  {ligneSelectionnee !== null
+                    ? `Ligne sélectionnée : ${ligneSelectionnee + 1} - ${(actesParamLabo[ligneSelectionnee].Param_designation || '').replace(/<[^>]+>/g, '')}`
+                    : "Cliquez sur une ligne pour la sélectionner"}
+                </span>
+                <Button
+                  size="sm"
+                  variant="outline-secondary"
+                  title="Monter la ligne sélectionnée"
+                  onClick={deplacerLigneVersHaut}
+                  disabled={loading || ligneSelectionnee === null || ligneSelectionnee === 0}
+                >
+                  <FaArrowUp className="me-1" /> Monter
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline-secondary"
+                  title="Descendre la ligne sélectionnée"
+                  onClick={deplacerLigneVersBas}
+                  disabled={loading || ligneSelectionnee === null || ligneSelectionnee === actesParamLabo.length - 1}
+                >
+                  <FaArrowDown className="me-1" /> Descendre
+                </Button>
+              </div>
               <div className="table-responsive" style={{ maxHeight: "400px", overflowY: "auto" }}>
                 <Table striped hover className="mb-0">
                   <thead className="table-light sticky-top">
@@ -797,17 +829,26 @@ export default function ActeBiologie() {
                   </thead>
                   <tbody>
                     {actesParamLabo.map((param, index) => (
-                      <tr key={param._id}>
+                      <tr
+                        key={param._id}
+                        onClick={() => selectionnerLigne(index)}
+                        style={{
+                          cursor: "pointer",
+                          backgroundColor: ligneSelectionnee === index ? "#cfe2ff" : undefined
+                        }}
+                      >
                         <td className="text-center fw-semibold">
                           {param.ORdonnacementAffichage || index + 1}
                         </td>
-                        <td 
-                          className="fw-semibold" 
-                          dangerouslySetInnerHTML={{ 
-                            __html: param.Param_designation || '' 
+                        <td
+                          className="fw-semibold"
+                          dangerouslySetInnerHTML={{
+                            __html: param.Param_designation || ''
                           }}
-                          onClick={() => modifierParametre(param)}
-                          style={{ cursor: "pointer" }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            modifierParametre(param);
+                          }}
                         />
                         <td className="fw-semibold text-primary">{param.ValeurNormale}</td>
                         <td>{param.PlageMinMaxNé}</td>
@@ -828,27 +869,12 @@ export default function ActeBiologie() {
                           <div className="d-flex gap-1 justify-content-center">
                             <Button
                               size="sm"
-                              variant="outline-secondary"
-                              title="Déplacer vers le haut"
-                              onClick={() => deplacerLigneVersHaut(index)}
-                              disabled={loading || index === 0}
-                            >
-                              <FaArrowUp />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline-secondary"
-                              title="Déplacer vers le bas"
-                              onClick={() => deplacerLigneVersBas(index)}
-                              disabled={loading || index === actesParamLabo.length - 1}
-                            >
-                              <FaArrowDown />
-                            </Button>
-                            <Button
-                              size="sm"
                               variant="outline-primary"
                               title="Modifier"
-                              onClick={() => modifierParametre(param)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                modifierParametre(param);
+                              }}
                               disabled={loading}
                             >
                               <FaEdit />
@@ -857,7 +883,10 @@ export default function ActeBiologie() {
                               size="sm"
                               variant="outline-danger"
                               title="Supprimer"
-                              onClick={() => supprimerParametre(param._id)}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                supprimerParametre(param._id);
+                              }}
                               disabled={loading}
                             >
                               <FaTrash />

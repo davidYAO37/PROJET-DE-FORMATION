@@ -24,6 +24,7 @@ export interface IActeParamLabo extends Omit<Document, '_id'> {
     ValeurMaxNormale?: number;
     ValeurMinNormale?: number;
     TypeTexte?: boolean;
+    EstLibelle?: boolean;
     SigneNormale?: string;
     SigneNé?: string;
     SigneEnfant?: string;
@@ -55,6 +56,7 @@ const ActeParamLaboSchema = new Schema<IActeParamLabo>({
     ValeurMaxNormale: { type: Number },
     ValeurMinNormale: { type: Number },
     TypeTexte: { type: Boolean, default: false },
+    EstLibelle: { type: Boolean, default: false },
     SigneNormale: { type: String, maxlength: 5, default: "-" },
     SigneNé: { type: String, maxlength: 5, default: "-" },
     SigneEnfant: { type: String, maxlength: 5, default: "-" },

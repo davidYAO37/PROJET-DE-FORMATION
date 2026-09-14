@@ -144,7 +144,8 @@ export default function AjouterParamModal({ show, onHide, acteSelectionne, onSav
           PlageMinMaxHomme: param.PlageMinMaxHomme,
           PlageMinMaxNé: param.PlageMinMaxNé,
           UnitéParam: param.UnitéParam,
-          TypeTexte: param.TypeTexte
+          TypeTexte: param.TypeTexte,
+          EstLibelle: param.EstLibelle
         }));
 
       // Envoyer chaque paramètre à l'API

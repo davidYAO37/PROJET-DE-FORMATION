@@ -22,6 +22,7 @@ export interface ActeParamLabo {
     ValeurMaxNormale?: number;
     ValeurMinNormale?: number;
     TypeTexte?: boolean;
+    EstLibelle?: boolean;
     SigneNormale?: string;
     SigneNé?: string;
     SigneEnfant?: string;

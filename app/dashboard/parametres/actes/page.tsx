@@ -39,6 +39,10 @@ export default function ActesPage() {
         setShowEdit(false);
     };
 
+    const handleUpdate = (a: ActeClinique) => {
+        setActes((prev) => prev.map((x) => (x._id === a._id ? a : x)));
+    };
+
     const handleEditClick = (a: ActeClinique) => {
         setSelected(a);
         setShowEdit(true);
@@ -92,6 +96,7 @@ export default function ActesPage() {
                             onEdit={handleEditClick}
                             onDelete={handleDelete}
                             onDeleteDuplicates={handleDeleteDuplicates}
+                            onUpdate={handleUpdate}
                         />
                     )}
                 </>

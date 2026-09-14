@@ -4,11 +4,13 @@ export interface IParamBiochimie extends Omit<Document, '_id'> {
     _id: string;
     CodeB?: string;
     LibelleB?: string;
+    EstLibelle?: boolean;
 }
 
 const ParamBiochimieSchema = new Schema<IParamBiochimie>({
     CodeB: { type: String, maxlength: 10, unique: true },
     LibelleB: { type: String, maxlength: 500, required: true },
+    EstLibelle: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const ParamBiochimie: Model<IParamBiochimie> = mongoose.models.ParamBiochimie || mongoose.model<IParamBiochimie>('ParamBiochimie', ParamBiochimieSchema);

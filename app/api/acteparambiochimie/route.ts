@@ -30,6 +30,7 @@ export async function GET(req: NextRequest) {
             IDACTEP: param.IDACTEP,
             IDPARAM_BIOCHIME: param.IDPARAM_BIOCHIME,
             param_designb: param.param_designb,
+            EstLibelle: (param as any).EstLibelle,
             ORdonnacementAffichage: param.ORdonnacementAffichage,
             IDACTE_PARAMBIOCHIMIE: String(index + 1)
         }));

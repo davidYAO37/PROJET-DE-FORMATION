@@ -68,7 +68,8 @@ export default function AjouterParamBiochimieModal({ show, onHide, onSave, onAdd
       .filter(p => p._id && selectedParams.has(p._id))
       .map(param => ({
         IDPARAM_BIOCHIME: param._id,
-        param_designb: param.LibelleB || ""
+        param_designb: param.LibelleB || "",
+        EstLibelle: param.EstLibelle || false
       }));
 
     if (onAdd) {

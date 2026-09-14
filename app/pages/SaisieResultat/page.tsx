@@ -62,6 +62,7 @@ interface ParametreResultat {
   IDResultat?: string;
   IDFAMILLE_ACTE_BIOLOGIE?: string;
   TypeTexte?: boolean;
+  EstLibelle?: boolean;
   ORdonnacementAffichage?: number;
   UnitéParam?: string;
   unite?: string;
@@ -178,6 +179,7 @@ export default function SaisieResultat({
           IDFAMILLE_ACTE_BIOLOGIE: r.IDFAMILLE_ACTE_BIOLOGIE,
           unite: r.unite,
           TypeTexte: r.TypeTexte,
+          EstLibelle: r.EstLibelle,
           ORdonnacementAffichage: r.ORdonnacementAffichage,
           UnitéParam: r.unite,
           IDResultat: r._id,
@@ -272,6 +274,7 @@ export default function SaisieResultat({
             IDFAMILLE_ACTE_BIOLOGIE: p.IDFAMILLE_ACTE_BIOLOGIE,
             unite: p.unite,
             TypeTexte: p.TypeTexte,
+            EstLibelle: p.EstLibelle,
             ORdonnacementAffichage: p.ORdonnacementAffichage,
             UnitéParam: p.unite,
           }));
@@ -492,7 +495,7 @@ export default function SaisieResultat({
     }
 
     // Vérifier qu'au moins un résultat numérique (non texte) est saisi
-    const lignesNonTexte = parametres.filter((p: any) => !p.TypeTexte);
+    const lignesNonTexte = parametres.filter((p: any) => !p.TypeTexte && !p.EstLibelle);
     const auMoinsUnSaisi = lignesNonTexte.some((p: any) => p.ChampResultat !== undefined && p.ChampResultat !== null && String(p.ChampResultat).trim() !== '');
     if (lignesNonTexte.length > 0 && !auMoinsUnSaisi) {
       alert("Veuillez saisir au moins un résultat avant d'enregistrer.");
@@ -512,9 +515,9 @@ export default function SaisieResultat({
         ? (localStorage.getItem("nom_utilisateur") ?? "")
         : "";
 
-    // Enregistrer : tous les paramètres texte + les numériques saisis uniquement
+    // Enregistrer : les libellés, les paramètres texte, et les numériques saisis
     const parametresFiltres = parametres.filter((p: any) =>
-      p.TypeTexte || (p.ChampResultat !== undefined && p.ChampResultat !== null && String(p.ChampResultat).trim() !== '')
+      p.EstLibelle || p.TypeTexte || (p.ChampResultat !== undefined && p.ChampResultat !== null && String(p.ChampResultat).trim() !== '')
     );
 
     const payload = {
@@ -752,20 +755,37 @@ export default function SaisieResultat({
                     </tr>
                   )}
                   {parametres.map((ligne, index) => (
-                    <tr key={index}>
+                    <tr key={index} style={{ backgroundColor: ligne.EstLibelle ? '#e9ecef' : undefined }}>
                       <td
                         dangerouslySetInnerHTML={{
                           __html: ligne.Param_designation || "",
                         }}
+                        style={{ fontWeight: ligne.EstLibelle ? 'bold' : 'normal' }}
                       />
                       <td>
                         <div className="d-flex align-items-center">
-                          {ligne.TypeTexte ? (
+                          {ligne.EstLibelle ? (
+                            <Form.Control
+                              type="text"
+                              value="—"
+                              disabled
+                              readOnly
+                              style={{
+                                backgroundColor: "#e9ecef",
+                                color: "#6c757d",
+                                fontWeight: "bold",
+                                textAlign: "center",
+                                cursor: "not-allowed",
+                              }}
+                            />
+                          ) : ligne.TypeTexte ? (
                             <Form.Control
                               as="textarea"
                               rows={2}
                               value={ligne.ChampResultat || ""}
-                              readOnly
+                              onChange={(e) =>
+                                modifierResultat(index, e.target.value)
+                              }
                               style={{
                                 backgroundColor: "#f8f9fa",
                                 fontWeight: "normal",
@@ -790,7 +810,7 @@ export default function SaisieResultat({
                               }}
                             />
                           )}
-                          {ligne.UnitéParam && (
+                          {ligne.UnitéParam && !ligne.EstLibelle && (
                             <span className="ms-2 text-muted small">
                               {ligne.UnitéParam}
                             </span>

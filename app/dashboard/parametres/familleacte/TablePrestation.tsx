@@ -162,6 +162,7 @@ export default function TablePrestation({ familleId }: Props) {
     const [prestations, setPrestations] = useState<ActePrestation[]>([]);
     const [actesDisponibles, setActesDisponibles] = useState<ActePrestation[]>([]);
     const [loading, setLoading] = useState(false);
+    const [ligneSelectionnee, setLigneSelectionnee] = useState<number | null>(null);
 
     // Charger tous les actes disponibles
     useEffect(() => {
@@ -231,23 +232,29 @@ export default function TablePrestation({ familleId }: Props) {
     };
 
     // Déplacer une ligne vers le haut
-    const handleMoveUp = (index: number) => {
-        if (index === 0) return;
+    const handleMoveUp = () => {
+        if (ligneSelectionnee === null || ligneSelectionnee === 0) return;
         const newPrestations = [...prestations];
-        [newPrestations[index - 1], newPrestations[index]] = [newPrestations[index], newPrestations[index - 1]];
+        [newPrestations[ligneSelectionnee - 1], newPrestations[ligneSelectionnee]] = [newPrestations[ligneSelectionnee], newPrestations[ligneSelectionnee - 1]];
         // Réorganiser les numéros d'ordre
         newPrestations.forEach((p, i) => p.ORdonnacementAffichage = i + 1);
+        setLigneSelectionnee(ligneSelectionnee - 1);
         setPrestations(newPrestations);
     };
 
     // Déplacer une ligne vers le bas
-    const handleMoveDown = (index: number) => {
-        if (index === prestations.length - 1) return;
+    const handleMoveDown = () => {
+        if (ligneSelectionnee === null || ligneSelectionnee === prestations.length - 1) return;
         const newPrestations = [...prestations];
-        [newPrestations[index], newPrestations[index + 1]] = [newPrestations[index + 1], newPrestations[index]];
+        [newPrestations[ligneSelectionnee], newPrestations[ligneSelectionnee + 1]] = [newPrestations[ligneSelectionnee + 1], newPrestations[ligneSelectionnee]];
         // Réorganiser les numéros d'ordre
         newPrestations.forEach((p, i) => p.ORdonnacementAffichage = i + 1);
+        setLigneSelectionnee(ligneSelectionnee + 1);
         setPrestations(newPrestations);
+    };
+
+    const selectionnerLigne = (index: number) => {
+        setLigneSelectionnee(index);
     };
 
     // Supprimer un acte de la famille
@@ -342,6 +349,31 @@ export default function TablePrestation({ familleId }: Props) {
                 </div>
             </div>
 
+            <div className="d-flex align-items-center gap-2 mb-2 p-2 bg-light border rounded">
+                <span className="fw-bold text-secondary small me-2">
+                    {ligneSelectionnee !== null
+                        ? `Ligne sélectionnée : ${ligneSelectionnee + 1} - ${prestations[ligneSelectionnee].designationacte || ''}`
+                        : "Cliquez sur une ligne pour la sélectionner"}
+                </span>
+                <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    title="Monter la ligne sélectionnée"
+                    onClick={handleMoveUp}
+                    disabled={loading || ligneSelectionnee === null || ligneSelectionnee === 0}
+                >
+                    <FaArrowUp className="me-1" /> Monter
+                </Button>
+                <Button
+                    variant="outline-secondary"
+                    size="sm"
+                    title="Descendre la ligne sélectionnée"
+                    onClick={handleMoveDown}
+                    disabled={loading || ligneSelectionnee === null || ligneSelectionnee === prestations.length - 1}
+                >
+                    <FaArrowDown className="me-1" /> Descendre
+                </Button>
+            </div>
             <Table bordered hover responsive size="sm">
                 <thead className="table-light">
                     <tr>
@@ -355,8 +387,15 @@ export default function TablePrestation({ familleId }: Props) {
                 <tbody>
                     {prestations.length > 0 ? (
                         prestations.map((prestation, index) => (
-                            <tr key={index}>
-                                <td>
+                            <tr
+                                key={index}
+                                onClick={() => selectionnerLigne(index)}
+                                style={{
+                                    cursor: "pointer",
+                                    backgroundColor: ligneSelectionnee === index ? "#cfe2ff" : undefined
+                                }}
+                            >
+                                <td onClick={(e) => e.stopPropagation()}>
                                     <ActeSelect
                                         actes={actesDisponibles}
                                         selectedId={prestation._id}
@@ -387,24 +426,8 @@ export default function TablePrestation({ familleId }: Props) {
                                         readOnly
                                     />
                                 </td>
-                                <td>
+                                <td onClick={(e) => e.stopPropagation()}>
                                     <div className="d-flex gap-1">
-                                        <Button
-                                            variant="outline-secondary"
-                                            size="sm"
-                                            onClick={() => handleMoveUp(index)}
-                                            disabled={index === 0}
-                                        >
-                                            <FaArrowUp />
-                                        </Button>
-                                        <Button
-                                            variant="outline-secondary"
-                                            size="sm"
-                                            onClick={() => handleMoveDown(index)}
-                                            disabled={index === prestations.length - 1}
-                                        >
-                                            <FaArrowDown />
-                                        </Button>
                                         <Button
                                             variant="outline-danger"
                                             size="sm"

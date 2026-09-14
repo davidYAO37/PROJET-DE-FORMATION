@@ -14,6 +14,7 @@ export default function ModifierParamBiochimie({ show, onHide, ParamBiochimie, o
     const [form, setForm] = useState({
         CodeB: "",
         LibelleB: "",
+        EstLibelle: false,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -23,13 +24,14 @@ export default function ModifierParamBiochimie({ show, onHide, ParamBiochimie, o
             setForm({
                 CodeB: ParamBiochimie.CodeB || "",
                 LibelleB: ParamBiochimie.LibelleB || "",
+                EstLibelle: ParamBiochimie.EstLibelle || false,
             });
         }
     }, [ParamBiochimie]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const { name, value } = e.target;
-        setForm(prev => ({ ...prev, [name]: value }));
+        const { name, value, type, checked } = e.target;
+        setForm(prev => ({ ...prev, [name]: type === "checkbox" ? checked : value }));
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -103,6 +105,16 @@ export default function ModifierParamBiochimie({ show, onHide, ParamBiochimie, o
                             maxLength={500}
                         />
                         <Form.Text className="text-muted">Obligatoire, maximum 500 caractères</Form.Text>
+                    </Form.Group>
+
+                    <Form.Group className="mb-3">
+                        <Form.Check
+                            type="checkbox"
+                            name="EstLibelle"
+                            label="Cocher si c'est un libellé/titre"
+                            checked={form.EstLibelle}
+                            onChange={handleChange}
+                        />
                     </Form.Group>
                 </Form>
             </Modal.Body>

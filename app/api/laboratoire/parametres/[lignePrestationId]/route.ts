@@ -109,6 +109,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ lign
                     IDResultat: resultat?._id || "",
                     IDFAMILLE_ACTE_BIOLOGIE: ligne.idFamilleActeBiologie,
                     TypeTexte: param.TypeTexte,
+                    EstLibelle: param.EstLibelle,
                     ORdonnacementAffichage: param.ORdonnacementAffichage,
                     UnitéParam: param.UnitéParam,
                     Interpretation: interpretationCommune
