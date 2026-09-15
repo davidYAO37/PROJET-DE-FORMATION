@@ -48,7 +48,7 @@ export default function Pagination({
           onChange={(e) => onPageSize(Number(e.target.value))}
           style={{ width: 'auto' }}
         >
-          <option value="25">25 lignes</option>
+          <option value="20">20 lignes</option>
           <option value="50">50 lignes</option>
           <option value="75">75 lignes</option>
           <option value="100">100 lignes</option>

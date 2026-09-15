@@ -44,6 +44,9 @@ interface RdvItem {
   DESCRIPTION: string;
   Contact: string;
   Statutrdvpris: boolean;
+  NouvelleDate?: string;
+  MotifReport?: string;
+  ServiceIndisponible?: boolean;
 }
 
 export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: DisponibilitePrescriptuerModalRadioProps) {
@@ -60,6 +63,10 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
   const [validatedRdv, setValidatedRdv] = useState<{ [key: string]: { patient: string; contact: string; typeVisite: string } }>({});
   const [addingRdv, setAddingRdv] = useState(false);
   const [rdvStatutSwitch, setRdvStatutSwitch] = useState<{ [key: string]: boolean }>({});
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportingRdv, setReportingRdv] = useState<string | null>(null);
+  const [reportDate, setReportDate] = useState('');
+  const [reportMotif, setReportMotif] = useState('');
 
   // Charger le médecin connecté uniquement
   useEffect(() => {
@@ -213,16 +220,19 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
     return timeString.slice(0, 5); // HH:MM
   };
 
-  const getStatutBadge = (statut: string | undefined | null, statutrdvpris: boolean) => {
+  const getStatutBadge = (statut: string | undefined | null, statutrdvpris: boolean, serviceIndisponible?: boolean) => {
     if (!statutrdvpris) return <Badge bg="secondary">Disponible</Badge>;
+    if (serviceIndisponible) return <Badge bg="dark">Service indisponible</Badge>;
     
     switch (statut) {
       case '1':
         return <Badge bg="primary">En cours</Badge>;
       case '2':
-        return <Badge bg="success">Validé</Badge>;
+        return <Badge bg="success">Confirmé</Badge>;
       case '3':
         return <Badge bg="danger">Annulé</Badge>;
+      case '4':
+        return <Badge bg="warning" text="dark">Reporté</Badge>;
       default:
         return <Badge bg="secondary">Disponible</Badge>;
     }
@@ -537,6 +547,125 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
       alert('❌ Erreur de connexion lors de la mise à jour');
     } finally {
       setUpdatingRdv(null);
+    }
+  };
+
+  const handleConfirmerRdv = async (rdvId: string) => {
+    try {
+      const rdv = rendezVous.find(r => r._id === rdvId);
+      if (!rdv) return;
+
+      const response = await fetch('/api/rendez-vous/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rdvId,
+          StatutRdv: '2',
+          Statutrdvpris: true,
+          ServiceIndisponible: false
+        })
+      });
+
+      if (response.ok) {
+        setRendezVous(prev => prev.map(r =>
+          r._id === rdvId
+            ? { ...r, StatutRdv: '2', Statutrdvpris: true, ServiceIndisponible: false }
+            : r
+        ));
+        alert('✅ Rendez-vous confirmé');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(`❌ Erreur: ${data.error || 'Confirmation impossible'}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('❌ Erreur de connexion');
+    }
+  };
+
+  const handleServiceIndisponible = async (rdvId: string) => {
+    if (!window.confirm("Confirmer l'indisponibilité du service pour ce rendez-vous ?")) return;
+
+    try {
+      const response = await fetch('/api/rendez-vous/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rdvId,
+          StatutRdv: '3',
+          Statutrdvpris: true,
+          ServiceIndisponible: true
+        })
+      });
+
+      if (response.ok) {
+        setRendezVous(prev => prev.map(r =>
+          r._id === rdvId
+            ? { ...r, StatutRdv: '3', Statutrdvpris: true, ServiceIndisponible: true }
+            : r
+        ));
+        alert('✅ Service indisponible signalé');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(`❌ Erreur: ${data.error || 'Action impossible'}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('❌ Erreur de connexion');
+    }
+  };
+
+  const handleOpenReport = (rdvId: string) => {
+    const rdv = rendezVous.find(r => r._id === rdvId);
+    if (!rdv) return;
+    setReportingRdv(rdvId);
+    setReportDate(rdv.NouvelleDate || '');
+    setReportMotif(rdv.MotifReport || '');
+    setShowReportModal(true);
+  };
+
+  const handleCloseReport = () => {
+    setShowReportModal(false);
+    setReportingRdv(null);
+    setReportDate('');
+    setReportMotif('');
+  };
+
+  const handleSaveReport = async () => {
+    if (!reportingRdv) return;
+    if (!reportDate || !reportMotif.trim()) {
+      alert('⚠️ Veuillez renseigner la nouvelle date et le motif');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/rendez-vous/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rdvId: reportingRdv,
+          StatutRdv: '4',
+          Statutrdvpris: true,
+          NouvelleDate: reportDate,
+          MotifReport: reportMotif.trim()
+        })
+      });
+
+      if (response.ok) {
+        setRendezVous(prev => prev.map(r =>
+          r._id === reportingRdv
+            ? { ...r, StatutRdv: '4', Statutrdvpris: true, NouvelleDate: reportDate, MotifReport: reportMotif.trim() }
+            : r
+        ));
+        alert('✅ Rendez-vous reporté');
+        handleCloseReport();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(`❌ Erreur: ${data.error || 'Report impossible'}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('❌ Erreur de connexion');
     }
   };
 
@@ -966,7 +1095,7 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
                       <div className={styles.medecinInfo}>
                         <div className={styles.medecinName}>
                           <i className="bi bi-person-circle me-2"></i>
-                          PR {medecin.nom} {medecin.prenoms}
+                          {medecin.nom} {medecin.prenoms}
                         </div>
                         <div className={styles.medecinSpecialite}>
                           {medecin.specialite}
@@ -1032,6 +1161,7 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
                     <thead>
                       <tr>
                         <th>Disponibilité</th>
+                        <th>Statut</th>
                         <th>Patient</th>
                         <th>Contact</th>
                         <th>Type Visite</th>
@@ -1057,6 +1187,27 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
                                   </Badge>
                                 )}
                               </div>
+                            </td>
+                            <td>
+                              {getStatutBadge(rdv.StatutRdv, rdv.Statutrdvpris, rdv.ServiceIndisponible)}
+                              {rdv.StatutRdv === '4' && rdv.NouvelleDate && (
+                                <small className="d-block text-muted mt-1">
+                                  <i className="bi bi-calendar me-1"></i>
+                                  Reporté au {new Date(`${rdv.NouvelleDate}T00:00:00`).toLocaleDateString('fr-FR')}
+                                </small>
+                              )}
+                              {rdv.StatutRdv === '4' && rdv.MotifReport && (
+                                <small className="d-block text-muted mt-1">
+                                  <i className="bi bi-info-circle me-1"></i>
+                                  {rdv.MotifReport}
+                                </small>
+                              )}
+                              {rdv.ServiceIndisponible && rdv.MotifReport && (
+                                <small className="d-block text-muted mt-1">
+                                  <i className="bi bi-info-circle me-1"></i>
+                                  {rdv.MotifReport}
+                                </small>
+                              )}
                             </td>
                             <td>
                               {rdv.Statutrdvpris && !isEditing ? (
@@ -1130,19 +1281,34 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
                                     </>
                                   ) : (
                                     <>
-                                      <span
-                                        style={{
-                                            fontSize: '0.75rem',
-                                            padding: '0.25rem 0.5rem',
-                                            backgroundColor: rdvIsPast ? '#6c757d' : '#198754',
-                                            color: 'white',
-                                            borderRadius: '0.375rem',
-                                            display: 'inline-block',
-                                            fontWeight: 500
-                                        }}
+                                      {getStatutBadge(rdv.StatutRdv, rdv.Statutrdvpris, rdv.ServiceIndisponible)}
+                                      <Button
+                                        variant="outline-success"
+                                        size="sm"
+                                        onClick={() => handleConfirmerRdv(rdvId)}
+                                        disabled={isUpdating || rdvIsPast || rdv.StatutRdv === '2'}
+                                        title="Confirmer le rendez-vous"
                                       >
-                                        {rdvIsPast ? 'Passé' : 'Validé'}
-                                      </span>
+                                        <i className="bi bi-check-circle"></i>
+                                      </Button>
+                                      <Button
+                                        variant="outline-warning"
+                                        size="sm"
+                                        onClick={() => handleOpenReport(rdvId)}
+                                        disabled={isUpdating || rdvIsPast}
+                                        title="Reporter le rendez-vous"
+                                      >
+                                        <i className="bi bi-clock-history"></i>
+                                      </Button>
+                                      <Button
+                                        variant="outline-dark"
+                                        size="sm"
+                                        onClick={() => handleServiceIndisponible(rdvId)}
+                                        disabled={isUpdating || rdvIsPast || rdv.ServiceIndisponible}
+                                        title="Service indisponible"
+                                      >
+                                        <i className="bi bi-x-octagon"></i>
+                                      </Button>
                                       <Button
                                         variant="outline-primary"
                                         size="sm"
@@ -1160,7 +1326,7 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
                                           label=""
                                           checked={rdvStatutSwitch[rdvId] || false}
                                           onChange={(e) => handleStatutSwitchChange(rdvId, e.target.checked)}
-                                          disabled={isUpdating || rdvIsPast}
+                                          disabled={isUpdating || rdvIsPast || rdv.ServiceIndisponible}
                                           title="Patient présent ?"
                                           style={{ cursor: 'pointer' }}
                                         />
@@ -1252,6 +1418,44 @@ export default function DisponibilitePrescriptuerModalRadio({ show, onHide }: Di
           </Button>
         </div>
       </Modal.Footer>
+
+      {/* Modal de report de rendez-vous */}
+      <Modal show={showReportModal} onHide={handleCloseReport} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-clock-history me-2"></i>
+            Reporter le rendez-vous
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>Nouvelle date</Form.Label>
+            <Form.Control
+              type="date"
+              value={reportDate}
+              onChange={(e) => setReportDate(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group>
+            <Form.Label>Motif du report</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={reportMotif}
+              onChange={(e) => setReportMotif(e.target.value)}
+              placeholder="Indiquez le motif du report..."
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseReport}>
+            Annuler
+          </Button>
+          <Button variant="primary" onClick={handleSaveReport}>
+            Enregistrer
+          </Button>
+        </Modal.Footer>
+      </Modal>
     </Modal>
   );
 }

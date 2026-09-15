@@ -17,6 +17,9 @@ export interface IRendezVous extends Document {
     Statutrdvpris: boolean;
     Contact: string;
     entrepriseId: string;
+    NouvelleDate?: string;
+    MotifReport?: string;
+    ServiceIndisponible?: boolean;
 }
 
 const RendezVousSchema = new Schema<IRendezVous>({
@@ -36,5 +39,8 @@ const RendezVousSchema = new Schema<IRendezVous>({
     Statutrdvpris: Boolean,
     Contact: String,
     entrepriseId: String,
+    NouvelleDate: { type: String, required: false },
+    MotifReport: { type: String, required: false },
+    ServiceIndisponible: { type: Boolean, default: false },
 }, { timestamps: true });
 export const RendezVous: Model<IRendezVous> = mongoose.models.RendezVous || mongoose.model<IRendezVous>('RendezVous', RendezVousSchema);

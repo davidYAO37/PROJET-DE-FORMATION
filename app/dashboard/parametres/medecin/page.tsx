@@ -1,7 +1,7 @@
 'use client';
 import React, { useEffect, useState } from 'react';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner } from 'react-bootstrap';
-import { FaEdit, FaTrash, FaPlus } from 'react-icons/fa';
+import { FaEdit, FaTrash, FaPlus, FaUserPlus } from 'react-icons/fa';
 import AjouterMedecin from './AjouterMedecin';
 import ModifierMedecin from './ModifierMedecin';
 import { Medecin } from '@/types/medecin';
@@ -63,6 +63,30 @@ export default function Medecins() {
     const updatedList = medecins.map((m) => (m._id === updated._id ? updated : m));
     setMedecins(updatedList);
     showNotification(`📝 Médecin "${updated.nom}" modifié.`, 'info');
+  };
+
+  const handleCreateUser = async (medecin: Medecin) => {
+    try {
+      const response = await fetch(`/api/medecins/${medecin._id}/create-user`, {
+        method: 'POST',
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setMedecins((prev) => prev.map((m) =>
+          m._id === medecin._id ? { ...m, userId: data.userId } : m
+        ));
+        showNotification(
+          `✅ Utilisateur créé pour ${medecin.nom} ${medecin.prenoms}${data.defaultPassword ? ` (mdp: ${data.defaultPassword})` : ''}`,
+          'success'
+        );
+      } else {
+        showNotification(data.error || 'Erreur lors de la création', 'danger');
+      }
+    } catch {
+      showNotification('Erreur de connexion', 'danger');
+    }
   };
 
   const handleDeleteMedecin = async (id?: string) => {
@@ -151,6 +175,17 @@ export default function Medecins() {
                         >
                           <FaEdit />
                         </Button>
+                        {!medecin.userId && medecin.EmailMed && (
+                          <Button
+                            variant="outline-success"
+                            size="sm"
+                            className="me-2"
+                            title="Créer un utilisateur pour ce médecin"
+                            onClick={() => handleCreateUser(medecin)}
+                          >
+                            <FaUserPlus />
+                          </Button>
+                        )}
                         <Button 
                           variant="outline-danger" 
                           size="sm"

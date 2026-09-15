@@ -9,4 +9,5 @@ export type Medecin = {
   TauxExecution?: number;
   TauxAideOperatoire?: number;
   TauxAnesthesiste?: number;
+  userId?: string;
 };

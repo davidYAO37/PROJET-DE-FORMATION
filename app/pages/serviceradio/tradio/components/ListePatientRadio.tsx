@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Table, Button, Spinner, Alert, Form, Row, Col } from "react-bootstrap";
-import { FaEye, FaCalendarAlt, FaUser, FaPhone, FaSearch, FaPrint } from "react-icons/fa";
+import { Table, Button, Spinner, Alert, Form, Row, Col, Modal, Card, InputGroup } from "react-bootstrap";
+import { FaEye, FaCalendarAlt, FaUser, FaPhone, FaSearch, FaPrint, FaUndo } from "react-icons/fa";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IPatient } from "@/models/patient";
+import Pagination from "@/components/Pagination";
+import { usePagination } from "@/components/usePagination";
 import PrintCompteRenduUnified from "./MesImpressions/CompteRendu/PrintCompteRenduUnified";
 
 interface Props {
@@ -15,11 +17,15 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
   const [lignePrestations, setLignePrestations] = useState<ILignePrestation[]>([]);
   const [selectedPatient, setSelectedPatient] = useState<IPatient | null>(null);
   const [patientPrestations, setPatientPrestations] = useState<ILignePrestation[]>([]);
+  const [showPrestationsModal, setShowPrestationsModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [dateDebut, setDateDebut] = useState("");
   const [dateFin, setDateFin] = useState("");
+  const [pageSize, setPageSize] = useState(20);
+
+  const { slice: paginatedPatients, page, totalPages, setPage, reset } = usePagination(patients, pageSize);
   
   // États pour l'impression
   const [printingId, setPrintingId] = useState<string | null>(null);
@@ -72,9 +78,14 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
     loadPatients();
   }, [dateDebut, dateFin, searchTerm]);
 
+  useEffect(() => {
+    reset();
+  }, [dateDebut, dateFin, searchTerm]);
+
   // Gérer la sélection d'un patient (logique WinDev exacte)
   const handlePatientSelect = async (patient: IPatient) => {
     setSelectedPatient(patient);
+    setShowPrestationsModal(true);
     
     // TableSupprimeTout(TABLE_LIGNE_PRESTATION_patient) - Vider le tableau
     setPatientPrestations([]);
@@ -91,10 +102,18 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
     onPatientSelect(patient);
   };
 
+  const handleClosePrestationsModal = () => setShowPrestationsModal(false);
+
   // Formater la date
   const formatDate = (date: Date | string) => {
     const d = new Date(date);
     return d.toLocaleDateString('fr-FR');
+  };
+
+  const handleResetFilters = () => {
+    setSearchTerm("");
+    setDateDebut("");
+    setDateFin("");
   };
 
   // Calculer l'âge du patient
@@ -173,48 +192,40 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
   return (
     <div>
       {/* Filtres */}
-      <div className="mb-4">
-        <Row>
-          <Col md={4}>
-            <Form.Group>
-              <Form.Label><FaSearch className="me-2" />Recherche</Form.Label>
-              <Form.Control
-                type="text"
-                placeholder="Nom, prénom ou dossier N°..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label><FaCalendarAlt className="me-2" />Date début</Form.Label>
-              <Form.Control
-                type="date"
-                value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label><FaCalendarAlt className="me-2" />Date fin</Form.Label>
-              <Form.Control
-                type="date"
-                value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={2}>
-            <Form.Group className="d-flex align-items-end">
-              <Button variant="primary" onClick={loadPatients} disabled={loading}>
-                {loading ? <Spinner size="sm" /> : <FaSearch />}
-              </Button>
-            </Form.Group>
-          </Col>
-        </Row>
-      </div>
+      <Card className="mb-1 border-0 shadow-sm">
+        <Card.Header className="bg-white border-bottom-0 pt-0 pb-0">
+          <h6 className="mb-0 text-primary fw-bold">
+            <FaSearch className="me-2" />
+            Rechercher un patient
+          </h6>
+        </Card.Header>
+        <Card.Body>
+          <Row className="g-3 align-items-end">
+            <Col xs={12} md={10}>
+              <InputGroup>
+                <InputGroup.Text className="bg-light border-end-0">
+                  <FaUser className="text-primary" />
+                </InputGroup.Text>
+                <Form.Control
+                  type="text"
+                  placeholder="Nom, prénom ou dossier N°..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="border-start-0"
+                />
+              </InputGroup>
+            </Col>
+            
+            <Col xs={12} md={2}>
+              <div className="d-flex gap-2">               
+                <Button variant="outline-secondary" onClick={handleResetFilters} title="Réinitialiser" className="d-flex align-items-center">
+                  <FaUndo />
+                </Button>
+              </div>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {error && <Alert variant="danger">{error}</Alert>}
 
@@ -245,7 +256,7 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
                 </td>
               </tr>
             ) : (
-              patients.map((patient) => (
+              paginatedPatients.map((patient) => (
                 <tr 
                   key={patient._id.toString()}
                   className={selectedPatient?._id === patient._id ? "table-active" : ""}
@@ -280,15 +291,25 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
             )}
           </tbody>
         </Table>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          total={patients.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSize={setPageSize}
+        />
       </div>
 
-      {/* Tableau des lignes de prestations du patient sélectionné */}
-      {selectedPatient && (
-        <div>
-          <h5>
+      {/* Modal des lignes de prestations du patient sélectionné */}
+      <Modal show={showPrestationsModal} onHide={handleClosePrestationsModal} size="lg" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
             <FaCalendarAlt className="me-2" />
-            Prestations de {selectedPatient.Nom} {selectedPatient.Prenoms}
-          </h5>
+            Prestations de {selectedPatient?.Nom} {selectedPatient?.Prenoms}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
           <Table striped bordered hover responsive>
             <thead className="table-success">
               <tr>
@@ -347,17 +368,29 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
               )}
             </tbody>
           </Table>
-        </div>
-      )}
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleClosePrestationsModal}>
+            Fermer
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Modal d'impression du compte rendu */}
-      {printModalOpen && printData && (
-        <PrintCompteRenduUnified
-          donnees={printData.donnees}
-          validationInfo={printData.validationInfo}
-          autoPrint={false}
-        />
-      )}
+      <Modal show={printModalOpen} onHide={() => setPrintModalOpen(false)} size="xl" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>Impression du compte rendu</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {printData && (
+            <PrintCompteRenduUnified
+              donnees={printData.donnees}
+              validationInfo={printData.validationInfo}
+              autoPrint={false}
+            />
+          )}
+        </Modal.Body>
+      </Modal>
     </div>
   );
 };

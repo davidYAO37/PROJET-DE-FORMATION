@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
-const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier", "radiologue"];
 
 export async function GET(req: NextRequest) {
   const { context, response } = await withTenant(req, READ_ROLES);

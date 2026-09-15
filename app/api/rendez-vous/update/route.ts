@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest) {
   const RendezVous = getTenantModel<IRendezVous>(context.connection, "RendezVous");
   try {
     const body = await req.json();
-    const { rdvId, PatientR, Contact, DESCRIPTION, StatutRdv, Statutrdvpris, entrepriseId } = body;
+    const { rdvId, PatientR, Contact, DESCRIPTION, StatutRdv, Statutrdvpris, NouvelleDate, MotifReport, ServiceIndisponible, entrepriseId } = body;
 
     console.log('✏️ Mise à jour du rendez-vous:', rdvId);
 
@@ -51,6 +51,9 @@ export async function PUT(req: NextRequest) {
       ...(DESCRIPTION && { DESCRIPTION }),
       ...(StatutRdv && { StatutRdv }),
       ...(Statutrdvpris !== undefined && { Statutrdvpris }),
+      ...(NouvelleDate !== undefined && { NouvelleDate }),
+      ...(MotifReport !== undefined && { MotifReport }),
+      ...(ServiceIndisponible !== undefined && { ServiceIndisponible }),
       RENDEZVOUSLE: new Date() // Date de prise du rendez-vous
     };
 
@@ -78,6 +81,9 @@ export async function PUT(req: NextRequest) {
         DESCRIPTION: updatedRdv.DESCRIPTION,
         StatutRdv: updatedRdv.StatutRdv,
         Statutrdvpris: updatedRdv.Statutrdvpris,
+        NouvelleDate: updatedRdv.NouvelleDate,
+        MotifReport: updatedRdv.MotifReport,
+        ServiceIndisponible: updatedRdv.ServiceIndisponible,
         RENDEZVOUSLE: updatedRdv.RENDEZVOUSLE
       }
     }, { status: 200 });

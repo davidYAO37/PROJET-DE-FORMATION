@@ -77,13 +77,14 @@ export async function POST(req: NextRequest) {
         });
 
         if (!existingUser) {
-          const userType = body.specialite === "Radiologie" ? "radiologue" : "medecin";
-          const hashedPassword = await hashPassword(body.EmailMed);
+          const userType = body.specialite?.toLowerCase().trim() === "radiologie" ? "radiologue" : "medecin";
+          const password = body.EmailMed.toLowerCase().trim();
+          const hashedPassword = await hashPassword(password);
 
           const newUser = new UserCollection({
             nom: body.nom,
             prenom: body.prenoms,
-            email: body.EmailMed,
+            email: password,
             type: userType,
             entrepriseId: entrepriseId,
             uid: `medecin_${newMedecin._id}`,
@@ -95,13 +96,17 @@ export async function POST(req: NextRequest) {
 
           console.log(`✅ Utilisateur créé automatiquement pour le médecin ${body.EmailMed}`);
           console.log(`🔐 Mot de passe par défaut: ${body.EmailMed} (email = mot de passe, hashé et sécurisé)`);
+        } else {
+          await Medecin.findByIdAndUpdate(newMedecin._id, { userId: existingUser._id });
+          console.log(`✅ Utilisateur existant lié au médecin ${body.EmailMed}`);
         }
       } catch (userError) {
         console.error("❌ Erreur lors de la création de l'utilisateur associé:", userError);
       }
     }
 
-    return NextResponse.json(newMedecin, { status: 201 });
+    const updatedMedecin = await Medecin.findById(newMedecin._id);
+    return NextResponse.json(updatedMedecin, { status: 201 });
   } catch (error) {
     console.error("Erreur ajout médecin:", error);
     return NextResponse.json({ error: "Erreur ajout médecin" }, { status: 500 });

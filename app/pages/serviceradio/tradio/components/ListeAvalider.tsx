@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Table, Button, Spinner, Alert, Form, Row, Col, Badge } from "react-bootstrap";
-import { FaEdit, FaCalendarAlt, FaUser, FaClock, FaCheckCircle, FaSearch, FaFilter, FaPrint, FaCheck } from "react-icons/fa";
+import { Table, Button, Spinner, Alert, Form, Row, Col, Badge, Card, InputGroup } from "react-bootstrap";
+import { FaEdit, FaCalendarAlt, FaUser, FaClock, FaCheckCircle, FaSearch, FaFilter, FaPrint, FaCheck, FaUndo } from "react-icons/fa";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IPatient } from "@/models/patient";
+import Pagination from "@/components/Pagination";
+import { usePagination } from "@/components/usePagination";
 import SaisieCRModal from "./SaisieCRModal";
 import PrintCompteRenduUnified from "./MesImpressions/CompteRendu/PrintCompteRenduUnified";
 import { useEntreprise } from "@/hooks/useEntreprise";
@@ -22,6 +24,9 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
   const [dateFin, setDateFin] = useState("");
   const [lettreCleFilter, setLettreCleFilter] = useState("");
   const [lettreClesDisponibles, setLettreClesDisponibles] = useState<string[]>([]);
+  const [pageSize, setPageSize] = useState(20);
+
+  const { slice: paginatedLignes, page, totalPages, setPage, reset } = usePagination(lignePrestations, pageSize);
   
   // États pour le modal de saisie de compte rendu
   const [showSaisieCRModal, setShowSaisieCRModal] = useState(false);
@@ -63,6 +68,10 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
 
   useEffect(() => {
     loadLignesAValider();
+  }, [dateDebut, dateFin, lettreCleFilter]);
+
+  useEffect(() => {
+    reset();
   }, [dateDebut, dateFin, lettreCleFilter]);
 
   // Écouter l'événement de rafraîchissement d'onglet
@@ -162,6 +171,12 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
   // Gérer le succès de la saisie
   const handleSaisieCRSuccess = () => {
     loadLignesAValider(); // Recharger les données
+  };
+
+  const handleResetFilters = () => {
+    setDateDebut("");
+    setDateFin("");
+    setLettreCleFilter("");
   };
 
   // Gérer la validation du compte rendu
@@ -336,7 +351,7 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
     if (ligne.compteRenduValidePar) {
       return <Badge bg="success"><FaCheckCircle className="me-1" />Validé</Badge>;
     } else if (ligne.resultatSaisiePar) {
-      return <Badge bg="warning"><FaClock className="me-1" />En attente de validation</Badge>;
+      return <Badge bg="warning"><FaClock className="me-1" />En attente <br />de validation</Badge>;
     } else {
       return <Badge bg="danger"><FaEdit className="me-1" />À saisir</Badge>;
     }
@@ -345,52 +360,75 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
   return (
     <div>
       {/* Filtres */}
-      <div className="mb-4">
-        <h5><FaFilter className="me-2" />Option de Recherche</h5>
-        <Row>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label><FaCalendarAlt className="me-2" />Date début</Form.Label>
-              <Form.Control
-                type="date"
-                value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label><FaCalendarAlt className="me-2" />Date fin</Form.Label>
-              <Form.Control
-                type="date"
-                value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label>Lettre clé</Form.Label>
-              <Form.Select
-                value={lettreCleFilter}
-                onChange={(e) => setLettreCleFilter(e.target.value)}
-              >
-                <option value="">Toutes les lettres clés</option>
-                {lettreClesDisponibles.map((lettre: string) => (
-                  <option key={lettre} value={lettre}>{lettre}</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group className="d-flex align-items-end">
-              <Button variant="primary" onClick={loadLignesAValider} disabled={loading}>
-                {loading ? <Spinner size="sm" /> : <FaSearch />}
-              </Button>
-            </Form.Group>
-          </Col>
-        </Row>
-      </div>
+      <Card className="mb-4 border-0 shadow-sm">
+        <Card.Header className="bg-white border-bottom-0 pt-3 pb-0">
+          <h6 className="mb-0 text-primary fw-bold">
+            <FaFilter className="me-2" />
+            Options de recherche
+          </h6>
+        </Card.Header>
+        <Card.Body>
+          <Row className="g-3 align-items-end">
+            <Col xs={12} md={3}>
+              <Form.Label className="text-muted small fw-semibold">Date début</Form.Label>
+              <InputGroup>
+                <InputGroup.Text className="bg-light border-end-0">
+                  <FaCalendarAlt className="text-primary" />
+                </InputGroup.Text>
+                <Form.Control
+                  type="date"
+                  value={dateDebut}
+                  onChange={(e) => setDateDebut(e.target.value)}
+                  className="border-start-0"
+                />
+              </InputGroup>
+            </Col>
+            <Col xs={12} md={3}>
+              <Form.Label className="text-muted small fw-semibold">Date fin</Form.Label>
+              <InputGroup>
+                <InputGroup.Text className="bg-light border-end-0">
+                  <FaCalendarAlt className="text-primary" />
+                </InputGroup.Text>
+                <Form.Control
+                  type="date"
+                  value={dateFin}
+                  onChange={(e) => setDateFin(e.target.value)}
+                  className="border-start-0"
+                />
+              </InputGroup>
+            </Col>
+            <Col xs={12} md={3}>
+              <Form.Label className="text-muted small fw-semibold">Lettre clé</Form.Label>
+              <InputGroup>
+                <InputGroup.Text className="bg-light border-end-0">
+                  <FaFilter className="text-primary" />
+                </InputGroup.Text>
+                <Form.Select
+                  value={lettreCleFilter}
+                  onChange={(e) => setLettreCleFilter(e.target.value)}
+                  className="border-start-0"
+                >
+                  <option value="">Toutes les lettres clés</option>
+                  {lettreClesDisponibles.map((lettre: string) => (
+                    <option key={lettre} value={lettre}>{lettre}</option>
+                  ))}
+                </Form.Select>
+              </InputGroup>
+            </Col>
+            <Col xs={12} md={3}>
+              <div className="d-flex gap-2">
+                <Button variant="primary" onClick={loadLignesAValider} disabled={loading} className="d-flex align-items-center">
+                  {loading ? <Spinner size="sm" /> : <FaSearch className="me-2" />}
+                  Rechercher
+                </Button>
+                <Button variant="outline-secondary" onClick={handleResetFilters} title="Réinitialiser" className="d-flex align-items-center">
+                  <FaUndo />
+                </Button>
+              </div>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {error && <Alert variant="danger">{error}</Alert>}
 
@@ -402,12 +440,10 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
             <tr>
               <th>Date prestation</th>
               <th>Patient</th>
-              <th>Contact</th>
+              <th className="d-none d-md-table-cell">Contact</th>
               <th>Dossier N°</th>
               <th>Prestation</th>
-              <th>Médecin exécutant</th>
-              <th>Saisie par</th>
-              <th>Saisie le</th>
+              <th className="d-none d-md-table-cell">Médecin exécutant</th>
               <th>Statut</th>
               <th>Actions</th>
             </tr>
@@ -415,18 +451,18 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={10} className="text-center">
+                <td colSpan={8} className="text-center">
                   <Spinner animation="border" />
                 </td>
               </tr>
             ) : lignePrestations.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center">
+                <td colSpan={8} className="text-center">
                   Aucune prestation à saisir/valider trouvée
                 </td>
               </tr>
             ) : (
-              lignePrestations
+              paginatedLignes
                 .sort((a: any, b: any) => new Date(a.Date_ligne_prestaion).getTime() - new Date(b.Date_ligne_prestaion).getTime())
                 .map((ligne: any) => {
                   const patient = getPatientInfo(ligne);
@@ -440,18 +476,14 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
                           <span className="text-muted">{ligne.Nompatient || "Patient non trouvé"}</span>
                         )}
                       </td>
-                      <td>{patient?.Contact || "N/A"}</td>
+                      <td className="d-none d-md-table-cell">{patient?.Contact || "N/A"}</td>
                       <td>
                         <strong>{patient?.Code_dossier || "N/A"}</strong>
                       </td>
                       <td>
                         <strong>{ligne.Prestation}</strong>                       
                       </td>                      
-                      <td>{ligne.MedecinExécutant || "N/A"}</td>
-                      <td>{ligne.resultatSaisiePar || "N/A"}</td>
-                      <td>
-                        {ligne.DatesaisieResultat ? formatDateTime(ligne.DatesaisieResultat) : "N/A"}
-                      </td>
+                      <td className="d-none d-md-table-cell">{ligne.MedecinExécutant || "N/A"}</td>
                       <td>{getStatutBadge(ligne)}</td>
                       <td>
                         <div className="d-flex gap-1">
@@ -522,43 +554,17 @@ const ListeAvalider: React.FC<Props> = ({ onLigneSelect }) => {
             )}
           </tbody>
         </Table>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          total={lignePrestations.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSize={setPageSize}
+        />
       </div>
 
-      {/* Statistiques */}
-      <div className="mt-4">
-        <Row>
-          <Col md={4}>
-            <div className="card border-danger">
-              <div className="card-body text-center">
-                <h6 className="card-title text-danger">À saisir</h6>
-                <h3 className="text-danger">
-                  {lignePrestations.filter((l: any) => !l.resultatSaisiePar).length}
-                </h3>
-              </div>
-            </div>
-          </Col>
-          <Col md={4}>
-            <div className="card border-warning">
-              <div className="card-body text-center">
-                <h6 className="card-title text-warning">En attente de validation</h6>
-                <h3 className="text-warning">
-                  {lignePrestations.filter((l: any) => l.resultatSaisiePar && !l.compteRenduValidePar).length}
-                </h3>
-              </div>
-            </div>
-          </Col>
-          <Col md={4}>
-            <div className="card border-success">
-              <div className="card-body text-center">
-                <h6 className="card-title text-success">Validés</h6>
-                <h3 className="text-success">
-                  {lignePrestations.filter((l: any) => l.compteRenduValidePar).length}
-                </h3>
-              </div>
-            </div>
-          </Col>
-        </Row>
-      </div>
+    
 
       {/* Modal de saisie de compte rendu */}
       {showSaisieCRModal && (

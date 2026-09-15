@@ -15,8 +15,8 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       <aside className="bg-light border-end">
         <SidebarRadio/>
       </aside>
-      <div className="flex-grow-1 d-flex flex-column">
-        <main className="p-3 flex-grow-1">
+      <div className="flex-grow-1 d-flex flex-column" style={{ minWidth: 0 }}>
+        <main className="p-3 flex-grow-1" style={{ minWidth: 0 }}>
           {children}
         </main>
       </div>

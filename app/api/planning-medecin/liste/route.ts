@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
-const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
+const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier", "radiologue"];
 const WRITE_ROLES = ["admin", "medecin", "accueil"];
 
 export async function GET(req: NextRequest) {

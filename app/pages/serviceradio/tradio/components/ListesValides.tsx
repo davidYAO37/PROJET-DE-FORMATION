@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from "react";
-import { Table, Button, Spinner, Alert, Form, Row, Col, Badge } from "react-bootstrap";
-import { FaEdit, FaCalendarAlt, FaUser, FaClock, FaCheckCircle, FaSearch, FaFilter, FaPrint, FaTimesCircle } from "react-icons/fa";
+import { Table, Button, Spinner, Alert, Form, Row, Col, Badge, Card, InputGroup } from "react-bootstrap";
+import { FaEdit, FaCalendarAlt, FaUser, FaClock, FaCheckCircle, FaSearch, FaFilter, FaPrint, FaTimesCircle, FaUndo } from "react-icons/fa";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IPatient } from "@/models/patient";
+import Pagination from "@/components/Pagination";
+import { usePagination } from "@/components/usePagination";
 import PrintCompteRenduUnified from "./MesImpressions/CompteRendu/PrintCompteRenduUnified";
 
 // Interface pour les données WinDev retournées par l'API
@@ -39,6 +41,9 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
   const [dateFin, setDateFin] = useState("");
   const [lettreCleFilter, setLettreCleFilter] = useState("");
   const [lettreClesDisponibles, setLettreClesDisponibles] = useState<string[]>([]);
+  const [pageSize, setPageSize] = useState(20);
+
+  const { slice: paginatedLignes, page, totalPages, setPage, reset } = usePagination(lignePrestations, pageSize);
   
   // États pour les actions d'impression et d'annulation
   const [printingId, setPrintingId] = useState<string | null>(null);
@@ -75,6 +80,10 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
 
   useEffect(() => {
     loadLignesValides();
+  }, [dateDebut, dateFin, lettreCleFilter]);
+
+  useEffect(() => {
+    reset();
   }, [dateDebut, dateFin, lettreCleFilter]);
 
   // Obtenir les informations du patient pour une ligne de prestation
@@ -271,6 +280,12 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
     }
   };
 
+  const handleResetFilters = () => {
+    setDateDebut("");
+    setDateFin("");
+    setLettreCleFilter("");
+  };
+
   // Obtenir le statut de la ligne
   const getStatutBadge = (ligne: any) => {
     if (ligne.CompterenduValidépar) {
@@ -285,52 +300,75 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
   return (
     <div>
       {/* Filtres */}
-      <div className="mb-4">
-        <h5><FaFilter className="me-2" />Rechercher les comptes rendus validés</h5>
-        <Row>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label><FaCalendarAlt className="me-2" />Date début</Form.Label>
-              <Form.Control
-                type="date"
-                value={dateDebut}
-                onChange={(e) => setDateDebut(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label><FaCalendarAlt className="me-2" />Date fin</Form.Label>
-              <Form.Control
-                type="date"
-                value={dateFin}
-                onChange={(e) => setDateFin(e.target.value)}
-              />
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group>
-              <Form.Label>Lettre clé</Form.Label>
-              <Form.Select
-                value={lettreCleFilter}
-                onChange={(e) => setLettreCleFilter(e.target.value)}
-              >
-                <option value="">Toutes les lettres clés</option>
-                {lettreClesDisponibles.map((lettre: string) => (
-                  <option key={lettre} value={lettre}>{lettre}</option>
-                ))}
-              </Form.Select>
-            </Form.Group>
-          </Col>
-          <Col md={3}>
-            <Form.Group className="d-flex align-items-end">
-              <Button variant="primary" onClick={loadLignesValides} disabled={loading}>
-                {loading ? <Spinner size="sm" /> : <FaSearch />}
-              </Button>
-            </Form.Group>
-          </Col>
-        </Row>
-      </div>
+      <Card className="mb-4 border-0 shadow-sm">
+        <Card.Header className="bg-white border-bottom-0 pt-3 pb-0">
+          <h6 className="mb-0 text-success fw-bold">
+            <FaFilter className="me-2" />
+            Rechercher les comptes rendus validés
+          </h6>
+        </Card.Header>
+        <Card.Body>
+          <Row className="g-3 align-items-end">
+            <Col xs={12} md={3}>
+              <Form.Label className="text-muted small fw-semibold">Date début</Form.Label>
+              <InputGroup>
+                <InputGroup.Text className="bg-light border-end-0">
+                  <FaCalendarAlt className="text-success" />
+                </InputGroup.Text>
+                <Form.Control
+                  type="date"
+                  value={dateDebut}
+                  onChange={(e) => setDateDebut(e.target.value)}
+                  className="border-start-0"
+                />
+              </InputGroup>
+            </Col>
+            <Col xs={12} md={3}>
+              <Form.Label className="text-muted small fw-semibold">Date fin</Form.Label>
+              <InputGroup>
+                <InputGroup.Text className="bg-light border-end-0">
+                  <FaCalendarAlt className="text-success" />
+                </InputGroup.Text>
+                <Form.Control
+                  type="date"
+                  value={dateFin}
+                  onChange={(e) => setDateFin(e.target.value)}
+                  className="border-start-0"
+                />
+              </InputGroup>
+            </Col>
+            <Col xs={12} md={3}>
+              <Form.Label className="text-muted small fw-semibold">Lettre clé</Form.Label>
+              <InputGroup>
+                <InputGroup.Text className="bg-light border-end-0">
+                  <FaFilter className="text-success" />
+                </InputGroup.Text>
+                <Form.Select
+                  value={lettreCleFilter}
+                  onChange={(e) => setLettreCleFilter(e.target.value)}
+                  className="border-start-0"
+                >
+                  <option value="">Toutes les lettres clés</option>
+                  {lettreClesDisponibles.map((lettre: string) => (
+                    <option key={lettre} value={lettre}>{lettre}</option>
+                  ))}
+                </Form.Select>
+              </InputGroup>
+            </Col>
+            <Col xs={12} md={3}>
+              <div className="d-flex gap-2">
+                <Button variant="success" onClick={loadLignesValides} disabled={loading} className="d-flex align-items-center">
+                  {loading ? <Spinner size="sm" /> : <FaSearch className="me-2" />}
+                  Rechercher
+                </Button>
+                <Button variant="outline-secondary" onClick={handleResetFilters} title="Réinitialiser" className="d-flex align-items-center">
+                  <FaUndo />
+                </Button>
+              </div>
+            </Col>
+          </Row>
+        </Card.Body>
+      </Card>
 
       {error && <Alert variant="danger">{error}</Alert>}
 
@@ -344,11 +382,9 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
               <th>Patient</th>
               <th>Prestation</th>
               <th>Lettre clé</th>
-              <th>Médecin exécutant</th>
-              <th>Saisie par</th>
-              <th>Saisie le</th>
-              <th>Validé par</th>
-              <th>Validé le</th>
+              <th className="d-none d-md-table-cell">Médecin exécutant</th>
+              <th className="d-none d-md-table-cell">Validé par</th>
+              <th className="d-none d-md-table-cell">Validé le</th>
               <th>Statut</th>
               <th>Actions</th>
             </tr>
@@ -356,18 +392,18 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={11} className="text-center">
+                <td colSpan={9} className="text-center">
                   <Spinner animation="border" />
                 </td>
               </tr>
             ) : lignePrestations.length === 0 ? (
               <tr>
-                <td colSpan={11} className="text-center">
+                <td colSpan={9} className="text-center">
                   Aucun compte rendu validé trouvé
                 </td>
               </tr>
             ) : (
-              lignePrestations
+              paginatedLignes
                 .sort((a: any, b: any) => new Date(a.Date_ligne_prestaion).getTime() - new Date(b.Date_ligne_prestaion).getTime())
                 .map((ligne: any) => {
                   const patient = getPatientInfo(ligne);
@@ -387,13 +423,9 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
                       <td>
                         <Badge bg="info">{ligne.lettreCle}</Badge>
                       </td>
-                      <td>{ligne.MedecinExécutant || "N/A"}</td>
-                      <td>{ligne.resultatsaisiepar || "N/A"}</td>
-                      <td>
-                        {ligne.DatesaisieResultat ? formatDateTime(ligne.DatesaisieResultat) : "N/A"}
-                      </td>
-                      <td>{ligne.CompterenduValidépar || "N/A"}</td>
-                      <td>
+                      <td className="d-none d-md-table-cell">{ligne.MedecinExécutant || "N/A"}</td>
+                      <td className="d-none d-md-table-cell">{ligne.CompterenduValidépar || "N/A"}</td>
+                      <td className="d-none d-md-table-cell">
                         {ligne.compterenduValidéLe ? formatDateTime(ligne.compterenduValidéLe) : "N/A"}
                       </td>
                       <td>{getStatutBadge(ligne)}</td>
@@ -439,39 +471,17 @@ const ListesValides: React.FC<Props> = ({ onLigneSelect }) => {
             )}
           </tbody>
         </Table>
+        <Pagination
+          currentPage={page}
+          totalPages={totalPages}
+          total={lignePrestations.length}
+          pageSize={pageSize}
+          onPageChange={setPage}
+          onPageSize={setPageSize}
+        />
       </div>
 
-      {/* Statistiques - Comptes rendus validés */}
-      <div className="mt-4">
-        <Row>
-          <Col md={6}>
-            <div className="card border-success">
-              <div className="card-body text-center">
-                <h6 className="card-title text-success">
-                  <FaCheckCircle className="me-2" />
-                  Comptes rendus validés
-                </h6>
-                <h3 className="text-success">
-                  {lignePrestations.filter((l: any) => l.CompterenduValidépar).length}
-                </h3>
-              </div>
-            </div>
-          </Col>
-          <Col md={6}>
-            <div className="card border-info">
-              <div className="card-body text-center">
-                <h6 className="card-title text-info">
-                  <FaCalendarAlt className="me-2" />
-                  Période sélectionnée
-                </h6>
-                <h3 className="text-info">
-                  {lignePrestations.length}
-                </h3>
-              </div>
-            </div>
-          </Col>
-        </Row>
-      </div>
+   
 
       {/* Modal d'impression avec design unifié */}
       {printModalOpen && (
