@@ -904,10 +904,10 @@ export function separateur(
 const LOGO_MAX_WIDTH = 120;
 const LOGO_MAX_HEIGHT = 80;
 
-export function dessinerLogo(
+export async function dessinerLogo(
     doc: PDFDocumentType,
     entreprise?: EntreprisePdf
-) {
+): Promise<boolean> {
 
     const logoUrl = entreprise?.LogoE;
 
@@ -915,7 +915,7 @@ export function dessinerLogo(
 
     if (!logoUrl) {
         console.log("[ResultatBiologique] Aucun LogoE fourni");
-        return;
+        return false;
     }
 
     const options: { fit: [number, number] } = {
@@ -934,17 +934,43 @@ export function dessinerLogo(
                 options
             );
             console.log("[ResultatBiologique] Logo dessiné depuis data URI");
-            return;
+            return true;
         } catch (err: any) {
             console.error("[ResultatBiologique] Erreur logo data URI:", err?.message || err);
-            return;
+            return false;
         }
     }
 
-    // 2. URL externe — non supportée nativement par PDFKit
+    // 2. URL externe — téléchargement pour PDFKit
     if (/^https?:\/\//i.test(logoUrl)) {
-        console.log("[ResultatBiologique] Logo URL externe non supportée dans le PDF:", logoUrl);
-        return;
+        try {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 10000);
+            const res = await fetch(logoUrl, { signal: controller.signal });
+            clearTimeout(timeout);
+            if (!res.ok) {
+                console.error("[ResultatBiologique] Échec téléchargement logo:", res.status, res.statusText);
+                return false;
+            }
+            const contentType = res.headers.get('content-type') || '';
+            if (!contentType.startsWith('image/')) {
+                console.error("[ResultatBiologique] Le logo distant n'est pas une image:", contentType);
+                return false;
+            }
+            const arrayBuffer = await res.arrayBuffer();
+            const buffer = Buffer.from(arrayBuffer);
+            doc.image(
+                buffer,
+                PAGE_MARGIN,
+                PAGE_MARGIN,
+                options
+            );
+            console.log("[ResultatBiologique] Logo dessiné depuis URL externe");
+            return true;
+        } catch (err: any) {
+            console.error("[ResultatBiologique] Erreur logo URL externe:", err?.message || err);
+            return false;
+        }
     }
 
     // 3. Chemin local
@@ -961,11 +987,14 @@ export function dessinerLogo(
                 options
             );
             console.log("[ResultatBiologique] Logo dessiné avec succès");
+            return true;
         } catch (err: any) {
             console.error("[ResultatBiologique] Erreur lors du dessin du logo:", err?.message || err);
+            return false;
         }
     }
 
+    return false;
 }
 
 // ============================================================================
@@ -1023,36 +1052,53 @@ function extraireCouleurEntete(enteteHtml?: string): string | undefined {
 
 export function dessinerEnteteClinique(
     doc: PDFDocumentType,
-    entreprise?: EntreprisePdf
+    entreprise?: EntreprisePdf,
+    withLogo = false
 ) {
 
-    const toutesLignesEntete = extraireLignesEntete(entreprise?.EnteteSociete);
-    const lignesEntete = toutesLignesEntete;
+    const enteteHtml = entreprise?.EnteteSociete;
+    const enteteLignes = extraireLignesEntete(enteteHtml);
     const largeurPage = doc.page.width - PAGE_MARGIN * 2;
 
-    const logoExiste = logoSeraAffiche(entreprise);
-    const logoW = logoExiste ? 130 : 0; // 120px logo + 10px marge
+    const logoW = withLogo ? 130 : 0; // 120px logo + 10px marge
     const xTexte = PAGE_MARGIN + logoW;
     const largeurTexte = largeurPage - logoW;
 
     // Centrer verticalement le bloc d'entête par rapport au logo
     const hauteurZoneLogo = 80;
     const hauteurLigne = 22;
-    const hauteurTexte = lignesEntete.length * hauteurLigne;
-    let y = PAGE_MARGIN + Math.max(0, (hauteurZoneLogo - hauteurTexte) / 2);
+    let y = PAGE_MARGIN;
 
-    const couleurEntete = extraireCouleurEntete(entreprise?.EnteteSociete) || COLORS.cyan;
+    const couleurEntete = extraireCouleurEntete(enteteHtml) || COLORS.cyan;
 
-    // Lignes de l'entête (adresse, téléphone, etc.) centrées à droite du logo
-    if (lignesEntete.length > 0) {
-        doc.font(FONT_BOLD).fontSize(16).fillColor(couleurEntete);
-        for (const ligne of lignesEntete) {
-            doc.text(ligne, xTexte, y, { width: largeurTexte, align: "center" });
+    if (enteteLignes.length > 0) {
+        // Entête HTML de l'entreprise : logo à gauche, texte à droite aligné à gauche
+        const hauteurTexte = enteteLignes.length * hauteurLigne;
+        y = PAGE_MARGIN + Math.max(0, (hauteurZoneLogo - hauteurTexte) / 2);
+
+        doc.font(FONT_BOLD).fontSize(14).fillColor(couleurEntete);
+        for (const ligne of enteteLignes) {
+            // Première ligne (nom) en plus grand
+            const isFirst = ligne === enteteLignes[0];
+            if (isFirst) {
+                doc.font(FONT_BOLD).fontSize(16).fillColor(couleurEntete);
+            } else {
+                doc.font(FONT_BOLD).fontSize(14).fillColor(COLORS.noir);
+            }
+            doc.text(ligne, xTexte, y, { width: largeurTexte, align: "left" });
             y += hauteurLigne;
         }
+    } else if (entreprise?.NomSociete) {
+        // Fallback : nom de la société centré (ou à droite si logo)
+        const align = withLogo ? "left" : "center";
+        const x = withLogo ? xTexte : PAGE_MARGIN;
+        y = PAGE_MARGIN + 20;
+        doc.font(FONT_BOLD).fontSize(18).fillColor(couleurEntete)
+            .text(entreprise.NomSociete, x, y, { width: withLogo ? largeurTexte : largeurPage, align });
+        y += hauteurLigne;
     }
 
-    const hauteurLogo = logoExiste ? hauteurZoneLogo : 0;
+    const hauteurLogo = withLogo ? hauteurZoneLogo : 0;
     doc.y = Math.max(doc.y, PAGE_MARGIN + hauteurLogo, y + 4);
 
 }
@@ -1261,7 +1307,7 @@ export function dessinerRenseignementClinique(
 // ENTETE COMPLET
 // ============================================================================
 
-export function dessinerEntete(
+export async function dessinerEntete(
 
     doc: PDFDocumentType,
 
@@ -1273,9 +1319,9 @@ export function dessinerEntete(
 
     if (afficherEntete) {
 
-        dessinerLogo(doc, data.entreprise);
+        const logoDessine = await dessinerLogo(doc, data.entreprise);
 
-        dessinerEnteteClinique(doc, data.entreprise);
+        dessinerEnteteClinique(doc, data.entreprise, logoDessine);
 
         // 1.5 cm de marge entre le bas du logo/entête et le bandeau titre
         doc.y += 20;
@@ -1337,12 +1383,12 @@ export function dessinerEntete(
 // ENTETE COMPACTE POUR LES PAGES SUIVANTES
 // ============================================================================
 
-export function dessinerEnteteNouvellePage(
+export async function dessinerEnteteNouvellePage(
     doc: PDFDocumentType,
     data: DonneesPdf
 ) {
     // Entête complète identique à la première page
-    dessinerEntete(doc, data);
+    await dessinerEntete(doc, data);
 }
 
 // ============================================================================
@@ -1979,7 +2025,7 @@ export function dessinerSousTitrePrestation(
 
 }
 
-export function dessinerResultats(
+export async function dessinerResultats(
 
     doc: PDFDocumentType,
 
@@ -1997,7 +2043,7 @@ export function dessinerResultats(
         if (fi > 0) {
             doc.addPage();
             doc.y = PAGE_MARGIN;
-            dessinerEnteteNouvellePage(doc, data);
+            await dessinerEnteteNouvellePage(doc, data);
         }
 
         doc.moveDown(0.5);
@@ -2361,7 +2407,7 @@ export async function genererResultatBiologique(
     // Première page
     // ------------------------------------------------------------------------
 
-    dessinerEntete(
+    await dessinerEntete(
         doc,
         data
     );
@@ -2370,7 +2416,7 @@ export async function genererResultatBiologique(
     // Résultats biologiques
     // ------------------------------------------------------------------------
 
-    dessinerResultats(
+    await dessinerResultats(
         doc,
         data
     );
@@ -2406,18 +2452,18 @@ export async function genererResultatBiologique(
 // VERSION STREAM
 // ============================================================================
 
-export function genererResultatBiologiqueStream(
+export async function genererResultatBiologiqueStream(
     data: DonneesPdf
-): PDFDocumentType {
+): Promise<PDFDocumentType> {
 
     const doc = creerDocument(data.options?.orientation || "portrait");
 
-    dessinerEntete(
+    await dessinerEntete(
         doc,
         data
     );
 
-    dessinerResultats(
+    await dessinerResultats(
         doc,
         data
     );

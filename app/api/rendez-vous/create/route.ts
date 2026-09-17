@@ -11,19 +11,20 @@ export async function POST(req: NextRequest) {
   const RendezVous = getTenantModel<IRendezVous>(context.connection, "RendezVous");
   try {
     const body = await req.json();
-    const { 
-      IDMEDECIN, 
-      IDPLANNING_MED, 
-      DateDisponinibilite, 
-      DatePlanning, 
-      HeureRDV, 
-      StatutRdv, 
-      Statutrdvpris, 
-      DESCRIPTION, 
-      PatientR, 
-      Contact, 
-      entrepriseId 
+    const {
+      IDMEDECIN,
+      IDPLANNING_MED,
+      DateDisponinibilite,
+      DatePlanning,
+      HeureRDV,
+      StatutRdv,
+      Statutrdvpris,
+      DESCRIPTION,
+      PatientR,
+      Contact
     } = body;
+
+    const entrepriseId = context.user.entrepriseId;
 
     console.log('➕ Création d\'un nouveau rendez-vous pour le médecin:', IDMEDECIN);
 

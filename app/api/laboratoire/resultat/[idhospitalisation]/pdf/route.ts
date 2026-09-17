@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
+import { getPrimaryConnection } from "@/lib/tenantDb";
 import { IExamenHospitalisation } from "@/models/examenHospit";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IPatient } from "@/models/patient";
@@ -20,7 +21,6 @@ export async function GET(
     const LignePrestation = getTenantModel<ILignePrestation>(connection, "LignePrestation");
     const Patient = getTenantModel<IPatient>(connection, "Patient");
     const ResultatLignePrestation = getTenantModel<IResultatLignePrestation>(connection, "ResultatLignePrestation");
-    const Entreprise = getTenantModel<IEntreprise>(connection, "Entreprise");
     const FamilleActe = getTenantModel<IFamilleActe>(connection, "FamilleActe");
 
     try {
@@ -96,20 +96,38 @@ export async function GET(
             });
         }
 
+        // L'entreprise (logo, entête, pied de page) est stockée dans la base principale,
+        // pas dans la base tenant. On la récupère depuis la connexion primaire.
         let entreprisePdf: EntreprisePdf | undefined = undefined;
-        const entrepriseId = examen.entrepriseId || context.user.entrepriseId;
-        const entreprise = entrepriseId
-            ? await Entreprise.findOne({ _id: entrepriseId }).lean()
-            : await Entreprise.findOne().lean();
+        try {
+            const primaryConn = await getPrimaryConnection();
+            const EntreprisePrimary = getTenantModel<IEntreprise>(primaryConn, "Entreprise");
+            const effectiveEntrepriseId = context.user.entrepriseId || examen.entrepriseId;
 
+            let entreprise = null;
+            if (effectiveEntrepriseId) {
+                entreprise = await EntreprisePrimary.findOne({ _id: effectiveEntrepriseId }).lean() as any;
+            }
+            if (!entreprise) {
+                entreprise = await EntreprisePrimary.findOne().lean() as any;
+            }
 
-        if (entreprise) {
-            entreprisePdf = {
-                NomSociete: entreprise.NomSociete,
-                EnteteSociete: entreprise.EnteteSociete,
-                LogoE: entreprise.LogoE,
-                PiedPageSociete: entreprise.PiedPageSociete
-            };
+            if (entreprise) {
+                console.log("[PDF Labo] Entreprise trouvée:", entreprise.NomSociete || entreprise.nomSociete);
+                console.log("[PDF Labo] LogoE:", (entreprise.LogoE || entreprise.logo || "").slice(0, 60) + "...");
+                console.log("[PDF Labo] EnteteSociete:", entreprise.EnteteSociete || entreprise.enteteSociete);
+
+                entreprisePdf = {
+                    NomSociete: entreprise.NomSociete || entreprise.nomSociete,
+                    EnteteSociete: entreprise.EnteteSociete || entreprise.enteteSociete,
+                    LogoE: entreprise.LogoE || entreprise.logo,
+                    PiedPageSociete: entreprise.PiedPageSociete || entreprise.piedPageSociete
+                };
+            } else {
+                console.log("[PDF Labo] Aucune entreprise trouvée");
+            }
+        } catch (e: any) {
+            console.error("[PDF Labo] Erreur récupération entreprise:", e.message);
         }
 
         const data: DonneesPdf = {

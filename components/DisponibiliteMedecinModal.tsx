@@ -7,6 +7,7 @@ import { useEntreprise } from '@/hooks/useEntreprise';
 import { generatePrintHeader, generatePrintFooter, createPrintWindow } from '@/utils/printRecu';
 import { IMedecin } from '@/models/medecin';
 import { logFetchIssue } from '@/lib/clientFetchLog';
+import RdvStatistics from '@/components/RdvStatistics';
 import styles from './DisponibiliteMedecinModal.module.css';
 
 interface DisponibiliteMedecinModalProps {
@@ -44,6 +45,10 @@ interface RdvItem {
   DESCRIPTION: string;
   Contact: string;
   Statutrdvpris: boolean;
+  NouvelleDate?: string;
+  MotifReport?: string;
+  ServiceIndisponible?: boolean;
+  AnnulationType?: string;
 }
 
 export default function DisponibiliteMedecinModal({ show, onHide }: DisponibiliteMedecinModalProps) {
@@ -60,6 +65,11 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
   const [validatedRdv, setValidatedRdv] = useState<{ [key: string]: { patient: string; contact: string; typeVisite: string } }>({});
   const [addingRdv, setAddingRdv] = useState(false);
   const [rdvStatutSwitch, setRdvStatutSwitch] = useState<{ [key: string]: boolean }>({});
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [reportingRdv, setReportingRdv] = useState<string | null>(null);
+  const [reportDate, setReportDate] = useState('');
+  const [reportMotif, setReportMotif] = useState('');
+  const [showStats, setShowStats] = useState(false);
 
   // Charger les médecins
   useEffect(() => {
@@ -191,18 +201,41 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
     return timeString.slice(0, 5); // HH:MM
   };
 
-  const getStatutBadge = (statut: string | undefined | null, statutrdvpris: boolean) => {
-    if (!statutrdvpris) return <Badge bg="secondary">Disponible</Badge>;
-    
+  const getStatutBadge = (statut: string | undefined | null, statutrdvpris: boolean, serviceIndisponible?: boolean, annulationType?: string) => {
+    const baseStyle: React.CSSProperties = {
+      fontSize: '0.7rem',
+      padding: '0.15rem 0.4rem',
+      borderRadius: '0.25rem',
+      fontWeight: 500,
+      display: 'inline-block',
+      whiteSpace: 'nowrap',
+      lineHeight: 1.2
+    };
+
+    const variants: Record<string, React.CSSProperties> = {
+      disponible: { backgroundColor: '#6c757d', color: '#fff' },
+      encours: { backgroundColor: '#0d6efd', color: '#fff' },
+      valide: { backgroundColor: '#198754', color: '#fff' },
+      annule: { backgroundColor: '#dc3545', color: '#fff' },
+      reporte: { backgroundColor: '#ffc107', color: '#212529' },
+      service: { backgroundColor: '#212529', color: '#fff' }
+    };
+
+    if (!statutrdvpris) return <span style={{ ...baseStyle, ...variants.disponible }}>Disponible</span>;
+    if (serviceIndisponible) return <span style={{ ...baseStyle, ...variants.service }}>Service indisponible</span>;
+    if (statut === '3' && annulationType) return <span style={{ ...baseStyle, ...variants.annule }}>Annulé ({annulationType})</span>;
+
     switch (statut) {
       case '1':
-        return <Badge bg="primary">En cours</Badge>;
+        return <span style={{ ...baseStyle, ...variants.encours }}>En cours</span>;
       case '2':
-        return <Badge bg="success">Validé</Badge>;
+        return <span style={{ ...baseStyle, ...variants.valide }}>Validé</span>;
       case '3':
-        return <Badge bg="danger">Annulé</Badge>;
+        return <span style={{ ...baseStyle, ...variants.annule }}>Annulé</span>;
+      case '4':
+        return <span style={{ ...baseStyle, ...variants.reporte }}>Reporté</span>;
       default:
-        return <Badge bg="secondary">Disponible</Badge>;
+        return <span style={{ ...baseStyle, ...variants.disponible }}>Disponible</span>;
     }
   };
 
@@ -522,6 +555,91 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
       }));
     } else {
       handleCancelEdit(rdvId);
+    }
+  };
+
+  const handleOpenReport = (rdvId: string) => {
+    const rdv = rendezVous.find(r => r._id === rdvId);
+    if (!rdv) return;
+    setReportingRdv(rdvId);
+    setReportDate(rdv.NouvelleDate || '');
+    setReportMotif(rdv.MotifReport || '');
+    setShowReportModal(true);
+  };
+
+  const handleCloseReport = () => {
+    setShowReportModal(false);
+    setReportingRdv(null);
+    setReportDate('');
+    setReportMotif('');
+  };
+
+  const handleSaveReport = async () => {
+    if (!reportingRdv) return;
+    if (!reportDate || !reportMotif.trim()) {
+      alert('⚠️ Veuillez renseigner la nouvelle date et le motif');
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/rendez-vous/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rdvId: reportingRdv,
+          StatutRdv: '4',
+          Statutrdvpris: true,
+          NouvelleDate: reportDate,
+          MotifReport: reportMotif.trim()
+        })
+      });
+
+      if (response.ok) {
+        setRendezVous(prev => prev.map(r =>
+          r._id === reportingRdv
+            ? { ...r, StatutRdv: '4', Statutrdvpris: true, NouvelleDate: reportDate, MotifReport: reportMotif.trim() }
+            : r
+        ));
+        alert('✅ Rendez-vous reporté');
+        handleCloseReport();
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(`❌ Erreur: ${data.error || 'Report impossible'}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('❌ Erreur de connexion');
+    }
+  };
+
+  const handleCancelRdv = async (rdvId: string) => {
+    if (!window.confirm('Voulez-vous annuler ce rendez-vous ?')) return;
+
+    try {
+      const response = await fetch('/api/rendez-vous/update', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          rdvId,
+          StatutRdv: '3',
+          Statutrdvpris: true
+        })
+      });
+
+      if (response.ok) {
+        setRendezVous(prev => prev.map(r =>
+          r._id === rdvId
+            ? { ...r, StatutRdv: '3', Statutrdvpris: true }
+            : r
+        ));
+        alert('✅ Rendez-vous annulé');
+      } else {
+        const data = await response.json().catch(() => ({}));
+        alert(`❌ Erreur: ${data.error || 'Annulation impossible'}`);
+      }
+    } catch (error) {
+      console.error(error);
+      alert('❌ Erreur de connexion');
     }
   };
 
@@ -877,7 +995,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
       <Modal.Body className={styles.modalBody}>
         <Row>
           {/* Colonne de gauche - Calendrier et liste médecins */}
-          <Col md={4}>
+          <Col md={3}>
             {/* Calendrier */}
             <Card className={styles.selectionCard}>
               <Card.Header className={styles.cardHeader}>
@@ -939,7 +1057,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                       <div className={styles.medecinInfo}>
                         <div className={styles.medecinName}>
                           <i className="bi bi-person-circle me-2"></i>
-                          PR {medecin.nom} {medecin.prenoms}
+                          {medecin.nom} {medecin.prenoms}
                         </div>
                         <div className={styles.medecinSpecialite}>
                           {medecin.specialite}
@@ -956,7 +1074,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
           </Col>
 
           {/* Colonne de droite - Tableau Rendez-vous */}
-          <Col md={8}>
+          <Col md={9}>
             {/* Tableau Rendez-vous */}
             <Card className={styles.tableCard}>
               <Card.Header className={styles.cardHeader}>
@@ -1003,16 +1121,59 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                     )}
                   </div>
                 ) : (
-                  <Table responsive striped hover size="sm">
-                    <thead>
-                      <tr>
-                        <th>Disponibilité</th>
-                        <th>Patient</th>
-                        <th>Contact</th>
-                        <th>Type Visite</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
+                  <>
+                    <Row className="g-2 mb-3">
+                      <Col xs={6} md>
+                        <Card className="text-center border-0 shadow-sm bg-light">
+                          <Card.Body className="p-2">
+                            <div className="fs-5 fw-bold text-primary">{rendezVous.length}</div>
+                            <small className="text-muted">Total</small>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={6} md>
+                        <Card className="text-center border-0 shadow-sm bg-light">
+                          <Card.Body className="p-2">
+                            <div className="fs-5 fw-bold text-success">{rendezVous.filter(r => r.StatutRdv === '2').length}</div>
+                            <small className="text-muted">Présents</small>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={6} md>
+                        <Card className="text-center border-0 shadow-sm bg-light">
+                          <Card.Body className="p-2">
+                            <div className="fs-5 fw-bold text-primary">{rendezVous.filter(r => r.StatutRdv === '1').length}</div>
+                            <small className="text-muted">En cours</small>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={6} md>
+                        <Card className="text-center border-0 shadow-sm bg-light">
+                          <Card.Body className="p-2">
+                            <div className="fs-5 fw-bold text-danger">{rendezVous.filter(r => r.StatutRdv === '3').length}</div>
+                            <small className="text-muted">Annulés</small>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                      <Col xs={6} md>
+                        <Card className="text-center border-0 shadow-sm bg-light">
+                          <Card.Body className="p-2">
+                            <div className="fs-5 fw-bold text-warning">{rendezVous.filter(r => r.StatutRdv === '4').length}</div>
+                            <small className="text-muted">Reportés</small>
+                          </Card.Body>
+                        </Card>
+                      </Col>
+                    </Row>
+                    <Table responsive striped hover size="sm">
+                      <thead>
+                        <tr>
+                          <th>Disponibilité</th>
+                          <th>Patient</th>
+                          <th>Contact</th>
+                          <th>Type Visite</th>
+                          <th>Actions</th>
+                        </tr>
+                      </thead>
                     <tbody>
                       {rendezVous.map((rdv) => {
                         const rdvId = rdv._id.toString();
@@ -1027,9 +1188,19 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                                 {/* <span>{formatTime(rdv.HeureRDV)}</span> */}
                                 <small className="text-muted">{rdv.DateDisponinibilite}</small>
                                 {rdvIsPast && (
-                                  <Badge bg="secondary" className="mt-1">
+                                  <span
+                                    className="mt-1"
+                                    style={{
+                                      fontSize: '0.65rem',
+                                      padding: '0.1rem 0.3rem',
+                                      borderRadius: '0.2rem',
+                                      backgroundColor: '#6c757d',
+                                      color: '#fff',
+                                      display: 'inline-block'
+                                    }}
+                                  >
                                     Passé
-                                  </Badge>
+                                  </span>
                                 )}
                               </div>
                             </td>
@@ -1076,19 +1247,20 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                               )}
                             </td>
                             <td>
-                              <div className="d-flex gap-1">
+                              <div className="d-flex align-items-center gap-1 flex-wrap">
                                 {rdv.Statutrdvpris ? (
                                   isEditing ? (
                                     <>
                                       <Button
                                         variant="success"
                                         size="sm"
+                                        style={{ padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
                                         onClick={() => handleUpdateRdv(rdvId)}
                                         disabled={isUpdating || rdvIsPast}
-                                        title={rdvIsPast ? "Impossible de modifier un rendez-vous passé" : "Mettre à jour le rendez-vous"}
+                                        title={rdvIsPast ? "Impossible de modifier un rendez-vous passé" : "Mettre à jour"}
                                       >
                                         {isUpdating ? (
-                                          <span className="spinner-border spinner-border-sm"></span>
+                                          <span className="spinner-border spinner-border-sm" style={{ width: '0.7rem', height: '0.7rem', borderWidth: '0.1rem' }}></span>
                                         ) : (
                                           <i className="bi bi-check-lg"></i>
                                         )}
@@ -1096,50 +1268,57 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                                       <Button
                                         variant="outline-secondary"
                                         size="sm"
+                                        style={{ padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
                                         onClick={() => handleCancelUpdate(rdvId)}
                                         disabled={isUpdating || rdvIsPast}
-                                        title={rdvIsPast ? "Impossible de modifier un rendez-vous passé" : "Annuler la modification"}
+                                        title="Annuler"
                                       >
                                         <i className="bi bi-x-lg"></i>
                                       </Button>
                                     </>
                                   ) : (
                                     <>
-                                      <span
-                                        style={{
-                                            fontSize: '0.75rem',
-                                            padding: '0.25rem 0.5rem',
-                                            backgroundColor: rdvIsPast ? '#6c757d' : '#198754',
-                                            color: 'white',
-                                            borderRadius: '0.375rem',
-                                            display: 'inline-block',
-                                            fontWeight: 500
-                                        }}
+                                      {getStatutBadge(rdv.StatutRdv, rdv.Statutrdvpris, rdv.ServiceIndisponible, rdv.AnnulationType)}
+                                      <Button
+                                        variant="outline-warning"
+                                        size="sm"
+                                        style={{ padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
+                                        onClick={() => handleOpenReport(rdvId)}
+                                        disabled={isUpdating || rdvIsPast}
+                                        title="Reporter"
                                       >
-                                        {rdvIsPast ? 'Passé' : 'Validé'}
-                                      </span>
+                                        <i className="bi bi-clock-history"></i>
+                                      </Button>
+                                      <Button
+                                        variant="outline-danger"
+                                        size="sm"
+                                        style={{ padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
+                                        onClick={() => handleCancelRdv(rdvId)}
+                                        disabled={isUpdating || rdvIsPast}
+                                        title="Annuler"
+                                      >
+                                        <i className="bi bi-x-octagon"></i>
+                                      </Button>
                                       <Button
                                         variant="outline-primary"
                                         size="sm"
+                                        style={{ padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
                                         onClick={() => handleStartEdit(rdvId)}
                                         disabled={isUpdating || rdvIsPast}
-                                        title={rdvIsPast ? "Impossible de modifier un rendez-vous passé" : "Modifier le rendez-vous"}
+                                        title={rdvIsPast ? "Impossible de modifier" : "Modifier"}
                                       >
                                         <i className="bi bi-pencil"></i>
                                       </Button>
-                                      {/* Interrupteur de statut - placé derrière les boutons */}
-                                      <div className="d-flex align-items-center ms-2">
-                                        <Form.Check
-                                          type="switch"
-                                          id={`statut-switch-${rdvId}`}
-                                          label=""
-                                          checked={rdvStatutSwitch[rdvId] || false}
-                                          onChange={(e) => handleStatutSwitchChange(rdvId, e.target.checked)}
-                                          disabled={isUpdating || rdvIsPast}
-                                          title="Patient présent ?"
-                                          style={{ cursor: 'pointer' }}
-                                        />
-                                      </div>
+                                      <Form.Check
+                                        type="switch"
+                                        id={`statut-switch-${rdvId}`}
+                                        label=""
+                                        checked={rdvStatutSwitch[rdvId] || false}
+                                        onChange={(e) => handleStatutSwitchChange(rdvId, e.target.checked)}
+                                        disabled={isUpdating || rdvIsPast}
+                                        title="Présent"
+                                        style={{ fontSize: '0.75rem', cursor: 'pointer' }}
+                                      />
                                     </>
                                   )
                                 ) : (
@@ -1147,12 +1326,13 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                                     <Button
                                       variant="success"
                                       size="sm"
+                                      style={{ padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
                                       onClick={() => handleValidateRdv(rdvId)}
                                       disabled={isUpdating || rdvIsPast}
-                                      title={rdvIsPast ? "Impossible de valider un rendez-vous passé" : "Valider le rendez-vous"}
+                                      title={rdvIsPast ? "Impossible de valider" : "Valider"}
                                     >
                                       {isUpdating ? (
-                                        <span className="spinner-border spinner-border-sm"></span>
+                                        <span className="spinner-border spinner-border-sm" style={{ width: '0.7rem', height: '0.7rem', borderWidth: '0.1rem' }}></span>
                                       ) : (
                                         <i className="bi bi-check-lg"></i>
                                       )}
@@ -1160,9 +1340,10 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                                     <Button
                                       variant="outline-danger"
                                       size="sm"
+                                      style={{ padding: '0.15rem 0.3rem', fontSize: '0.7rem' }}
                                       onClick={() => handleCancelEdit(rdvId)}
                                       disabled={isUpdating || rdvIsPast}
-                                      title={rdvIsPast ? "Impossible d'annuler un rendez-vous passé" : "Annuler la saisie"}
+                                      title="Supprimer"
                                     >
                                       <i className="bi bi-trash"></i>
                                     </Button>
@@ -1175,6 +1356,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                       })}
                     </tbody>
                   </Table>
+                  </>
                 )}
                 
                 {/* Bouton pour ajouter une nouvelle ligne de rendez-vous */}
@@ -1220,6 +1402,10 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
               <i className="bi bi-hospital me-2"></i>
               LISTE DES MEDECINS A CONTACTER
             </Button>
+            <Button variant="warning" onClick={() => setShowStats(true)} disabled={!selectedMedecin || rendezVous.length === 0}>
+              <i className="bi bi-bar-chart-line me-2"></i>
+              Statistiques
+            </Button>
           </div>
           <Button variant="secondary" onClick={onHide}>
             <i className="bi bi-x-lg me-2"></i>
@@ -1227,6 +1413,63 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
           </Button>
         </div>
       </Modal.Footer>
+
+      {/* Modal de report de rendez-vous */}
+      <Modal show={showReportModal} onHide={handleCloseReport} centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-clock-history me-2"></i>
+            Reporter le rendez-vous
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <Form.Group className="mb-3">
+            <Form.Label>Nouvelle date</Form.Label>
+            <Form.Control
+              type="date"
+              value={reportDate}
+              onChange={(e) => setReportDate(e.target.value)}
+            />
+          </Form.Group>
+          <Form.Group>
+            <Form.Label>Motif du report</Form.Label>
+            <Form.Control
+              as="textarea"
+              rows={3}
+              value={reportMotif}
+              onChange={(e) => setReportMotif(e.target.value)}
+              placeholder="Indiquez le motif du report..."
+            />
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={handleCloseReport}>
+            Annuler
+          </Button>
+          <Button variant="primary" onClick={handleSaveReport}>
+            Enregistrer
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* Modal de statistiques rendez-vous */}
+      <Modal show={showStats} onHide={() => setShowStats(false)} size="xl" centered>
+        <Modal.Header closeButton>
+          <Modal.Title>
+            <i className="bi bi-bar-chart-line me-2"></i>
+            Statistiques des rendez-vous
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <RdvStatistics rendezVous={rendezVous} plannings={plannings} />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowStats(false)}>
+            Fermer
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
     </Modal>
   );
 }

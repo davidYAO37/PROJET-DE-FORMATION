@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const planningId = searchParams.get('planningId');
-    const entrepriseId = searchParams.get('entrepriseId');
 
     console.log('🔍 Récupération des rendez-vous pour un planning:', planningId);
 
@@ -20,17 +19,8 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "ID du planning requis" }, { status: 400 });
     }
 
-    // Construire la requête
-    const query: any = {
-      IDPLANNING_MED: planningId
-    };
-
-    if (entrepriseId) {
-      query.entrepriseId = entrepriseId;
-    }
-
-    // Récupérer les rendez-vous pour ce planning spécifique
-    const rendezVous = await RendezVous.find(query)
+    // Récupérer les rendez-vous pour ce planning spécifique (tenant isolé par connexion)
+    const rendezVous = await RendezVous.find({ IDPLANNING_MED: planningId })
       .sort({ HeureRDV: 1 }) // Trier par heure
       .lean();
 

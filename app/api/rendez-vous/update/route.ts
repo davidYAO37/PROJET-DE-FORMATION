@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest) {
   const RendezVous = getTenantModel<IRendezVous>(context.connection, "RendezVous");
   try {
     const body = await req.json();
-    const { rdvId, PatientR, Contact, DESCRIPTION, StatutRdv, Statutrdvpris, NouvelleDate, MotifReport, ServiceIndisponible, entrepriseId } = body;
+    const { rdvId, PatientR, Contact, DESCRIPTION, StatutRdv, Statutrdvpris, NouvelleDate, MotifReport, ServiceIndisponible, AnnulationType } = body;
 
     console.log('✏️ Mise à jour du rendez-vous:', rdvId);
 
@@ -19,15 +19,10 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: "ID du rendez-vous requis" }, { status: 400 });
     }
 
-    // Vérifier que le rendez-vous existe
+    // Vérifier que le rendez-vous existe (tenant isolé par connexion)
     const existingRdv = await RendezVous.findById(rdvId);
     if (!existingRdv) {
       return NextResponse.json({ error: "Rendez-vous non trouvé" }, { status: 404 });
-    }
-
-    // Vérifier l'entreprise si spécifiée
-    if (entrepriseId && existingRdv.entrepriseId !== entrepriseId) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
     }
 
     // Permettre la mise à jour des rendez-vous validés (suppression de la vérification)
@@ -54,6 +49,7 @@ export async function PUT(req: NextRequest) {
       ...(NouvelleDate !== undefined && { NouvelleDate }),
       ...(MotifReport !== undefined && { MotifReport }),
       ...(ServiceIndisponible !== undefined && { ServiceIndisponible }),
+      ...(AnnulationType !== undefined && { AnnulationType }),
       RENDEZVOUSLE: new Date() // Date de prise du rendez-vous
     };
 
@@ -84,6 +80,7 @@ export async function PUT(req: NextRequest) {
         NouvelleDate: updatedRdv.NouvelleDate,
         MotifReport: updatedRdv.MotifReport,
         ServiceIndisponible: updatedRdv.ServiceIndisponible,
+        AnnulationType: updatedRdv.AnnulationType,
         RENDEZVOUSLE: updatedRdv.RENDEZVOUSLE
       }
     }, { status: 200 });

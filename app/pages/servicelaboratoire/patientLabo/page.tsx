@@ -14,6 +14,7 @@ import ModifierPatient from './ModifierPatient';
 import ExamenHospitalisationModal from '../components/ExamenHospitModal';
 import FicheConsultation from '../components/ConsultationAdd/FicheConsultation';
 import PatientServiceModalLabo from '@/components/PatientServiceModalLabo';
+import ExamenHospitalisationModalBilan from '../../serviceaccueil/components/ExamenHospitModalBilan';
 
 
 export default function PageLabo() {
@@ -36,6 +37,7 @@ export default function PageLabo() {
   const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [consultationJour, setConsultationJour] = useState<string | null>(null);
+  const [showExamenHospitalisationModalBilan, setShowExamenHospitalisationModalBilan] = useState(false);
 
   // États pour le modal PatientServiceModalAccueil
   const [showPatientServiceModal, setShowPatientServiceModal] = useState(false);
@@ -189,7 +191,7 @@ export default function PageLabo() {
         </Col>
         <Col xs={12} md={2}>
           <Button
-            variant="outline-warning"
+            variant="outline-success"
             title="Ajouter examens ou hospitalisation"
             size="sm"
             onClick={() => setShowExamenHospitalisationModal(true)}
@@ -202,6 +204,25 @@ export default function PageLabo() {
             onHide={() => setShowExamenHospitalisationModal(false)}
           />
         </Col>
+
+        {/* Bouton pour ajouter un bilan */}
+        <Col xs={12} md={2} className="mt-2 mt-md-0">
+          <Button
+            variant="outline-warning"
+            title="Ajouter un bilan"
+            size="sm"
+            className="w-100"
+            onClick={() => setShowExamenHospitalisationModalBilan(true)}
+          >
+            Ajouter un bilan
+          </Button>
+          {/* Modal ajouter bilan ... */}
+          <ExamenHospitalisationModalBilan
+            show={showExamenHospitalisationModalBilan}
+            onHide={() => setShowExamenHospitalisationModalBilan(false)}
+          />
+        </Col>
+
 
         <Col xs={12} md={2} className="mt-2 mt-md-0 text-md-end text-start">
           <Button variant="success" onClick={() => setShowAddModal(true)}>

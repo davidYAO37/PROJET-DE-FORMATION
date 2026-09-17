@@ -15,6 +15,7 @@ const MENU = [
     { key: 'mouvements',        label: 'Mouvements manuels',        icon: 'bi bi-arrow-left-right',   color: 'text-danger'  },
     { key: 'inventaire',        label: 'Inventaire complet',        icon: 'bi bi-clipboard2-check',   color: 'text-secondary' },
     { key: 'impression',        label: 'Impression / Rapports',     icon: 'bi bi-printer-fill',       color: 'text-dark'      },
+    { key: 'statistiques',      label: 'Statistiques',              icon: 'bi bi-bar-chart-fill',    color: 'text-primary', isRoute: '/pages/servicepharmacie/statistiques' },
     { key: 'guide',             label: 'Guide d\'utilisation',      icon: 'bi bi-book-half',          color: 'text-primary', isRoute: '/pages/servicepharmacie/guide' },
     { key: 'motdepasse',        label: 'Mot de passe',              icon: 'bi bi-key-fill',           color: 'text-dark',  isModal: true },
 ];

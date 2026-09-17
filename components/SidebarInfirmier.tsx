@@ -4,6 +4,8 @@ import { usePathname } from 'next/navigation';
 import { Nav, Badge } from 'react-bootstrap';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
+import SalleAttenteModal from '@/app/pages/serviceaccueil/components/SalleAttenteModal';
+import SalleConstante from '@/app/pages/serviceaccueil/components/SalleConstante';
 import { useRouter } from 'next/navigation';
 import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
@@ -11,6 +13,10 @@ const menu = [
   { label: 'Tableau de bord',      path: '/pages/serviceinfirmier/tinfirmier',                    icon: <i className="bi bi-speedometer2 me-2 text-info"></i> },
   { label: 'Liste des patients',   path: '/pages/serviceinfirmier/tinfirmier/patients',           icon: <i className="bi bi-people-fill me-2 text-primary"></i> },
   { label: 'Patients hospitalisés', path: '/pages/serviceinfirmier/tinfirmier/patientsHospitalises', icon: <i className="bi bi-hospital me-2 text-warning"></i> },
+  { label: 'Salle d\'attente',    path: '#', isModal: true,                                      icon: <i className="bi bi-people-fill me-2 text-warning"></i> },
+  { label: 'Constantes',           path: '#', isModal: true,                                      icon: <i className="bi bi-clipboard2-pulse-fill me-2 text-danger"></i> },
+  { label: 'Statistiques',         path: '/pages/serviceinfirmier/statistiques',                  icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
+  { label: 'Statistiques RDV',     path: '/pages/statistiques-rendezvous',                       icon: <i className="bi bi-calendar-event-fill me-2 text-info"></i> },
   { label: 'Guide d\'utilisation', path: '/pages/serviceinfirmier/guide', icon: <i className="bi bi-book-half me-2 text-primary"></i> },
   { label: 'Mot de passe',         path: '#', isModal: true,                                      icon: <i className="bi bi-key-fill me-2 text-dark"></i> },
 ];
@@ -21,6 +27,8 @@ export default function SidebarInfirmier() {
   const [open, setOpen]   = useState(false);
   const [user, setUser]   = useState('');
   const [showMotDePasseModal, setShowMotDePasseModal] = useState(false);
+  const [showSalleAttenteModal, setShowSalleAttenteModal] = useState(false);
+  const [showSalleConstanteModal, setShowSalleConstanteModal] = useState(false);
   const [patientsActifs, setPatientsActifs] = useState(0);
 
   useEffect(() => {
@@ -39,6 +47,18 @@ export default function SidebarInfirmier() {
   const handleMotDePasseClick = (e: React.MouseEvent) => {
     e.preventDefault();
     setShowMotDePasseModal(true);
+    setOpen(false);
+  };
+
+  const handleSalleAttenteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowSalleAttenteModal(true);
+    setOpen(false);
+  };
+
+  const handleSalleConstanteClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setShowSalleConstanteModal(true);
     setOpen(false);
   };
 
@@ -96,7 +116,7 @@ export default function SidebarInfirmier() {
                 <a
                   href="#"
                   className="sidebar-link-medical d-flex align-items-center"
-                  onClick={handleMotDePasseClick}
+                  onClick={item.label === 'Salle d\'attente' ? handleSalleAttenteClick : item.label === 'Constantes' ? handleSalleConstanteClick : handleMotDePasseClick}
                 >
                   {item.icon}
                   <span>{item.label}</span>
@@ -133,6 +153,17 @@ export default function SidebarInfirmier() {
       <ModifierMotDePasseModal
         show={showMotDePasseModal}
         onHide={() => setShowMotDePasseModal(false)}
+      />
+
+      <SalleAttenteModal
+        show={showSalleAttenteModal}
+        onHide={() => setShowSalleAttenteModal(false)}
+      />
+
+      <SalleConstante
+        show={showSalleConstanteModal}
+        onHide={() => setShowSalleConstanteModal(false)}
+        user={user}
       />
     </>
   );
