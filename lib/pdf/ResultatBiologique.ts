@@ -2205,7 +2205,9 @@ export function dessinerTraitPied(
 
         doc.page.height -
 
-        FOOTER_HEIGHT;
+        FOOTER_HEIGHT -
+
+        PAGE_MARGIN;
 
     doc
 
@@ -2229,6 +2231,8 @@ export function dessinerTraitPied(
 
         .strokeColor("#999999")
 
+        .lineWidth(0.5)
+
         .stroke();
 
 }
@@ -2236,6 +2240,28 @@ export function dessinerTraitPied(
 // ============================================================================
 // PIED DE PAGE D'UNE PAGE
 // ============================================================================
+
+function nettoyerHtmlPiedPage(html?: string): string[] {
+
+    if (!html) return [];
+
+    const nettoye = html
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/p>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&nbsp;/gi, " ")
+        .replace(/&amp;/gi, "&")
+        .replace(/&lt;/gi, "<")
+        .replace(/&gt;/gi, ">")
+        .replace(/\r/g, "\n")
+        .trim();
+
+    return nettoye
+        .split("\n")
+        .map(ligne => ligne.trim())
+        .filter(ligne => ligne.length > 0);
+
+}
 
 export function dessinerPiedPageSociete(
 
@@ -2245,30 +2271,24 @@ export function dessinerPiedPageSociete(
 
 ) {
 
-    const lignes = extraireLignesEntete(entreprise?.PiedPageSociete);
-    if (lignes.length === 0) return;
-
+    const lignes = nettoyerHtmlPiedPage(entreprise?.PiedPageSociete);
     const largeur = doc.page.width - PAGE_MARGIN * 2;
-    const lignePied = lignes.join("  ·  "); // fusionner en une seule ligne si plusieurs
-    const hauteurBandeau = lignes.length > 1 ? 14 * lignes.length + 8 : 22;
-    const yBandeau = doc.page.height - 42 - hauteurBandeau;
+    const yTrait = doc.page.height - FOOTER_HEIGHT - PAGE_MARGIN;
+    const yTexte = yTrait + 6;
+    const hauteurMax = FOOTER_HEIGHT - 12;
 
-    // Bandeau cyan plein
-    doc.rect(PAGE_MARGIN, yBandeau, largeur, hauteurBandeau)
-        .fillColor(COLORS.cyan).fill();
-
-    // Texte blanc centré dans le bandeau
-    if (lignes.length === 1) {
-        doc.font(FONT_NORMAL).fontSize(9).fillColor(COLORS.blanc)
-            .text(lignePied, PAGE_MARGIN, yBandeau + (hauteurBandeau - 9) / 2,
-                { width: largeur, align: "center" });
-    } else {
-        let yL = yBandeau + 4;
-        doc.font(FONT_NORMAL).fontSize(9).fillColor(COLORS.blanc);
-        for (const l of lignes) {
-            doc.text(l, PAGE_MARGIN, yL, { width: largeur, align: "center" });
-            yL += 14;
+    if (lignes.length > 0) {
+        doc.font(FONT_NORMAL).fontSize(9).fillColor("#555555");
+        let yL = yTexte;
+        for (const ligne of lignes) {
+            if (yL + 9 > yTrait + hauteurMax) break;
+            doc.text(ligne, PAGE_MARGIN, yL, { width: largeur, align: "center" });
+            yL += 12;
         }
+    } else {
+        // Fallback lorsqu'aucun pied de page n'est configuré
+        doc.font(FONT_ITALIC).fontSize(9).fillColor("#777777")
+            .text("Merci pour votre confiance", PAGE_MARGIN, yTexte, { width: largeur, align: "center" });
     }
 
 }

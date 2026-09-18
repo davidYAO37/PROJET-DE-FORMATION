@@ -31,21 +31,20 @@ export async function POST(req: NextRequest) {
       const consultation = await Consultation.findById(body.IDCONSULTATION);
 
       if (consultation) {
-        // Vérifier si tout est encaissé
-        const resteAPayer = body.TotalapayerPatient || 0;
-        const montantClient = body.Montantencaisse || 0;
-
-        if (resteAPayer === montantClient) {
-          consultation.Toutencaisse = true;
-        } else {
-          consultation.Toutencaisse = false;
-        }
-        await consultation.save();
-
         // On cherche le nombre et le montant déjà encaissé pour la consultation
         const encaissementsExistants = await EncaissementCaisse.find({ IDCONSULTATION: String(body.IDCONSULTATION) });
         nMoncompteur = encaissementsExistants.length + 1;
         gnDejapaye = encaissementsExistants.reduce((sum, enc) => sum + (enc.Montantencaisse || 0), 0);
+
+        // On ne modifie pas Restapayer ici : le reste reel est calcule en affichage
+        // (Restapayer - somme des encaissements lies).
+        const resteAPayer = body.TotalapayerPatient || 0;
+        const montantClient = body.Montantencaisse || 0;
+        const resteReel = Math.max(0, (consultation.Restapayer || 0) - gnDejapaye - montantClient);
+
+        // Marquer comme totalement encaissee si le reste calcule est nul
+        consultation.Toutencaisse = resteReel === 0;
+        await consultation.save();
 
         // Créer l'encaissement selon la logique WinDev
         const nouvelEncaissement = new EncaissementCaisse({
@@ -62,7 +61,7 @@ export async function POST(req: NextRequest) {
           HeureEncaissement: new Date().toTimeString(),
           Modepaiement: body.Modepaiement,
           TotalapayerPatient: resteAPayer,
-          restapayerBilan: (resteAPayer - montantClient).toString(),
+          restapayerBilan: String(resteReel),
           Assure: consultation.Assure,
           IdPatient: consultation.PatientP,
           AnnulationOrdonneLe: '',
@@ -100,22 +99,28 @@ export async function POST(req: NextRequest) {
         nMoncompteur = encaissementsExistants.length + 1;
         gnDejapaye = encaissementsExistants.reduce((sum, enc) => sum + (enc.Montantencaisse || 0), 0);
 
+        const montantEncaisse = Number(body.Montantencaisse) || 0;
+        const resteAvant = Number(facturation.Restapayer) || 0;
+        // On ne modifie pas Restapayer ici : le reste reel est calcule en affichage
+        // (Restapayer - somme des encaissements lies).
+        const resteReel = Math.max(0, resteAvant - gnDejapaye - montantEncaisse);
+
         // Créer l'encaissement selon la logique WinDev
         const nouvelEncaissement = new EncaissementCaisse({
           DatePrest: facturation.DatePres || facturation.DateFacturation || new Date(),
           Patient: `${facturation.PatientP} --Encaissement-- Prestation du ${new Date(facturation.DateFacturation || new Date()).toLocaleDateString()} N°${nMoncompteur}`,
           Assurance: facturation.Assurance,
           Designation: facturation.Designationtypeacte,
-          Restapayer: -body.Montantencaisse,
+          Restapayer: -montantEncaisse,
           Medecin: facturation.NomMed,
           Utilisateur: body.Utilisateur || 'Utilisateur',
           IDFACTURATION: String(facturation._id),
           DateEncaissement: new Date(),
-          Montantencaisse: body.Montantencaisse,
+          Montantencaisse: montantEncaisse,
           HeureEncaissement: new Date().toTimeString(),
           Modepaiement: body.Modepaiement,
           TotalapayerPatient: body.TotalapayerPatient || 0,
-          restapayerBilan: ((body.montantClient || 0) - body.Montantencaisse).toString(),
+          restapayerBilan: String(resteReel),
           Assure: facturation.Assure,
           IdPatient: facturation.PatientP,
           AnnulationOrdonneLe: '',
@@ -128,19 +133,13 @@ export async function POST(req: NextRequest) {
         if (body.Modepaiement === "Caution" && facturation.IdPatient) {
           const patientCaution = await Patient.findById(facturation.IdPatient);
           if (patientCaution) {
-            const montant = Number(body.Montantencaisse) || 0;
             const provisionActuelle = Number(patientCaution.ProvisionClient) || 0;
             const depenseActuelle = Number(patientCaution.DepenseProvision) || 0;
-            patientCaution.ProvisionClient = provisionActuelle - montant;
-            patientCaution.DepenseProvision = depenseActuelle + montant;
+            patientCaution.ProvisionClient = provisionActuelle - montantEncaisse;
+            patientCaution.DepenseProvision = depenseActuelle + montantEncaisse;
             await patientCaution.save();
           }
         }
-
-        /*  // Mettre à jour la facturation pour réduire le reste à payer
-         await Facturation.findByIdAndUpdate(body.IDFACTURATION, {
-             $inc: { Restapayer: -body.Montantencaisse }
-         }); */
       }
     }
 
@@ -189,15 +188,18 @@ export async function GET(request: NextRequest) {
       encaissements = await EncaissementCaisse.find({ 
         Patient: { $regex: patient.trim(), $options: 'i' } 
       }).sort({ DateEncaissement: -1 });
-    } else if (idConsultations && idConsultations.trim() !== '') {
-      const ids = idConsultations.split(',').map(s => s.trim()).filter(Boolean);
-      if (ids.length) {
-        encaissements = await EncaissementCaisse.find({ IDCONSULTATION: { $in: ids } }).sort({ DateEncaissement: -1 });
+    } else if ((idConsultations && idConsultations.trim() !== '') || (idFacturations && idFacturations.trim() !== '')) {
+      const consultationIdsList = idConsultations ? idConsultations.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const facturationIdsList = idFacturations ? idFacturations.split(',').map(s => s.trim()).filter(Boolean) : [];
+      const orConditions: Record<string, any>[] = [];
+      if (consultationIdsList.length) {
+        orConditions.push({ IDCONSULTATION: { $in: consultationIdsList } });
       }
-    } else if (idFacturations && idFacturations.trim() !== '') {
-      const ids = idFacturations.split(',').map(s => s.trim()).filter(Boolean);
-      if (ids.length) {
-        encaissements = await EncaissementCaisse.find({ IDFACTURATION: { $in: ids } }).sort({ DateEncaissement: -1 });
+      if (facturationIdsList.length) {
+        orConditions.push({ IDFACTURATION: { $in: facturationIdsList } });
+      }
+      if (orConditions.length) {
+        encaissements = await EncaissementCaisse.find({ $or: orConditions }).sort({ DateEncaissement: -1 });
       }
     } else if (idConsultation && idConsultation.trim() !== '') {
       encaissements = await EncaissementCaisse.find({ IDCONSULTATION: idConsultation.trim() }).sort({ DateEncaissement: -1 });

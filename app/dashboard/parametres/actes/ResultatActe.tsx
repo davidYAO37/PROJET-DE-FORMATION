@@ -67,6 +67,34 @@ const ResultatActe: React.FC<Props> = ({ show, acte, onClose, onSave }) => {
         execCommand('fontSize', size);
     };
 
+    // Interligne et espacement de paragraphe
+    const wrapSelectionWithStyle = (style: string) => {
+        const selection = window.getSelection();
+        if (!selection || !selection.rangeCount || !editorRef.current) return;
+        const range = selection.getRangeAt(0);
+        if (range.collapsed) return;
+
+        const contents = range.extractContents();
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = style;
+        wrapper.appendChild(contents);
+        range.insertNode(wrapper);
+
+        selection.removeAllRanges();
+        const newRange = document.createRange();
+        newRange.selectNodeContents(wrapper);
+        selection.addRange(newRange);
+        editorRef.current.focus();
+    };
+
+    const applyLineHeight = (lineHeight: string) => {
+        wrapSelectionWithStyle(`line-height: ${lineHeight};`);
+    };
+
+    const applyParagraphSpacing = (spacing: string) => {
+        wrapSelectionWithStyle(`margin-top: 0; margin-bottom: ${spacing};`);
+    };
+
     // Fonctions pour les tableaux
     const insertTable = (rows: number, cols: number) => {
         if (!editorRef.current) return;
@@ -131,6 +159,55 @@ const ResultatActe: React.FC<Props> = ({ show, acte, onClose, onSave }) => {
             const table = range.startContainer.parentElement?.closest('table');
             if (table) {
                 table.remove();
+            }
+        }
+    };
+
+    const deleteTableRow = () => {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const cell = range.startContainer.parentElement?.closest('td, th');
+            if (cell) {
+                const row = cell.closest('tr');
+                const table = cell.closest('table');
+                if (row && table) {
+                    if (table.rows.length <= 1) {
+                        table.remove();
+                    } else {
+                        row.remove();
+                    }
+                }
+            }
+        }
+    };
+
+    const deleteTableColumn = () => {
+        const selection = window.getSelection();
+        if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0);
+            const cell = range.startContainer.parentElement?.closest('td, th') as HTMLTableCellElement | null;
+            if (cell) {
+                const table = cell.closest('table');
+                const cellIndex = cell.cellIndex;
+                if (table && cellIndex >= 0) {
+                    let hasMultipleColumns = false;
+                    for (let i = 0; i < table.rows.length; i++) {
+                        if (table.rows[i].cells.length > 1) {
+                            hasMultipleColumns = true;
+                            break;
+                        }
+                    }
+                    if (!hasMultipleColumns) {
+                        table.remove();
+                    } else {
+                        for (let i = 0; i < table.rows.length; i++) {
+                            if (cellIndex < table.rows[i].cells.length) {
+                                table.rows[i].deleteCell(cellIndex);
+                            }
+                        }
+                    }
+                }
             }
         }
     };
@@ -617,6 +694,34 @@ const ResultatActe: React.FC<Props> = ({ show, acte, onClose, onSave }) => {
                                 </Dropdown.Menu>
                             </Dropdown>
 
+                            {/* Interligne */}
+                            <Dropdown drop="down">
+                                <Dropdown.Toggle variant="outline-secondary" size="sm" title="Interligne">
+                                    Interligne
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu>
+                                    <Dropdown.Item onClick={() => applyLineHeight('1')}>1.0</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => applyLineHeight('1.15')}>1.15</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => applyLineHeight('1.5')}>1.5</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => applyLineHeight('2')}>2.0</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => applyLineHeight('2.5')}>2.5</Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>
+
+                            {/* Espacement de paragraphe */}
+                            <Dropdown drop="down">
+                                <Dropdown.Toggle variant="outline-secondary" size="sm" title="Espacement de paragraphe">
+                                    Espacement
+                                </Dropdown.Toggle>
+                                <Dropdown.Menu>
+                                    <Dropdown.Item onClick={() => applyParagraphSpacing('0')}>0 px</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => applyParagraphSpacing('5px')}>5 px</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => applyParagraphSpacing('10px')}>10 px</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => applyParagraphSpacing('15px')}>15 px</Dropdown.Item>
+                                    <Dropdown.Item onClick={() => applyParagraphSpacing('20px')}>20 px</Dropdown.Item>
+                                </Dropdown.Menu>
+                            </Dropdown>
+
                             {/* Tableaux */}
                             <Dropdown drop="down">
                                 <Dropdown.Toggle variant="outline-info" size="sm" title="Insérer un tableau">
@@ -642,8 +747,14 @@ const ResultatActe: React.FC<Props> = ({ show, acte, onClose, onSave }) => {
                                 <Button variant="outline-warning" onClick={addTableColumn} title="Ajouter une colonne">
                                     <FaPlus style={{ transform: 'rotate(90deg)' }} />
                                 </Button>
-                                <Button variant="outline-danger" onClick={deleteTable} title="Supprimer le tableau">
+                                <Button variant="outline-danger" onClick={deleteTableRow} title="Supprimer la ligne">
                                     <FaTrash />
+                                </Button>
+                                <Button variant="outline-danger" onClick={deleteTableColumn} title="Supprimer la colonne">
+                                    <FaTrash style={{ transform: 'rotate(90deg)' }} />
+                                </Button>
+                                <Button variant="outline-danger" onClick={deleteTable} title="Supprimer le tableau">
+                                    <FaTable />
                                 </Button>
                             </ButtonGroup>
 

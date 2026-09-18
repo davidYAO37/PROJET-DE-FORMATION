@@ -4,13 +4,15 @@ import { Container, Row, Col, Card, Button, Badge } from "react-bootstrap";
 import { FaUsers, FaCalendarCheck, FaUserMd, FaSignOutAlt } from "react-icons/fa";
 import { useState, useEffect } from "react";
 import PlanningRdvMed from "@/components/PlanningRdvMed";
+import { useAuthUser } from "@/hooks/useAuthUser";
 
 export default function DashboardPage() {
   const router = useRouter();
+  const { user, loading: userLoading } = useAuthUser();
   const [stats, setStats] = useState({
     totalPatients: 0,
     rendezVousAujourdhui: 0,
-    utilisateurConnecte: "Dr. KOUASSI David"
+    utilisateurConnecte: ""
   });
   const [loading, setLoading] = useState(true);
 
@@ -23,16 +25,22 @@ export default function DashboardPage() {
           throw new Error(`HTTP ${response.status}`);
         }
         const data = await response.json();
+        const utilisateurConnecte = userLoading
+          ? ""
+          : `${user?.nom || ''} ${user?.prenom || ''}`.trim() || localStorage.getItem('nom_utilisateur') || "";
         setStats({
           totalPatients: data.totalPatients || 0,
           rendezVousAujourdhui: data.rendezVousAujourdhui || 0,
-          utilisateurConnecte: localStorage.getItem('nom_utilisateur') || "Dr. KOUASSI David"
+          utilisateurConnecte
         });
       } catch (error) {
         console.error('Erreur de chargement des statistiques:', error);
+        const utilisateurConnecte = userLoading
+          ? ""
+          : `${user?.nom || ''} ${user?.prenom || ''}`.trim() || localStorage.getItem('nom_utilisateur') || "";
         setStats(prev => ({
           ...prev,
-          utilisateurConnecte: localStorage.getItem('nom_utilisateur') || "Dr. KOUASSI David"
+          utilisateurConnecte
         }));
       } finally {
         setLoading(false);
@@ -40,7 +48,7 @@ export default function DashboardPage() {
     };
 
     chargerStats();
-  }, []);
+  }, [user, userLoading]);
 
   // Styles CSS pour les cartes
   const cardStyles = `
@@ -78,7 +86,7 @@ export default function DashboardPage() {
             <div className="d-flex justify-content-between align-items-center mb-2">
               <h2 className="mb-0 text-primary fw-bold">
                 <FaUserMd className="me-2" />
-                Tableau de bord Administrateur
+                Tableau de bord {user?.type === 'admin' || user?.type === 'adminsuper' ? 'Administrateur' : 'Utilisateur'}
               </h2>
               <Button variant="outline-danger" onClick={handleLogout}>
                 <FaSignOutAlt className="me-1" />
@@ -138,7 +146,7 @@ export default function DashboardPage() {
                     <Card.Title className="text-white mb-2"></Card.Title>
                     <div>
                       <Badge bg="light" text="dark" className="fs-6" style={{ fontSize: '1.2rem !important', padding: '0.5rem 1rem !important' }}>
-                        {stats.utilisateurConnecte}
+                        {loading || userLoading ? 'Chargement...' : (stats.utilisateurConnecte || 'Utilisateur')}
                       </Badge>
                     </div>
                   </Card.Body>
