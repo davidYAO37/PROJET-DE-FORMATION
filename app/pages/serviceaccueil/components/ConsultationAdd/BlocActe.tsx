@@ -2,7 +2,7 @@
 import { Row, Col, Form, Card, Alert } from "react-bootstrap";
 import { Medecin } from "@/types/medecin";
 import { Patient } from "@/types/patient";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 type BlocActeProps = {
     actes: { _id: string; designationacte: string; prixClinique?: number; prixMutuel?: number; prixPreferentiel?: number; ActeNonFacturable?: boolean }[];
@@ -35,16 +35,6 @@ export default function BlocActe({
     patient,
 }: BlocActeProps) {
     const [warning, setWarning] = useState<string | null>(null);
-
-    // Met à jour automatiquement le montant clinique selon le type patient et l'acte sélectionné
-    useEffect(() => {
-        if (!selectedActe) return;
-        const acte = actes.find(a => a._id === selectedActe);
-        if (!acte) return;
-        if (assure === "mutualiste") setMontantClinique(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
-        else if (assure === "preferentiel") setMontantClinique(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
-        else setMontantClinique(Math.round(acte.prixClinique ?? 0));
-    }, [selectedActe, actes, assure, setMontantClinique]);
 
     const handleActeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const acteId = e.target.value;

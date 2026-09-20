@@ -5,6 +5,8 @@ export interface ISocieteAssurance extends Document {
     legacyId?: number;
     Assurance: Types.ObjectId | IAssurance;
     societe?: string;
+    accepteSurplus?: boolean | null;
+    utiliseTarifsPropres?: boolean; // null = hérite de l'assurance
 
 }
 
@@ -14,6 +16,8 @@ const SocieteAssuranceSchema = new Schema<ISocieteAssurance>(
         legacyId: { type: Number },
         Assurance: { type: Schema.Types.ObjectId, ref: 'Assurance', required: true },
         societe: { type: String, maxlength: 60 },
+        accepteSurplus: { type: Boolean, default: null },
+        utiliseTarifsPropres: { type: Boolean, default: true },
     },
     { timestamps: true }
 );

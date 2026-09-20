@@ -223,6 +223,8 @@ interface Props {
     saiTaux?: number; // Taux (%)
     assuranceDbId?: string; // ObjectId de l'assurance en base pour charger les tarifs
     societePartenaireId?: string; // ObjectId de la société partenaire sélectionnée (mode exclusif)
+    societeAssuranceId?: string; // ObjectId de la société/assurance pour les tarifs négociés
+    accepteSurplus?: boolean; // indique si la société accepte le surplus
     onTotalsChange?: (totaux: {
         montantTotal: number;
         partAssurance: number;
@@ -285,9 +287,10 @@ const emptyLigne = (): ILignePrestation => ({
     Action: ""
 });
 
-export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, assuranceDbId, societePartenaireId, onTotalsChange, externalResetKey, presetLines, onLinesChange, modeModification = false }: Props) {
+export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, assuranceDbId, societePartenaireId, societeAssuranceId, accepteSurplus = true, onTotalsChange, externalResetKey, presetLines, onLinesChange, modeModification = false }: Props) {
     const [actes, setActes] = useState<IActeClinique[]>([]);
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
+    const [tarifsSocieteAssurance, setTarifsSocieteAssurance] = useState<ITarifAssurance[]>([]);
     const [actesSocietePartenaire, setActesSocietePartenaire] = useState<IActeSocietePartenaireRaw[]>([]);
     const actesRef = useRef<IActeClinique[]>([]);
     const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
@@ -363,6 +366,32 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
             })
             .catch(() => setTarifsAssurance([]));
     }, [assuranceDbId]);
+
+    useEffect(() => {
+        // Charger les tarifs de la société/assurance si un identifiant est fourni
+        if (!societeAssuranceId || societeAssuranceId.trim() === "") {
+            setTarifsSocieteAssurance([]);
+            return;
+        }
+        fetch(`/api/tarifs-societe-assurance?societeAssuranceId=${societeAssuranceId}`)
+            .then((r) => {
+                if (!r.ok) throw new Error("no tarifs for societe assurance");
+                return r.json();
+            })
+            .then((list) => {
+                const mapped: ITarifAssurance[] = (Array.isArray(list) ? list : []).map((t: any) => ({
+                    _id: String(t._id),
+                    Designation: t.acte,
+                    IDASSURANCE: 0,
+                    PrixMutualiste: t.prixmutuel,
+                    PrixAssure: t.prixpreferenciel,
+                    CoefficientActe: t.coefficient,
+                    Prix: undefined,
+                }));
+                setTarifsSocieteAssurance(mapped);
+            })
+            .catch(() => setTarifsSocieteAssurance([]));
+    }, [societeAssuranceId]);
 
     useEffect(() => {
         // Charger les actes de la société partenaire sélectionnée (mode exclusif)
@@ -469,6 +498,28 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
     function tarifActeClinique(ligne: ILignePrestation, acte: IActeClinique, selAssure: number) {
         // SI ACTE.CoefficientActe=0 ALORS => coefficient = 1 sinon acte.CoefficientActe
         ligne.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
+
+        // Mode sans surplus : utiliser le tarif négocié (assurance/société) comme montant clinique affiché
+        if (accepteSurplus === false && assuranceId !== 1) {
+            const designation = acte.Designation || "";
+            const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => t.Designation === designation) : [];
+            const assuranceMatches = tarifsAssurance.filter((t) => t.Designation === designation);
+            const tarifMatchedList = societeMatches.length > 0 ? societeMatches : assuranceMatches;
+            
+            if (tarifMatchedList.length > 0) {
+                const tarif = tarifMatchedList[0];
+                const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+                ligne.Accepter = prixNegocie;
+                ligne.SURPLUS = 0;
+                ligne.Reliquat = 0;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Coef_ASSUR = 0;
+                ligne.TARIF_ASSURANCE = prixNegocie;
+                ligne.COEFFICIENT_ASSURANCE = 0;
+                ligne.PrixTotal = ligne.Accepter * ligne.Coefficient * ligne.QteP;
+                return;
+            }
+        }
 
         switch (selAssure) {
             case 1: // NON ASSURE
@@ -1055,7 +1106,7 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
                 return copy;
             })
         );
-    }, [assuranceId, findActeById, isSocietePartenaireMode, findActeSocietePartenaireById, actes]);
+    }, [assuranceId, findActeById, isSocietePartenaireMode, findActeSocietePartenaireById, actes, accepteSurplus, societeAssuranceId, tarifsSocieteAssurance, tarifsAssurance]);
 
     // Quand un champ clé change et nécessité recalcul
     const onFieldChangeAndRecalc = useCallback((lineId: string, field: keyof ILignePrestation, value: any) => {
@@ -1088,7 +1139,7 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
                 return copy;
             })
         );
-    }, [assuranceId, findActeById, isSocietePartenaireMode]);
+    }, [assuranceId, findActeById, isSocietePartenaireMode, accepteSurplus, societeAssuranceId, tarifsSocieteAssurance, tarifsAssurance]);
 
     // ---------- UI ----------
     return (

@@ -89,6 +89,7 @@ export interface IExamenHospitalisation extends Omit<Document, '_id'> {
     ObservationHospitalisation?: string;
     IDCHAMBRE?: Types.ObjectId;
     IDSOCIETEASSURANCE?: Types.ObjectId;
+    accepteSurplus?: boolean;
     SOCIETE_PATIENT?: string;
     statutPrescriptionMedecin?: number;
     hospitalisationId?: Types.ObjectId | string;
@@ -203,6 +204,7 @@ const ExamenHospitalisationSchema = new Schema<IExamenHospitalisation>(
         ObservationHospitalisation: { type: String },
         IDCHAMBRE: { type: Schema.Types.ObjectId, ref: 'Chambre' },
         IDSOCIETEASSURANCE: { type: Schema.Types.ObjectId, ref: 'SocieteAssurance' },
+        accepteSurplus: { type: Boolean, default: true },
         SOCIETE_PATIENT: { type: String, maxlength: 60 },
         statutPrescriptionMedecin: { type: Number },
         hospitalisationId: { type: Schema.Types.ObjectId, index: true },

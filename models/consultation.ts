@@ -24,6 +24,7 @@ export interface IConsultation extends Document {
   tauxAssurance: number;
   PartAssurance: number;
   tiket_moderateur: number;
+  accepteSurplus?: boolean;
   numero_carte?: string;
   NumBon?: string;
 
@@ -112,6 +113,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     tauxAssurance: { type: Number, default: 0 },
     PartAssurance: { type: Number, default: 0 },
     tiket_moderateur: { type: Number, default: 0 },
+    accepteSurplus: { type: Boolean, default: true },
     numero_carte: { type: String },
     NumBon: { type: String },
 

@@ -83,28 +83,18 @@ export async function POST(req: NextRequest) {
         const medecin = await Medecin.findById(data.selectedMedecin);
 
         // Montants et calculs (tous en entiers)
-        let montantActe = Math.round(data.montantClinique || 0);
-        let partAssurance = 0;
-        let Partassure = 0;
-        let surplus = 0;
-        let statutC = false;
-        let statutPaiement = "En cours de Paiement";
-
         const tauxNum = Number(data.taux) || 0;
+        const montantClinique = Math.round(data.montantClinique || 0);
+        const montantAssur = Math.round(data.montantAssurance || montantClinique || 0);
+        const accepteSurplus = data.accepteSurplus !== false; // défaut true
 
-        // Calcul Part Assurance, Part Patient, Surplus
-        if (data.assure === "mutualiste") {
-            montantActe = Math.round(data.montantAssurance || montantActe);
-        } else if (data.assure === "assure") {
-            montantActe = Math.round(data.montantAssurance || montantActe);
-        }
+        const montantCouvert = accepteSurplus ? montantAssur : montantAssur;
+        const surplus = accepteSurplus && montantClinique > montantAssur
+            ? Math.round(montantClinique - montantAssur)
+            : 0;
 
-        if (data.montantClinique > montantActe) {
-            surplus = Math.round(data.montantClinique - montantActe);
-        }
-
-        partAssurance = Math.round((tauxNum * montantActe) / 100);
-        Partassure = montantActe - partAssurance;
+        const partAssurance = Math.round((tauxNum * montantCouvert) / 100);
+        const Partassure = montantCouvert - partAssurance;
         const totalPatient = Partassure + surplus;
 
         // Correction des champs obligatoires
@@ -122,11 +112,13 @@ export async function POST(req: NextRequest) {
             IDASSURANCE: assurance?._id,
 
 
-            Prix_Assurance: Math.round(montantActe),
-            PrixClinique: Math.round(data.montantClinique || 0),
+            Prix_Assurance: Math.round(montantAssur),
+            PrixClinique: Math.round(montantClinique),
             Restapayer: Math.round(totalPatient),
             montantapayer: Math.round(Partassure + surplus),
             ReliquatPatient: Math.round(surplus),
+            accepteSurplus,
+            IDSOCIETEASSURANCE: data.idSocieteAssurance || patient?.IDSOCIETEASSURANCE || data.selectedAssurance,
 
             Code_dossier: patient.Code_dossier, // Toujours le code dossier du patient
             // CodePrestation: généré automatiquement par le modèle
@@ -149,7 +141,6 @@ export async function POST(req: NextRequest) {
             Souscripteur: patient?.Souscripteur,
             PatientP: patient?.Nom + " " + patient?.Prenoms,
             SOCIETE_PATIENT: patient?.SOCIETE_PATIENT || data.societePatient,
-            IDSOCIETEASSURANCE: patient?.IDSOCIETEASSURANCE || data.selectedAssurance,
 
             Medecin: medecin ? `${medecin.nom} ${medecin.prenoms}` : "",
             IDMEDECIN: medecin?._id,

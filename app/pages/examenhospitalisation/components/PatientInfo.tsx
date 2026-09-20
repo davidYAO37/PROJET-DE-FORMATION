@@ -64,6 +64,7 @@ export default function PatientInfo({ formData, setFormData, onCodePrestationCha
                     medecinPrescripteur: data.medecinPrescripteur || prev.medecinPrescripteur,
                     Rclinique: data.Rclinique || prev.Rclinique,
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
+                    IDSOCIETEASSURANCE: data.numero || prev.IDSOCIETEASSURANCE,
                     assurance: {
                         assuranceId: data.idAssurance || prev.assurance.assuranceId,
                         designationassurance: data.assurance || prev.assurance.designationassurance,
@@ -72,6 +73,7 @@ export default function PatientInfo({ formData, setFormData, onCodePrestationCha
                         matricule: data.matricule || prev.assurance.matricule,
                         numeroBon: data.NumBon || data.numeroBon || prev.assurance.numeroBon,
                         societe: data.SOCIETE_PATIENT || data.societe || prev.assurance.societe,
+                        societeId: data.numero || prev.assurance.societeId,
                         numero: data.numero || prev.assurance.numero,
                         adherent: data.Souscripteur || data.souscripteur || prev.assurance.adherent,
                     },

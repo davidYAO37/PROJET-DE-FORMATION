@@ -211,6 +211,8 @@ interface Props {
     assuranceId?: AssuranceId; // Sélection (1=Sans,2=Mutualiste,3=Préférentiel)
     saiTaux?: number; // Taux (%)
     assuranceDbId?: string; // ObjectId de l'assurance en base pour charger les tarifs
+    societeAssuranceId?: string; // ObjectId de la société/assurance pour les tarifs négociés
+    accepteSurplus?: boolean; // indique si la société accepte le surplus
     onTotalsChange?: (totaux: {
         montantTotal: number;
         partAssurance: number;
@@ -272,9 +274,10 @@ const emptyLigne = (): ILignePrestation => ({
     Action: ""
 });
 
-export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, assuranceDbId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
+export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, assuranceDbId, societeAssuranceId, accepteSurplus = true, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
     const [actes, setActes] = useState<IActeClinique[]>([]);
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
+    const [tarifsSocieteAssurance, setTarifsSocieteAssurance] = useState<ITarifAssurance[]>([]);
     const [lignes, setLignes] = useState<ILignePrestation[]>([]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
     const [totaux, setTotaux] = useState({
@@ -344,6 +347,31 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
     }, [assuranceDbId]);
 
     useEffect(() => {
+        if (!societeAssuranceId || societeAssuranceId.trim() === "") {
+            setTarifsSocieteAssurance([]);
+            return;
+        }
+        fetch(`/api/tarifs-societe-assurance?societeAssuranceId=${societeAssuranceId}`)
+            .then((r) => {
+                if (!r.ok) throw new Error("no tarifs for societe assurance");
+                return r.json();
+            })
+            .then((list) => {
+                const mapped: ITarifAssurance[] = (Array.isArray(list) ? list : []).map((t: any) => ({
+                    _id: String(t._id),
+                    Designation: t.acte,
+                    IDASSURANCE: 0,
+                    PrixMutualiste: t.prixmutuel,
+                    PrixAssure: t.prixpreferenciel,
+                    CoefficientActe: t.coefficient,
+                    Prix: undefined,
+                }));
+                setTarifsSocieteAssurance(mapped);
+            })
+            .catch(() => setTarifsSocieteAssurance([]));
+    }, [societeAssuranceId]);
+
+    useEffect(() => {
         // recalculer totaux à chaque modification de lignes
         facturePharmacie();
         if (onLinesChange) onLinesChange(lignes);
@@ -376,6 +404,28 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
         // SI ACTE.CoefficientActe=0 ALORS => coefficient = 1 sinon acte.CoefficientActe
         ligne.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
 
+        // Mode sans surplus : utiliser le tarif négocié (assurance/société) comme montant clinique affiché
+        if (accepteSurplus === false && assuranceId !== 1) {
+            const designation = acte.Designation || "";
+            const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => t.Designation === designation) : [];
+            const assuranceMatches = tarifsAssurance.filter((t) => t.Designation === designation);
+            const tarifMatchedList = societeMatches.length > 0 ? societeMatches : assuranceMatches;
+            
+            if (tarifMatchedList.length > 0) {
+                const tarif = tarifMatchedList[0];
+                const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+                ligne.Accepter = prixNegocie;
+                ligne.SURPLUS = 0;
+                ligne.Reliquat = 0;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Coef_ASSUR = 0;
+                ligne.TARIF_ASSURANCE = prixNegocie;
+                ligne.COEFFICIENT_ASSURANCE = 0;
+                ligne.PrixTotal = ligne.Accepter * ligne.Coefficient * ligne.QteP;
+                return;
+            }
+        }
+
         switch (selAssure) {
             case 1: // NON ASSURE
                 ligne.Accepter = acte.Prix || 0;
@@ -396,8 +446,11 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
     }
 
     function tarifActeAssurance(ligne: ILignePrestation, acte: IActeClinique, selAssure: number) {
-        // Vérifier si tarif assurance existe pour cet acte (déjà filtré par assurance en amont)
-        const tarifMatchedList = tarifsAssurance.filter((t) => t.Designation === (acte.Designation || ""));
+        // Tarif effectif : société d'abord si fourni et tarif existant pour cet acte, sinon assurance
+        const designation = acte.Designation || "";
+        const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => t.Designation === designation) : [];
+        const assuranceMatches = tarifsAssurance.filter((t) => t.Designation === designation);
+        const tarifMatchedList = societeMatches.length > 0 ? societeMatches : assuranceMatches;
         if (tarifMatchedList.length === 0) {
             // équivalent Erreur(...) et suppression tableau => on déclenche une erreur visible
             setErrorMsg(
@@ -433,6 +486,21 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
         // selon SEL_Assure(selAssure)
         if (selAssure === 1) {
             tarifActeClinique(ligne, acte, selAssure);
+            return;
+        }
+
+        // Mode sans surplus : on applique le tarif négocié tel quel
+        if (accepteSurplus === false) {
+            const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+            ligne.Prixunitaire = prixNegocie;
+            ligne.Accepter = prixNegocie;
+            ligne.SURPLUS = 0;
+            ligne.Reliquat = 0;
+            ligne.TotalRelicatCoefAssur = 0;
+            ligne.Coef_ASSUR = 0;
+            ligne.TARIF_ASSURANCE = 0;
+            ligne.COEFFICIENT_ASSURANCE = 0;
+            ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
             return;
         }
 
@@ -518,6 +586,22 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
 
         if (selAssure === 1) {
             tarifActeClinique(ligne, acte, selAssure);
+            return;
+        }
+
+        // Mode sans surplus : on applique le tarif négocié tel quel
+        if (accepteSurplus === false) {
+            const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+            ligne.Prixunitaire = prixNegocie;
+            ligne.Accepter = prixNegocie;
+            ligne.SURPLUS = 0;
+            ligne.Reliquat = 0;
+            ligne.TotalRelicatCoefAssur = 0;
+            ligne.Coef_ASSUR = 0;
+            ligne.forfaitclinique = 0;
+            ligne.TARIF_ASSURANCE = 0;
+            ligne.COEFFICIENT_ASSURANCE = 0;
+            ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
             return;
         }
 
@@ -615,6 +699,21 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
             return;
         }
 
+        // Mode sans surplus : on applique le tarif négocié tel quel
+        if (accepteSurplus === false) {
+            const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+            ligne.Prixunitaire = prixNegocie;
+            ligne.Accepter = prixNegocie;
+            ligne.SURPLUS = 0;
+            ligne.Reliquat = 0;
+            ligne.TotalRelicatCoefAssur = 0;
+            ligne.Coef_ASSUR = 0;
+            ligne.TARIF_ASSURANCE = 0;
+            ligne.COEFFICIENT_ASSURANCE = 0;
+            ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+            return;
+        }
+
         if (selAssure === 2) {
             const tPrix = tarif.PrixMutualiste ?? 0;
             const aPrix = acte.PrixMutualiste ?? 0;
@@ -688,7 +787,15 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                 ligne.Coefficient = ligne.CoefClinique || ligne.Coefficient;
                 ligne.PrixTotal = ligne.Coefficient * ligne.Prixunitaire * ligne.QteP;
 
-                if (ligne.TARIF_ASSURANCE === 0) {
+                if (accepteSurplus === false) {
+                    // Mode sans surplus : base patient = tarif négocié, pas de surplus/reliquat
+                    ligne.PartAssurance = (saiTaux * ligne.PrixTotal) / 100;
+                    ligne.PartAssure = ligne.PrixTotal - ligne.PartAssurance;
+                    ligne.Reliquat = 0;
+                    ligne.Coef_ASSUR = 0;
+                    ligne.SURPLUS = 0;
+                    ligne.TotalRelicatCoefAssur = 0;
+                } else if (ligne.TARIF_ASSURANCE === 0) {
                     // TARIF_ASSURANCE non paramétré
                     ligne.PartAssurance = (saiTaux * ligne.Prixunitaire * ligne.Coefficient * ligne.QteP) / 100;
                     ligne.PartAssure = ligne.PrixTotal - ligne.PartAssurance;

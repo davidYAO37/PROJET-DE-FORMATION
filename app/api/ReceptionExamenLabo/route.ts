@@ -135,6 +135,12 @@ export async function POST(req: NextRequest) {
             ...(header.IDASSURANCE && {
                 IDASSURANCE: new mongoose.Types.ObjectId(header.IDASSURANCE)
             }),
+            ...(header.IDSOCIETEASSURANCE && {
+                IDSOCIETEASSURANCE: new mongoose.Types.ObjectId(header.IDSOCIETEASSURANCE)
+            }),
+            ...(header.accepteSurplus !== undefined && {
+                accepteSurplus: header.accepteSurplus
+            }),
         };
 
         // Création ou mise à jour de l'examen
@@ -150,7 +156,14 @@ export async function POST(req: NextRequest) {
                 );
             }
         } else {
-            saved = await ExamenHospitalisation.create(examenData);
+            saved = await ExamenHospitalisation.findOneAndUpdate(
+                {
+                    CodePrestation: header.CodePrestation,
+                    Designationtypeacte: header.Designationtypeacte,
+                },
+                examenData,
+                { new: true, upsert: true, setDefaultsOnInsert: true }
+            );
         }
 
         const hospId = saved._id;
@@ -198,7 +211,7 @@ export async function POST(req: NextRequest) {
                         coefficientActe: l.Coefficient || 1,
                         lettreCle: l.Lettre_Cle || "",
                         idActe: l.IDACTE,
-                        prixClinique: l.SURPLUS || 0,
+                        prixClinique: l.Accepter || 0,
                         reliquatPatient: l.Reliquat || 0,
                         montantMedecinExecutant: l.Montant_MedExecutant || 0,
                         numMedecinExecutant: (l.StatutMedecinActe === "OUI" && header.medecinId) ? header.medecinId : "",

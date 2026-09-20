@@ -315,7 +315,8 @@ export default function HospitalisationPageBilan() {
                                                                         taux: Number(data.Taux) || 0,
                                                                         matricule: data.Numcarte || "",
                                                                         numeroBon: data.NumBon || "",
-                                                                        societe: data.SocieteP || "",
+                                                                        societe: data.SocieteP || data.SOCIETE_PATIENT || "",
+                                                                        societeId: data.IDSOCIETEASSURANCE ? String(data.IDSOCIETEASSURANCE) : "",
                                                                         numero: "",
                                                                         adherent: data.Souscripteur || "",
                                                                     },
@@ -616,6 +617,8 @@ export default function HospitalisationPageBilan() {
                                 saiTaux={formData.assurance.taux || 0}
                                 assuranceDbId={formData.assurance.assuranceId || undefined}
                                 societePartenaireId={formData.societePartenaireId || undefined}
+                                societeAssuranceId={formData.assurance.societeId || undefined}
+                                accepteSurplus={formData.assurance.accepteSurplus ?? true}
                                 externalResetKey={resetKey}
                                 presetLines={presetLines}
                                 modeModification={modeModification}

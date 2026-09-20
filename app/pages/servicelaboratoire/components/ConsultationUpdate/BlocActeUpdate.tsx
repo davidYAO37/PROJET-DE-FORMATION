@@ -1,7 +1,7 @@
 "use client";
 import { Row, Col, Form, Card, Button, InputGroup } from "react-bootstrap";
 import type { Medecin } from "@/types/medecin";
-import { useEffect } from "react";
+
 import { FaSearch } from "react-icons/fa";
 
 type BlocActeUpdateProps = {
@@ -37,16 +37,6 @@ export default function BlocActeUpdate({
     setCodePrestation,
     onLoadConsultation,
 }: BlocActeUpdateProps) {
-    // Met à jour automatiquement le montant clinique selon le type patient et l'acte sélectionné
-    useEffect(() => {
-        if (!selectedActe) return;
-        const acte = actes.find(a => a._id === selectedActe);
-        if (!acte) return;
-        if (assure === "mutualiste") setMontantClinique(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
-        else if (assure === "preferentiel") setMontantClinique(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
-        else setMontantClinique(Math.round(acte.prixClinique ?? 0));
-    }, [selectedActe, actes, assure, setMontantClinique]);
-
     return (
         <Card className="p-3 mb-3 shadow-sm border-primary">
             {/* Champ N°Prestation - Spécifique à la modification */}

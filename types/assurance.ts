@@ -1,9 +1,10 @@
 export interface Assurance {
-    _id?: string; // facultatif lors de la création   
+    _id?: string; // facultatif lors de la création
     designationassurance: string;
     codeassurance: string;
     telephone: string;
     email: string;
+    accepteSurplus?: boolean;
 }
 
 // Type étendu pour la saisie dans les formulaires hospitalisation/examen

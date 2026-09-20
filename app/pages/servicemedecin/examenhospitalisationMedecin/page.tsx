@@ -257,6 +257,12 @@ export default function HospitalisationPageMedecin() {
                             setResetKey((k) => k + 1);
                         }}
                     />
+                    <AssuranceInfoMedecin
+                        formData={formData}
+                        setFormData={setFormData}
+                        currentLignes={currentLignes}
+                        onRecalculateLines={() => setTriggerRecalculation((key) => key + 1)}
+                    />
                 </Col>
 
                 <Col md={9}>
@@ -306,7 +312,13 @@ export default function HospitalisationPageMedecin() {
                                                             taux: Number(data.Taux) || 0,
                                                             matricule: data.Numcarte || "",
                                                             numeroBon: data.NumBon || "",
-                                                            societe: data.SocieteP || "",
+                                                            societeId: data.societeId
+                                                                ? String(data.societeId)
+                                                                : data.IDSOCIETEASSURANCE
+                                                                    ? String(data.IDSOCIETEASSURANCE)
+                                                                    : "",
+                                                            societe: data.SocieteP || data.SOCIETE_PATIENT || "",
+                                                            accepteSurplus: data.accepteSurplus ?? true,
                                                             numero: "",
                                                             adherent: data.Souscripteur || "",
                                                         },
@@ -489,6 +501,8 @@ export default function HospitalisationPageMedecin() {
                             assuranceId={formData.Assure === "NON ASSURE" ? 1 : formData.Assure === "TARIF MUTUALISTE" ? 2 : 3}
                             saiTaux={formData.assurance.taux || 0}
                             assuranceDbId={formData.assurance.assuranceId || undefined}
+                            societeAssuranceId={formData.assurance.societeId || undefined}
+                            accepteSurplus={formData.assurance.accepteSurplus ?? true}
                             externalResetKey={resetKey}
                             presetLines={presetLines}
                             onTotalsChange={(s) => {

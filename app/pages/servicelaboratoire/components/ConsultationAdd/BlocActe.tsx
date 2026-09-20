@@ -1,7 +1,7 @@
 "use client";
 import { Row, Col, Form, Card } from "react-bootstrap";
 import { Medecin } from "@/types/medecin";
-import { useEffect } from "react";
+
 
 type BlocActeProps = {
     actes: { _id: string; designationacte: string; prixClinique?: number; prixMutuel?: number; prixPreferentiel?: number }[];
@@ -31,16 +31,6 @@ export default function BlocActe({
     setSelectedMedecin,
     assure,
 }: BlocActeProps) {
-    // Met à jour automatiquement le montant clinique selon le type patient et l'acte sélectionné
-    useEffect(() => {
-        if (!selectedActe) return;
-        const acte = actes.find(a => a._id === selectedActe);
-        if (!acte) return;
-        if (assure === "mutualiste") setMontantClinique(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
-        else if (assure === "preferentiel") setMontantClinique(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
-        else setMontantClinique(Math.round(acte.prixClinique ?? 0));
-    }, [selectedActe, actes, assure, setMontantClinique]);
-
     return (
 
         <Card className="p-2 mb-2">

@@ -8,6 +8,7 @@ export interface IAssurance extends Omit<Document, '_id'> {
   telephone: string;
   email: string;
   NCC?: string;
+  accepteSurplus?: boolean; // true = avec surplus (comportement actuel), false = sans surplus
   societes?: mongoose.Types.ObjectId[]; // Liste des sociétés liées
 }
 
@@ -17,6 +18,7 @@ const AssuranceSchema: Schema<IAssurance> = new Schema({
   telephone: { type: String, required: true },
   email: { type: String, required: true },
   NCC: { type: String, maxlength: 100 },
+  accepteSurplus: { type: Boolean, default: true },
   societes: [{ type: mongoose.Schema.Types.ObjectId, ref: 'SocieteAssurance' }],
 },
   { timestamps: true });

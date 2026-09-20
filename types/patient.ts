@@ -11,6 +11,7 @@ export type Patient = {
   Date_naisse?: Date;
   Taux?: number;
   IDASSURANCE?: string; // Référence à l'assurance
+  IDSOCIETEASSURANCE?: string;
   SOCIETE_PATIENT?: string;
   Souscripteur?: string;
   TarifPatient?: string; // NON ASSURE, TARIF ASSURE, TARIF MUTUALISTE

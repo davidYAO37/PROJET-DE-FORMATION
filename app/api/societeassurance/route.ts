@@ -14,6 +14,13 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const assuranceId = searchParams.get("assuranceId");
+    const societeId = searchParams.get("societeId");
+
+    if (societeId) {
+        const societe = await SocieteAssurance.findById(societeId).lean();
+        return NextResponse.json(societe);
+    }
+
     if (!assuranceId) {
         return NextResponse.json([], { status: 200 });
     }
@@ -28,19 +35,21 @@ export async function POST(request: NextRequest) {
     const SocieteAssurance = getTenantModel<ISocieteAssurance>(context.connection, "SocieteAssurance");
 
     const body = await request.json();
-    const { societe, assuranceId } = body;
+    const { societe, assuranceId, accepteSurplus, utiliseTarifsPropres } = body;
     if (!assuranceId || !societe) {
         return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
     }
 
-    await SocieteAssurance.create({
+    const created = await SocieteAssurance.create({
         societe,
         Assurance: assuranceId,
+        accepteSurplus: accepteSurplus ?? null,
+        utiliseTarifsPropres: utiliseTarifsPropres ?? true,
     });
 
     // Retourner uniquement les sociétés de l'assurance concernée
     const societes = await SocieteAssurance.find({ Assurance: assuranceId }).lean();
-    return NextResponse.json(societes);
+    return NextResponse.json({ created, societes });
 }
 
 // PUT /api/societeassurance
@@ -50,12 +59,17 @@ export async function PUT(request: NextRequest) {
     const SocieteAssurance = getTenantModel<ISocieteAssurance>(context.connection, "SocieteAssurance");
 
     const body = await request.json();
-    const { id, societe, assuranceId } = body;
-    if (!id || !societe || !assuranceId) {
+    const { id, societe, assuranceId, accepteSurplus, utiliseTarifsPropres } = body;
+    if (!id || !assuranceId) {
         return NextResponse.json({ error: "Champs obligatoires manquants" }, { status: 400 });
     }
 
-    await SocieteAssurance.findByIdAndUpdate(id, { societe });
+    const update: any = {};
+    if (societe !== undefined) update.societe = societe;
+    if (accepteSurplus !== undefined) update.accepteSurplus = accepteSurplus;
+    if (utiliseTarifsPropres !== undefined) update.utiliseTarifsPropres = utiliseTarifsPropres;
+
+    await SocieteAssurance.findByIdAndUpdate(id, update);
 
     const updated = await SocieteAssurance.find({ Assurance: assuranceId }).lean();
     return NextResponse.json(updated);

@@ -234,7 +234,7 @@ export default function HospitalisationPageCaisse({
                 StatutMedecinAnesthesiste: line.StatutMedecinAnesthesiste ?? "NON",
                 StatutMedecinAideOperatoire: line.StatutMedecinAideOperatoire ?? "NON",
             }));
-            
+
             setPresetLines(cleanedLines);
             // Déclenche la réinit dans ActesTable et rechargement des lignes
             setResetKey((k) => k + 1);
@@ -443,6 +443,8 @@ export default function HospitalisationPageCaisse({
                 matricule: data.Numcarte || "",
                 numeroBon: data.NumBon || "",
                 societe: data.SocieteP || data.SOCIETE_PATIENT || "",
+                societeId: data.IDSOCIETEASSURANCE ? String(data.IDSOCIETEASSURANCE) : "",
+                accepteSurplus: data.accepteSurplus ?? true,
                 numero: "",
                 adherent: data.Souscripteur || "",
             },
@@ -521,7 +523,7 @@ export default function HospitalisationPageCaisse({
                 StatutMedecinAnesthesiste: line.StatutMedecinAnesthesiste ?? "NON",
                 StatutMedecinAideOperatoire: line.StatutMedecinAideOperatoire ?? "NON",
             }));
-            
+
             setPresetLines(cleanedLines);
             setResetKey((k) => k + 1);
         } else {
@@ -662,6 +664,8 @@ export default function HospitalisationPageCaisse({
                             assuranceId={formData.Assure === "NON ASSURE" ? 1 : formData.Assure === "TARIF MUTUALISTE" ? 2 : 3}
                             saiTaux={formData.assurance.taux || 0}
                             assuranceDbId={formData.assurance.assuranceId || undefined}
+                            societeAssuranceId={formData.assurance.societeId || undefined}
+                            accepteSurplus={formData.assurance.accepteSurplus ?? true}
                             externalResetKey={resetKey}
                             presetLines={presetLines}
                             onTotalsChange={(s) => {
@@ -793,6 +797,8 @@ export default function HospitalisationPageCaisse({
                                 CodePrestation: codePrestation || formData.patientId, // fallback si besoin
                                 Rclinique: formData.Rclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
+                                IDSOCIETEASSURANCE: formData.assurance.societeId || undefined,
+                                accepteSurplus: formData.assurance.accepteSurplus ?? true,
                                 Assurance: formData.assurance?.designationassurance || "",
                                 Souscripteur: formData.assurance.adherent || "",
                                 Taux: formData.assurance.taux || 0,

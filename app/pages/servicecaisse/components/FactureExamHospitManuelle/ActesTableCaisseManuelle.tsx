@@ -221,6 +221,8 @@ interface Props {
     assuranceId?: AssuranceId; // Sélection (1=Sans,2=Mutualiste,3=Préférentiel)
     saiTaux?: number; // Taux (%)
     assuranceDbId?: string; // ObjectId de l'assurance en base pour charger les tarifs
+    societeAssuranceId?: string; // ObjectId de la société/assurance pour les tarifs négociés
+    accepteSurplus?: boolean; // indique si la société accepte le surplus
     onTotalsChange?: (totaux: {
         montantTotal: number;
         partAssurance: number;
@@ -293,9 +295,10 @@ const emptyLigne = (): ILignePrestation => ({
     payePar: ""
 });
 
-export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTaux = 0, assuranceDbId, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
+export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTaux = 0, assuranceDbId, societeAssuranceId, accepteSurplus = true, onTotalsChange, externalResetKey, presetLines, onLinesChange }: Props) {
     const [actes, setActes] = useState<IActeClinique[]>([]);
     const [tarifsAssurance, setTarifsAssurance] = useState<ITarifAssurance[]>([]);
+    const [tarifsSocieteAssurance, setTarifsSocieteAssurance] = useState<ITarifAssurance[]>([]);
     const [medecins, setMedecins] = useState<any[]>([]);
     const [lignes, setLignes] = useState<ILignePrestation[]>([emptyLigne()]);
     const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -384,6 +387,32 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
     }, []);
 
     useEffect(() => {
+        // Charger les tarifs de la société/assurance si un identifiant est fourni
+        if (!societeAssuranceId || societeAssuranceId.trim() === "") {
+            setTarifsSocieteAssurance([]);
+            return;
+        }
+        fetch(`/api/tarifs-societe-assurance?societeAssuranceId=${societeAssuranceId}`)
+            .then((r) => {
+                if (!r.ok) throw new Error("no tarifs for societe assurance");
+                return r.json();
+            })
+            .then((list) => {
+                const mapped: ITarifAssurance[] = (Array.isArray(list) ? list : []).map((t: any) => ({
+                    _id: String(t._id),
+                    Designation: t.acte,
+                    IDASSURANCE: 0,
+                    PrixMutualiste: t.prixmutuel,
+                    PrixAssure: t.prixpreferenciel,
+                    CoefficientActe: t.coefficient,
+                    Prix: undefined,
+                }));
+                setTarifsSocieteAssurance(mapped);
+            })
+            .catch(() => setTarifsSocieteAssurance([]));
+    }, [societeAssuranceId]);
+
+    useEffect(() => {
         // recalculer totaux à chaque modification de lignes
         facturePharmacie();
         if (onLinesChange) onLinesChange(lignes);
@@ -424,21 +453,384 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
     }, [externalResetKey, presetLines, cleanLoadedLines]);
 
     // ---------- Helpers pour rechercher objets -------------
-    function findActeById(id: string) {
-        return actes.find((a) => a._id === id);
-    }
-    function findTarifByActeDesignationAndAssurance(designation: string, _assurance: AssuranceId) {
-        // Les tarifs sont déjà filtrés par assurance via l'endpoint /api/tarifs/{assuranceDbId}
-        return tarifsAssurance.find((t) => t.Designation === designation);
+    const findActeById = useCallback((id: string) => actes.find((a) => a._id === id), [actes]);
+
+    // ---------- Traduction des procédures WLangage ----------
+    function tarifActeClinique(ligne: ILignePrestation, acte: IActeClinique, selAssure: number) {
+        // SI ACTE.CoefficientActe=0 ALORS => coefficient = 1 sinon acte.CoefficientActe
+        ligne.Coefficient = acte.CoefficientActe && acte.CoefficientActe !== 0 ? acte.CoefficientActe : 1;
+
+        // Mode sans surplus : utiliser le tarif négocié (assurance/société) comme montant clinique affiché
+        if (accepteSurplus === false && assuranceId !== 1) {
+            const designation = acte.Designation || "";
+            const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => t.Designation === designation) : [];
+            const assuranceMatches = tarifsAssurance.filter((t) => t.Designation === designation);
+            const tarifMatchedList = societeMatches.length > 0 ? societeMatches : assuranceMatches;
+            
+            if (tarifMatchedList.length > 0) {
+                const tarif = tarifMatchedList[0];
+                const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+                ligne.Accepter = prixNegocie;
+                ligne.SURPLUS = 0;
+                ligne.Reliquat = 0;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Coef_ASSUR = 0;
+                ligne.TARIF_ASSURANCE = prixNegocie;
+                ligne.COEFFICIENT_ASSURANCE = 0;
+                ligne.PrixTotal = ligne.Accepter * ligne.Coefficient * ligne.QteP;
+                return;
+            }
+        }
+
+        switch (selAssure) {
+            case 1: // NON ASSURE
+                ligne.Accepter = acte.Prix || 0;
+                ligne.SURPLUS = 0;
+                break;
+            case 2: // Tarif Mutualiste
+                ligne.Accepter = acte.PrixMutualiste || acte.Prix || 0;
+                ligne.SURPLUS = 0;
+                break;
+            case 3: // Tarif Preferentiel
+                ligne.Accepter = acte.PrixAssure || acte.Prix || 0;
+                ligne.SURPLUS = 0;
+                break;
+            default:
+                ligne.Accepter = acte.Prix || 0;
+                ligne.SURPLUS = 0;
+        }
     }
 
-    function prixActe(ligne: ILignePrestation, acte?: IActeClinique) {
-        // Coefficient, QteP, Prixunitaire, PrixTotal, PartAssurance et PartAssure sont désormais
-        // saisis manuellement par l'utilisateur : aucun recalcul automatique n'est appliqué ici.
-        // On détermine uniquement à qui revient le montant (médecin exécutant / anesthésiste /
-        // aide opératoire) à partir du montant total déjà saisi.
+    function tarifActeAssurance(ligne: ILignePrestation, acte: IActeClinique, selAssure: number) {
+        // Tarif effectif : société d'abord si fourni et tarif existant pour cet acte, sinon assurance
+        const designation = acte.Designation || "";
+        const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => t.Designation === designation) : [];
+        const assuranceMatches = tarifsAssurance.filter((t) => t.Designation === designation);
+        const tarifMatchedList = societeMatches.length > 0 ? societeMatches : assuranceMatches;
+        if (tarifMatchedList.length === 0) {
+            // équivalent Erreur(...) et suppression tableau => on déclenche une erreur visible
+            setErrorMsg(
+                `Merci d'ajouter cet acte (${acte.Designation}) à la liste des actes de l'assurance avant cette opération.`
+            );
+            // on vide les lignes (comme TableSupprime)
+            setLignes([]);
+            return;
+        }
+        // sinon on parcourt les tarifs correspondants (tous pour cette assurance)
+        for (const tarif of tarifMatchedList) {
+            if (tarif.CoefficientActe === 1 && acte.CoefficientActe !== 1) {
+                montantForfaitAssurance(ligne, acte, tarif, selAssure);
+            } else if (tarif.CoefficientActe !== 1 && acte.CoefficientActe === 1) {
+                montantForfaitClinique(ligne, acte, tarif, selAssure);
+            } else {
+                montantSansForfait(ligne, acte, tarif, selAssure);
+            }
+        }
+    }
 
-        // On cherche le cas ou le montant est pour le médecin
+    function montantForfaitAssurance(
+        ligne: ILignePrestation,
+        acte: IActeClinique,
+        tarif: ITarifAssurance,
+        selAssure: number
+    ) {
+        // CAS OU COEF ASSURANCE EST UN FORFAIT  ON PREND LE COEFFICIENT DE L'ASSURANCE
+        ligne.Coefficient = acte.CoefficientActe || 1;
+        ligne.Coef_ASSUR = 0;
+        ligne.CoefClinique = ligne.Coefficient;
+
+        // selon SEL_Assure(selAssure)
+        if (selAssure === 1) {
+            tarifActeClinique(ligne, acte, selAssure);
+            return;
+        }
+
+        // Mode sans surplus : on applique le tarif négocié tel quel
+        if (accepteSurplus === false) {
+            const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+            ligne.Prixunitaire = prixNegocie;
+            ligne.Accepter = prixNegocie;
+            ligne.SURPLUS = 0;
+            ligne.Reliquat = 0;
+            ligne.TotalRelicatCoefAssur = 0;
+            ligne.Coef_ASSUR = 0;
+            ligne.TARIF_ASSURANCE = 0;
+            ligne.COEFFICIENT_ASSURANCE = 0;
+            ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+            return;
+        }
+
+        // Case 2 (Mutualiste)
+        if (selAssure === 2) {
+            const tPrix = tarif.PrixMutualiste ?? 0;
+            const aPrix = acte.PrixMutualiste ?? 0;
+            const aCoef = acte.CoefficientActe ?? 1;
+            if (tPrix < aPrix * aCoef) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix * aCoef - tPrix;
+                ligne.TotalRelicatCoefAssur = ligne.Coef_ASSUR * aPrix * ligne.QteP;
+                ligne.Reliquat = ligne.SURPLUS * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix === aPrix * aCoef) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                // tPrix > aPrix * coef
+                ligne.CoefClinique = tarif.CoefficientActe || ligne.CoefClinique;
+                ligne.Accepter = tarif.PrixMutualiste || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixMutualiste || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+
+        // Case 3 (Assuré)
+        if (selAssure === 3) {
+            const tPrix = tarif.PrixAssure ?? 0;
+            const aPrix = acte.PrixAssure ?? 0;
+            const aCoef = acte.CoefficientActe ?? 1;
+            if (tPrix < aPrix * aCoef) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix * aCoef - tPrix;
+                ligne.TotalRelicatCoefAssur = ligne.Coef_ASSUR * aPrix * ligne.QteP;
+                ligne.Reliquat = ligne.SURPLUS * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix === aPrix * aCoef) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                // tPrix > aPrix * coef
+                ligne.CoefClinique = tarif.CoefficientActe || ligne.CoefClinique;
+                ligne.Accepter = tarif.PrixAssure || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixAssure || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+    }
+
+    function montantForfaitClinique(
+        ligne: ILignePrestation,
+        acte: IActeClinique,
+        tarif: ITarifAssurance,
+        selAssure: number
+    ) {
+        // CAS OU COEF ASSURANCE EST UN FORFAIT  ON PREND LE COEFFICIENT DE L'ASSURANCE
+        ligne.Coefficient = acte.CoefficientActe || 1;
+        ligne.Coef_ASSUR = 0;
+        ligne.CoefClinique = ligne.Coefficient;
+        ligne.forfaitclinique = 0;
+
+        if (selAssure === 1) {
+            tarifActeClinique(ligne, acte, selAssure);
+            return;
+        }
+
+        // Mode sans surplus : on applique le tarif négocié tel quel
+        if (accepteSurplus === false) {
+            const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+            ligne.Prixunitaire = prixNegocie;
+            ligne.Accepter = prixNegocie;
+            ligne.SURPLUS = 0;
+            ligne.Reliquat = 0;
+            ligne.TotalRelicatCoefAssur = 0;
+            ligne.Coef_ASSUR = 0;
+            ligne.forfaitclinique = 0;
+            ligne.TARIF_ASSURANCE = 0;
+            ligne.COEFFICIENT_ASSURANCE = 0;
+            ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+            return;
+        }
+
+        // Case 2 (Mutualiste)
+        if (selAssure === 2) {
+            const tPrix = tarif.PrixMutualiste ?? 0;
+            const aPrix = acte.PrixMutualiste ?? 0;
+            const tCoef = tarif.CoefficientActe ?? 1;
+            if (tPrix * tCoef < aPrix) {
+                ligne.forfaitclinique = 1;
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix - tPrix * tCoef;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Reliquat = ligne.SURPLUS * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix * tCoef === aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                ligne.CoefClinique = tarif.CoefficientActe || ligne.CoefClinique;
+                ligne.Accepter = tarif.PrixMutualiste || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixMutualiste || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+
+        // Case 3 (Assuré)
+        if (selAssure === 3) {
+            const tPrix = tarif.PrixAssure ?? 0;
+            const aPrix = acte.PrixAssure ?? 0;
+            const tCoef = tarif.CoefficientActe ?? 1;
+            if (tPrix * tCoef < aPrix) {
+                ligne.forfaitclinique = 1;
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix - tPrix * tCoef;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Reliquat = ligne.SURPLUS * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix * tCoef === aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                ligne.CoefClinique = tarif.CoefficientActe || ligne.CoefClinique;
+                ligne.Accepter = tarif.PrixAssure || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixAssure || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+    }
+
+    function montantSansForfait(
+        ligne: ILignePrestation,
+        acte: IActeClinique,
+        tarif: ITarifAssurance,
+        selAssure: number
+    ) {
+        // CAS OU COEF ASSURANCE < COEF CLINIQUE
+        const tCoef = tarif.CoefficientActe ?? 0;
+        const aCoef = acte.CoefficientActe ?? 0;
+        if (tCoef < aCoef) {
+            ligne.Coef_ASSUR = aCoef - tCoef;
+        } else if (tCoef === aCoef) {
+            ligne.Coef_ASSUR = 0;
+        } else {
+            // tCoef > aCoef
+            ligne.Coefficient = tCoef;
+            ligne.Coef_ASSUR = 0;
+        }
+
+        ligne.CoefClinique = ligne.Coefficient;
+
+        // selon selAssure
+        if (selAssure === 1) {
+            tarifActeClinique(ligne, acte, selAssure);
+            return;
+        }
+
+        // Mode sans surplus : on applique le tarif négocié tel quel
+        if (accepteSurplus === false) {
+            const prixNegocie = selAssure === 2 ? (tarif.PrixMutualiste ?? 0) : (tarif.PrixAssure ?? 0);
+            ligne.Prixunitaire = prixNegocie;
+            ligne.Accepter = prixNegocie;
+            ligne.SURPLUS = 0;
+            ligne.Reliquat = 0;
+            ligne.TotalRelicatCoefAssur = 0;
+            ligne.Coef_ASSUR = 0;
+            ligne.TARIF_ASSURANCE = 0;
+            ligne.COEFFICIENT_ASSURANCE = 0;
+            ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+            return;
+        }
+
+        if (selAssure === 2) {
+            const tPrix = tarif.PrixMutualiste ?? 0;
+            const aPrix = acte.PrixMutualiste ?? 0;
+            if (tPrix < aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix - tPrix;
+                ligne.TotalRelicatCoefAssur = ligne.Coef_ASSUR * aPrix * ligne.QteP;
+                ligne.Reliquat = ligne.SURPLUS * (tarif.CoefficientActe ?? 0) * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix === aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                ligne.Accepter = tarif.PrixMutualiste || tPrix;
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixMutualiste || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+
+        // selAssure === 3
+        if (selAssure === 3) {
+            const tPrix = tarif.PrixAssure ?? 0;
+            const aPrix = acte.PrixAssure ?? 0;
+            if (tPrix < aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = aPrix - tPrix;
+                ligne.TotalRelicatCoefAssur = ligne.Coef_ASSUR * aPrix * ligne.QteP;
+                ligne.Reliquat = ligne.SURPLUS * (tarif.CoefficientActe ?? 0) * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else if (tPrix === aPrix) {
+                ligne.Prixunitaire = aPrix;
+                ligne.Accepter = aPrix;
+                ligne.SURPLUS = 0;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            } else {
+                ligne.SURPLUS = 0;
+                ligne.Prixunitaire = tarif.PrixAssure || tPrix;
+                ligne.Accepter = tarif.PrixAssure || tPrix;
+                ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP;
+                ligne.COEFFICIENT_ASSURANCE = tarif.CoefficientActe || 0;
+                ligne.TARIF_ASSURANCE = tPrix;
+            }
+            return;
+        }
+    }
+
+    function repartirMontantsMedecin(ligne: ILignePrestation, acte?: IActeClinique) {
+        // Répartition des montants vers le médecin exécutant / anesthésiste / aide opératoire
         if (acte && (acte.MontantAuMed === 1 || acte.MontantAuMed === "1")) {
             ligne.StatutMedecinActe = "OUI";
             ligne.Montant_MedExecutant = ligne.PrixTotal;
@@ -446,20 +838,79 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
             ligne.StatutMedecinActe = "NON";
             ligne.Montant_MedExecutant = 0;
         }
-
-        // On cherche le cas ou le montant est pour l'anesthésiste
         if (acte && (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1")) {
             ligne.MontantAnesthesiste = ligne.PrixTotal;
         } else {
             ligne.MontantAnesthesiste = 0;
         }
-
-        // On cherche le cas ou le montant est pour l'aide opératoire
         if (acte && (acte.MontantAideOperatoire === 1 || acte.MontantAideOperatoire === "1")) {
             ligne.MontantAideOperatoire = ligne.PrixTotal;
         } else {
             ligne.MontantAideOperatoire = 0;
         }
+    }
+
+    function prixActe(ligne: ILignePrestation, acte?: IActeClinique) {
+        // TABLE_PRESTATION.Prixunitaire = TABLE_PRESTATION.Accepter
+        ligne.Prixunitaire = ligne.Accepter || ligne.Prixunitaire || 0;
+        // initial PrixTotal
+        ligne.PrixTotal = ligne.Prixunitaire * ligne.Coefficient * ligne.QteP; // + taxe si besoin
+
+        if (assuranceId !== 1) {
+            // Avec assurance
+            if (ligne.Exclusion === "Accepter") {
+                //On actualise le coefficient acte
+                ligne.Coefficient = ligne.CoefClinique || ligne.Coefficient;
+                ligne.PrixTotal = ligne.Coefficient * ligne.Prixunitaire * ligne.QteP;
+
+                if (accepteSurplus === false) {
+                    // Mode sans surplus : base patient = tarif négocié, pas de surplus/reliquat
+                    ligne.PartAssurance = (saiTaux * ligne.PrixTotal) / 100;
+                    ligne.PartAssure = ligne.PrixTotal - ligne.PartAssurance;
+                    ligne.Reliquat = 0;
+                    ligne.Coef_ASSUR = 0;
+                    ligne.SURPLUS = 0;
+                    ligne.TotalRelicatCoefAssur = 0;
+                } else if (ligne.TARIF_ASSURANCE === 0) {
+                    // TARIF_ASSURANCE non paramétré
+                    ligne.PartAssurance = (saiTaux * ligne.Prixunitaire * ligne.Coefficient * ligne.QteP) / 100;
+                    ligne.PartAssure = ligne.PrixTotal - ligne.PartAssurance;
+                    ligne.Reliquat = 0;
+                    ligne.Coef_ASSUR = 0;
+                    ligne.SURPLUS = 0;
+                    ligne.TotalRelicatCoefAssur = 0;
+                } else {
+                    ligne.PartAssurance =
+                        (saiTaux * ligne.TARIF_ASSURANCE * ligne.COEFFICIENT_ASSURANCE * ligne.QteP) / 100;
+                    ligne.PartAssure =
+                        ligne.TARIF_ASSURANCE * ligne.COEFFICIENT_ASSURANCE * ligne.QteP - ligne.PartAssurance;
+                    ligne.Reliquat = ligne.SURPLUS * ligne.COEFFICIENT_ASSURANCE * ligne.QteP;
+                    ligne.TotalRelicatCoefAssur =
+                        ligne.Coef_ASSUR * ligne.Prixunitaire * ligne.QteP;
+                }
+            } else {
+                // Exclusion = Refuser
+                ligne.Coefficient = acte?.CoefficientActe ?? ligne.Coefficient;
+                ligne.PartAssurance = 0;
+                ligne.TotalRelicatCoefAssur = 0;
+                ligne.Reliquat = 0;
+                ligne.Prixunitaire = ligne.Refuser || ligne.Prixunitaire;
+                ligne.PrixTotal = ligne.Coefficient * ligne.Prixunitaire * ligne.QteP;
+                ligne.PartAssure = ligne.PrixTotal;
+            }
+        } else {
+            // Sans assurance
+            ligne.PartAssurance = 0;
+            ligne.TotalRelicatCoefAssur = 0;
+            ligne.COEFFICIENT_ASSURANCE = 0;
+            ligne.TARIF_ASSURANCE = 0;
+            ligne.Reliquat = 0;
+            ligne.Coef_ASSUR = 0;
+            ligne.SURPLUS = 0;
+            ligne.PartAssure = ligne.PrixTotal;
+        }
+
+        repartirMontantsMedecin(ligne, acte);
     }
 
     // Fonction pour mettre à jour MedecinAffiche selon les statuts
@@ -643,23 +1094,11 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
                 copy.heurePaiement = '';
                 copy.payePar = '';
 
-                // Préremplir le prix unitaire selon le type d'assurance, puis calculer
-                // Montant Total / Part Assurance / Part Assuré à partir des valeurs préremplies
-                const prixUnitaire = assuranceId === 3
-                    ? (acte.PrixAssure || acte.Prix || 0)
-                    : assuranceId === 2
-                        ? (acte.PrixMutualiste || acte.Prix || 0)
-                        : (acte.Prix || 0);
-                copy.Prixunitaire = prixUnitaire;
-                const prixTotal = Math.round(prixUnitaire * copy.Coefficient * copy.QteP);
-                copy.PrixTotal = prixTotal;
+                // Appliquer le tarif (clinique, assurance ou société) puis calculer les parts
                 if (assuranceId === 1) {
-                    copy.PartAssurance = 0;
-                    copy.PartAssure = prixTotal;
+                    tarifActeClinique(copy, acte, 1);
                 } else {
-                    const partAssurance = Math.round(prixTotal * ((saiTaux || 0) / 100));
-                    copy.PartAssurance = partAssurance;
-                    copy.PartAssure = prixTotal - partAssurance;
+                    tarifActeAssurance(copy, acte, assuranceId);
                 }
 
               // Si le montant total de l'acte est pour le médecin exécutant
@@ -689,23 +1128,8 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
                 copy.MontantAnesthesiste = 0;
                 copy.MontantAideOperatoire = 0;
 
-                // Calcul du prix
+                // Calcul du prix (tarifs + parts + répartition médecin)
                 prixActe(copy, acte);
-
-                // si MontantAuMed=1, on change la valeur
-                if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
-                    copy.Montant_MedExecutant = copy.PrixTotal;
-                }
-
-                // si MontantAnesthesiste=1, on change la valeur
-                if (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1") {
-                    copy.MontantAnesthesiste = copy.PrixTotal;
-                }
-
-                // si MontantAideOperatoire=1, on change la valeur
-                if (acte.MontantAideOperatoire === 1 || acte.MontantAideOperatoire === "1") {
-                    copy.MontantAideOperatoire = copy.PrixTotal;
-                }
 
                 // Mettre à jour MedecinAffiche selon les statuts
                 updateMedecinAffiche(copy, medecins);
@@ -739,37 +1163,21 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
                     }
                 }
 
-                // PrixTotal, PartAssurance et PartAssure restent modifiables manuellement, mais un
-                // changement de Coefficient, QteP ou Prixunitaire déclenche leur recalcul automatique.
-                const triggerRecalcFields: (keyof ILignePrestation)[] = ['Coefficient', 'QteP', 'Prixunitaire'];
-                if (triggerRecalcFields.includes(field)) {
-                    const prixTotal = Math.round((copy.Prixunitaire || 0) * (copy.Coefficient || 0) * (copy.QteP || 0));
-                    copy.PrixTotal = prixTotal;
-                    if (assuranceId === 1) {
-                        // Non assuré : le patient règle la totalité
-                        copy.PartAssurance = 0;
-                        copy.PartAssure = prixTotal;
+                // PrixTotal, PartAssurance et PartAssure : recalcul automatique lorsque
+                // Coefficient, QteP, Prixunitaire ou Exclusion changent, en appliquant
+                // les tarifs société/assurance et la règle accepteSurplus.
+                const recalcFields: (keyof ILignePrestation)[] = ['Coefficient', 'QteP', 'Prixunitaire', 'Exclusion'];
+                const acte = findActeById(copy.IDACTE);
+                if (acte) {
+                    if (recalcFields.includes(field)) {
+                        if (assuranceId === 1) {
+                            tarifActeClinique(copy, acte, 1);
+                        } else {
+                            tarifActeAssurance(copy, acte, assuranceId);
+                        }
+                        prixActe(copy, acte);
                     } else {
-                        const partAssurance = Math.round(prixTotal * ((saiTaux || 0) / 100));
-                        copy.PartAssurance = partAssurance;
-                        copy.PartAssure = prixTotal - partAssurance;
-                    }
-                }
-
-                const montantFields: (keyof ILignePrestation)[] = [
-                    'Coefficient', 'QteP', 'Prixunitaire', 'PrixTotal', 'PartAssurance', 'PartAssure',
-                ];
-                if (!montantFields.includes(field)) {
-                    const acte = findActeById(copy.IDACTE);
-                    // si acte existe, on met seulement à jour l'affectation médecin/anesthésiste/aide opératoire
-                    if (acte) {
-                        prixActe(copy, acte);
-                    }
-                } else if (triggerRecalcFields.includes(field)) {
-                    // Le PrixTotal vient d'être recalculé : mettre à jour l'affectation médecin/anesthésiste/aide opératoire
-                    const acte = findActeById(copy.IDACTE);
-                    if (acte) {
-                        prixActe(copy, acte);
+                        repartirMontantsMedecin(copy, acte);
                     }
                 }
 

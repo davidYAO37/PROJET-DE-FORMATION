@@ -68,6 +68,7 @@ export * from './patient';
 export * from './rapportHospitalisation';
 export * from './resultatLignePrestation';
 export * from './tarifassurance';
+export * from './tarifsocieteassurance';
 export * from './users.model';
 
 // Side-effect imports ensure schemas are registered with default mongoose
@@ -140,6 +141,7 @@ import './patient';
 import './rapportHospitalisation';
 import './resultatLignePrestation';
 import './tarifassurance';
+import './tarifsocieteassurance';
 import './users.model';
 
 // --- Modèles du module Hospitalisation ---

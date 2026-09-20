@@ -27,7 +27,6 @@ export type Acte = {
     reliquat?: number;
     totalRelicatCoefAssur?: number;
     montantMedExecutant?: number
-
 };
 
 export type Assurance = {
@@ -38,6 +37,8 @@ export type Assurance = {
     matricule: string;
     numeroBon: string;
     societe: string;
+    societeId?: string;
+    accepteSurplus?: boolean;
     numero: string;
     adherent: string;
 };
@@ -74,6 +75,9 @@ export type ExamenHospitalisationForm = {
     IdPatient?: string;
     MontantRecu?: number;
     IDASSURANCE?: string;
+    IDSOCIETEASSURANCE?: string;
+    IDSOCIETEPARTENAIRE?: string;
+    accepteSurplus?: boolean;
     Souscripteur?: string;
     SOCIETE_PATIENT?: string;
     TotalPaye?: number;

@@ -211,6 +211,8 @@ export default function HospitalisationPage({
             typeacte: typeActeValue,
             // Assurance : priorité absolue aux données de l'examen existant
             Assure: data.Assure || "",
+            IDSOCIETEASSURANCE: data.IDSOCIETEASSURANCE ? String(data.IDSOCIETEASSURANCE) : "",
+            accepteSurplus: data.accepteSurplus !== undefined ? Boolean(data.accepteSurplus) : undefined,
             assurance: {
                 assuranceId: data.IDASSURANCE ? String(data.IDASSURANCE) : "",
                 designationassurance: data.Assurance || "",
@@ -218,9 +220,11 @@ export default function HospitalisationPage({
                 taux: Number(data.Taux) || 0,
                 matricule: data.Numcarte || "",
                 numeroBon: data.NumBon || "",
-                societe: data.SocieteP || "",
+                societeId: data.IDSOCIETEASSURANCE ? String(data.IDSOCIETEASSURANCE) : "",
+                societe: data.SocieteP || data.SOCIETE_PATIENT || "",
                 numero: "",
                 adherent: data.Souscripteur || "",
+                accepteSurplus: data.accepteSurplus !== undefined ? Boolean(data.accepteSurplus) : undefined,
             },
             // Médecins
             medecinId: data.NummedecinExécutant || prev.medecinId,
@@ -303,7 +307,7 @@ export default function HospitalisationPage({
             setInitialHydrated(true);
             hydrateFromExistingExamen(initialDesignationtypeacte, initialCodePrestation);
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [initialCodePrestation, initialDesignationtypeacte, typesActe]);
 
     return (
@@ -444,7 +448,7 @@ export default function HospitalisationPage({
                                                             taux: Number(data.Taux) || 0,
                                                             matricule: data.Numcarte || "",
                                                             numeroBon: data.NumBon || "",
-                                                            societe: data.SocieteP || "",
+                                                            societe: data.SocieteP || data.SOCIETE_PATIENT || "",
                                                             numero: "",
                                                             adherent: data.Souscripteur || "",
                                                         },
@@ -627,6 +631,8 @@ export default function HospitalisationPage({
                             assuranceId={formData.Assure === "NON ASSURE" ? 1 : formData.Assure === "TARIF MUTUALISTE" ? 2 : 3}
                             saiTaux={formData.assurance.taux || 0}
                             assuranceDbId={formData.assurance.assuranceId || undefined}
+                            societeAssuranceId={formData.assurance.societeId || undefined}
+                            accepteSurplus={formData.assurance.accepteSurplus ?? true}
                             externalResetKey={resetKey}
                             presetLines={presetLines}
                             onTotalsChange={(s) => {
@@ -699,6 +705,8 @@ export default function HospitalisationPage({
                                 CodePrestation: CodePrestation || formData.patientId, // fallback si besoin
                                 Rclinique: formData.Rclinique,
                                 IDASSURANCE: formData.assurance.assuranceId || undefined,
+                                IDSOCIETEASSURANCE: formData.assurance.societeId || undefined,
+                                accepteSurplus: formData.assurance.accepteSurplus ?? true,
                                 Assurance: formData.assurance?.designationassurance || "",
                                 Souscripteur: formData.assurance.adherent || "",
                                 Taux: formData.assurance.taux || 0,

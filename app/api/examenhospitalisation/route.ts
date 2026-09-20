@@ -131,7 +131,7 @@ export async function POST(req: NextRequest) {
             IdPatient: consultationData.IdPatient ?
                 new mongoose.Types.ObjectId(consultationData.IdPatient) : null,
             PatientP: consultationData.PatientP || header.PatientP || "",
-            
+
             // Ajouter le champ sexe depuis la consultation
             sexe: consultationData.Sexe || header.sexe || "",
 
@@ -154,6 +154,10 @@ export async function POST(req: NextRequest) {
             ...(header.IDASSURANCE && {
                 IDASSURANCE: new mongoose.Types.ObjectId(header.IDASSURANCE)
             }),
+            ...(header.IDSOCIETEASSURANCE && {
+                IDSOCIETEASSURANCE: new mongoose.Types.ObjectId(header.IDSOCIETEASSURANCE)
+            }),
+            accepteSurplus: header.accepteSurplus,
         };
 
         // Création ou mise à jour de l'examen
@@ -169,7 +173,14 @@ export async function POST(req: NextRequest) {
                 );
             }
         } else {
-            saved = await ExamenHospitalisation.create(examenData);
+            saved = await ExamenHospitalisation.findOneAndUpdate(
+                {
+                    CodePrestation: header.CodePrestation,
+                    Designationtypeacte: header.Designationtypeacte,
+                },
+                examenData,
+                { new: true, upsert: true, setDefaultsOnInsert: true }
+            );
         }
 
         const hospId = saved._id;
@@ -207,7 +218,7 @@ export async function POST(req: NextRequest) {
                         coefficientActe: l.Coefficient || 1,
                         lettreCle: l.Lettre_Cle || "",
                         idActe: l.IDACTE,
-                        prixClinique: l.SURPLUS || 0,
+                        prixClinique: l.Accepter || 0,
                         reliquatPatient: l.Reliquat || 0,
                         montantMedecinExecutant: l.Montant_MedExecutant || 0,
                         numMedecinExecutant: (l.StatutMedecinActe === "OUI" && header.medecinId) ? header.medecinId : "",
@@ -230,10 +241,10 @@ export async function POST(req: NextRequest) {
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
                         IDSOCIETEPARTENAIRE: saved.IDSOCIETEPARTENAIRE || null,
-                        
+
                         // Ajouter le champ sexe depuis la consultation
                         sexe: consultationData.Sexe || "",
-                        
+
                         // Ajouter les statuts pour anesthésiste et aide opératoire
                         StatutMedecinAnesthesiste: l.StatutMedecinAnesthesiste || "NON",
                         StatutMedecinAideOperatoire: l.StatutMedecinAideOperatoire || "NON",

@@ -12,6 +12,7 @@ import { Modal } from 'react-bootstrap';
 import dayjs from 'dayjs';
 import ModifierPatient from './ModifierPatient';
 import ExamenHospitalisationModal from '../components/ExamenHospitModal';
+import ExamenHospitalisationModalBilan from '../../serviceaccueil/components/ExamenHospitModalBilan';
 import FicheConsultation from '../components/ConsultationAdd/FicheConsultation';
 import PatientServiceModalLabo from '@/components/PatientServiceModalLabo';
 
@@ -34,6 +35,7 @@ export default function PageLabo() {
 
   const [showPharmacieModalPharmAccueil, setShowPharmacieModalPharmAccueil] = useState(false);
   const [showExamenHospitalisationModal, setShowExamenHospitalisationModal] = useState(false);
+  const [showExamenHospitalisationModalBilan, setShowExamenHospitalisationModalBilan] = useState(false);
   const [showConsultationModal, setShowConsultationModal] = useState(false);
   const [consultationJour, setConsultationJour] = useState<string | null>(null);
 
@@ -200,6 +202,21 @@ export default function PageLabo() {
           <ExamenHospitalisationModal
             show={showExamenHospitalisationModal}
             onHide={() => setShowExamenHospitalisationModal(false)}
+          />
+        </Col>
+
+        <Col xs={12} md={2}>
+          <Button
+            variant="outline-warning"
+            title="Ajouter un bilan"
+            size="sm"
+            onClick={() => setShowExamenHospitalisationModalBilan(true)}
+          >
+            Ajouter un bilan
+          </Button>
+          <ExamenHospitalisationModalBilan
+            show={showExamenHospitalisationModalBilan}
+            onHide={() => setShowExamenHospitalisationModalBilan(false)}
           />
         </Col>
 

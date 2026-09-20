@@ -15,12 +15,14 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
         codeassurance: "",
         telephone: "",
         email: "",
+        accepteSurplus: true,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setForm({ ...form, [name]: type === "checkbox" ? checked : value });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +58,7 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
                 });
             }
             onAdd(data);
-            setForm({ designationassurance: "", codeassurance: "", telephone: "", email: "" });
+            setForm({ designationassurance: "", codeassurance: "", telephone: "", email: "", accepteSurplus: true });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -87,6 +89,19 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
                     <Form.Group className="mb-2">
                         <Form.Label>Email</Form.Label>
                         <Form.Control name="email" value={form.email} onChange={handleChange} required type="email" />
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Check
+                            type="switch"
+                            id="accepteSurplus"
+                            name="accepteSurplus"
+                            label="Accepte le calcul des surplus"
+                            checked={form.accepteSurplus}
+                            onChange={handleChange}
+                        />
+                        <Form.Text className="text-muted">
+                            Désactiver pour n'utiliser que les tarifs assurance/société sans ajouter le surplus clinique.
+                        </Form.Text>
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>

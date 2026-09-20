@@ -24,10 +24,14 @@ export default function AssuranceInfoCaisseManuelle({ formData, setFormData, cur
 
     // Callback pour sélection société
     const handleSelectSociete = (societe: { _id: string; societe: string }) => {
-        setFormData({
-            ...formData,
-            assurance: { ...formData.assurance, societe: societe.societe },
-        });
+        setFormData((prev) => ({
+            ...prev,
+            assurance: {
+                ...prev.assurance,
+                societeId: societe._id,
+                societe: societe.societe,
+            },
+        }));
     };
 
     // Charger médecins
@@ -47,6 +51,54 @@ export default function AssuranceInfoCaisseManuelle({ formData, setFormData, cur
                 setAssurances(Array.isArray(data) ? data : []);
             });
     }, []);
+
+    // Résoudre la règle de surplus de la société sélectionnée, ou à défaut de l'assurance.
+    useEffect(() => {
+        const assuranceId = formData.assurance.assuranceId;
+        const societeId = formData.assurance.societeId;
+        let cancelled = false;
+
+        const updateAccepteSurplus = (accepteSurplus: boolean) => {
+            if (cancelled) return;
+            setFormData((prev) => {
+                if (prev.assurance.accepteSurplus === accepteSurplus) return prev;
+                return {
+                    ...prev,
+                    assurance: { ...prev.assurance, accepteSurplus },
+                };
+            });
+        };
+
+        const resolveAccepteSurplus = async () => {
+            if (!assuranceId) {
+                updateAccepteSurplus(false);
+                return;
+            }
+
+            if (societeId) {
+                try {
+                    const response = await fetch(`/api/societeassurance?societeId=${encodeURIComponent(societeId)}`);
+                    if (response.ok) {
+                        const societe = await response.json();
+                        if (societe?.accepteSurplus !== null && societe?.accepteSurplus !== undefined) {
+                            updateAccepteSurplus(Boolean(societe.accepteSurplus));
+                            return;
+                        }
+                    }
+                } catch {
+                    // Revenir à la règle de l'assurance si la société ne peut pas être chargée.
+                }
+            }
+
+            const assurance = assurances.find((item) => item._id === assuranceId);
+            updateAccepteSurplus(assurance?.accepteSurplus ?? true);
+        };
+
+        resolveAccepteSurplus();
+        return () => {
+            cancelled = true;
+        };
+    }, [formData.assurance.assuranceId, formData.assurance.societeId, assurances, setFormData]);
 
     // Fonction pour vérifier les paiements existants
     const checkPaidLines = (): boolean => {
@@ -83,8 +135,10 @@ export default function AssuranceInfoCaisseManuelle({ formData, setFormData, cur
                         matricule: "",
                         numeroBon: "",
                         societe: "",
+                        societeId: "",
                         numero: "",
                         adherent: "",
+                        accepteSurplus: false,
                     },
                     partAssurance: 0,
                     Partassure: 0,
@@ -192,14 +246,16 @@ export default function AssuranceInfoCaisseManuelle({ formData, setFormData, cur
                                       return;
                                   } */
 
-                                setFormData({
-                                    ...formData,
+                                setFormData((prev) => ({
+                                    ...prev,
                                     assurance: {
-                                        ...formData.assurance,
+                                        ...prev.assurance,
                                         assuranceId: newAssuranceId,
                                         designationassurance,
+                                        societeId: "",
+                                        societe: "",
                                     },
-                                });
+                                }));
                                 previousAssuranceId.current = newAssuranceId;
 
                                 // Ouvrir le modal si une assurance est sélectionnée
@@ -316,6 +372,13 @@ export default function AssuranceInfoCaisseManuelle({ formData, setFormData, cur
                                 +
                             </Button>
                         </div>
+                        {formData.assurance.assuranceId && (
+                            <Form.Text className={formData.assurance.accepteSurplus ? "text-success" : "text-danger"}>
+                                {formData.assurance.accepteSurplus
+                                    ? "La société accepte le surplus."
+                                    : "La société n’accepte pas le surplus."}
+                            </Form.Text>
+                        )}
                     </Form.Group>
 
                     {/* Adhérent */}

@@ -115,8 +115,14 @@ export async function POST(req: NextRequest) {
       );
       if (!savedExamen) throw new Error("Examen introuvable pour mise à jour");
     } else {
-      const created = await ExamenHospitalisation.create([cleanedHeader], { session });
-      savedExamen = Array.isArray(created) ? created[0] : created;
+      savedExamen = await ExamenHospitalisation.findOneAndUpdate(
+        {
+          CodePrestation: cleanedHeader.CodePrestation,
+          Designationtypeacte: cleanedHeader.Designationtypeacte,
+        },
+        { ...cleanedHeader, updatedAt: new Date() },
+        { new: true, upsert: true, setDefaultsOnInsert: true, session }
+      );
     }
 
     const factData = {

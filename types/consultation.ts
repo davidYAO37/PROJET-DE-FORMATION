@@ -22,6 +22,7 @@ export interface ConsultationType {
     tauxAssurance: number;
     PartAssurance: number;
     tiket_moderateur: number;
+    accepteSurplus?: boolean;
     numero_carte: string;
     NumBon: string;
 

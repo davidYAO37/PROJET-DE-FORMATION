@@ -80,6 +80,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                     Rclinique: data.Rclinique || prev.Rclinique,
                     societePatient: data.SOCIETE_PATIENT || data.societe || prev.societePatient,
                     Code_dossier: data.Code_dossier || prev.Code_dossier,
+                    IDSOCIETEASSURANCE: data.numero || prev.IDSOCIETEASSURANCE,
                     assurance: {
                         assuranceId: data.idAssurance || prev.assurance.assuranceId,
                         designationassurance: data.assurance || prev.assurance.designationassurance,
@@ -88,6 +89,7 @@ export default function PatientInfoCaisse({ formData, setFormData, onCodePrestat
                         matricule: data.matricule || prev.assurance.matricule,
                         numeroBon: data.NumBon || data.numeroBon || prev.assurance.numeroBon,
                         societe: data.SOCIETE_PATIENT || data.societe || prev.assurance.societe,
+                        societeId: data.numero || prev.assurance.societeId,
                         numero: data.numero || prev.assurance.numero,
                         adherent: data.Souscripteur || data.souscripteur || prev.assurance.adherent,
                     },

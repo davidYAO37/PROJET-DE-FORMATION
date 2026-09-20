@@ -40,6 +40,8 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
     const [partAssurance, setPartAssurance] = useState<number>(0);
     const [Partassure, setPartassure] = useState<number>(0);
     const [totalPatient, setTotalPatient] = useState<number>(0);
+    const [accepteSurplus, setAccepteSurplus] = useState<boolean>(true);
+    const [idSocieteAssurance, setIdSocieteAssurance] = useState<string>("");
 
     const [numBon, setNumBon] = useState("");
     const [recuPar, setRecuPar] = useState("");
@@ -97,6 +99,32 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
         }
     }, [assure, patient]);
 
+    // Résoudre la politique de surplus selon la société ou l'assurance
+    useEffect(() => {
+        const resolveSurplus = async () => {
+            if (assure === "non" || !selectedAssurance) {
+                setAccepteSurplus(true);
+                setIdSocieteAssurance("");
+                return;
+            }
+            const societeId = patient?.IDSOCIETEASSURANCE;
+            if (societeId) {
+                setIdSocieteAssurance(societeId.toString?.() || "");
+                const res = await fetch(`/api/societeassurance?societeId=${societeId}`);
+                const societe = await res.json();
+                if (societe && societe.accepteSurplus !== null && societe.accepteSurplus !== undefined) {
+                    setAccepteSurplus(societe.accepteSurplus);
+                    return;
+                }
+            } else {
+                setIdSocieteAssurance("");
+            }
+            const assurance = assurances.find(a => a._id === selectedAssurance);
+            setAccepteSurplus(assurance?.accepteSurplus ?? true);
+        };
+        resolveSurplus();
+    }, [assure, selectedAssurance, patient, assurances]);
+
     useEffect(() => {
         if (!selectedActe) return;
         const acte = actes.find((a) => a._id === selectedActe);
@@ -109,9 +137,13 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
         else montant = Math.round(acte.prixClinique ?? 0);
         setMontantClinique(montant);
 
-        // Si patient mutualiste ou préférentiel, on cherche le tarif dans la collection tarifassurance
+        // Si patient mutualiste ou préférentiel, on cherche le tarif société ou assurance
         if ((assure === "mutualiste" || assure === "preferentiel") && selectedAssurance) {
-            fetch(`/api/tarifs/${selectedAssurance}`)
+            const tarifUrl = idSocieteAssurance
+                ? `/api/tarifs-societe-assurance?societeAssuranceId=${idSocieteAssurance}`
+                : `/api/tarifs/${selectedAssurance}`;
+
+            fetch(tarifUrl)
                 .then(res => res.json())
                 .then((tarifs) => {
                     if (!Array.isArray(tarifs)) { setMontantAssurance(0); return; }
@@ -136,22 +168,42 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
     useEffect(() => {
         const tauxNum = Number(taux) || 0;
         let montantAssur = montantAssurance;
-        // Si le montant assurance n'est pas paramétré, on prend celui de la clinique
+        // Si le montant assurance/société n'est pas paramétré, on prend celui de la clinique
         if (!montantAssur || montantAssur === 0) montantAssur = montantClinique;
 
-        // Calcul de la part de l'assurance (arrondi à l'entier)
-        const partAssur = Math.round((montantAssur * tauxNum) / 100);
-        const partPat = montantAssur - partAssur;
+        // Si le surplus n'est pas accepté, le montant clinique affiché/sauvegardé correspond au tarif assurance/société.
+        // Sinon, on restaure le vrai montant clinique depuis l'acte.
+        let effectiveMontantClinique = montantClinique;
+        if (!accepteSurplus) {
+            effectiveMontantClinique = montantAssur;
+            if (montantClinique !== montantAssur) setMontantClinique(montantAssur);
+        } else {
+            const acte = actes.find((a) => a._id === selectedActe);
+            if (acte) {
+                if (assure === "mutualiste") effectiveMontantClinique = Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0);
+                else if (assure === "preferentiel") effectiveMontantClinique = Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
+                else effectiveMontantClinique = Math.round(acte.prixClinique ?? 0);
+                if (montantClinique !== effectiveMontantClinique) setMontantClinique(effectiveMontantClinique);
+            }
+        }
 
-        // Calcul du surplus
+        const montantCouvert = montantAssur;
+
+        // Calcul de la part de l'assurance (arrondi à l'entier)
+        const partAssur = Math.round((montantCouvert * tauxNum) / 100);
+        const partPat = montantCouvert - partAssur;
+
+        // Calcul du surplus uniquement si accepté
         let surplusCalc = 0;
-        if (montantClinique > montantAssur) surplusCalc = montantClinique - montantAssur;
+        if (accepteSurplus && effectiveMontantClinique > montantAssur) {
+            surplusCalc = effectiveMontantClinique - montantAssur;
+        }
 
         setSurplus(surplusCalc);
         setPartAssurance(partAssur);
         setPartassure(partPat);
         setTotalPatient(partPat + surplusCalc);
-    }, [montantClinique, montantAssurance, taux, selectedAssurance, assurances]);
+    }, [montantClinique, montantAssurance, taux, selectedAssurance, assurances, accepteSurplus, actes, selectedActe, assure]);
 
     const handleSave = async () => {
         setError("");
@@ -176,6 +228,8 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                     selectedAssurance,
                     montantClinique,
                     montantAssurance,
+                    accepteSurplus,
+                    idSocieteAssurance,
                     Code_dossier: patient.Code_dossier,
                     NumBon: numBon,
                     Recupar: recuPar,

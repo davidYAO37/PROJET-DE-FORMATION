@@ -15,6 +15,7 @@ export default function ModifierAssurance({ show, onHide, assurance, onSave }: P
         codeassurance: "",
         telephone: "",
         email: "",
+        accepteSurplus: true,
     });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
@@ -26,12 +27,14 @@ export default function ModifierAssurance({ show, onHide, assurance, onSave }: P
                 codeassurance: assurance.codeassurance,
                 telephone: assurance.telephone || "",
                 email: assurance.email || "",
+                accepteSurplus: assurance.accepteSurplus ?? true,
             });
         }
     }, [assurance]);
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
+        const { name, value, type, checked } = e.target;
+        setForm({ ...form, [name]: type === "checkbox" ? checked : value });
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -78,6 +81,19 @@ export default function ModifierAssurance({ show, onHide, assurance, onSave }: P
                     <Form.Group className="mb-2">
                         <Form.Label>Email</Form.Label>
                         <Form.Control name="email" value={form.email} onChange={handleChange} required type="email" />
+                    </Form.Group>
+                    <Form.Group className="mb-2">
+                        <Form.Check
+                            type="switch"
+                            id="edit-accepteSurplus"
+                            name="accepteSurplus"
+                            label="Accepte le calcul des surplus"
+                            checked={form.accepteSurplus}
+                            onChange={handleChange}
+                        />
+                        <Form.Text className="text-muted">
+                            Désactiver pour n'utiliser que les tarifs assurance/société sans ajouter le surplus clinique.
+                        </Form.Text>
                     </Form.Group>
                 </Modal.Body>
                 <Modal.Footer>

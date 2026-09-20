@@ -3,10 +3,13 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Button, Table, Form } from "react-bootstrap";
 import { Assurance } from "@/types/assurance";
+import TarifSocieteAssuranceModal from "./TarifSocieteAssuranceModal";
 
 interface SocieteAssurance {
     _id: string;
     societe: string;
+    accepteSurplus?: boolean | null;
+    utiliseTarifsPropres?: boolean;
 }
 
 type Props = {
@@ -24,6 +27,11 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
     const [editValue, setEditValue] = useState<string>("");
     const [savingEdit, setSavingEdit] = useState(false);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [editSurplus, setEditSurplus] = useState<boolean | null>(null);
+    const [editTarifs, setEditTarifs] = useState<boolean>(true);
+
+    const [showTarifs, setShowTarifs] = useState(false);
+    const [selectedSociete, setSelectedSociete] = useState<SocieteAssurance | null>(null);
 
     // Charger les sociétés liées à l'assurance
     useEffect(() => {
@@ -65,8 +73,17 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
         });
         if (res.ok) {
             const data = await res.json();
-            setSocietes(data);
+            const societesList = data.societes || data;
+            const created = data.created;
+
+            setSocietes(societesList);
             setForm({ societe: "" });
+
+            // Initialiser les tarifs propres de la société comme une copie des tarifs assurance
+            if (created?._id && assurance?._id) {
+                await fetch(`/api/tarifs/${assurance._id}`).catch(() => {});
+                await fetch(`/api/tarifs-societe-assurance?societeAssuranceId=${created._id}`).catch(() => {});
+            }
         }
         setCreating(false);
     };
@@ -78,14 +95,20 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
         const res = await fetch("/api/societeassurance", {
             method: "PUT",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ id, societe: editValue, assuranceId: assurance._id })
+            body: JSON.stringify({ id, societe: editValue, assuranceId: assurance._id, accepteSurplus: editSurplus, utiliseTarifsPropres: editTarifs })
         });
         if (res.ok) {
             const data = await res.json();
             setSocietes(data);
             setEditId(null);
+            setEditSurplus(null);
         }
         setSavingEdit(false);
+    };
+
+    const openTarifs = (s: SocieteAssurance) => {
+        setSelectedSociete(s);
+        setShowTarifs(true);
     };
 
     // Supprimer une société
@@ -124,16 +147,18 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
                             <thead className="table-primary">
                                 <tr>
                                     <th className="text-center">Nom de la société</th>
+                                    <th className="text-center">Tarifs utilisés</th>
+                                    <th className="text-center">Surplus</th>
                                     <th className="text-center">Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {societes.length === 0 ? (
-                                    <tr><td colSpan={2} className="text-center text-muted">Aucune société trouvée.</td></tr>
+                                    <tr><td colSpan={4} className="text-center text-muted">Aucune société trouvée.</td></tr>
                                 ) : (
                                     societes.map(s => (
                                         <tr key={s._id}>
-                                            <td className="Col-8 text-center fw-semibold">
+                                            <td className="text-center fw-semibold" style={{ width: "30%" }}>
                                                 {editId === s._id ? (
                                                     <Form.Control
                                                         value={editValue}
@@ -149,21 +174,60 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
                                                     s.societe
                                                 )}
                                             </td>
-                                            <td className="Col-4 text-center">
+                                            <td className="text-center" style={{ width: "20%" }}>
+                                                {editId === s._id ? (
+                                                    <Form.Select
+                                                        size="sm"
+                                                        value={editTarifs ? "propres" : "assurance"}
+                                                        onChange={e => setEditTarifs(e.target.value === "propres")}
+                                                    >
+                                                        <option value="propres">Propres tarifs</option>
+                                                        <option value="assurance">Tarifs de l'assurance</option>
+                                                    </Form.Select>
+                                                ) : (
+                                                    s.utiliseTarifsPropres === false ? "Tarifs assurance" : "Propres tarifs"
+                                                )}
+                                            </td>
+                                            <td className="text-center" style={{ width: "20%" }}>
+                                                {editId === s._id ? (
+                                                    <Form.Select
+                                                        size="sm"
+                                                        value={editSurplus === null ? "" : editSurplus ? "true" : "false"}
+                                                        onChange={e => {
+                                                            const v = e.target.value;
+                                                            setEditSurplus(v === "" ? null : v === "true");
+                                                        }}
+                                                    >
+                                                        <option value="">Hérite de l'assurance</option>
+                                                        <option value="true">Avec surplus</option>
+                                                        <option value="false">Sans surplus</option>
+                                                    </Form.Select>
+                                                ) : (
+                                                    s.accepteSurplus === true ? "Avec surplus" :
+                                                    s.accepteSurplus === false ? "Sans surplus" :
+                                                    "Hérite"
+                                                )}
+                                            </td>
+                                            <td className="text-center" style={{ width: "30%" }}>
                                                 {editId === s._id ? (
                                                     <>
                                                         <Button size="sm" variant="success" className="me-2" disabled={savingEdit || !editValue.trim()} onClick={() => handleEditSave(s._id)}>
                                                             {savingEdit ? <span className="spinner-border spinner-border-sm" /> : <i className="bi bi-check-lg" />} Enregistrer
                                                         </Button>
-                                                        <Button size="sm" variant="outline-secondary" onClick={() => setEditId(null)} disabled={savingEdit}>
+                                                        <Button size="sm" variant="outline-secondary" onClick={() => { setEditId(null); setEditSurplus(null); }} disabled={savingEdit}>
                                                             Annuler
                                                         </Button>
                                                     </>
                                                 ) : (
                                                     <>
-                                                        <Button size="sm" variant="outline-primary" className="me-2" onClick={() => { setEditId(s._id); setEditValue(s.societe); }}>
+                                                        <Button size="sm" variant="outline-primary" className="me-2" onClick={() => { setEditId(s._id); setEditValue(s.societe); setEditSurplus(s.accepteSurplus ?? null); setEditTarifs(s.utiliseTarifsPropres ?? true); }}>
                                                             <i className="bi bi-pencil-square" /> Modifier
                                                         </Button>
+                                                        {s.utiliseTarifsPropres !== false && (
+                                                            <Button size="sm" variant="outline-info" className="me-2" onClick={() => openTarifs(s)}>
+                                                                <i className="bi bi-currency-exchange" /> Tarifs
+                                                            </Button>
+                                                        )}
                                                         <Button size="sm" variant="outline-danger" disabled={deletingId === s._id} onClick={() => handleDelete(s._id)}>
                                                             {deletingId === s._id ? <span className="spinner-border spinner-border-sm" /> : <i className="bi bi-trash" />} Supprimer
                                                         </Button>
@@ -197,6 +261,16 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
                     <i className="bi bi-x-lg me-2" />Fermer
                 </Button>
             </Modal.Footer>
+
+            <TarifSocieteAssuranceModal
+                show={showTarifs}
+                onHide={() => {
+                    setShowTarifs(false);
+                    setSelectedSociete(null);
+                }}
+                societe={selectedSociete}
+                assuranceId={assurance?._id}
+            />
         </Modal>
     );
 }
