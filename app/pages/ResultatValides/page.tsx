@@ -14,7 +14,7 @@ export default function ListeResultatValides() {
   const [codePrestationFilter, setCodePrestationFilter] = useState('');
   const [patientFilter, setPatientFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const [itemsPerPage, setItemsPerPage] = useState(25);
 
   useEffect(() => {
     const today = new Date();
@@ -137,7 +137,12 @@ export default function ListeResultatValides() {
   });
 
   const totalPages = Math.ceil(filteredResultats.length / itemsPerPage) || 1;
-  const paginatedResultats = filteredResultats.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+  const firstItemIndex = (currentPage - 1) * itemsPerPage;
+  const lastItemIndex = Math.min(firstItemIndex + itemsPerPage, filteredResultats.length);
+  const paginatedResultats = filteredResultats.slice(firstItemIndex, lastItemIndex);
+  const visiblePages = Array.from({ length: totalPages }, (_, index) => index + 1).filter(
+    (page) => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2
+  );
 
   return (
     <Container className="py-2">
@@ -316,23 +321,45 @@ export default function ListeResultatValides() {
         </Table>
 
         {filteredResultats.length > 0 && (
-          <div className="d-flex justify-content-between align-items-center mt-3">
-            <small className="text-muted">
-              {filteredResultats.length} résultat{filteredResultats.length > 1 ? 's' : ''} — Page {currentPage} / {totalPages}
-            </small>
-            <Pagination size="sm">
-              <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
-              <Pagination.Prev onClick={() => setCurrentPage((p) => Math.max(1, p - 1))} disabled={currentPage === 1} />
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                <Pagination.Item
-                  key={page}
-                  active={page === currentPage}
-                  onClick={() => setCurrentPage(page)}
+          <div className="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mt-3 p-3 bg-light rounded-3 border">
+            <div className="d-flex flex-wrap align-items-center gap-3">
+              <small className="text-muted">
+                Affichage de <strong>{firstItemIndex + 1}</strong> à <strong>{lastItemIndex}</strong> sur{' '}
+                <strong>{filteredResultats.length}</strong> résultat{filteredResultats.length > 1 ? 's' : ''}
+              </small>
+              <div className="d-flex align-items-center gap-2">
+                <Form.Label htmlFor="resultats-par-page" className="mb-0 small text-muted text-nowrap">
+                  Résultats par page
+                </Form.Label>
+                <Form.Select
+                  id="resultats-par-page"
+                  size="sm"
+                  value={itemsPerPage}
+                  onChange={(event) => {
+                    setItemsPerPage(Number(event.target.value));
+                    setCurrentPage(1);
+                  }}
+                  style={{ width: '85px' }}
+                  aria-label="Nombre de résultats par page"
                 >
-                  {page}
-                </Pagination.Item>
+                  {[25, 50, 75, 100].map((size) => (
+                    <option key={size} value={size}>{size}</option>
+                  ))}
+                </Form.Select>
+              </div>
+            </div>
+            <Pagination className="mb-0 flex-wrap" size="sm">
+              <Pagination.First onClick={() => setCurrentPage(1)} disabled={currentPage === 1} />
+              <Pagination.Prev onClick={() => setCurrentPage((page) => Math.max(1, page - 1))} disabled={currentPage === 1} />
+              {visiblePages.map((page, index) => (
+                <React.Fragment key={page}>
+                  {index > 0 && page - visiblePages[index - 1] > 1 && <Pagination.Ellipsis disabled />}
+                  <Pagination.Item active={page === currentPage} onClick={() => setCurrentPage(page)}>
+                    {page}
+                  </Pagination.Item>
+                </React.Fragment>
               ))}
-              <Pagination.Next onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages} />
+              <Pagination.Next onClick={() => setCurrentPage((page) => Math.min(totalPages, page + 1))} disabled={currentPage === totalPages} />
               <Pagination.Last onClick={() => setCurrentPage(totalPages)} disabled={currentPage === totalPages} />
             </Pagination>
           </div>

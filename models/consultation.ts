@@ -27,6 +27,8 @@ export interface IConsultation extends Document {
   accepteSurplus?: boolean;
   numero_carte?: string;
   NumBon?: string;
+  reduction?: number;
+  MotifRemise?: string;
 
   Recupar: string;
   IDACTE: string;
@@ -116,6 +118,8 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     accepteSurplus: { type: Boolean, default: true },
     numero_carte: { type: String },
     NumBon: { type: String },
+    reduction: { type: Number, default: 0 },
+    MotifRemise: { type: String, maxlength: 200 },
 
     Recupar: { type: String, required: true },
     IDACTE: { type: String, required: true },

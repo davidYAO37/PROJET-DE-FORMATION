@@ -141,84 +141,99 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
 
     // Résoudre la politique de surplus selon la société ou l'assurance
     useEffect(() => {
+        let cancelled = false;
         const resolveSurplus = async () => {
             if (assure === "non" || !selectedAssurance) {
-                setAccepteSurplus(true);
-                setIdSocieteAssurance("");
+                if (!cancelled) {
+                    setAccepteSurplus(true);
+                    setIdSocieteAssurance("");
+                }
                 return;
             }
-            const societeId = patient?.IDSOCIETEASSURANCE;
+
+            const consultationSocieteId = currentConsultation?.IDSOCIETEASSURANCE
+                ? String(currentConsultation.IDSOCIETEASSURANCE)
+                : "";
+            const patientSocieteId = patient?.IDSOCIETEASSURANCE
+                ? String(patient.IDSOCIETEASSURANCE)
+                : "";
+            const societeId = consultationSocieteId || patientSocieteId;
+
             if (societeId) {
-                setIdSocieteAssurance(societeId.toString?.() || "");
-                const res = await fetch(`/api/societeassurance?societeId=${societeId}`);
-                const societe = await res.json();
-                if (societe && societe.accepteSurplus !== null && societe.accepteSurplus !== undefined) {
-                    setAccepteSurplus(societe.accepteSurplus);
-                    return;
+                if (!cancelled) setIdSocieteAssurance(societeId);
+                try {
+                    const res = await fetch(`/api/societeassurance?societeId=${encodeURIComponent(societeId)}`);
+                    if (res.ok) {
+                        const societe = await res.json();
+                        if (societe?.accepteSurplus !== null && societe?.accepteSurplus !== undefined) {
+                            if (!cancelled) setAccepteSurplus(Boolean(societe.accepteSurplus));
+                            return;
+                        }
+                    }
+                } catch {
                 }
-            } else {
+            } else if (!cancelled) {
                 setIdSocieteAssurance("");
             }
+
             const assurance = assurances.find(a => a._id === selectedAssurance);
-            setAccepteSurplus(assurance?.accepteSurplus ?? true);
+            if (!cancelled) setAccepteSurplus(assurance?.accepteSurplus ?? true);
         };
         resolveSurplus();
-    }, [assure, selectedAssurance, patient, assurances]);
+        return () => {
+            cancelled = true;
+        };
+    }, [assure, selectedAssurance, patient?.IDSOCIETEASSURANCE, currentConsultation?.IDSOCIETEASSURANCE, assurances]);
 
     useEffect(() => {
-        if (!selectedActe) return;
-        const acte = actes.find((a) => a._id === selectedActe);
-        if (!acte) {
-            console.log("Acte non trouvé pour l'ID:", selectedActe);
-            return;
-        }
+        let cancelled = false;
+        const recalculateTarifs = async () => {
+            if (!selectedActe) return;
+            const acte = actes.find((a) => a._id === selectedActe);
+            if (!acte) return;
 
-        console.log("Recalcul des prix pour l'acte:", acte.designationacte, "Type patient:", assure);
+            const prixActe = assure === "mutualiste"
+                ? Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0)
+                : assure === "preferentiel"
+                    ? Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0)
+                    : Math.round(acte.prixClinique ?? 0);
 
-        // Montant clinique selon le type patient
-        let montant = 0;
-        if (assure === "mutualiste") montant = Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0);
-        else if (assure === "preferentiel") montant = Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
-        else montant = Math.round(acte.prixClinique ?? 0);
+            let montantTarif = prixActe;
+            if ((assure === "mutualiste" || assure === "preferentiel") && selectedAssurance) {
+                const urls = [
+                    ...(idSocieteAssurance
+                        ? [`/api/tarifs-societe-assurance?societeAssuranceId=${encodeURIComponent(idSocieteAssurance)}`]
+                        : []),
+                    `/api/tarifs/${selectedAssurance}`,
+                ];
 
-        //console.log("Montant clinique calculé:", montant);
-        setMontantClinique(montant);
-
-        // Si patient mutualiste ou préférentiel, on cherche le tarif société ou assurance
-        if ((assure === "mutualiste" || assure === "preferentiel") && selectedAssurance) {
-            const tarifUrl = idSocieteAssurance
-                ? `/api/tarifs-societe-assurance?societeAssuranceId=${idSocieteAssurance}`
-                : `/api/tarifs/${selectedAssurance}`;
-
-            fetch(tarifUrl)
-                .then(res => res.json())
-                .then((tarifs) => {
-                    if (!Array.isArray(tarifs)) {
-                        //console.log("Pas de tarifs trouvés");
-                        setMontantAssurance(0);
-                        return;
+                for (const url of urls) {
+                    try {
+                        const res = await fetch(url);
+                        if (!res.ok) continue;
+                        const tarifs = await res.json();
+                        if (!Array.isArray(tarifs)) continue;
+                        const tarif = tarifs.find((item: any) => item.acte === acte.designationacte);
+                        if (!tarif) continue;
+                        montantTarif = assure === "mutualiste"
+                            ? Math.round(tarif.prixmutuel ?? prixActe)
+                            : Math.round(tarif.prixpreferenciel ?? prixActe);
+                        break;
+                    } catch {
                     }
-                    const tarif = tarifs.find((t: any) => t.acte === acte.designationacte);
-                    if (tarif) {
-                        // console.log("Tarif trouvé:", tarif);
-                        if (assure === "mutualiste") setMontantAssurance(Math.round(tarif.prixmutuel ?? acte.prixMutuel ?? acte.prixClinique ?? 0));
-                        else if (assure === "preferentiel") setMontantAssurance(Math.round(tarif.prixpreferenciel ?? acte.prixPreferentiel ?? acte.prixClinique ?? 0));
-                    } else {
-                        //console.log("Tarif non trouvé, utilisation prix acte");
-                        if (assure === "mutualiste") setMontantAssurance(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
-                        else if (assure === "preferentiel") setMontantAssurance(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
-                    }
-                })
-                .catch((err) => {
-                    //console.log("Erreur récupération tarifs:", err);
-                    if (assure === "mutualiste") setMontantAssurance(Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0));
-                    else if (assure === "preferentiel") setMontantAssurance(Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0));
-                });
-        } else {
-            // console.log("Pas d'assurance ou patient non assuré, montant assurance = montant clinique");
-            setMontantAssurance(Math.round(acte.prixClinique ?? 0));
-        }
-    }, [selectedActe, assure, actes, selectedAssurance]);
+                }
+            }
+
+            if (cancelled) return;
+            setMontantAssurance(montantTarif);
+            setMontantClinique(accepteSurplus ? prixActe : montantTarif);
+        };
+
+        recalculateTarifs();
+        return () => {
+            cancelled = true;
+        };
+    }, [selectedActe, assure, actes, selectedAssurance, idSocieteAssurance, accepteSurplus]);
 
     useEffect(() => {
         const tauxNum = Number(taux) || 0;

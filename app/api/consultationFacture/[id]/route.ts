@@ -7,7 +7,7 @@ import { IPatient } from "@/models/patient";
 import { IAssurance } from "@/models/assurance";
 import { IMedecin } from "@/models/medecin";
 
-const ROLES = ["admin","medecin","accueil","infirmier","caisse"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "caisse"];
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     const { context, response } = await withTenant(req, ROLES);
@@ -48,6 +48,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         const consultation = await Consultation.findById(id);
         if (!consultation) return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
 
+        const reduction = Number(data.reduction) || 0;
+        if (reduction > 0 && !(data.MotifRemise || "").trim()) {
+            return NextResponse.json({ error: "Veuillez saisir le motif de la remise SVP" }, { status: 400 });
+        }
+
         // Récupération patient, assurance, médecin
         const patient = data.IdPatient ? await Patient.findById(
             typeof data.IdPatient === "string" ? new mongoose.Types.ObjectId(data.IdPatient) : data.IdPatient
@@ -62,22 +67,25 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         ) : null;
 
         // Calcul montants
-        let montantActe = data.montantClinique || 0;
+        const montantClinique = Math.max(0, Number(data.montantClinique) || 0);
+        const montantAssurance = Math.max(0, Number(data.montantAssurance) || 0);
         const tauxNum = Number(data.taux) || 0;
         let partAssurance = 0;
         let Partassure = 0;
         let surplus = 0;
 
-        if (data.assure === "mutualiste" || data.assure === "assure") {
-            montantActe = data.montantAssurance || montantActe;
+        if (data.assure === "non") {
+            Partassure = montantClinique;
+        } else {
+            const montantCouvert = montantAssurance || montantClinique;
+            partAssurance = Math.round((tauxNum * montantCouvert) / 100);
+            Partassure = montantCouvert - partAssurance;
+            surplus = Math.max(0, montantClinique - montantCouvert);
         }
-        if ((data.montantClinique || 0) > montantActe) {
-            surplus = (data.montantClinique || 0) - montantActe;
-        }
-
-        partAssurance = (tauxNum * montantActe) / 100;
-        Partassure = montantActe - partAssurance;
-        const totalPatient = Partassure + surplus;
+        const totalPatientBase = Partassure + surplus;
+        const montantRegle = Math.max(0, totalPatientBase - reduction);
+        const montantEncaisse = Math.min(Number(data.Montantencaisse) || 0, montantRegle);
+        const resteAPayer = Math.max(0, montantRegle - montantEncaisse);
 
         // Mise à jour consultation
         consultation.designationC = data.selectedActeDesignation;
@@ -88,10 +96,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.IdPatient = patient?._id ? new mongoose.Types.ObjectId(String(patient._id)) : undefined;
         consultation.IDMEDECIN = medecin?._id ? new mongoose.Types.ObjectId(String(medecin._id)) : undefined;
 
-        consultation.Prix_Assurance = montantActe;
-        consultation.PrixClinique = data.montantClinique || 0;
+        consultation.Prix_Assurance = data.assure === "non" ? 0 : (montantAssurance || montantClinique);
+        consultation.PrixClinique = montantClinique;
 
-        consultation.montantapayer = totalPatient; // Partassure + surplus = tiket_moderateur + ReliquatPatient
+        consultation.montantapayer = totalPatientBase;
         consultation.ReliquatPatient = surplus;
 
         consultation.Code_dossier = data.Code_dossier;
@@ -104,15 +112,15 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.tiket_moderateur = Partassure;
         consultation.numero_carte = data.matricule;
         consultation.NumBon = data.NumBon;
+        consultation.reduction = reduction;
+        consultation.MotifRemise = (data.MotifRemise || "").trim();
         consultation.Recupar = data.Recupar;
         consultation.IDACTE = data.selectedActe;
         consultation.PatientP = patient?.Nom + " " + patient?.Prenoms || "";
         consultation.Medecin = medecin ? `${medecin.nom} ${medecin.prenoms}` : "";
-        console.log("PatientP:", consultation.PatientP);
-        // Calcul Toutencaisse
-        const resteAPayer = totalPatient - (data.Montantencaisse || 0);
-        consultation.Restapayer = resteAPayer >= 0 ? resteAPayer : 0;
-        const toutEncaisse = resteAPayer <= 0;
+
+        consultation.Restapayer = resteAPayer;
+        const toutEncaisse = resteAPayer === 0;
 
         // Mise à jour consultation apres paiement
         consultation.Toutencaisse = toutEncaisse; // True si Restapayer = 0
@@ -120,7 +128,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.DateFacturation = data.DateFacturation || new Date();
         consultation.Caissiere = data.Caissiere || data.Recupar || "";
         consultation.Modepaiement = data.Modepaiement || "Espèce";
-        consultation.Montantencaisse = data.Montantencaisse || 0;
+        consultation.Montantencaisse = montantEncaisse;
         consultation.StatutPaiement = toutEncaisse ? "En cours de Paiement" : "Pas facturé";
         consultation.StatutC = true;
 

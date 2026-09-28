@@ -9,6 +9,7 @@ type ResumeMontantsProps = {
     partAssurance: number;
     Partassure: number;
     totalPatient: number;
+    reduction?: number;
     montantEncaisse?: number;
     setMontantEncaisse?: (val: number) => void;
     modePaiement?: ModeDePaiement["Modepaiement"];
@@ -21,6 +22,7 @@ export default function ResumeMontantsUpdateCaisse({
     partAssurance,
     Partassure,
     totalPatient,
+    reduction = 0,
     montantEncaisse = 0,
     setMontantEncaisse,
     modePaiement = "Espèce",
@@ -28,7 +30,8 @@ export default function ResumeMontantsUpdateCaisse({
     patientId,
 }: ResumeMontantsProps) {
     const [modesPaiement, setModesPaiement] = useState<ModeDePaiement[]>([]);
-    const resteAPayer = Math.max(0, totalPatient - montantEncaisse);
+    const montantApayer = Math.max(0, totalPatient - reduction);
+    const resteAPayer = Math.max(0, montantApayer - montantEncaisse);
     const provision = useProvisionPatient(patientId);
     const cautionDisponible = isCautionAvailable(provision, totalPatient);
 
@@ -146,7 +149,7 @@ export default function ResumeMontantsUpdateCaisse({
                         <i className="bi bi-cash-coin me-2 text-success"></i>
                         Total à Payer par le Patient:
                         <span className="badge bg-success ms-2 fs-5 px-3 py-2">
-                            {Math.round(totalPatient)} FCFA
+                            {Math.round(montantApayer)} FCFA
                         </span>
                     </h5>
                 </Col>
@@ -177,10 +180,9 @@ export default function ResumeMontantsUpdateCaisse({
                             const parsed = Number(e.target.value);
                             if (!Number.isNaN(parsed)) {
                                 // Appliquer la formule de calcul
-                                const reduction = 0; // Pas de réduction dans ce contexte
                                 const montantRegle = Math.max(0, (totalPatient || 0) - reduction);
                                 let encaisse = Math.max(0, parsed);
-                                
+
                                 if (encaisse > montantRegle && parsed !== montantRegle) {
                                     setMontantEncaisse?.(montantRegle);
                                     encaisse = montantRegle;

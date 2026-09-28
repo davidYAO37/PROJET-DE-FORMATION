@@ -25,6 +25,8 @@ export interface ConsultationType {
     accepteSurplus?: boolean;
     numero_carte: string;
     NumBon: string;
+    reduction?: number;
+    MotifRemise?: string;
 
     IdPatient: string;
     Souscripteur: string;

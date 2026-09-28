@@ -75,6 +75,12 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
     const matricule = consultation.numero_carte || consultation.Matricule || patient?.Matricule || '-';
     const societePatient = consultation.SOCIETE_PATIENT || patient?.SOCIETE_PATIENT || assurance;
     const taux = consultation.tauxAssurance ? `${consultation.tauxAssurance}` : '-';
+    const totalPatientAvantRemise = Number(consultation.montantapayer ?? consultation.totalPatient ?? 0);
+    const remise = Number(consultation.reduction ?? 0);
+    const totalAPayer = Math.max(0, totalPatientAvantRemise - remise);
+    const motifRemise = (consultation.MotifRemise || "").trim() || "Aucun motif";
+    const totalPaye = Number(consultation.Montantencaisse ?? consultation.montantEncaisse ?? consultation.MontantRecu ?? 0);
+    const resteAPayer = Number(consultation.Restapayer ?? consultation.resteAPayer ?? consultation.restapayer ?? Math.max(0, totalAPayer - totalPaye));
 
     const getContent = () => {
         const printContent = document.getElementById('print-content');
@@ -203,16 +209,21 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
                         INFO RECU
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 15 }}>
-                        {renderInfoBox('Part Patient', Number(consultation.montantapayer || 0))}
+                        {renderInfoBox('Part Patient', totalPatientAvantRemise)}
                         {renderInfoBox('Total surplus', Number(consultation.ReliquatPatient || consultation.totalsurplus || 0))}
-                        {renderInfoBox('Remise', Number(consultation.reduction || 0))}
-                        {renderInfoBox('Total a payer', Number(consultation.montantapayer || 0), true)}
+                        {renderInfoBox('Remise', remise)}
+                        {renderInfoBox('Total a payer', totalAPayer, true)}
                     </div>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: 15 }}>
                         {renderInfoBox('Part Assurance', Number(consultation.PartAssurance || 0))}
-                        {renderInfoBox('Total Payé', Number(consultation.Montantencaisse || 0))}
-                        {renderInfoBox('Reste a payer', Number(consultation.Restapayer || 0))}
+                        {renderInfoBox('Total Payé', totalPaye)}
+                        {renderInfoBox('Reste a payer', resteAPayer)}
                     </div>
+                    {remise > 0 && (
+                        <div style={{ marginTop: 12, padding: '8px 12px', border: '1px solid #000', borderRadius: 6, background: '#f8f9fa' }}>
+                            <strong>Motif de la remise :</strong> {motifRemise}
+                        </div>
+                    )}
                 </div>
             </div>
         </>
