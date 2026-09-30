@@ -98,7 +98,7 @@ export async function GET(request: NextRequest) {
         Temperature: consultation.Temperature,
         Poids: consultation.Poids,
         Tension: consultation.Tension,
-        Glycemie: consultation.Glycemie,
+        Pouls: consultation.Pouls,
         TailleCons: consultation.TailleCons,
         ExamenClinique: consultation.ExamenClinique || '',
         CodeAffection: consultation.CodeAffection || '',
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
         temperature: consultation.Temperature,
         poids: consultation.Poids,
         tension: consultation.Tension,
-        glycemie: consultation.Glycemie,
+        pouls: consultation.Pouls,
         taille: consultation.TailleCons,
         frequenceCardiaque: '', // Champ non disponible dans le modèle
         frequenceRespiratoire: '', // Champ non disponible dans le modèle

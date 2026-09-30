@@ -115,8 +115,8 @@ export async function POST(req: NextRequest) {
       observationData.Tension = body.Tension;
     }
     
-    if (body.Glycemie !== undefined && body.Glycemie !== null) {
-      observationData.Glycemie = body.Glycemie;
+    if (body.Pouls !== undefined && body.Pouls !== null) {
+      observationData.Pouls = body.Pouls;
     }
     
     if (body.TailleCons !== undefined && body.TailleCons !== null) {

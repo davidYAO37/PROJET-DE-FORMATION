@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       temperature: consultation.Temperature || null,
       poids: consultation.Poids || null,
       tension: consultation.Tension || null,
-      glycemie: consultation.Glycemie || null,
+      pouls: consultation.Pouls || null,
       taille: consultation.TailleCons || null,
       dateConsultation: consultation.Date_consulation,
       heureConsultation: consultation.Heure_Consultation
@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
         Temperature: constantes.temperature,
         Poids: constantes.poids,
         Tension: constantes.tension,
-        Glycemie: constantes.glycemie,
+        Pouls: constantes.pouls,
         TailleCons: constantes.taille
       },
       { new: true, runValidators: true }
@@ -80,7 +80,7 @@ export async function PUT(request: NextRequest) {
         temperature: consultation.Temperature,
         poids: consultation.Poids,
         tension: consultation.Tension,
-        glycemie: consultation.Glycemie,
+        pouls: consultation.Pouls,
         taille: consultation.TailleCons
       }
     });

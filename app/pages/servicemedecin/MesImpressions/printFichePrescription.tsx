@@ -69,7 +69,7 @@ interface Consultation {
   Date_consulation?: Date;
   Température?: string;
   Tension?: string;
-  Glycemie?: string;
+  Pouls?: string;
   TailleCons?: string;
   Poids?: string;
   ConstancePrisepar?: string;
@@ -247,7 +247,7 @@ export default function PrintFichePrescription({ consultationId, patientId, pati
               Date_consulation: consultationData.Date_consulation,
               Température: consultationData.Temperature,
               Tension: consultationData.Tension,
-              Glycemie: consultationData.Glycemie,
+              Pouls: consultationData.Pouls,
               TailleCons: consultationData.TailleCons,
               Poids: consultationData.Poids,
               IDPARTIENT: consultationData.IdPatient,
@@ -494,7 +494,7 @@ export default function PrintFichePrescription({ consultationId, patientId, pati
             <div style={{ display: 'grid', gap: '4px', fontSize: '12px' }}>
               <div><strong>Température:</strong> {consultation.Température || 'N/A'}°C <strong>Poids:</strong> {consultation.Poids || 'N/A'} kg</div>
 
-              <div><strong>Tension:</strong> {consultation.Tension || 'N/A'} <strong>Glycémie:</strong> {consultation.Glycemie || 'N/A'}</div>
+              <div><strong>Tension:</strong> {consultation.Tension || 'N/A'} <strong>Pouls:</strong> {consultation.Pouls || 'N/A'} bpm</div>
             </div>
           </div>
 

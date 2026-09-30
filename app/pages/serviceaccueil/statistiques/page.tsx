@@ -101,7 +101,7 @@ interface DetailItem {
   temperature?: string;
   poids?: string;
   tension?: string;
-  glycemie?: string;
+  pouls?: string;
   taille?: string;
   statut?: string;
   nouvelleDate?: string | null;

@@ -121,7 +121,7 @@ async function main() {
     const document = {
       legacyId, Date: parseDate(row.Date), Heure: excelTime(row.Heure), Intervenant: row.Medecin, ObservationC: row.ObservationC,
       Patient: patientId, Hospitalisation: hospitalisationId, Poids: String(row.Poids || ''), Temperature: String(row['Température'] || ''),
-      Tension: String(row.Tension || ''), Glycemie: String(row.Glycemie || ''), TailleCons: String(row.TailleCons || ''),
+      Tension: String(row.Tension || ''), Pouls: String(row.Pouls || ''), TailleCons: String(row.TailleCons || ''),
       Code_dossier: String(row.Code_dossier || ''), CodePrestation: String(row.Code_Prestation || ''), IDMEDECIN: medecins.get(String(row.IDMEDECIN)),
       entrepriseId, createdAt: now, updatedAt: now,
     };

@@ -35,7 +35,7 @@ interface Consultation {
   temperature?: string;
   poids?: string;
   tension?: string;
-  glycemie?: string;
+  pouls?: string;
   frequenceCardiaque?: string;
   frequenceRespiratoire?: string;
   MotifConsultation?: string;
@@ -92,7 +92,7 @@ export default function FichePrescriptionMedecinAsaisie() {
     temperature: '',
     poids: '',
     tension: '',
-    glycemie: '',
+    pouls: '',
     taille: ''
   });
 
@@ -167,7 +167,7 @@ export default function FichePrescriptionMedecinAsaisie() {
             temperature: data.Temperature || '',
             poids: data.Poids || '',
             tension: data.Tension || '',
-            glycemie: data.Glycemie || '',
+            pouls: data.Pouls || '',
             taille: data.TailleCons || ''
           });
 
@@ -490,7 +490,7 @@ export default function FichePrescriptionMedecinAsaisie() {
               temperature: data.consultation.temperature || '',
               poids: data.consultation.poids || '',
               tension: data.consultation.tension || '',
-              glycemie: data.consultation.glycemie || '',
+              pouls: data.consultation.pouls || '',
               taille: data.consultation.taille || ''
             });
 
@@ -562,7 +562,7 @@ export default function FichePrescriptionMedecinAsaisie() {
   };
 
   const renderConstanteField = (label: string, field: string, value: string, placeholder: string, icon: string) => {
-    const indice = getIndiceConstante(value, field as 'temperature' | 'tension' | 'glycemie' | 'poids');
+    const indice = getIndiceConstante(value, field as 'temperature' | 'tension' | 'pouls' | 'poids');
 
     return (
       <Col md={6} className="mb-3">
@@ -706,7 +706,7 @@ export default function FichePrescriptionMedecinAsaisie() {
 
   // Fonctions de gestion
   // Fonction pour calculer l'indice des constantes
-  const getIndiceConstante = (valeur: string, type: 'temperature' | 'tension' | 'glycemie' | 'poids') => {
+  const getIndiceConstante = (valeur: string, type: 'temperature' | 'tension' | 'pouls' | 'poids') => {
     if (!valeur) return null;
 
     const numValeur = parseFloat(valeur.replace(',', '.'));
@@ -732,10 +732,10 @@ export default function FichePrescriptionMedecinAsaisie() {
         }
         return null;
 
-      case 'glycemie':
-        if (numValeur > 2.5 || numValeur < 0.6) return { niveau: 'danger', message: 'Glycémie critique', icone: 'bi-exclamation-triangle-fill' };
-        if (numValeur > 1.5 || numValeur < 0.8) return { niveau: 'warning', message: 'Glycémie anormale', icone: 'bi-exclamation-circle-fill' };
-        return { niveau: 'success', message: 'Glycémie normale', icone: 'bi-check-circle-fill' };
+      case 'pouls':
+        if (numValeur > 140 || numValeur < 40) return { niveau: 'danger', message: 'Pouls critique', icone: 'bi-exclamation-triangle-fill' };
+        if (numValeur > 100 || numValeur < 60) return { niveau: 'warning', message: 'Pouls anormal', icone: 'bi-exclamation-circle-fill' };
+        return { niveau: 'success', message: 'Pouls normal', icone: 'bi-check-circle-fill' };
 
       case 'poids':
         // Indice de masse corporelle approximatif (en supposant une taille moyenne de 1.70m)
@@ -801,7 +801,7 @@ export default function FichePrescriptionMedecinAsaisie() {
             temperature: constantesForm.temperature,
             poids: constantesForm.poids,
             tension: constantesForm.tension,
-            glycemie: constantesForm.glycemie,
+            pouls: constantesForm.pouls,
             taille: constantesForm.taille || ''
           }
         })
@@ -1552,7 +1552,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                       {renderConstanteField('Température (°C)', 'temperature', constantesForm.temperature, '37.5', 'thermometer-half')}
                       {renderConstanteField('Poids (kg)', 'poids', constantesForm.poids, '70', 'speedometer2')}
                       {renderConstanteField('Tension (mmHg)', 'tension', constantesForm.tension, '120/80', 'heart-pulse')}
-                      {renderConstanteField('Glycémie (g/L)', 'glycemie', constantesForm.glycemie, '1.05', 'droplet')}
+                      {renderConstanteField('Pouls (bpm)', 'pouls', constantesForm.pouls, '75', 'activity')}
                       {renderConstanteField('Taille (cm)', 'taille', constantesForm.taille, '175', 'rulers')}
                     </Row>
                   ) : (
@@ -1568,7 +1568,7 @@ export default function FichePrescriptionMedecinAsaisie() {
                             temperature: '37.5',
                             poids: '70',
                             tension: '120/80',
-                            glycemie: '1.05',
+                            pouls: '75',
                             taille: '175'
                           });
                         }}

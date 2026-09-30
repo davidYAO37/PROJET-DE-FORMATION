@@ -36,7 +36,7 @@ interface Consultation {
   Temperature?: string;
   Tension?: string;
   TailleCons?: string;
-  Glycemie?: string;
+  Pouls?: string;
   Poids?: string;
   DatePres?: string;
   IDMEDECIN?: string;

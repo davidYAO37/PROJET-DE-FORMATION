@@ -48,7 +48,7 @@ export async function PUT(
 
     const stringFields = [
       "Heure", "ObservationC", "Poids", "Temperature", "Tension",
-      "Glycemie", "TailleCons", "Code_dossier", "CodePrestation",
+      "Pouls", "TailleCons", "Code_dossier", "CodePrestation",
       "Intervenant", "entrepriseId"
     ];
     stringFields.forEach((field) => {

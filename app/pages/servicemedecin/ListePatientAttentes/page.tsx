@@ -21,7 +21,7 @@ interface PatientEnAttente {
   temperature?: string;
   poids?: string;
   tension?: string;
-  glycemie?: string;
+  pouls?: string;
   diagnostic?: string;
   codePrestation?: string;
   attenteMedecin?: number;
@@ -49,22 +49,22 @@ export default function ListePatientAttentes() {
 
   // Fonction pour calculer la priorité basée sur les constantes
   const calculerPrioriteSelonConstantes = (patient: PatientEnAttente): 'basse' | 'normale' | 'urgente' => {
-    const { temperature, tension, glycemie } = patient;
-    
+    const { temperature, tension, pouls } = patient;
+
     // Conversion des valeurs en nombres si possible
     const temp = temperature ? parseFloat(temperature.replace(',', '.')) : null;
     const tensionValues = tension ? tension.split('/').map(v => parseFloat(v.trim())) : [];
-    const glyc = glycemie ? parseFloat(glycemie.replace(',', '.')) : null;
-    
+    const poulsValue = pouls ? parseFloat(pouls.replace(',', '.')) : null;
+
     // Critères d'urgence
     let scoreUrgence = 0;
-    
+
     // Température : > 39°C ou < 35°C
     if (temp) {
       if (temp > 39 || temp < 35) scoreUrgence += 3;
       else if (temp > 38 || temp < 36) scoreUrgence += 1;
     }
-    
+
     // Tension : systolique > 160 ou < 90, diastolique > 100 ou < 60
     if (tensionValues.length >= 2) {
       const [systolique, diastolique] = tensionValues;
@@ -74,13 +74,13 @@ export default function ListePatientAttentes() {
         scoreUrgence += 1;
       }
     }
-    
-    // Glycémie : > 2.5 g/L ou < 0.6 g/L
-    if (glyc) {
-      if (glyc > 2.5 || glyc < 0.6) scoreUrgence += 3;
-      else if (glyc > 1.5 || glyc < 0.8) scoreUrgence += 1;
+
+    // Pouls : > 140 bpm ou < 40 bpm
+    if (poulsValue) {
+      if (poulsValue > 140 || poulsValue < 40) scoreUrgence += 3;
+      else if (poulsValue > 100 || poulsValue < 60) scoreUrgence += 1;
     }
-    
+
     // Détermination de la priorité
     if (scoreUrgence >= 3) return 'urgente';
     if (scoreUrgence >= 1) return 'normale';
@@ -159,7 +159,7 @@ export default function ListePatientAttentes() {
         priorite: calculerPrioriteSelonConstantes({
           temperature: consultation.Temperature || '',
           tension: consultation.Tension || '',
-          glycemie: consultation.Glycemie || ''
+          pouls: consultation.Pouls || ''
         } as PatientEnAttente), // Basé sur les constantes
         medecinId: connectedMedecin._id,
         medecinNom: connectedMedecin.nom,
@@ -168,7 +168,7 @@ export default function ListePatientAttentes() {
         temperature: consultation.Temperature || '',
         poids: consultation.Poids || '',
         tension: consultation.Tension || '',
-        glycemie: consultation.Glycemie || '',
+        pouls: consultation.Pouls || '',
         diagnostic: consultation.Diagnostic || '',
         codePrestation: consultation.CodePrestation || '',
         attenteMedecin: consultation.attenteMedecin ?? 0
@@ -378,13 +378,13 @@ export default function ListePatientAttentes() {
                           {patient.poids && (
                             <div><i className="bi bi-speedometer2 text-info me-1"></i>{patient.poids}kg</div>
                           )}
-                          {patient.glycemie && (
-                            <div><i className="bi bi-droplet text-warning me-1"></i>{patient.glycemie}</div>
+                          {patient.pouls && (
+                            <div><i className="bi bi-heart-pulse text-warning me-1"></i>{patient.pouls} bpm</div>
                           )}
                           {patient.diagnostic && (
                             <div className="text-muted mt-1"><i className="bi bi-file-text me-1"></i>{patient.diagnostic}</div>
                           )}
-                          {!patient.temperature && !patient.tension && !patient.poids && !patient.glycemie && (
+                          {!patient.temperature && !patient.tension && !patient.poids && !patient.pouls && (
                             <span className="text-muted">Non renseigné</span>
                           )}
                         </div>

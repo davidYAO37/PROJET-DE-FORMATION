@@ -44,7 +44,7 @@ interface Consultation {
   Temperature?: string;
   Poids?: string;
   Tension?: string;
-  Glycemie?: string;
+  Pouls?: string;
   TraitementClinique?: string;
 }
 
@@ -55,7 +55,7 @@ interface Observation {
   Temperature?: string;
   Tension?: string;
   Poids?: string;
-  Glycemie?: string;
+  Pouls?: string;
   TailleCons?: string;
   ObservationC?: string;
   createdAt?: string;
@@ -244,7 +244,7 @@ export default function DossierPatientInfirmier({
                           <th>🌡️ Temp.</th>
                           <th>🩺 Tension</th>
                           <th>⚖️ Poids</th>
-                          <th>🍬 Glycémie</th>
+                          <th>🫀 Pouls</th>
                           <th>📏 Taille</th>
                           <th>Observation</th>
                         </tr>
@@ -257,7 +257,7 @@ export default function DossierPatientInfirmier({
                             <td>{obs.Temperature ? `${obs.Temperature}°C` : '—'}</td>
                             <td>{obs.Tension || '—'}</td>
                             <td>{obs.Poids ? `${obs.Poids} kg` : '—'}</td>
-                            <td>{obs.Glycemie || '—'}</td>
+                            <td>{obs.Pouls ? `${obs.Pouls} bpm` : '—'}</td>
                             <td>{obs.TailleCons ? `${obs.TailleCons} cm` : '—'}</td>
                             <td className="text-start">{obs.ObservationC || '—'}</td>
                           </tr>

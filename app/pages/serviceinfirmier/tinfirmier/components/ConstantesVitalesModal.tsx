@@ -31,7 +31,7 @@ interface Observation {
   Temperature?: string;
   Tension?: string;
   Poids?: string;
-  Glycemie?: string;
+  Pouls?: string;
   TailleCons?: string;
   ObservationC?: string;
   Intervenant?: string;
@@ -100,7 +100,7 @@ export default function ConstantesVitalesModal({
   const [temperature, setTemperature]           = useState('');
   const [tension, setTension]                   = useState('');
   const [poids, setPoids]                       = useState('');
-  const [glycemie, setGlycemie]                 = useState('');
+  const [pouls, setPouls]                 = useState('');
   const [taille, setTaille]                     = useState('');
   const [observation, setObservation]           = useState('');
   const [intervenant, setIntervenant]           = useState('');
@@ -125,7 +125,7 @@ export default function ConstantesVitalesModal({
       setTemperature('');
       setTension('');
       setPoids('');
-      setGlycemie('');
+      setPouls('');
       setTaille('');
       setObservation('');
       setCodeDossierLocal(codeDossier || '');
@@ -168,7 +168,7 @@ export default function ConstantesVitalesModal({
     setTemperature('');
     setTension('');
     setPoids('');
-    setGlycemie('');
+    setPouls('');
     setTaille('');
     setObservation('');
     setIntervenant(userName);
@@ -182,7 +182,7 @@ export default function ConstantesVitalesModal({
     setTemperature(obs.Temperature || '');
     setTension(obs.Tension || '');
     setPoids(obs.Poids || '');
-    setGlycemie(obs.Glycemie || '');
+    setPouls(obs.Pouls || '');
     setTaille(obs.TailleCons || '');
     setObservation(obs.ObservationC || '');
     setIntervenant(obs.Intervenant || userName);
@@ -213,7 +213,7 @@ export default function ConstantesVitalesModal({
         Temperature: temperature,
         Tension: tension,
         Poids: poids,
-        Glycemie: glycemie,
+        Pouls: pouls,
         TailleCons: taille,
         ObservationC: observation,
         Intervenant: intervenant,
@@ -405,12 +405,12 @@ export default function ConstantesVitalesModal({
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-2">
-                      <Form.Label className="fw-bold">Glycémie</Form.Label>
+                      <Form.Label className="fw-bold">Pouls (bpm)</Form.Label>
                       <Form.Control
                         type="text"
-                        value={glycemie}
-                        onChange={(e) => setGlycemie(e.target.value)}
-                        placeholder="ex: 1.1"
+                        value={pouls}
+                        onChange={(e) => setPouls(e.target.value)}
+                        placeholder="ex: 75"
                       />
                     </Form.Group>
                   </Col>
@@ -488,7 +488,7 @@ export default function ConstantesVitalesModal({
                       <th>Temp.</th>
                       <th>Tension</th>
                       <th>Poids</th>
-                      <th>Glycémie</th>
+                      <th>Pouls</th>
                       <th>Taille</th>
                       <th>Observation</th>
                       <th>Actions</th>
@@ -503,7 +503,7 @@ export default function ConstantesVitalesModal({
                         <td>{obs.Temperature ? `${obs.Temperature}°C` : '—'}</td>
                         <td>{obs.Tension || '—'}</td>
                         <td>{obs.Poids ? `${obs.Poids} kg` : '—'}</td>
-                        <td>{obs.Glycemie || '—'}</td>
+                        <td>{obs.Pouls ? `${obs.Pouls} bpm` : '—'}</td>
                         <td>{obs.TailleCons ? `${obs.TailleCons} cm` : '—'}</td>
                         <td className="text-start" style={{ maxWidth: 200, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                           {obs.ObservationC || '—'}

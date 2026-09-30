@@ -289,7 +289,7 @@ async function main() {
     Temperature: String,
     Poids: String,
     Tension: String,
-    Glycemie: String,
+    Pouls: String,
     TailleCons: String,
     AttenteAccueil: { type: Number, default: 0 },
     attenteMedecin: { type: Number, default: 0 },

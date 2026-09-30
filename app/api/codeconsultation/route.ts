@@ -55,7 +55,7 @@ export async function GET(request: NextRequest) {
         Temperature: consultation.Temperature,
         Tension: consultation.Tension,
         TailleCons: consultation.TailleCons,
-        Glycemie: consultation.Glycemie,
+        Pouls: consultation.Pouls,
         Poids: consultation.Poids,
         info: infoMessage,
     };

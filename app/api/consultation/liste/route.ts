@@ -72,7 +72,7 @@ export async function GET(req: NextRequest) {
             { Temperature: { $exists: true, $ne: '' } },
             { Poids: { $exists: true, $ne: '' } },
             { Tension: { $exists: true, $ne: '' } },
-            { Glycemie: { $exists: true, $ne: '' } },
+            { Pouls: { $exists: true, $ne: '' } },
             { TailleCons: { $exists: true, $ne: '' } }
           ];
           break;
@@ -108,11 +108,11 @@ export async function GET(req: NextRequest) {
         statutC: c.StatutC,
         attenteAccueil: c.AttenteAccueil,
         datetransfert: c.datetransfert ? new Date(c.datetransfert).toISOString().split('T')[0] : null,
-        constantes: !!(c.Temperature || c.Poids || c.Tension || c.Glycemie || c.TailleCons),
+        constantes: !!(c.Temperature || c.Poids || c.Tension || c.Pouls || c.TailleCons),
         temperature: c.Temperature || '-',
         poids: c.Poids || '-',
         tension: c.Tension || '-',
-        glycemie: c.Glycemie || '-',
+        pouls: c.Pouls || '-',
         taille: c.TailleCons || '-'
       };
     });

@@ -8,7 +8,7 @@ interface ConstanteData {
     tension: string;
     taille: string;
     poids: string;
-    glycemie: string;
+    pouls: string;
     medecin: string;
     prisePar: string;
 }
@@ -28,7 +28,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
         tension: "",
         taille: "",
         poids: "",
-        glycemie: "",
+        pouls: "",
         medecin: consultation?.Medecin || "",
         prisePar: user,
     });
@@ -41,7 +41,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
     const [searchSuccess, setSearchSuccess] = useState<string>("");
     const [imc, setImc] = useState<string>("");
     const [imcInterpretation, setImcInterpretation] = useState<string>("");
-    const [glycemieInterpretation, setGlycemieInterpretation] = useState<string>("");
+    const [poulsInterpretation, setPoulsInterpretation] = useState<string>("");
 
     useEffect(() => {
         // Charger les médecins depuis l'API
@@ -81,7 +81,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                     tension: "",
                     taille: "",
                     poids: "",
-                    glycemie: "",
+                    pouls: "",
                     medecin: "",
                     prisePar: user,
                 });
@@ -119,7 +119,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                             tension: data.Tension || "",
                             taille: data.TailleCons || "",
                             poids: data.Poids || "",
-                            glycemie: data.Glycemie || "",
+                            pouls: data.Pouls || "",
                             medecin: data.IDMEDECIN || "",
                         }));
                         setConstantesChargees(true);
@@ -154,7 +154,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                                     tension: constData.Tension || "",
                                     taille: constData.TailleCons || "",
                                     poids: constData.Poids || "",
-                                    glycemie: constData.Glycemie || "",
+                                    pouls: constData.Pouls || "",
                                     medecin: constData.IDMEDECIN || "",
                                 }));
                                 setConstantesChargees(true);
@@ -210,28 +210,26 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
         }
     }, [formData.poids, formData.taille]);
 
-    // Interprétation automatique de la glycémie
+    // Interprétation automatique du pouls
     useEffect(() => {
-        if (formData.glycemie) {
-            const glycemieNum = parseFloat(formData.glycemie);
+        if (formData.pouls) {
+            const poulsNum = parseFloat(formData.pouls);
 
-            if (glycemieNum > 0) {
-                if (glycemieNum < 0.7) {
-                    setGlycemieInterpretation("Hypoglycémie (trop basse)");
-                } else if (glycemieNum >= 0.7 && glycemieNum <= 1.1) {
-                    setGlycemieInterpretation("Glycémie normale");
-                } else if (glycemieNum > 1.1 && glycemieNum <= 1.26) {
-                    setGlycemieInterpretation("Glycémie élevée (prédiabète)");
+            if (poulsNum > 0) {
+                if (poulsNum < 60) {
+                    setPoulsInterpretation("Bradycardie (trop bas)");
+                } else if (poulsNum >= 60 && poulsNum <= 100) {
+                    setPoulsInterpretation("Pouls normal");
                 } else {
-                    setGlycemieInterpretation("Hyperglycémie (diabète possible)");
+                    setPoulsInterpretation("Tachycardie (trop élevé)");
                 }
             } else {
-                setGlycemieInterpretation("");
+                setPoulsInterpretation("");
             }
         } else {
-            setGlycemieInterpretation("");
+            setPoulsInterpretation("");
         }
-    }, [formData.glycemie]);
+    }, [formData.pouls]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -267,7 +265,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                 tension: formData.tension,
                 taille: formData.taille,
                 poids: formData.poids,
-                glycemie: formData.glycemie,
+                pouls: formData.pouls,
                 medecin: formData.medecin,
                 prisePar: formData.prisePar,
                 attenteAccueil: 1,
@@ -326,7 +324,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                             tension: constData.Tension || "",
                             taille: constData.TailleCons || "",
                             poids: constData.Poids || "",
-                            glycemie: constData.Glycemie || "",
+                            pouls: constData.Pouls || "",
                             medecin: constData.IDMEDECIN || "",
                         }));
                         setConstantesChargees(true);
@@ -338,14 +336,14 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                 setConsultationTrouvee(null);
                 setConstantesChargees(false);
                 setSearchError("Code non trouvé. Veuillez saisir le bon code prestation.");
-                setFormData((prev) => ({ ...prev, temperature: "", tension: "", taille: "", poids: "", glycemie: "", medecin: "" }));
+                setFormData((prev) => ({ ...prev, temperature: "", tension: "", taille: "", poids: "", pouls: "", medecin: "" }));
             }
         } catch (error) {
             console.error("Erreur lors de la recherche:", error);
             setConsultationTrouvee(null);
             setConstantesChargees(false);
             setSearchError("Erreur lors de la recherche. Veuillez réessayer.");
-            setFormData((prev) => ({ ...prev, temperature: "", tension: "", taille: "", poids: "", glycemie: "", medecin: "" }));
+            setFormData((prev) => ({ ...prev, temperature: "", tension: "", taille: "", poids: "", pouls: "", medecin: "" }));
         }
     };
 
@@ -452,23 +450,23 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
                                         />
                                     </Col>
                                 </Row>
-                                {/* Ligne 3 : Glycémie avec interprétation */}
+                                {/* Ligne 3 : Pouls avec interprétation */}
                                 <Form.Group className="mb-3">
-                                    <Form.Label>Glycémie (g/L)</Form.Label>
+                                    <Form.Label>Pouls (bpm)</Form.Label>
                                     <Form.Control
                                         type="text"
-                                        name="glycemie"
-                                        value={formData.glycemie}
+                                        name="pouls"
+                                        value={formData.pouls}
                                         onChange={handleChange}
-                                        placeholder="Ex: 1.05"
+                                        placeholder="Ex: 75"
                                     />
-                                    {glycemieInterpretation && (
-                                        <Form.Text className={`d-block mt-1 ${glycemieInterpretation.includes("normale") ? "text-success" :
-                                            glycemieInterpretation.includes("élevée") ? "text-warning" :
+                                    {poulsInterpretation && (
+                                        <Form.Text className={`d-block mt-1 ${poulsInterpretation.includes("normale") ? "text-success" :
+                                            poulsInterpretation.includes("élevée") ? "text-warning" :
                                                 "text-danger"
                                             }`}>
-                                            {glycemieInterpretation.includes("normale") ? "✅" :
-                                                glycemieInterpretation.includes("élevée") ? "⚠️" : "❌"} {glycemieInterpretation}
+                                            {poulsInterpretation.includes("normale") ? "✅" :
+                                                poulsInterpretation.includes("élevée") ? "⚠️" : "❌"} {poulsInterpretation}
                                         </Form.Text>
                                     )}
                                 </Form.Group>

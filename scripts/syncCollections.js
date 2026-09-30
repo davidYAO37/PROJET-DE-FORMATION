@@ -112,7 +112,7 @@ const COLLECTIONS = [
       Temperature:               null,
       Poids:                     null,
       Tension:                   null,
-      Glycemie:                  null,
+      Pouls:                  null,
       TailleCons:                null,
       AttenteAccueil:            0,
       attenteMedecin:            0,

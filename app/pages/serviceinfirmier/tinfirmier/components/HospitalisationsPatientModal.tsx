@@ -26,7 +26,7 @@ interface Observation {
   Temperature?: string;
   Tension?: string;
   Poids?: string;
-  Glycemie?: string;
+  Pouls?: string;
   TailleCons?: string;
   Frequence?: string;
   SpO2?: string;
@@ -236,7 +236,7 @@ export default function HospitalisationsPatientModal({
             <div style="background:#f8f9fa; padding:8px; border-radius:4px;"><strong>TA :</strong> ${obs.Tension || '—'}</div>
             <div style="background:#f8f9fa; padding:8px; border-radius:4px;"><strong>Poids :</strong> ${obs.Poids || '—'}</div>
             <div style="background:#f8f9fa; padding:8px; border-radius:4px;"><strong>Taille :</strong> ${obs.TailleCons || '—'}</div>
-            <div style="background:#f8f9fa; padding:8px; border-radius:4px;"><strong>Glyc :</strong> ${obs.Glycemie || '—'}</div>
+            <div style="background:#f8f9fa; padding:8px; border-radius:4px;"><strong>Pouls :</strong> ${obs.Pouls || '—'}</div>
             <div style="background:#f8f9fa; padding:8px; border-radius:4px;"><strong>SpO2 :</strong> ${obs.SpO2 || '—'}</div>
           </div>
         </div>

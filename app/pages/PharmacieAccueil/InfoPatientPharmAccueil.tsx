@@ -24,7 +24,7 @@ interface Consultation {
     Temperature?: string;
     Tension?: string;
     TailleCons?: string;
-    Glycemie?: string;
+    Pouls?: string;
     Poids?: string;
     DatePres?: string;
     IDMEDECIN?: string;
@@ -217,7 +217,7 @@ export default function InfoPatientPharmAccueil({
                     Temperature: "",
                     Tension: "",
                     TailleCons: "",
-                    Glycemie: "",
+                    Pouls: "",
                     Poids: ""
                 });
                 setPrescription({});
@@ -259,8 +259,8 @@ export default function InfoPatientPharmAccueil({
                 Tension: consultationData.Tension || "",
                 // SAI_TailleCons=CONSULTATION.TailleCons
                 TailleCons: consultationData.TailleCons || "",
-                // SAI_Glycemie=CONSULTATION.Glycemie
-                Glycemie: consultationData.Glycemie || "",
+                // SAI_Pouls=CONSULTATION.Pouls
+                Pouls: consultationData.Pouls || "",
                 // SAI_Poids=CONSULTATION.Poids
                 Poids: consultationData.Poids || "",
                 // SAI_DatePres=DateSys()

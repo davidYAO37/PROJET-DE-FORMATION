@@ -40,7 +40,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.Tension = data.tension;
         consultation.Poids = data.poids;
         consultation.TailleCons = data.taille;
-        consultation.Glycemie = data.glycemie;
+        consultation.Pouls = data.pouls;
         consultation.IDMEDECIN = data.medecin;
         consultation.AttenteAccueil = 1; // Correction: stocké comme Number dans le modèle
         consultation.attenteMedecin = 1;

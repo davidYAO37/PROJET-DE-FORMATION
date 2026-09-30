@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
       const isRecu = c.StatutC === true;
       const isSalleAttente = c.AttenteAccueil === false && c.StatutC === false;
       const isEnCours = c.AttenteAccueil === 1 && c.StatutC === false;
-      const hasConstantes = !!(c.Temperature || c.Poids || c.Tension || c.Glycemie || c.TailleCons);
+      const hasConstantes = !!(c.Temperature || c.Poids || c.Tension || c.Pouls || c.TailleCons);
       const isTransfert = !!c.datetransfert && c.datetransfert >= periodeDebut && c.datetransfert <= periodeFin;
 
       if (isRecu) recus++;

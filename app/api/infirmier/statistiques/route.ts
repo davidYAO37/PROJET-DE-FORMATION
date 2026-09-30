@@ -93,7 +93,7 @@ export async function GET(req: NextRequest) {
     const parMedecinMap = new Map<string, { medecinId: string; nom: string; total: number; consultations: number; hospitalisations: number; soins: number }>();
 
     for (const c of consultations as any[]) {
-      const hasConstantes = !!(c.Temperature || c.Poids || c.Tension || c.Glycemie || c.TailleCons);
+      const hasConstantes = !!(c.Temperature || c.Poids || c.Tension || c.Pouls || c.TailleCons);
       if (hasConstantes) consultationsAvecConstantes++;
 
       const mois = toMonth(c.Date_consulation);

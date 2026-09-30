@@ -19,7 +19,6 @@ function formatConstante(c: any): string {
   if (c.pouls != null) parts.push(`Pouls ${c.pouls}`);
   if (c.frequenceRespiratoire != null) parts.push(`FR ${c.frequenceRespiratoire}`);
   if (c.spo2 != null) parts.push(`SpO2 ${c.spo2}%`);
-  if (c.glycemie != null) parts.push(`Glycémie ${c.glycemie}`);
   if (c.poids != null) parts.push(`Poids ${c.poids}kg`);
   const date = c.date ? new Date(c.date).toLocaleDateString('fr-FR') : '';
   return `- ${date} ${c.heure || ''} : ${parts.join(', ')}${c.observation ? ` (${c.observation})` : ''}`;

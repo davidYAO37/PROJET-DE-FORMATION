@@ -15,10 +15,10 @@
 #### Constantes médicales
 - **GET /api/fichePrescriptionMedecin/constantes** - Récupérer les constantes d'une consultation
   - Paramètre: `consultationId` (requis)
-  - Retourne: température, poids, tension, glycémie, taille
+  - Retourne: température, poids, tension, pouls, taille
 
 - **PUT /api/fichePrescriptionMedecin/constantes** - Mettre à jour les constantes
-  - Corps: `{ consultationId, constantes: { temperature, poids, tension, glycemie, taille } }`
+  - Corps: `{ consultationId, constantes: { temperature, poids, tension, pouls, taille } }`
 
 #### Antécédents patient
 - **GET /api/fichePrescriptionMedecin/antecedents** - Récupérer les antécédents d'un patient
@@ -69,7 +69,7 @@ PUT /api/fichePrescriptionMedecin/constantes
     "temperature": 37.5,
     "poids": 70,
     "tension": "120/80",
-    "glycemie": 1.2,
+    "pouls": 75,
     "taille": 175
   }
 }

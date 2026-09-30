@@ -62,7 +62,7 @@ export interface IConsultation extends Document {
   Temperature?: string; // Temperature
   Poids?: string; // Poids
   Tension?: string; // Tension
-  Glycemie?: string; // Glycemie
+  Pouls?: string; // Pouls
   TailleCons?: string; // TailleCons
 
   AttenteAccueil?: number;
@@ -150,7 +150,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
     Temperature: { type: String },
     Poids: { type: String },
     Tension: { type: String },
-    Glycemie: { type: String },
+    Pouls: { type: String },
     TailleCons: { type: String },
 
     AttenteAccueil: { type: Number, default: 0 },

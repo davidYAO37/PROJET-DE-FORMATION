@@ -11,7 +11,6 @@ export interface IConstanteHospitalisation extends Document {
   pouls?: number;
   frequenceRespiratoire?: number;
   spo2?: number;
-  glycemie?: number;
   poids?: number;
   taille?: number;
   diurese?: number;
@@ -33,7 +32,6 @@ const ConstanteHospitalisationSchema = new Schema<IConstanteHospitalisation>(
     pouls: { type: Number },
     frequenceRespiratoire: { type: Number },
     spo2: { type: Number },
-    glycemie: { type: Number },
     poids: { type: Number },
     taille: { type: Number },
     diurese: { type: Number },

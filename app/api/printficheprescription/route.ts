@@ -72,7 +72,7 @@ export async function GET(request: NextRequest) {
           Date_consulation: 1,
           Temperature: 1,
           Tension: 1,
-          Glycemie: 1,
+          Pouls: 1,
           TailleCons: 1,
           Poids: 1,
           IdPatient: 1,

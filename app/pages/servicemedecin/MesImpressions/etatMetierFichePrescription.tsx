@@ -39,7 +39,7 @@ interface IConsultation {
   Temperature?: string;
   Poids?: string;
   Tension?: string;
-  Glycemie?: string;
+  Pouls?: string;
   TailleCons?: string;
   PrixClinique?: number;
   Prix_Assurance?: number;
@@ -434,9 +434,9 @@ export default function EtatMetierFichePrescription({
             </Col>
             <Col md={3}>
               <div className="text-center p-3 bg-light rounded">
-                <i className="bi bi-droplet fs-3 text-warning mb-2"></i>
-                <h6 className="mb-1">Glycémie</h6>
-                <p className="mb-0 fw-bold">{consultation?.Glycemie || 'N/A'} g/L</p>
+                <i className="bi bi-heart-pulse fs-3 text-warning mb-2"></i>
+                <h6 className="mb-1">Pouls</h6>
+                <p className="mb-0 fw-bold">{consultation?.Pouls || 'N/A'} bpm</p>
               </div>
             </Col>
           </Row>

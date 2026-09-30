@@ -68,7 +68,7 @@ interface Consultation {
   Temperature?: string;
   Poids?: string;
   Tension?: string;
-  Glycemie?: string;
+  Pouls?: string;
   Medecin?: string;
   StatutPaiement?: string;
   montantapayer?: number;
@@ -809,7 +809,7 @@ export default function DossierPatient({
                           .sort((a, b) => new Date(b.Date_consulation).getTime() - new Date(a.Date_consulation).getTime())
                           .map((consultation) => {
                           const isOpen = expandedConsultation === consultation._id;
-                          const hasConstantes = consultation.Poids || consultation.Temperature || consultation.Tension || consultation.Glycemie;
+                          const hasConstantes = consultation.Poids || consultation.Temperature || consultation.Tension || consultation.Pouls;
                           const details = consultationDetails[consultation._id] || {};
                           return (
                             <React.Fragment key={consultation._id}>
@@ -859,7 +859,7 @@ export default function DossierPatient({
                                             </div>
                                           </Col>
                                         )}
-                                        {(consultation.Temperature || consultation.Poids || consultation.Tension || consultation.Glycemie) && (
+                                        {(consultation.Temperature || consultation.Poids || consultation.Tension || consultation.Pouls) && (
                                           <Col md={6} key={`${consultation._id}-constantes`}>
                                             <div className="p-2 bg-white rounded border h-100">
                                               <div className="small fw-bold text-secondary mb-2"><FaStethoscope className="me-1" />Constantes</div>
@@ -867,7 +867,7 @@ export default function DossierPatient({
                                                 {consultation.Temperature && <span key="temp"><strong>Température:</strong> {consultation.Temperature}°C</span>}
                                                 {consultation.Poids && <span key="poids"><strong>Poids:</strong> {consultation.Poids} kg</span>}
                                                 {consultation.Tension && <span key="tension"><strong>Tension:</strong> {consultation.Tension}</span>}
-                                                {consultation.Glycemie && <span key="glycemie"><strong>Glycémie:</strong> {consultation.Glycemie}</span>}
+                                                {consultation.Pouls && <span key="pouls"><strong>Pouls:</strong> {consultation.Pouls} bpm</span>}
                                               </div>
                                             </div>
                                           </Col>

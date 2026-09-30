@@ -34,7 +34,7 @@ interface Consultation {
   temperature?: string;
   poids?: string;
   tension?: string;
-  glycemie?: string;
+  pouls?: string;
   frequenceCardiaque?: string;
   frequenceRespiratoire?: string;
   MotifConsultation?: string;
@@ -82,7 +82,7 @@ export default function FichePrescriptionMedecin() {
     temperature: "",
     poids: "",
     tension: "",
-    glycemie: "",
+    pouls: "",
     taille: "",
   });
 
@@ -337,7 +337,7 @@ export default function FichePrescriptionMedecin() {
               temperature: data.consultation.temperature || "",
               poids: data.consultation.poids || "",
               tension: data.consultation.tension || "",
-              glycemie: data.consultation.glycemie || "",
+              pouls: data.consultation.pouls || "",
               taille: data.consultation.taille || "",
             });
 
@@ -418,7 +418,7 @@ export default function FichePrescriptionMedecin() {
   ) => {
     const indice = getIndiceConstante(
       value,
-      field as "temperature" | "tension" | "glycemie" | "poids",
+      field as "temperature" | "tension" | "pouls" | "poids",
     );
 
     return (
@@ -582,7 +582,7 @@ export default function FichePrescriptionMedecin() {
   // Fonction pour calculer l'indice des constantes
   const getIndiceConstante = (
     valeur: string,
-    type: "temperature" | "tension" | "glycemie" | "poids",
+    type: "temperature" | "tension" | "pouls" | "poids",
   ) => {
     if (!valeur) return null;
 
@@ -647,22 +647,22 @@ export default function FichePrescriptionMedecin() {
         }
         return null;
 
-      case "glycemie":
-        if (numValeur > 2.5 || numValeur < 0.6)
+      case "pouls":
+        if (numValeur > 140 || numValeur < 40)
           return {
             niveau: "danger",
-            message: "Glycémie critique",
+            message: "Pouls critique",
             icone: "bi-exclamation-triangle-fill",
           };
-        if (numValeur > 1.5 || numValeur < 0.8)
+        if (numValeur > 100 || numValeur < 60)
           return {
             niveau: "warning",
-            message: "Glycémie anormale",
+            message: "Pouls anormal",
             icone: "bi-exclamation-circle-fill",
           };
         return {
           niveau: "success",
-          message: "Glycémie normale",
+          message: "Pouls normal",
           icone: "bi-check-circle-fill",
         };
 
@@ -749,7 +749,7 @@ export default function FichePrescriptionMedecin() {
             temperature: constantesForm.temperature,
             poids: constantesForm.poids,
             tension: constantesForm.tension,
-            glycemie: constantesForm.glycemie,
+            pouls: constantesForm.pouls,
             taille: constantesForm.taille || "",
           },
         }),
@@ -1547,11 +1547,11 @@ export default function FichePrescriptionMedecin() {
                         "heart-pulse",
                       )}
                       {renderConstanteField(
-                        "Glycémie (g/L)",
-                        "glycemie",
-                        constantesForm.glycemie,
-                        "1.05",
-                        "droplet",
+                        "Pouls (bpm)",
+                        "pouls",
+                        constantesForm.pouls,
+                        "75",
+                        "activity",
                       )}
                       {renderConstanteField(
                         "Taille (cm)",
@@ -1578,7 +1578,7 @@ export default function FichePrescriptionMedecin() {
                             temperature: "37.5",
                             poids: "70",
                             tension: "120/80",
-                            glycemie: "1.05",
+                            pouls: "75",
                             taille: "175",
                           });
                         }}

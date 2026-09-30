@@ -8,7 +8,7 @@ export interface ObservationHospit {
     Poids?: string;
     Temperature?: string;
     Tension?: string;
-    Glycemie?: string;
+    Pouls?: string;
     TailleCons?: string;
     Code_dossier?: string;
     CodePrestation?: string;

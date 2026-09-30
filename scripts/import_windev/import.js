@@ -104,7 +104,7 @@ const ConsultationSchema = new mongoose.Schema({
   Temperature: { type: String },
   Poids: { type: String },
   Tension: { type: String },
-  Glycemie: { type: String },
+  Pouls: { type: String },
   TailleCons: { type: String },
   AttenteAccueil: { type: Number, default: 0 },
   attenteMedecin: { type: Number, default: 0 },
