@@ -226,19 +226,11 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         if (!montantAssur || montantAssur === 0) montantAssur = montantClinique;
 
         // Si le surplus n'est pas accepté, le montant clinique affiché/sauvegardé correspond au tarif assurance/société.
-        // Sinon, on restaure le vrai montant clinique depuis l'acte.
+        // Sinon, on laisse le montant clinique tel que saisi manuellement ou calculé lors du changement d'acte.
         let effectiveMontantClinique = montantClinique;
         if (!accepteSurplus) {
             effectiveMontantClinique = montantAssur;
             if (montantClinique !== montantAssur) setMontantClinique(montantAssur);
-        } else {
-            const acte = actes.find((a) => a._id === selectedActe);
-            if (acte) {
-                if (assure === "mutualiste") effectiveMontantClinique = Math.round(acte.prixMutuel ?? acte.prixClinique ?? 0);
-                else if (assure === "preferentiel") effectiveMontantClinique = Math.round(acte.prixPreferentiel ?? acte.prixClinique ?? 0);
-                else effectiveMontantClinique = Math.round(acte.prixClinique ?? 0);
-                if (montantClinique !== effectiveMontantClinique) setMontantClinique(effectiveMontantClinique);
-            }
         }
 
         const montantCouvert = montantAssur;
@@ -257,7 +249,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
         setPartAssurance(partAssur);
         setPartassure(partPat);
         setTotalPatient(partPat + surplusCalc);
-    }, [montantClinique, montantAssurance, taux, selectedAssurance, assurances, accepteSurplus, actes, selectedActe, assure]);
+    }, [montantClinique, montantAssurance, taux, accepteSurplus]);
 
     // Fonction pour charger une consultation par son CodePrestation
     const loadConsultationByCode = async () => {
