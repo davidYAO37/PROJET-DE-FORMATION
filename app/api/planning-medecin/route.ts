@@ -102,7 +102,7 @@ export async function POST(req: NextRequest) {
             PatientR: "",
             LibelleRDV: "",
             IDPLANNING_MED: existingPlanning._id,
-            Medecinr: `PR ${medecin.nom} ${medecin.prenoms}`,
+            Medecinr: `${medecin.nom} ${medecin.prenoms}`,
             entrepriseId: idEntreprise
           });
           await newRdv.save();
@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
             PatientR: "",
             LibelleRDV: "",
             IDPLANNING_MED: savedPlanning._id,
-            Medecinr: `PR ${medecin.nom} ${medecin.prenoms}`,
+            Medecinr: `${medecin.nom} ${medecin.prenoms}`,
             entrepriseId: idEntreprise
           });
           await newRdv.save();

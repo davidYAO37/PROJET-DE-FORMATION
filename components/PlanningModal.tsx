@@ -356,7 +356,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
                       <option value="">Sélectionner un médecin</option>
                       {medecins.map((medecin) => (
                         <option key={medecin._id.toString()} value={medecin._id.toString()}>
-                          PR {medecin.nom} {medecin.prenoms}
+                          {medecin.nom} {medecin.prenoms}
                         </option>
                       ))}
                     </Form.Select>

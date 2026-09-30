@@ -312,7 +312,7 @@ export default function PlanningField({ medecinId, onPlanningSelect, showActions
                   <option value="">Choisir un médecin...</option>
                   {medecins.map((medecin) => (
                     <option key={medecin._id.toString()} value={medecin._id.toString()}>
-                      PR {medecin.nom} {medecin.prenoms}
+                      {medecin.nom} {medecin.prenoms}
                     </option>
                   ))}
                 </Form.Select>
