@@ -254,7 +254,23 @@ export default function RapportHospitalisationModal({
         consultation,
         lignesConsultation,
         prescriptionsConsultation,
+        antecedentsPatient,
       } = result.data;
+
+      // Pré-remplissage des antécédents du patient même s'il n'y a pas d'hospitalisation.
+      if (antecedentsPatient) {
+        setFormData((prev) => ({
+          ...prev,
+          antecedentsMedicaux: antecedentsPatient.antecedentMedico || prev.antecedentsMedicaux,
+          antecedentsChirurgicaux: antecedentsPatient.anteChirurgico || prev.antecedentsChirurgicaux,
+        }));
+      }
+
+      if (result.hospitalisationFound === false) {
+        setSuccess('Aucune hospitalisation trouvée. Les antécédents du patient ont été chargés.');
+        setTimeout(() => setSuccess(''), 5000);
+        return;
+      }
 
       // Mêmes sources et format que PrintFichePrescription : ExamenClinique est le
       // texte saisi par le médecin à la consultation, les examens paracliniques sont
@@ -274,7 +290,7 @@ export default function RapportHospitalisationModal({
         .map((p: any) => `- ${p.nomMedicament} ${p.posologie || ''} qté:${p.QteP}`)
         .join('\n');
 
-      const evolutionText = evolutions
+      const evolutionText = (evolutions || [])
         .map((e: any) => {
           const date = e.date ? new Date(e.date).toLocaleDateString('fr-FR') : '';
           return `- ${date} ${e.heure || ''} : ${e.observation}${e.decision ? ` — Décision : ${e.decision}` : ''}${e.etatPatient ? ` — État : ${e.etatPatient}` : ''}`;
@@ -283,13 +299,15 @@ export default function RapportHospitalisationModal({
 
       setFormData((prev) => ({
         ...prev,
-        hospitalisationId: examenHospitalisation._id ? String(examenHospitalisation._id) : prev.hospitalisationId,
-        dateEntree: examenHospitalisation.Entrele ? new Date(examenHospitalisation.Entrele) : prev.dateEntree,
-        dateSortie: examenHospitalisation.SortieLe ? new Date(examenHospitalisation.SortieLe) : prev.dateSortie,
-        service: examenHospitalisation.Designationtypeacte || prev.service,
-        medecinTraitant: examenHospitalisation.NomMed || prev.medecinTraitant,
-        diagnosticAdmission: examenHospitalisation.Rclinique || prev.diagnosticAdmission,
-        motifHospitalisation: examenHospitalisation.motifHospitalisation || examenHospitalisation.Rclinique || prev.motifHospitalisation,
+        hospitalisationId: examenHospitalisation?._id ? String(examenHospitalisation._id) : prev.hospitalisationId,
+        dateEntree: examenHospitalisation?.Entrele ? new Date(examenHospitalisation.Entrele) : prev.dateEntree,
+        dateSortie: examenHospitalisation?.SortieLe ? new Date(examenHospitalisation.SortieLe) : prev.dateSortie,
+        service: examenHospitalisation?.Designationtypeacte || prev.service,
+        medecinTraitant: examenHospitalisation?.NomMed || prev.medecinTraitant,
+        diagnosticAdmission: examenHospitalisation?.Rclinique || prev.diagnosticAdmission,
+        motifHospitalisation: examenHospitalisation?.motifHospitalisation || examenHospitalisation?.Rclinique || prev.motifHospitalisation,
+        antecedentsMedicaux: antecedentsPatient?.antecedentMedico || prev.antecedentsMedicaux,
+        antecedentsChirurgicaux: antecedentsPatient?.anteChirurgico || prev.antecedentsChirurgicaux,
         examenClinique: examenCliniqueText || prev.examenClinique,
         examensParacliniques: examensParacliniquesText || prev.examensParacliniques,
         traitementAdministre: traitementAdministreText || prev.traitementAdministre,
@@ -686,14 +704,46 @@ export default function RapportHospitalisationModal({
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Antécédents médicaux</Form.Label>
-                      <Form.Control as="textarea" rows={2} value={formData.antecedentsMedicaux} onChange={(e) => setFormData({ ...formData, antecedentsMedicaux: e.target.value })} />
+                      <Form.Label className={`${formData.antecedentsMedicaux?.trim() ? 'text-dark' : 'text-muted'} small`}>
+                        <i className="bi bi-clock-history me-1"></i>
+                        Antécédents médicaux
+                      </Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        value={formData.antecedentsMedicaux}
+                        onChange={(e) => setFormData({ ...formData, antecedentsMedicaux: e.target.value })}
+                        placeholder="Antécédents médicaux du patient..."
+                        className={formData.antecedentsMedicaux?.trim() ? 'border-success' : ''}
+                      />
+                      {formData.antecedentsMedicaux?.trim() && (
+                        <small className="text-muted mt-1 d-block">
+                          <i className="bi bi-check-circle-fill text-success me-1"></i>
+                          {formData.antecedentsMedicaux.length} caractères
+                        </small>
+                      )}
                     </Form.Group>
                   </Col>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Antécédents chirurgicaux</Form.Label>
-                      <Form.Control as="textarea" rows={2} value={formData.antecedentsChirurgicaux} onChange={(e) => setFormData({ ...formData, antecedentsChirurgicaux: e.target.value })} />
+                      <Form.Label className={`${formData.antecedentsChirurgicaux?.trim() ? 'text-dark' : 'text-muted'} small`}>
+                        <i className="bi bi-bandaid me-1"></i>
+                        Antécédents chirurgicaux
+                      </Form.Label>
+                      <Form.Control
+                        as="textarea"
+                        rows={2}
+                        value={formData.antecedentsChirurgicaux}
+                        onChange={(e) => setFormData({ ...formData, antecedentsChirurgicaux: e.target.value })}
+                        placeholder="Antécédents chirurgicaux du patient..."
+                        className={formData.antecedentsChirurgicaux?.trim() ? 'border-success' : ''}
+                      />
+                      {formData.antecedentsChirurgicaux?.trim() && (
+                        <small className="text-muted mt-1 d-block">
+                          <i className="bi bi-check-circle-fill text-success me-1"></i>
+                          {formData.antecedentsChirurgicaux.length} caractères
+                        </small>
+                      )}
                     </Form.Group>
                   </Col>
                 </Row>
@@ -713,15 +763,25 @@ export default function RapportHospitalisationModal({
                   <Col md={4}><Form.Group><Form.Label>Pouls</Form.Label><Form.Control value={formData.pouls} onChange={(e) => setFormData({ ...formData, pouls: e.target.value })} placeholder="Ex. 72 bpm" /></Form.Group></Col>
                 </Row>
                 <Form.Group className="mb-3">
-                  <Form.Label>Examen clinique *</Form.Label>
+                  <Form.Label className={`${formData.examenClinique?.trim() ? 'text-dark' : 'text-muted'} small`}>
+                    <i className="bi bi-stethoscope me-1"></i>
+                    Examen clinique <span className="text-danger">*</span>
+                  </Form.Label>
                   <Form.Control
                     as="textarea"
                     rows={3}
                     value={formData.examenClinique}
                     onChange={(e) => setFormData({ ...formData, examenClinique: e.target.value })}
                     placeholder="Résultats de l'examen clinique..."
+                    className={formData.examenClinique?.trim() ? 'border-warning' : ''}
                     required
                   />
+                  {formData.examenClinique?.trim() && (
+                    <small className="text-muted mt-1 d-block">
+                      <i className="bi bi-check-circle-fill text-success me-1"></i>
+                      {formData.examenClinique.length} caractères
+                    </small>
+                  )}
                 </Form.Group>
                 <Form.Group className="mb-3">
                   <Form.Label>Examens paracliniques</Form.Label>

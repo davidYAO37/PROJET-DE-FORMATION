@@ -17,4 +17,5 @@ export type Patient = {
   TarifPatient?: string; // NON ASSURE, TARIF ASSURE, TARIF MUTUALISTE
   ProvisionClient?: number; // Montant en cours du compte patient
   assurance?: string; // facultatif, référence à l'assurance
+  Assurance?: string; // champ réel du modèle MongoDB
 };

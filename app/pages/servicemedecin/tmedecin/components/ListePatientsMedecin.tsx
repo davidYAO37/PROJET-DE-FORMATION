@@ -294,7 +294,7 @@ export default function ListePatientMedecin() {
           patientNom={selectedPatientForModals.Nom}
           patientPrenoms={selectedPatientForModals.Prenoms}
           Code_dossier={selectedPatientForModals.Code_dossier}
-          Assurance={selectedPatientForModals.assurance}
+          Assurance={selectedPatientForModals.Assurance}
           SOCIETE_PATIENT={selectedPatientForModals.SOCIETE_PATIENT}
           mode="consultation"
         />
@@ -325,7 +325,7 @@ export default function ListePatientMedecin() {
           patientDateNaissance={selectedPatientForModals.Date_naisse}
           patientSexe={selectedPatientForModals.sexe}
           patientNumeroDossier={selectedPatientForModals.Code_dossier}
-          patientAssurance={selectedPatientForModals.assurance}
+          patientAssurance={selectedPatientForModals.Assurance}
         />
       )}
 

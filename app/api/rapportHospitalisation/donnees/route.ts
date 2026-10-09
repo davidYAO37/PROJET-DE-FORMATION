@@ -11,6 +11,7 @@ import { IConstanteHospitalisation } from '@/models/hospitalisation/ConstanteHos
 import {
   IEvolutionMedicaleHospitalisation,
 } from '@/models/hospitalisation/EvolutionMedicaleHospitalisation';
+import { IPatient } from '@/models/patient';
 import { withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 
@@ -24,6 +25,7 @@ export async function GET(request: NextRequest) {
     const LignePrestation = getTenantModel<ILignePrestation>(context.connection, "LignePrestation");
     const PatientPrescription = getTenantModel<IPatientPrescription>(context.connection, "PatientPrescription");
     const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+    const Patient = getTenantModel<IPatient>(context.connection, "Patient");
     const PrescriptionHospitalisation = getTenantModel<IPrescriptionHospitalisation>(context.connection, "PrescriptionHospitalisation");
     const SoinHospitalisation = getTenantModel<ISoinHospitalisation>(context.connection, "SoinHospitalisation");
     const ConstanteHospitalisation = getTenantModel<IConstanteHospitalisation>(context.connection, "ConstanteHospitalisation");
@@ -46,19 +48,50 @@ export async function GET(request: NextRequest) {
     // jamais son propre _id via un champ hospitalisationId : on le retrouve soit
     // directement par son _id, soit via le marqueur statutHospitalisation (uniquement
     // présent sur les enregistrements d'admission).
-    const examenFilter: Record<string, unknown> = hospitalisationId
+    let examenFilter: Record<string, unknown> = hospitalisationId
       ? { _id: hospitalisationId }
       : { IdPatient: patientId, statutHospitalisation: { $exists: true } };
 
-    const examenHospit = await ExamenHospitalisation.findOne(examenFilter)
+    let examenHospit = await ExamenHospitalisation.findOne(examenFilter)
       .sort({ Entrele: -1 })
       .lean();
 
+    // Fallback : certaines admissions n'ont pas le marqueur statutHospitalisation
+    // mais possèdent une date d'entrée (Entrele).
+    if (!examenHospit && !hospitalisationId) {
+      examenHospit = await ExamenHospitalisation.findOne({
+        IdPatient: patientId,
+        Entrele: { $exists: true },
+      })
+        .sort({ Entrele: -1 })
+        .lean();
+    }
+
+    const patientDoc = await Patient.findById(patientId).lean();
+
     if (!examenHospit) {
-      return NextResponse.json(
-        { success: false, error: 'Aucune hospitalisation trouvée pour ce patient' },
-        { status: 404 }
-      );
+      return NextResponse.json({
+        success: true,
+        hospitalisationFound: false,
+        data: {
+          examenHospitalisation: null,
+          lignesPrestation: [],
+          prescriptions: [],
+          soins: [],
+          constantes: [],
+          evolutions: [],
+          consultation: null,
+          lignesConsultation: [],
+          prescriptionsConsultation: [],
+          antecedentsPatient: patientDoc ? {
+            antecedentMedico: patientDoc.AntecedentMedico || '',
+            anteChirurgico: patientDoc.AnteChirurgico || '',
+          } : {
+            antecedentMedico: '',
+            anteChirurgico: '',
+          },
+        },
+      });
     }
 
     const [lignesPrestation, prescriptions, soins, constantes, evolutions] = await Promise.all([
@@ -97,6 +130,13 @@ export async function GET(request: NextRequest) {
         consultation,
         lignesConsultation,
         prescriptionsConsultation,
+        antecedentsPatient: patientDoc ? {
+          antecedentMedico: patientDoc.AntecedentMedico || '',
+          anteChirurgico: patientDoc.AnteChirurgico || '',
+        } : {
+          antecedentMedico: '',
+          anteChirurgico: '',
+        },
       },
     });
   } catch (error) {
