@@ -308,6 +308,9 @@ export default function ListePatientMedecin() {
           patientId={selectedPatientForModals._id?.toString() || ''}
           patientNom={selectedPatientForModals.Nom}
           patientPrenoms={selectedPatientForModals.Prenoms}
+          patientSexe={selectedPatientForModals.sexe}
+          patientAge={selectedPatientForModals.Age_partient}
+          patientCodeDossier={selectedPatientForModals.Code_dossier}
         />
       )}
 
@@ -319,6 +322,10 @@ export default function ListePatientMedecin() {
           patientId={selectedPatientForModals._id?.toString() || ''}
           patientNom={selectedPatientForModals.Nom}
           patientPrenoms={selectedPatientForModals.Prenoms}
+          patientDateNaissance={selectedPatientForModals.Date_naisse}
+          patientSexe={selectedPatientForModals.sexe}
+          patientNumeroDossier={selectedPatientForModals.Code_dossier}
+          patientAssurance={selectedPatientForModals.assurance}
         />
       )}
 

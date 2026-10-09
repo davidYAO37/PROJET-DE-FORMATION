@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { IRapportHospitalisation } from '@/models/rapportHospitalisation';
 import { withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
+import { normalizeRapportHospitalisationStatut, StatutRapportHospitalisation } from '@/types/rapportHospitalisation';
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
 const WRITE_ROLES = ["admin", "medecin", "infirmier"];
@@ -55,11 +56,54 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       );
     }
 
-    if (rapport.statut === 'valide') {
+    const isAuthor = rapport.auteurId
+      ? rapport.auteurId === context.user.userId
+      : rapport.medecinTraitant?.trim() === userName.trim();
+    if (!isAuthor) {
+      return NextResponse.json({ success: false, error: 'Seul le médecin auteur peut modifier ce rapport' }, { status: 403 });
+    }
+
+    const currentStatus = normalizeRapportHospitalisationStatut(rapport.statut);
+    if (currentStatus === 'valide' || currentStatus === 'annule') {
       return NextResponse.json(
-        { success: false, error: 'Ce rapport est validé et ne peut plus être modifié' },
+        { success: false, error: 'Ce rapport est validé ou annulé et ne peut plus être modifié' },
         { status: 409 }
       );
+    }
+
+    delete body.patientId;
+    delete body.patientNom;
+    delete body.patientPrenoms;
+    delete body.patientDateNaissance;
+    delete body.patientSexe;
+    delete body.patientNumeroDossier;
+    delete body.patientAssurance;
+    delete body.auteurId;
+    delete body.validatedAt;
+    delete body.validatedBy;
+    delete body.cancelledAt;
+    delete body.cancelledBy;
+
+    if (body.statut) {
+      const targetStatus = normalizeRapportHospitalisationStatut(body.statut as StatutRapportHospitalisation);
+      const transitions = currentStatus === 'brouillon'
+        ? ['brouillon', 'a_valider', 'annule']
+        : ['a_valider', 'valide', 'annule'];
+      if (!transitions.includes(targetStatus)) {
+        return NextResponse.json({ success: false, error: `Transition de ${currentStatus} vers ${targetStatus} interdite` }, { status: 400 });
+      }
+      body.statut = targetStatus;
+      if (targetStatus === 'valide') {
+        body.validatedAt = new Date();
+        body.validatedBy = userName;
+      }
+      if (targetStatus === 'annule') {
+        if (!body.motifAnnulation?.trim()) {
+          return NextResponse.json({ success: false, error: 'Le motif d’annulation est obligatoire' }, { status: 400 });
+        }
+        body.cancelledAt = new Date();
+        body.cancelledBy = userName;
+      }
     }
 
     if (body.dateEntree || body.dateSortie) {
@@ -126,9 +170,16 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
       );
     }
 
-    if (rapport.statut === 'valide') {
+    const isAuthor = rapport.auteurId
+      ? rapport.auteurId === context.user.userId
+      : rapport.medecinTraitant?.trim() === userName.trim();
+    if (!isAuthor) {
+      return NextResponse.json({ success: false, error: 'Seul le médecin auteur peut supprimer ce rapport' }, { status: 403 });
+    }
+
+    if (normalizeRapportHospitalisationStatut(rapport.statut) !== 'brouillon') {
       return NextResponse.json(
-        { success: false, error: 'Ce rapport est validé et ne peut plus être supprimé' },
+        { success: false, error: 'Seul un rapport en brouillon peut être supprimé' },
         { status: 409 }
       );
     }

@@ -14,8 +14,15 @@ export const COMPTE_RENDU_OPERATOIRE_TYPES = [
 
 export type TypeCompteRenduOperatoire = (typeof COMPTE_RENDU_OPERATOIRE_TYPES)[number];
 
-export const COMPTE_RENDU_OPERATOIRE_STATUTS = ['planifie', 'en_cours', 'termine', 'annule'] as const;
+export const COMPTE_RENDU_OPERATOIRE_STATUTS = ['brouillon', 'a_valider', 'valide', 'annule', 'planifie', 'en_cours', 'termine'] as const;
 export type StatutCompteRenduOperatoire = (typeof COMPTE_RENDU_OPERATOIRE_STATUTS)[number];
+
+export const normalizeCompteRenduOperatoireStatut = (statut: StatutCompteRenduOperatoire): 'brouillon' | 'a_valider' | 'valide' | 'annule' => {
+    if (statut === 'planifie') return 'brouillon';
+    if (statut === 'en_cours') return 'a_valider';
+    if (statut === 'termine') return 'valide';
+    return statut;
+};
 
 export const COMPTE_RENDU_OPERATOIRE_LABELS: Record<TypeCompteRenduOperatoire, string> = {
     chirurgie_generale: 'Chirurgie générale',

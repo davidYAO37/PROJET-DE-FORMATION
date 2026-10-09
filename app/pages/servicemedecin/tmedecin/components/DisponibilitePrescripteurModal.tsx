@@ -960,7 +960,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
                       <div className={styles.medecinInfo}>
                         <div className={styles.medecinName}>
                           <i className="bi bi-person-circle me-2"></i>
-                          PR {medecin.nom} {medecin.prenoms}
+                             {medecin.nom} {medecin.prenoms}
                         </div>
                         <div className={styles.medecinSpecialite}>
                           {medecin.specialite}

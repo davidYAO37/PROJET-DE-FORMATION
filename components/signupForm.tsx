@@ -2,6 +2,22 @@
 import axios from "axios";
 import React, { useState, useEffect } from "react";
 import { Modal, Button } from "react-bootstrap";
+import { useLicenceModules } from "@/hooks/useLicenceModules";
+import { LicenceModuleCode } from "@/lib/licenceModules";
+
+const USER_ROLES: { value: string; label: string; module?: LicenceModuleCode }[] = [
+  { value: "admin", label: "Administrateur" },
+  { value: "accueil", label: "Service Accueil", module: "accueil" },
+  { value: "biologiste", label: "Biologiste", module: "biologiste" },
+  { value: "caisse", label: "Caissière", module: "caisse" },
+  { value: "comptable", label: "Comptabilité", module: "comptabilite" },
+  { value: "infirmier", label: "Infirmier", module: "infirmier" },
+  { value: "medecin", label: "Medecin", module: "medecin" },
+  { value: "pharmacien", label: "Pharmacie", module: "pharmacie" },
+  { value: "radiologue", label: "Radiologie", module: "radio" },
+  { value: "technicienlabo", label: "Technicien laboratoire", module: "laboratoire" },
+  { value: "facturation", label: "Facturation", module: "facturation" },
+];
 
 const SignupForm = () => {
   const [form, setForm] = useState({ nom: "", prenom: "", email: "", type: "", entrepriseId: "" });
@@ -28,6 +44,8 @@ const SignupForm = () => {
   const [blockingUser, setBlockingUser] = useState<any | null>(null);
   const [blockMessage, setBlockMessage] = useState("");
   const [showBlockModal, setShowBlockModal] = useState(false);
+  const { hasModule } = useLicenceModules();
+  const availableRoles = USER_ROLES.filter(role => !role.module || hasModule(role.module));
 
   useEffect(() => {
     // Récupérer l'ID entreprise de l'utilisateur connecté
@@ -475,17 +493,9 @@ const SignupForm = () => {
                   required
                 >
                   <option value="">Sélectionnez un rôle</option>
-                  <option value="admin">Administrateur</option>
-                  <option value="accueil">Service Accueil</option>
-                  <option value="biologiste">Biologiste</option>
-                  <option value="caisse">Caissière</option>
-                  <option value="comptable">Comptabilité</option>
-                  <option value="infirmier">Infirmier</option>
-                  <option value="medecin">Medecin</option>
-                  <option value="pharmacien">Pharmacie</option>
-                  <option value="radiologue">Radiologie</option>
-                  <option value="technicienlabo">Technicien laboratoire</option>
-                  <option value="facturation">Facturation</option>
+                  {availableRoles.map(role => (
+                    <option key={role.value} value={role.value}>{role.label}</option>
+                  ))}
                 </select>
               </div>
             </div>
@@ -891,17 +901,9 @@ const SignupForm = () => {
                       onChange={(e) => setEditType(e.target.value)}
                     >
                       <option value="">Sélectionnez un rôle</option>
-                      <option value="admin">Administrateur</option>
-                      <option value="accueil">Service Accueil</option>
-                      <option value="biologiste">Biologiste</option>
-                      <option value="caisse">Caissière</option>
-                      <option value="comptable">Comptabilité</option>
-                      <option value="infirmier">Infirmier</option>
-                      <option value="medecin">Medecin</option>
-                      <option value="pharmacien">Pharmacie</option>
-                      <option value="radiologue">Radiologie</option>
-                      <option value="technicienlabo">Technicien laboratoire</option>
-                      <option value="facturation">Facturation</option>
+                      {availableRoles.map(role => (
+                        <option key={role.value} value={role.value}>{role.label}</option>
+                      ))}
                     </select>
                   </div>
                 </>

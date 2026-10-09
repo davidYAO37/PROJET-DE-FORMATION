@@ -9,8 +9,12 @@ export interface ICompteRenduOperatoire extends Document {
     heureDebut?: string;
     heureFin?: string;
     chirurgien: string;
+    sexe?: string;
+    age?: number;
     assistant?: string;
     anesthesiste?: string;
+    indication?: string;
+    intervention?: string;
     infirmier?: string;
     typeOperation: TypeCompteRenduOperatoire;
     descriptionOperation: string;
@@ -21,6 +25,11 @@ export interface ICompteRenduOperatoire extends Document {
     traitementPostOperatoire?: string;
     dureeOperation?: number; // en minutes
     statut: StatutCompteRenduOperatoire;
+    validatedAt?: Date;
+    validatedBy?: string;
+    cancelledAt?: Date;
+    cancelledBy?: string;
+    motifAnnulation?: string;
     numeroDossier: string;
     dateCreation: Date;
     medecinId?: string;
@@ -36,8 +45,12 @@ const CompteRenduOperatoireSchema = new Schema<ICompteRenduOperatoire>({
     heureDebut: { type: String },
     heureFin: { type: String },
     chirurgien: { type: String, required: true },
+    sexe: { type: String, required: true },
+    age: { type: Number, required: true, min: 0 },
     assistant: { type: String },
     anesthesiste: { type: String },
+    indication: { type: String, required: true },
+    intervention: { type: String, required: true },
     infirmier: { type: String },
     typeOperation: { type: String, required: true, enum: ['chirurgie_generale', 'orthopedie', 'gynecologie', 'urologie', 'ophtalmologie', 'orl', 'dentaire', 'cardiovasculaire', 'neurologie', 'autre'] },
     descriptionOperation: { type: String, required: true },
@@ -47,7 +60,12 @@ const CompteRenduOperatoireSchema = new Schema<ICompteRenduOperatoire>({
     suitesOperatoires: { type: String, required: true },
     traitementPostOperatoire: { type: String },
     dureeOperation: { type: Number },
-    statut: { type: String, required: true, enum: ['planifie', 'en_cours', 'termine', 'annule'], default: 'planifie' },
+    statut: { type: String, required: true, enum: ['brouillon', 'a_valider', 'valide', 'annule', 'planifie', 'en_cours', 'termine'], default: 'brouillon' },
+    validatedAt: { type: Date },
+    validatedBy: { type: String },
+    cancelledAt: { type: Date },
+    cancelledBy: { type: String },
+    motifAnnulation: { type: String },
     numeroDossier: { type: String, required: true },
     dateCreation: { type: Date, default: Date.now },
     medecinId: { type: String },

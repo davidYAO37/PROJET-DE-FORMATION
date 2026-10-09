@@ -62,34 +62,26 @@ export async function POST(request: NextRequest) {
       patientId,
       dateEntree,
       dateSortie,
-      service,
       motifHospitalisation,
-      diagnosticAdmission,
-      diagnosticFinal,
-      histoireMaladie,
       examenClinique,
+      examensParacliniques,
       traitementAdministre,
       evolution,
-      suitesHospitalisation,
+      conclusion,
       medecinTraitant,
-      recommandations,
     } = body;
 
     if (
       !patientId ||
       !dateEntree ||
       !dateSortie ||
-      !service ||
       !motifHospitalisation ||
-      !diagnosticAdmission ||
-      !diagnosticFinal ||
-      !histoireMaladie ||
       !examenClinique ||
+      !examensParacliniques ||
       !traitementAdministre ||
       !evolution ||
-      !suitesHospitalisation ||
-      !medecinTraitant ||
-      !recommandations
+      !conclusion ||
+      !medecinTraitant
     ) {
       return NextResponse.json(
         { success: false, error: 'Champs requis manquants' },
@@ -123,6 +115,12 @@ export async function POST(request: NextRequest) {
       ...body,
       patientNom: patient.Nom,
       patientPrenoms: patient.Prenoms,
+      patientDateNaissance: patient.Date_naisse,
+      patientSexe: patient.sexe,
+      patientNumeroDossier: patient.Code_dossier,
+      patientAssurance: patient.Assurance,
+      auteurId: context.user.userId,
+      statut: 'brouillon',
       dateEntree: dateEntreeObj,
       dateSortie: dateSortieObj,
       dateRapport: body.dateRapport ? new Date(body.dateRapport) : new Date(),

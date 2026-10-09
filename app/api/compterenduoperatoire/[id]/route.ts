@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
-import { COMPTE_RENDU_OPERATOIRE_TYPES, COMPTE_RENDU_OPERATOIRE_STATUTS } from '@/types/compteRenduOperatoire';
+import { COMPTE_RENDU_OPERATOIRE_TYPES, COMPTE_RENDU_OPERATOIRE_STATUTS, normalizeCompteRenduOperatoireStatut } from '@/types/compteRenduOperatoire';
 import { ICompteRenduOperatoire } from '@/models/compteRenduOperatoire';
 
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier'];
@@ -36,20 +36,30 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         }
 
         // Vérifier les permissions (seul le chirurgien peut modifier)
-        if (cr.chirurgien?.trim() !== userName.trim()) {
+        const isAuthor = cr.medecinId
+            ? String(cr.medecinId) === context.user.userId
+            : cr.chirurgien?.trim() === userName.trim();
+        if (!isAuthor) {
             return NextResponse.json(
                 { success: false, error: 'Seul le chirurgien ayant saisi le compte rendu peut le modifier' },
                 { status: 403 }
             );
         }
 
-        // Ne pas permettre la modification si terminé
-        if (cr.statut === 'termine') {
+        const currentStatus = normalizeCompteRenduOperatoireStatut(cr.statut);
+        if (currentStatus === 'valide' || currentStatus === 'annule') {
             return NextResponse.json(
-                { success: false, error: 'Les comptes rendus terminés ne peuvent plus être modifiés' },
+                { success: false, error: 'Un compte rendu validé ou annulé ne peut plus être modifié' },
                 { status: 400 }
             );
         }
+
+        delete body.patientId;
+        delete body.patientNom;
+        delete body.patientPrenoms;
+        delete body.sexe;
+        delete body.age;
+        delete body.numeroDossier;
 
         // Validation des types
         if (body.typeOperation && !COMPTE_RENDU_OPERATOIRE_TYPES.includes(body.typeOperation)) {
@@ -64,6 +74,50 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
                 { success: false, error: 'Statut invalide' },
                 { status: 400 }
             );
+        }
+
+        if (body.statut) {
+            const targetStatus = normalizeCompteRenduOperatoireStatut(body.statut);
+            const transitions = {
+                brouillon: ['brouillon', 'a_valider', 'annule'],
+                a_valider: ['a_valider', 'valide', 'annule'],
+            } as const;
+
+            if (!(transitions[currentStatus] as readonly string[]).includes(targetStatus)) {
+                return NextResponse.json(
+                    { success: false, error: `Transition de ${currentStatus} vers ${targetStatus} interdite` },
+                    { status: 400 }
+                );
+            }
+
+            body.statut = targetStatus;
+            if (targetStatus === 'valide') {
+                body.validatedAt = new Date();
+                body.validatedBy = userName;
+            }
+            if (targetStatus === 'annule') {
+                if (!body.motifAnnulation?.trim()) {
+                    return NextResponse.json(
+                        { success: false, error: 'Le motif d’annulation est obligatoire' },
+                        { status: 400 }
+                    );
+                }
+                body.cancelledAt = new Date();
+                body.cancelledBy = userName;
+            }
+        }
+
+        delete body.validatedAt;
+        delete body.validatedBy;
+        delete body.cancelledAt;
+        delete body.cancelledBy;
+        if (body.statut === 'valide') {
+            body.validatedAt = new Date();
+            body.validatedBy = userName;
+        }
+        if (body.statut === 'annule') {
+            body.cancelledAt = new Date();
+            body.cancelledBy = userName;
         }
 
         // Recalculer la durée si heures modifiées
@@ -127,7 +181,10 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         }
 
         // Vérifier les permissions
-        if (cr.chirurgien?.trim() !== userName.trim()) {
+        const isAuthor = cr.medecinId
+            ? String(cr.medecinId) === context.user.userId
+            : cr.chirurgien?.trim() === userName.trim();
+        if (!isAuthor) {
             return NextResponse.json(
                 { success: false, error: 'Seul le chirurgien ayant saisi le compte rendu peut le supprimer' },
                 { status: 403 }
@@ -135,9 +192,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
         }
 
         // Ne pas permettre la suppression si terminé
-        if (cr.statut === 'termine') {
+        if (normalizeCompteRenduOperatoireStatut(cr.statut) !== 'brouillon') {
             return NextResponse.json(
-                { success: false, error: 'Les comptes rendus terminés ne peuvent plus être supprimés' },
+                { success: false, error: 'Seul un compte rendu en brouillon peut être supprimé' },
                 { status: 400 }
             );
         }

@@ -95,15 +95,16 @@ export async function POST(request: NextRequest) {
             patientId,
             dateOperation,
             chirurgien,
+            indication,
+            intervention,
             typeOperation,
             descriptionOperation,
             diagnosticPreOperatoire,
             gestesRealises,
-            suitesOperatoires,
-            numeroDossier
+            suitesOperatoires
         } = body;
 
-        if (!patientId || !dateOperation || !chirurgien || !typeOperation || !descriptionOperation || !diagnosticPreOperatoire || !gestesRealises || !suitesOperatoires || !numeroDossier) {
+        if (!patientId || !dateOperation || !chirurgien || !indication || !intervention || !typeOperation || !descriptionOperation || !diagnosticPreOperatoire || !gestesRealises || !suitesOperatoires) {
             return NextResponse.json(
                 { success: false, error: 'Champs requis manquants' },
                 { status: 400 }
@@ -148,8 +149,12 @@ export async function POST(request: NextRequest) {
             ...body,
             patientNom: patient.Nom,
             patientPrenoms: patient.Prenoms,
+            sexe: patient.sexe,
+            age: patient.Age_partient,
+            numeroDossier: patient.Code_dossier,
+            medecinId: context.user.userId,
             dureeOperation,
-            statut: body.statut || 'planifie'
+            statut: 'brouillon'
         });
 
         await nouveauCR.save();

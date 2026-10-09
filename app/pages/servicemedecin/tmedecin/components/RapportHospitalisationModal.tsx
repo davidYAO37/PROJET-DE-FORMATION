@@ -4,7 +4,7 @@ import { Modal, Card, Row, Col, Table, Button, Form, Alert, Badge } from 'react-
 import { FaHospitalUser, FaPrint, FaSave, FaPlus, FaEdit, FaTrash, FaFileAlt, FaSyncAlt } from 'react-icons/fa';
 import { useEntreprise } from '@/hooks/useEntreprise';
 import { generatePrintHeader, generatePrintFooter, createPrintWindow, createPrintWindowWithoutHeader } from '@/utils/printRecu';
-import { RapportHospitalisationForm, ServiceHospitalisation } from '@/types/rapportHospitalisation';
+import { normalizeRapportHospitalisationStatut, RapportHospitalisationForm, ServiceHospitalisation, StatutRapportHospitalisation } from '@/types/rapportHospitalisation';
 
 interface RapportHospitalisation extends RapportHospitalisationForm {
   _id: string;
@@ -18,6 +18,10 @@ interface RapportHospitalisationModalProps {
   patientId: string;
   patientNom?: string;
   patientPrenoms?: string;
+  patientDateNaissance?: Date;
+  patientSexe?: string;
+  patientNumeroDossier?: string;
+  patientAssurance?: string;
 }
 
 const SERVICE_LABELS: Record<ServiceHospitalisation | string, string> = {
@@ -44,6 +48,10 @@ export default function RapportHospitalisationModal({
   patientId,
   patientNom,
   patientPrenoms,
+  patientDateNaissance,
+  patientSexe,
+  patientNumeroDossier,
+  patientAssurance,
 }: RapportHospitalisationModalProps) {
   const [rapports, setRapports] = useState<RapportHospitalisation[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,6 +63,8 @@ export default function RapportHospitalisationModal({
   const [loadingHospitData, setLoadingHospitData] = useState(false);
   const [hospitDataError, setHospitDataError] = useState('');
   const [typeActes, setTypeActes] = useState<{ _id: string; Designation: string }[]>([]);
+  const [statutFilter, setStatutFilter] = useState<"" | "brouillon" | "a_valider" | "valide" | "annule">("");
+  const [medecinFilter, setMedecinFilter] = useState("");
 
   const currentUser = typeof window !== 'undefined'
     ? localStorage.getItem('nom_utilisateur') || localStorage.getItem('userName') || ''
@@ -67,10 +77,19 @@ export default function RapportHospitalisationModal({
     hospitalisationId: undefined,
     patientNom,
     patientPrenoms,
+    patientDateNaissance,
+    patientSexe,
+    patientNumeroDossier,
+    patientAssurance,
     dateEntree: new Date(),
     dateSortie: new Date(),
     service: '',
     motifHospitalisation: '',
+    antecedentsMedicaux: '',
+    antecedentsChirurgicaux: '',
+    tensionArterielle: '',
+    temperature: '',
+    pouls: '',
     diagnosticAdmission: '',
     diagnosticFinal: '',
     histoireMaladie: '',
@@ -80,11 +99,18 @@ export default function RapportHospitalisationModal({
     evolution: '',
     complications: '',
     suitesHospitalisation: '',
-    medecinTraitant: '',
+    medecinTraitant: currentUser,
     medecinChefService: '',
     recommandations: '',
+    conclusion: '',
     dateRapport: new Date(),
   });
+
+  const medecins = [...new Set(rapports.map(rapport => rapport.medecinTraitant || '').filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr'));
+  const rapportsFiltres = rapports.filter(rapport =>
+    (!statutFilter || normalizeRapportHospitalisationStatut(rapport.statut) === statutFilter) &&
+    (!medecinFilter || rapport.medecinTraitant === medecinFilter)
+  );
 
   const loadRapports = async () => {
     try {
@@ -121,6 +147,8 @@ export default function RapportHospitalisationModal({
 
   useEffect(() => {
     if (show && patientId) {
+      setStatutFilter('');
+      setMedecinFilter('');
       loadRapports();
       loadTypeActes();
     }
@@ -132,10 +160,19 @@ export default function RapportHospitalisationModal({
       hospitalisationId: undefined,
       patientNom,
       patientPrenoms,
+      patientDateNaissance,
+      patientSexe,
+      patientNumeroDossier,
+      patientAssurance,
       dateEntree: new Date(),
       dateSortie: new Date(),
       service: '',
       motifHospitalisation: '',
+      antecedentsMedicaux: '',
+      antecedentsChirurgicaux: '',
+      tensionArterielle: '',
+      temperature: '',
+      pouls: '',
       diagnosticAdmission: '',
       diagnosticFinal: '',
       histoireMaladie: '',
@@ -145,9 +182,10 @@ export default function RapportHospitalisationModal({
       evolution: '',
       complications: '',
       suitesHospitalisation: '',
-      medecinTraitant: '',
+      medecinTraitant: currentUser,
       medecinChefService: '',
       recommandations: '',
+      conclusion: '',
       dateRapport: new Date(),
     });
     setEditingRapport(null);
@@ -165,10 +203,19 @@ export default function RapportHospitalisationModal({
       hospitalisationId: freshRapport.hospitalisationId,
       patientNom: freshRapport.patientNom,
       patientPrenoms: freshRapport.patientPrenoms,
+      patientDateNaissance: freshRapport.patientDateNaissance,
+      patientSexe: freshRapport.patientSexe,
+      patientNumeroDossier: freshRapport.patientNumeroDossier,
+      patientAssurance: freshRapport.patientAssurance,
       dateEntree: new Date(freshRapport.dateEntree),
       dateSortie: freshRapport.dateSortie ? new Date(freshRapport.dateSortie) : undefined,
       service: freshRapport.service || '',
       motifHospitalisation: freshRapport.motifHospitalisation || '',
+      antecedentsMedicaux: freshRapport.antecedentsMedicaux || '',
+      antecedentsChirurgicaux: freshRapport.antecedentsChirurgicaux || '',
+      tensionArterielle: freshRapport.tensionArterielle || '',
+      temperature: freshRapport.temperature || '',
+      pouls: freshRapport.pouls || '',
       diagnosticAdmission: freshRapport.diagnosticAdmission || '',
       diagnosticFinal: freshRapport.diagnosticFinal || '',
       histoireMaladie: freshRapport.histoireMaladie || '',
@@ -181,6 +228,7 @@ export default function RapportHospitalisationModal({
       medecinTraitant: freshRapport.medecinTraitant || '',
       medecinChefService: freshRapport.medecinChefService || '',
       recommandations: freshRapport.recommandations || '',
+      conclusion: freshRapport.conclusion || '',
       dateRapport: new Date(freshRapport.dateRapport),
       statut: freshRapport.statut,
     });
@@ -271,6 +319,11 @@ export default function RapportHospitalisationModal({
         patientId,
         patientNom,
         patientPrenoms,
+        patientDateNaissance,
+        patientSexe,
+        patientNumeroDossier,
+        patientAssurance,
+        statut: editingRapport?.statut || 'brouillon',
         dateRapport: formData.dateRapport || new Date(),
       };
 
@@ -328,90 +381,68 @@ export default function RapportHospitalisationModal({
     }
   };
 
+  const handleStatusChange = async (rapport: RapportHospitalisation, statut: 'a_valider' | 'valide' | 'annule') => {
+    const motifAnnulation = statut === 'annule' ? prompt('Indiquez le motif de l’annulation :')?.trim() : undefined;
+    if (statut === 'annule' && !motifAnnulation) return;
+    if (statut === 'valide' && !confirm('Valider définitivement ce rapport ? Il ne pourra plus être modifié.')) return;
+
+    try {
+      const response = await fetch(`/api/rapportHospitalisation/${rapport._id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'x-user-name': currentUser },
+        body: JSON.stringify({ statut, motifAnnulation }),
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Erreur lors du changement de statut');
+      setRapports(current => current.map(item => item._id === rapport._id ? result.data : item));
+      setSuccess(result.message || 'Statut mis à jour avec succès');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (err: any) {
+      setError(err.message || 'Erreur lors du changement de statut');
+      setTimeout(() => setError(''), 3000);
+    }
+  };
+
   const getServiceLabel = (service: ServiceHospitalisation | string | undefined) => {
     if (!service) return 'N/A';
     return SERVICE_LABELS[service] || service;
   };
 
-  const getStatutBadge = (statut: string | undefined) => {
-    if (statut === 'valide') return <Badge bg="success">Validé</Badge>;
-    if (statut === 'a_completer') return <Badge bg="warning" text="dark">À compléter</Badge>;
+  const getStatutBadge = (statut: StatutRapportHospitalisation | undefined) => {
+    const normalized = normalizeRapportHospitalisationStatut(statut);
+    if (normalized === 'valide') return <Badge bg="success">Validé</Badge>;
+    if (normalized === 'a_valider') return <Badge bg="warning" text="dark">À valider</Badge>;
+    if (normalized === 'annule') return <Badge bg="danger">Annulé</Badge>;
     return <Badge bg="secondary">Brouillon</Badge>;
   };
 
   const getReportPrintContent = (rapport: RapportHospitalisation) => {
+    const escapeHtml = (value?: string | number) => String(value ?? 'Non renseigné').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+    const text = (value?: string) => escapeHtml(value).replace(/\r?\n/g, '<br>');
     const patientFullName = `${rapport.patientNom || ''} ${rapport.patientPrenoms || ''}`.trim() || 'Patient non renseigné';
     const dateEntree = new Date(rapport.dateEntree).toLocaleDateString('fr-FR');
-    const dateSortie = rapport.dateSortie ? new Date(rapport.dateSortie).toLocaleDateString('fr-FR') : 'N/A';
-    const dureeHospitalisation = rapport.dureeHospitalisation
-      ? `${rapport.dureeHospitalisation} jour${rapport.dureeHospitalisation > 1 ? 's' : ''}`
-      : 'N/A';
-    const numeroRapport = rapport._id || 'N/A';
-    const utilisateur = typeof window !== 'undefined' ? localStorage.getItem('nom_utilisateur') || '' : '';
+    const dateSortie = rapport.dateSortie ? new Date(rapport.dateSortie).toLocaleDateString('fr-FR') : 'Non renseignée';
+    const dateNaissance = rapport.patientDateNaissance ? new Date(rapport.patientDateNaissance).toLocaleDateString('fr-FR') : 'Non renseignée';
+    const statut = normalizeRapportHospitalisationStatut(rapport.statut);
+    const statutLabel = statut === 'brouillon' ? 'BROUILLON' : statut === 'a_valider' ? 'À VALIDER' : statut === 'annule' ? 'ANNULÉ' : '';
+    const section = (title: string, content?: string, minHeight = 36) => `<div style="margin-bottom:14px;page-break-inside:avoid"><div style="font-size:11px;font-weight:750;color:#0f766e;text-transform:uppercase;letter-spacing:.7px;border-bottom:1px solid #99f6e4;padding-bottom:4px;margin-bottom:6px">${title}</div><div style="min-height:${minHeight}px;text-align:justify">${text(content)}</div></div>`;
 
-    const section = (title: string, content: string | undefined) => `
-        <div style="margin-bottom: 18px;">
-          <div style="background-color: #d3d3d3; padding: 6px 10px; font-weight: bold; font-size: 13px; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-            ${title}
-          </div>
-          <div style="padding: 8px 10px; font-size: 12px; white-space: pre-line;">${content || 'Non spécifié'}</div>
-        </div>`;
-
-    return `
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Rapport d'Hospitalisation</title>
-        <style>
-          body { font-family: Arial, sans-serif; padding: 10px; font-size: 12px; color: #000000; line-height: 1.3; }
-          @media print { body { font-size: 11px; } }
-        </style>
-      </head>
-      <body>
-        <div style="background-color: #d3d3d3; padding: 10px; text-align: center; margin-bottom: 20px; font-weight: bold; font-size: 18px; color: #000000; -webkit-print-color-adjust: exact; print-color-adjust: exact;">
-          RAPPORT D'HOSPITALISATION N° ${numeroRapport}
-        </div>
-
-        <div style="margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
-            <div style="font-weight: bold; font-size: 16px;">${patientFullName}</div>
-            <div style="display: flex; gap: 25px; font-size: 12px;">
-              <div><strong>Service :</strong> ${getServiceLabel(rapport.service)}</div>
-              <div><strong>Médecin traitant :</strong> ${rapport.medecinTraitant || 'N/A'}</div>
-              <div><strong>Chef de service :</strong> ${rapport.medecinChefService || 'N/A'}</div>
-            </div>
-          </div>
-          <div style="display: flex; gap: 25px; font-size: 12px;">
-            <div><strong>Entrée le :</strong> ${dateEntree}</div>
-            <div><strong>Sortie le :</strong> ${dateSortie}</div>
-            <div><strong>Durée :</strong> ${dureeHospitalisation}</div>
-          </div>
-        </div>
-
-        ${section('MOTIF D\'HOSPITALISATION', rapport.motifHospitalisation)}
-        <div style="display: flex; gap: 15px;">
-          <div style="flex: 1;">${section('DIAGNOSTIC D\'ADMISSION', rapport.diagnosticAdmission)}</div>
-          <div style="flex: 1;">${section('DIAGNOSTIC FINAL', rapport.diagnosticFinal)}</div>
-        </div>
-        ${section('HISTOIRE DE LA MALADIE', rapport.histoireMaladie)}
-        ${section('EXAMEN CLINIQUE', rapport.examenClinique)}
-        ${section('EXAMENS PARACLINIQUES', rapport.examensParacliniques)}
-        ${section('TRAITEMENT ADMINISTRÉ', rapport.traitementAdministre)}
-        ${section('ÉVOLUTION', rapport.evolution)}
-        ${rapport.complications ? section('COMPLICATIONS', rapport.complications) : ''}
-        ${section('SUITES D\'HOSPITALISATION', rapport.suitesHospitalisation)}
-        ${section('RECOMMANDATIONS', rapport.recommandations)}
-
-        <div style="text-align: right; font-size: 12px; margin-top: 15px;">
-          Cordialement, ${rapport.medecinTraitant || 'N/A'}
-        </div>
-
-        <div style="text-align: center; font-size: 10px; color: #666666; margin-top: 20px;">
-          Imprimé le: ${new Date().toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: '2-digit' })} à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })} par ${utilisateur}
-        </div>
-      </body>
-      </html>
-    `;
+    return `<html><body><div style="font-family:'Segoe UI',Arial,sans-serif;padding:10px 20px;color:#1f2937;font-size:12px;line-height:1.5;position:relative">
+      ${statutLabel ? `<div style="position:fixed;top:45%;left:16%;transform:rotate(-28deg);font-size:72px;font-weight:800;letter-spacing:8px;color:${statut === 'annule' ? 'rgba(185,28,28,.12)' : 'rgba(71,85,105,.12)'};z-index:0">${statutLabel}</div>` : ''}
+      <div style="position:relative;z-index:1">
+        <div style="border-bottom:3px solid #0f766e;padding-bottom:12px;margin-bottom:18px;display:flex;justify-content:space-between;align-items:flex-end"><div><div style="font-size:10px;font-weight:700;color:#0f766e;letter-spacing:1.8px;text-transform:uppercase">Document médical</div><div style="font-size:24px;font-weight:750;color:#111827">Rapport d’hospitalisation</div></div>${statut === 'valide' ? '<div style="font-size:10px;font-weight:800;color:#047857">DOCUMENT VALIDÉ</div>' : ''}</div>
+        <div style="background:#f8fafc;border:1px solid #dbe3ea;border-left:4px solid #0f766e;border-radius:7px;padding:12px 14px;margin-bottom:16px"><table style="width:100%;border-collapse:collapse"><tr><td colspan="3" style="font-size:15px;font-weight:700;padding-bottom:8px">${escapeHtml(patientFullName)}</td></tr><tr><td><small>DDN</small><br><b>${escapeHtml(dateNaissance)}</b></td><td><small>Sexe</small><br><b>${escapeHtml(rapport.patientSexe)}</b></td><td><small>N° dossier</small><br><b style="color:#0f766e">${escapeHtml(rapport.patientNumeroDossier)}</b></td></tr><tr><td colspan="3" style="padding-top:8px"><small>Assurance</small><br><b>${escapeHtml(rapport.patientAssurance || 'Non assuré')}</b></td></tr></table></div>
+        <table style="width:100%;border-collapse:collapse;margin-bottom:16px"><tr><td><b>Médecin traitant :</b> ${escapeHtml(rapport.medecinTraitant)}</td></tr><tr><td><b>Date d’entrée :</b> ${escapeHtml(dateEntree)} &nbsp;&nbsp;&nbsp; <b>Date de sortie :</b> ${escapeHtml(dateSortie)}</td></tr></table>
+        ${section('Motif d’hospitalisation', rapport.motifHospitalisation)}
+        <div style="display:flex;gap:16px"><div style="flex:1">${section('Antécédents médicaux', rapport.antecedentsMedicaux)}</div><div style="flex:1">${section('Antécédents chirurgicaux', rapport.antecedentsChirurgicaux)}</div></div>
+        <div style="background:#f1f5f9;border-radius:6px;padding:8px 12px;margin-bottom:14px"><b>Constantes :</b> TA ${escapeHtml(rapport.tensionArterielle)} &nbsp;|&nbsp; Température ${escapeHtml(rapport.temperature)} &nbsp;|&nbsp; Pouls ${escapeHtml(rapport.pouls)}</div>
+        ${section('Examen clinique', rapport.examenClinique)}
+        ${section('Examens paracliniques réalisés pendant l’hospitalisation', rapport.examensParacliniques)}
+        ${section('Traitements', rapport.traitementAdministre)}
+        ${section('Évolution', rapport.evolution)}
+        ${section('Conclusion', rapport.conclusion, 70)}
+        <div style="display:flex;justify-content:flex-end;margin-top:32px"><div style="width:230px;text-align:center;border-top:1px solid #94a3b8;padding-top:8px"><div style="font-size:10px;color:#64748b;text-transform:uppercase">Date, signature et cachet</div><div style="font-size:13px;font-weight:700;margin-top:18px">${escapeHtml(rapport.medecinTraitant)}</div></div></div>
+      </div></div></body></html>`;
   };
 
   const getFreshRapport = async (rapport: RapportHospitalisation): Promise<RapportHospitalisation> => {
@@ -454,7 +485,7 @@ export default function RapportHospitalisationModal({
           <Modal.Title className="d-flex align-items-center">
             <FaHospitalUser className="me-2" />
             Gestion des Rapports d'Hospitalisation
-            <Badge bg="light" text="dark" className="ms-2">{rapports.length}</Badge>
+            <Badge bg="light" text="dark" className="ms-2">{rapportsFiltres.length}/{rapports.length}</Badge>
           </Modal.Title>
         </Modal.Header>
         <Modal.Body>
@@ -472,46 +503,56 @@ export default function RapportHospitalisationModal({
             </Button>
           </div>
 
+          {rapports.length > 0 && (
+            <Card className="border-0 bg-light mb-3"><Card.Body className="py-3"><Row className="g-3 align-items-end">
+              <Col md={5}><Form.Group><Form.Label className="small fw-semibold mb-1">Filtrer par statut</Form.Label><Form.Select value={statutFilter} onChange={(e) => setStatutFilter(e.target.value as typeof statutFilter)}><option value="">Tous les statuts</option><option value="brouillon">Brouillon</option><option value="a_valider">À valider</option><option value="valide">Validé</option><option value="annule">Annulé</option></Form.Select></Form.Group></Col>
+              <Col md={5}><Form.Group><Form.Label className="small fw-semibold mb-1">Filtrer par médecin</Form.Label><Form.Select value={medecinFilter} onChange={(e) => setMedecinFilter(e.target.value)}><option value="">Tous les médecins</option>{medecins.map(medecin => <option key={medecin} value={medecin}>{medecin}</option>)}</Form.Select></Form.Group></Col>
+              <Col md={2}><Button variant="outline-secondary" className="w-100" disabled={!statutFilter && !medecinFilter} onClick={() => { setStatutFilter(''); setMedecinFilter(''); }}>Réinitialiser</Button></Col>
+            </Row></Card.Body></Card>
+          )}
+
           {loading ? (
             <div className="text-center py-5">
               <div className="spinner-border text-primary" role="status">
                 <span className="visually-hidden">Chargement...</span>
               </div>
             </div>
-          ) : rapports.length > 0 ? (
+          ) : rapportsFiltres.length > 0 ? (
             <Table striped hover responsive>
               <thead>
                 <tr>
                   <th>Date entrée</th>
                   <th>Date sortie</th>
-                  <th>Service</th>
                   <th>Médecin traitant</th>
                   <th>Statut</th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {rapports.map((rapport) => {
-                  const isValide = rapport.statut === 'valide';
+                {rapportsFiltres.map((rapport) => {
+                  const normalizedStatus = normalizeRapportHospitalisationStatut(rapport.statut);
+                  const isLocked = normalizedStatus === 'valide' || normalizedStatus === 'annule';
                   return (
                   <tr key={rapport._id}>
                     <td>{formatDateInput(rapport.dateEntree)}</td>
                     <td>{formatDateInput(rapport.dateSortie)}</td>
-                    <td>{getServiceLabel(rapport.service)}</td>
                     <td>{rapport.medecinTraitant}</td>
                     <td>{getStatutBadge(rapport.statut)}</td>
                     <td>
                       <div className="btn-group" role="group">
-                        <Button variant="outline-primary" size="sm" onClick={() => handleEdit(rapport)} title={isValide ? 'Consulter (lecture seule)' : 'Modifier'}>
+                        <Button variant="outline-primary" size="sm" onClick={() => handleEdit(rapport)} title={isLocked ? 'Consulter (lecture seule)' : 'Modifier'}>
                           <FaEdit />
                         </Button>
+                        {normalizedStatus === 'brouillon' && <Button variant="outline-warning" size="sm" onClick={() => handleStatusChange(rapport, 'a_valider')}>Soumettre</Button>}
+                        {normalizedStatus === 'a_valider' && <Button variant="outline-success" size="sm" onClick={() => handleStatusChange(rapport, 'valide')}>Valider</Button>}
+                        {!isLocked && <Button variant="outline-danger" size="sm" onClick={() => handleStatusChange(rapport, 'annule')}>Annuler</Button>}
                         <Button variant="outline-success" size="sm" onClick={() => handlePrintWithHeader(rapport)}>
                           <FaPrint />
                         </Button>
                         <Button variant="outline-info" size="sm" onClick={() => handlePrintWithoutHeader(rapport)}>
                           <FaFileAlt />
                         </Button>
-                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(rapport._id)} disabled={isValide} title={isValide ? 'Rapport validé : suppression impossible' : 'Supprimer'}>
+                        <Button variant="outline-danger" size="sm" onClick={() => handleDelete(rapport._id)} disabled={normalizedStatus !== 'brouillon'} title={normalizedStatus !== 'brouillon' ? 'Seul un brouillon peut être supprimé' : 'Supprimer'}>
                           <FaTrash />
                         </Button>
                       </div>
@@ -548,7 +589,7 @@ export default function RapportHospitalisationModal({
             variant="light"
             size="sm"
             onClick={chargerDonneesHospitalisation}
-            disabled={loadingHospitData || formData.statut === 'valide'}
+            disabled={loadingHospitData || normalizeRapportHospitalisationStatut(formData.statut) === 'valide' || normalizeRapportHospitalisationStatut(formData.statut) === 'annule'}
             className="me-3 fw-semibold"
           >
             <FaSyncAlt className={`me-2 ${loadingHospitData ? 'fa-spin' : ''}`} />
@@ -556,14 +597,27 @@ export default function RapportHospitalisationModal({
           </Button>
         </Modal.Header>
         <Modal.Body style={{ maxHeight: '80vh', overflowY: 'auto' }}>
-          {formData.statut === 'valide' && (
-            <Alert variant="success" className="d-flex align-items-center gap-2">
-              <FaHospitalUser /> Ce rapport est validé : il est en lecture seule et ne sera plus actualisé automatiquement.
+          {(normalizeRapportHospitalisationStatut(formData.statut) === 'valide' || normalizeRapportHospitalisationStatut(formData.statut) === 'annule') && (
+            <Alert variant={normalizeRapportHospitalisationStatut(formData.statut) === 'valide' ? 'success' : 'danger'} className="d-flex align-items-center gap-2">
+              <FaHospitalUser /> Ce rapport est {normalizeRapportHospitalisationStatut(formData.statut) === 'valide' ? 'validé' : 'annulé'} et disponible uniquement en lecture.
             </Alert>
           )}
           {hospitDataError && <Alert variant="warning" className="py-2">{hospitDataError}</Alert>}
           <Form onSubmit={handleSave}>
-          <fieldset disabled={formData.statut === 'valide'}>
+          <fieldset disabled={normalizeRapportHospitalisationStatut(formData.statut) === 'valide' || normalizeRapportHospitalisationStatut(formData.statut) === 'annule'}>
+            <Card className="mb-3 border-0 bg-light">
+              <Card.Header className="bg-light"><h6 className="mb-0">Informations du patient</h6></Card.Header>
+              <Card.Body>
+                <Row className="g-3">
+                  <Col md={4}><Form.Group><Form.Label>Nom et prénom</Form.Label><Form.Control value={`${patientNom || ''} ${patientPrenoms || ''}`.trim()} readOnly /></Form.Group></Col>
+                  <Col md={2}><Form.Group><Form.Label>Date de naissance</Form.Label><Form.Control value={formatDateInput(patientDateNaissance) || 'Non renseignée'} readOnly /></Form.Group></Col>
+                  <Col md={2}><Form.Group><Form.Label>Sexe</Form.Label><Form.Control value={patientSexe || 'Non renseigné'} readOnly /></Form.Group></Col>
+                  <Col md={2}><Form.Group><Form.Label>N° dossier</Form.Label><Form.Control value={patientNumeroDossier || 'Non renseigné'} readOnly /></Form.Group></Col>
+                  <Col md={2}><Form.Group><Form.Label>Assurance</Form.Label><Form.Control value={patientAssurance || 'Non assuré'} readOnly /></Form.Group></Col>
+                </Row>
+              </Card.Body>
+            </Card>
+
             <Card className="mb-3">
               <Card.Header className="bg-light">
                 <h6 className="mb-0">Informations Générales</h6>
@@ -593,24 +647,10 @@ export default function RapportHospitalisationModal({
                       />
                     </Form.Group>
                   </Col>
-                  <Col md={4}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Service *</Form.Label>
-                      <Form.Select
-                        value={formData.service}
-                        onChange={(e) => setFormData({ ...formData, service: e.target.value })}
-                        required
-                      >
-                        <option value="">Sélectionner...</option>
-                        {typeActes.map((typeActe) => (
-                          <option key={typeActe._id} value={typeActe.Designation}>{typeActe.Designation}</option>
-                        ))}
-                      </Form.Select>
-                    </Form.Group>
-                  </Col>
+
                 </Row>
                 <Row>
-                  <Col md={6}>
+                  <Col md={12}>
                     <Form.Group className="mb-3">
                       <Form.Label>Médecin traitant *</Form.Label>
                       <Form.Control
@@ -622,24 +662,14 @@ export default function RapportHospitalisationModal({
                       />
                     </Form.Group>
                   </Col>
-                  <Col md={6}>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Médecin chef de service</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={formData.medecinChefService}
-                        onChange={(e) => setFormData({ ...formData, medecinChefService: e.target.value })}
-                        placeholder="Nom du chef de service"
-                      />
-                    </Form.Group>
-                  </Col>
+
                 </Row>
               </Card.Body>
             </Card>
 
             <Card className="mb-3">
               <Card.Header className="bg-light">
-                <h6 className="mb-0">Diagnostic et Motif</h6>
+                <h6 className="mb-0">Motif et antécédents</h6>
               </Card.Header>
               <Card.Body>
                 <Form.Group className="mb-3">
@@ -656,48 +686,32 @@ export default function RapportHospitalisationModal({
                 <Row>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Diagnostic d'admission *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={formData.diagnosticAdmission}
-                        onChange={(e) => setFormData({ ...formData, diagnosticAdmission: e.target.value })}
-                        placeholder="Diagnostic à l'admission..."
-                        required
-                      />
+                      <Form.Label>Antécédents médicaux</Form.Label>
+                      <Form.Control as="textarea" rows={2} value={formData.antecedentsMedicaux} onChange={(e) => setFormData({ ...formData, antecedentsMedicaux: e.target.value })} />
                     </Form.Group>
                   </Col>
                   <Col md={6}>
                     <Form.Group className="mb-3">
-                      <Form.Label>Diagnostic final *</Form.Label>
-                      <Form.Control
-                        type="text"
-                        value={formData.diagnosticFinal}
-                        onChange={(e) => setFormData({ ...formData, diagnosticFinal: e.target.value })}
-                        placeholder="Diagnostic final..."
-                        required
-                      />
+                      <Form.Label>Antécédents chirurgicaux</Form.Label>
+                      <Form.Control as="textarea" rows={2} value={formData.antecedentsChirurgicaux} onChange={(e) => setFormData({ ...formData, antecedentsChirurgicaux: e.target.value })} />
                     </Form.Group>
                   </Col>
                 </Row>
+
               </Card.Body>
             </Card>
 
             <Card className="mb-3">
               <Card.Header className="bg-light">
-                <h6 className="mb-0">Évolution Clinique</h6>
+                <h6 className="mb-0">Examens cliniques</h6>
               </Card.Header>
               <Card.Body>
-                <Form.Group className="mb-3">
-                  <Form.Label>Histoire de la maladie *</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={4}
-                    value={formData.histoireMaladie}
-                    onChange={(e) => setFormData({ ...formData, histoireMaladie: e.target.value })}
-                    placeholder="Historique détaillé de la maladie..."
-                    required
-                  />
-                </Form.Group>
+
+                <Row className="g-3 mb-3">
+                  <Col md={4}><Form.Group><Form.Label>TA</Form.Label><Form.Control value={formData.tensionArterielle} onChange={(e) => setFormData({ ...formData, tensionArterielle: e.target.value })} placeholder="Ex. 120/80 mmHg" /></Form.Group></Col>
+                  <Col md={4}><Form.Group><Form.Label>TC</Form.Label><Form.Control value={formData.temperature} onChange={(e) => setFormData({ ...formData, temperature: e.target.value })} placeholder="Ex. 37 °C" /></Form.Group></Col>
+                  <Col md={4}><Form.Group><Form.Label>Pouls</Form.Label><Form.Control value={formData.pouls} onChange={(e) => setFormData({ ...formData, pouls: e.target.value })} placeholder="Ex. 72 bpm" /></Form.Group></Col>
+                </Row>
                 <Form.Group className="mb-3">
                   <Form.Label>Examen clinique *</Form.Label>
                   <Form.Control
@@ -717,6 +731,7 @@ export default function RapportHospitalisationModal({
                     value={formData.examensParacliniques}
                     onChange={(e) => setFormData({ ...formData, examensParacliniques: e.target.value })}
                     placeholder="Résultats des examens complémentaires..."
+                    required
                   />
                 </Form.Group>
               </Card.Body>
@@ -749,70 +764,23 @@ export default function RapportHospitalisationModal({
                     required
                   />
                 </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>Complications</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={2}
-                    value={formData.complications}
-                    onChange={(e) => setFormData({ ...formData, complications: e.target.value })}
-                    placeholder="Complications éventuelles survenues..."
-                  />
-                </Form.Group>
+
               </Card.Body>
             </Card>
 
             <Card className="mb-3">
               <Card.Header className="bg-light">
-                <h6 className="mb-0">Suites et Recommandations</h6>
+                <h6 className="mb-0">Conclusion</h6>
               </Card.Header>
               <Card.Body>
                 <Form.Group className="mb-3">
-                  <Form.Label>Suites d'hospitalisation *</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={formData.suitesHospitalisation}
-                    onChange={(e) => setFormData({ ...formData, suitesHospitalisation: e.target.value })}
-                    placeholder="Description des suites de l'hospitalisation..."
-                    required
-                  />
+                  <Form.Label>Conclusion *</Form.Label>
+                  <Form.Control as="textarea" rows={4} value={formData.conclusion} onChange={(e) => setFormData({ ...formData, conclusion: e.target.value })} placeholder="Conclusion du rapport d'hospitalisation..." required />
                 </Form.Group>
-                <Form.Group className="mb-3">
-                  <Form.Label>Recommandations *</Form.Label>
-                  <Form.Control
-                    as="textarea"
-                    rows={3}
-                    value={formData.recommandations}
-                    onChange={(e) => setFormData({ ...formData, recommandations: e.target.value })}
-                    placeholder="Recommandations pour le suivi..."
-                    required
-                  />
-                </Form.Group>
+
               </Card.Body>
             </Card>
 
-            <Card className="mb-3">
-              <Card.Header className="bg-light">
-                <h6 className="mb-0">Statut du rapport</h6>
-              </Card.Header>
-              <Card.Body>
-                <Form.Group>
-                  <Form.Label>Statut</Form.Label>
-                  <Form.Select
-                    value={formData.statut || 'brouillon'}
-                    onChange={(e) => setFormData({ ...formData, statut: e.target.value as typeof formData.statut })}
-                  >
-                    <option value="brouillon">Brouillon (actualisation automatique)</option>
-                    <option value="a_completer">À compléter</option>
-                    <option value="valide">Validé (verrouille définitivement le rapport)</option>
-                  </Form.Select>
-                  <Form.Text className="text-muted">
-                    Tant que le statut n'est pas "Validé", le rapport est actualisé automatiquement à chaque nouvelle prescription, soin, constante ou évolution. Une fois validé, il ne peut plus être actualisé, modifié ni supprimé.
-                  </Form.Text>
-                </Form.Group>
-              </Card.Body>
-            </Card>
           </fieldset>
 
             <div className="d-flex justify-content-between">
@@ -828,7 +796,7 @@ export default function RapportHospitalisationModal({
                 <Button variant="secondary" className="me-2" onClick={() => setShowFormModal(false)}>
                   Annuler
                 </Button>
-                <Button variant="success" type="submit" disabled={saving || formData.statut === 'valide'}>
+                <Button variant="success" type="submit" disabled={saving || normalizeRapportHospitalisationStatut(formData.statut) === 'valide' || normalizeRapportHospitalisationStatut(formData.statut) === 'annule'}>
                   <FaSave className="me-2" />
                   {saving ? 'Sauvegarde...' : (editingRapport ? 'Modifier' : 'Créer')}
                 </Button>
