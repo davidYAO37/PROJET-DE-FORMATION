@@ -1,6 +1,6 @@
 // app/api/ListePrescription/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IPrescription } from "@/models/Prescription";
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
         // Rechercher d'abord par IdPatient (champ ObjectId) – c'est la valeur que nous fournissons depuis l'interface
         // Si aucune ligne n'est trouvée (par exemple parce que le champ n'existait pas sur les anciennes données),
         // essayer également de filtrer sur PatientP pour préserver la rétrocompatibilité.
-        let prescriptions = await Prescription.find({ $or: [{ IdPatient: patientId }, { PatientP: patientId }] })
+        let prescriptions = await Prescription.find({ $or: [{ IdPatient: patientId }, { PatientP: patientId }], ...getTenantFilter(context) })
             .populate("IDASSURANCE", "designationassurance")
             .populate("IDMEDECIN", "nom prenoms")
             .sort({ DatePres: -1 })

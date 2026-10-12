@@ -148,7 +148,6 @@ function printBon(doc: ICaisseDoc, entreprise: any) {
 
 export default function CaissePage() {
   const { entreprise } = useEntreprise();
-  const [entrepriseId, setEntrepriseId] = useState('');
   const [utilisateur, setUtilisateur] = useState('');
   const [docs, setDocs] = useState<ICaisseDoc[]>([]);
   const [loading, setLoading] = useState(false);
@@ -166,7 +165,6 @@ export default function CaissePage() {
   const [recherchePrestations, setRecherchePrestations] = useState('');
 
   useEffect(() => {
-    setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
     setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
   }, []);
 

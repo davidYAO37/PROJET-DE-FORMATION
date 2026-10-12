@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { sendExport, formatDateFr, formatMontant } from '@/lib/exportUtils';
 import { ICaisse } from '@/models/caisse';
@@ -33,8 +33,9 @@ export async function GET(request: NextRequest) {
     fin.setHours(23, 59, 59, 999);
 
     const lignes: any[] = [];
+    const tenantFilter = getTenantFilter(context);
 
-    const docsCaisse = await caisse.find({ dAteC: { $gte: debut, $lte: fin } }).lean();
+    const docsCaisse = await caisse.find({ dAteC: { $gte: debut, $lte: fin }, ...tenantFilter }).lean();
     for (const c of docsCaisse) {
       const isEntree = (c.typeC || '').toLowerCase().includes('entrée');
       lignes.push({
@@ -52,6 +53,7 @@ export async function GET(request: NextRequest) {
       Date_consulation: { $gte: debut, $lte: fin },
       StatutC: true,
       PrixClinique: { $ne: 0 },
+      ...tenantFilter,
     }).lean();
 
     for (const c of consultations) {
@@ -70,6 +72,7 @@ export async function GET(request: NextRequest) {
 
     const facturations = await Facturation.find({
       DateFacturation: { $gte: debut, $lte: fin },
+      ...tenantFilter,
     }).lean();
 
     for (const f of facturations) {
@@ -88,6 +91,7 @@ export async function GET(request: NextRequest) {
 
     const encaissements = await EncaissementCaisse.find({
       DateEncaissement: { $gte: debut, $lte: fin },
+      ...tenantFilter,
     }).lean();
 
     for (const e of encaissements) {

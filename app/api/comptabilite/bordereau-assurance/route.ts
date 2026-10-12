@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IFacturation } from '@/models/Facturation';
 import { IConsultation } from '@/models/consultation';
@@ -88,7 +88,7 @@ export async function GET(request: NextRequest) {
             { DateFacturation: { $gte: debut, $lte: fin } },
           ],
         };
-    const facturations = await Facturation.find(facturationQuery as any).lean();
+    const facturations = await Facturation.find({ ...facturationQuery, ...getTenantFilter(context) } as any).lean();
 
     for (const f of facturations) {
       if (f.StatutFacture) continue;
@@ -132,7 +132,7 @@ export async function GET(request: NextRequest) {
           statutPrescriptionMedecin: 3,
         };
 
-    const consultations = await Consultation.find(consultationQuery as any).lean();
+    const consultations = await Consultation.find({ ...consultationQuery, ...getTenantFilter(context) } as any).lean();
 
     for (const c of consultations) {
       if (c.StatutFacture) continue;
@@ -184,7 +184,7 @@ export async function POST(request: NextRequest) {
   const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
 
   const body = await request.json();
-  const { assuranceId, dateDebut, dateFin, lignes, saisirpar, entrepriseId } = body;
+  const { assuranceId, dateDebut, dateFin, lignes, saisirpar } = body;
 
   if (!assuranceId || !dateDebut || !dateFin || !Array.isArray(lignes) || lignes.length === 0) {
     return NextResponse.json({ success: false, message: 'Données manquantes' }, { status: 400 });
@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
             etat_facture: false,
             TotalPaye: 0,
             Restapayer: arrondi(total.partAssurance),
-            entrepriseId: entrepriseId || '',
+            entrepriseId: context.entrepriseId || '',
           },
         ],
         { session }
@@ -262,6 +262,7 @@ export async function POST(request: NextRequest) {
               idHospitalisation: l.idHospitalisation ? new mongoose.Types.ObjectId(l.idHospitalisation) : undefined,
               IDFACTURATION: l.idFacturation ? new mongoose.Types.ObjectId(l.idFacturation) : undefined,
               AHospitalisation: l.aHospitalisation || 0,
+              entrepriseId: context.entrepriseId,
             },
           ],
           { session }
@@ -274,7 +275,7 @@ export async function POST(request: NextRequest) {
 
       if (consultationsIds.length > 0) {
         await Consultation.updateMany(
-          { _id: { $in: consultationsIds } },
+          { _id: { $in: consultationsIds }, ...getTenantFilter(context) },
           { $set: { StatutFacture: true, Numfacture: reference } },
           { session }
         );
@@ -282,7 +283,7 @@ export async function POST(request: NextRequest) {
 
       if (prescriptionsIds.length > 0) {
         await Prescription.updateMany(
-          { _id: { $in: prescriptionsIds } },
+          { _id: { $in: prescriptionsIds }, ...getTenantFilter(context) },
           { $set: { StatutFacture: true, Numfacture: reference } },
           { session }
         );
@@ -290,7 +291,7 @@ export async function POST(request: NextRequest) {
 
       if (facturationsIds.length > 0) {
         await Facturation.updateMany(
-          { _id: { $in: facturationsIds } },
+          { _id: { $in: facturationsIds }, ...getTenantFilter(context) },
           { $set: { StatutFacture: true, Numfacture: reference } },
           { session }
         );
@@ -299,7 +300,7 @@ export async function POST(request: NextRequest) {
       const hospitalisationsIds = lignes.filter(l => l.idHospitalisation).map(l => l.idHospitalisation!);
       if (hospitalisationsIds.length > 0) {
         await ExamenHospitalisation.updateMany(
-          { _id: { $in: hospitalisationsIds } },
+          { _id: { $in: hospitalisationsIds }, ...getTenantFilter(context) },
           { $set: { StatutFacture: true, Numfacture: reference } },
           { session }
         );
@@ -331,6 +332,7 @@ export async function POST(request: NextRequest) {
               Assurance: assurance.designationassurance,
               CreePar: saisirpar || '',
               NCC: (assurance as any).NCC || '',
+              entrepriseId: context.entrepriseId,
             },
           ],
           { session }

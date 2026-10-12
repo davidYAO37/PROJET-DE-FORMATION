@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { IConsultation } from "@/models/consultation";
 import { IFacturation } from "@/models/Facturation";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +20,8 @@ export async function GET(req: NextRequest) {
         try {
             consultationsNonSoldées = await Consultation.find({
                 statutPrescriptionMedecin: 3,
-                Restapayer: { $ne: 0 }
+                Restapayer: { $ne: 0 },
+                ...getTenantFilter(context)
             })
                 .sort({ Date_consulation: -1 })
                 .lean();
@@ -32,7 +33,8 @@ export async function GET(req: NextRequest) {
         let facturationsNonSoldées: any[] = [];
         try {
             facturationsNonSoldées = await Facturation.find({
-                Restapayer: { $ne: 0 }
+                Restapayer: { $ne: 0 },
+                ...getTenantFilter(context)
             })
                 .sort({ DatePres: -1 })
                 .lean();

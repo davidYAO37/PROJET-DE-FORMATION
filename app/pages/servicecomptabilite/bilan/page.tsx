@@ -1,10 +1,11 @@
 'use client';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Card, Row, Col, Button, Form, Table, Badge, Spinner, Alert } from 'react-bootstrap';
 
 interface BilanLigne {
   date: string;
   typeActe: string;
+  designation?: string;
   patient: string;
   typePatient: string;
   montantTotal: number;
@@ -16,13 +17,19 @@ interface BilanLigne {
   modePaiement: string;
   saisirPar: string;
 }
-interface Totaux { montantTotal: number; partAssurance: number; montantEncaisse: number; resteAPayer: number; remise: number; }
+interface Totaux { montantTotal: number; partPatient: number; partAssurance: number; montantEncaisse: number; resteAPayer: number; remise: number; }
 
 const fmt = (n: number) => (n || 0).toLocaleString('fr-FR');
 const today = () => new Date().toISOString().split('T')[0];
+const typePatientLabel = (value: string) => {
+  const normalized = (value || '').toUpperCase();
+  if (normalized.includes('MUTUALISTE')) return 'Mutualiste';
+  if (normalized.includes('NON')) return 'Non assuré';
+  if (normalized.includes('ASSURE') || normalized === 'OUI') return 'Assuré';
+  return value || 'Non renseigné';
+};
 
 export default function BilanPage() {
-  const [entrepriseId, setEntrepriseId] = useState('');
   const [dateDebut, setDateDebut] = useState(today());
   const [dateFin, setDateFin] = useState(today());
   const [modePaiement, setModePaiement] = useState('TOUS');
@@ -35,14 +42,11 @@ export default function BilanPage() {
   const [message, setMessage] = useState<string | null>(null);
   const [modesPaiement, setModesPaiement] = useState<{ _id: string; Modepaiement: string }[]>([]);
 
-  useEffect(() => { setEntrepriseId(localStorage.getItem('IdEntreprise') || ''); }, []);
-
   // Charger les modes de paiement depuis le modèle
   useEffect(() => {
     const fetchModes = async () => {
       try {
-        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
-        const res = await fetch(`/api/modepaiement?entrepriseId=${encodeURIComponent(entrepriseId)}`);
+        const res = await fetch('/api/modepaiement');
         if (res.ok) {
           const json = await res.json();
           setModesPaiement(Array.isArray(json?.data) ? json.data : []);
@@ -57,21 +61,58 @@ export default function BilanPage() {
   const charger = useCallback(async () => {
     setLoading(true); setMessage(null);
     try {
-      const params = new URLSearchParams({ dateDebut, dateFin, modePaiement, typePatient, entrepriseId });
+      const params = new URLSearchParams({ dateDebut, dateFin, modePaiement, typePatient });
       const res = await fetch(`/api/comptabilite/bilan?${params}`);
+      const json = await res.json();
       if (res.ok) {
-        const json = await res.json();
-        setLignes(json.lignes || []); setTotaux(json.totaux || null); setParTypeActe(json.parTypeActe || {});
-      } else setMessage('Erreur lors du chargement');
+        setLignes(Array.isArray(json.data) ? json.data : []);
+        setTotaux(json.totaux || null);
+        setParTypeActe(json.parTypeActe || {});
+      } else {
+        setLignes([]);
+        setTotaux(null);
+        setParTypeActe({});
+        setMessage(json.message || 'Erreur lors du chargement');
+      }
+    } catch {
+      setLignes([]);
+      setTotaux(null);
+      setParTypeActe({});
+      setMessage('Impossible de charger le détail du bilan');
     } finally { setLoading(false); }
-  }, [dateDebut, dateFin, modePaiement, typePatient, entrepriseId]);
+  }, [dateDebut, dateFin, modePaiement, typePatient]);
 
-  useEffect(() => { if (entrepriseId) charger(); }, [charger, entrepriseId]);
+  useEffect(() => { charger(); }, [charger]);
 
   const lignesFiltrees = lignes.filter(l =>
     !recherche || (l.patient || '').toLowerCase().includes(recherche.toLowerCase()) ||
-    (l.typeActe || '').toLowerCase().includes(recherche.toLowerCase())
+    (l.typeActe || '').toLowerCase().includes(recherche.toLowerCase()) ||
+    (l.designation || '').toLowerCase().includes(recherche.toLowerCase())
   );
+
+  const totauxAffiches = useMemo(() => {
+    if (!recherche.trim()) return totaux;
+    return lignesFiltrees.reduce<Totaux>((acc, ligne) => ({
+      montantTotal: acc.montantTotal + Number(ligne.montantTotal || 0),
+      partPatient: acc.partPatient + Number(ligne.partPatient || 0),
+      partAssurance: acc.partAssurance + Number(ligne.partAssurance || 0),
+      montantEncaisse: acc.montantEncaisse + Number(ligne.montantEncaisse || 0),
+      resteAPayer: acc.resteAPayer + Number(ligne.resteAPayer || 0),
+      remise: acc.remise + Number(ligne.remise || 0),
+    }), { montantTotal: 0, partPatient: 0, partAssurance: 0, montantEncaisse: 0, resteAPayer: 0, remise: 0 });
+  }, [lignesFiltrees, recherche, totaux]);
+
+  const parTypeActeAffiche = useMemo(() => {
+    if (!recherche.trim()) return parTypeActe;
+    return lignesFiltrees.reduce<Record<string, { count: number; montant: number; encaisse: number }>>((acc, ligne) => {
+      const type = ligne.typeActe || 'Autre';
+      if (!acc[type]) acc[type] = { count: 0, montant: 0, encaisse: 0 };
+      acc[type].count += 1;
+      acc[type].montant += Number(ligne.montantTotal || 0);
+      acc[type].encaisse += Number(ligne.montantEncaisse || 0);
+      return acc;
+    }, {});
+  }, [lignesFiltrees, parTypeActe, recherche]);
 
   const periode = `${dateDebut.split('-').reverse().join('/')} — ${dateFin.split('-').reverse().join('/')}`;
 
@@ -91,14 +132,14 @@ export default function BilanPage() {
       {message && <Alert variant="danger" dismissible onClose={() => setMessage(null)} className="py-2 mb-2" style={{ fontSize: '0.8rem' }}>{message}</Alert>}
 
       {/* KPIs */}
-      {totaux && (
+      {totauxAffiches && (
         <Row className="g-2 mb-2">
           {[
-            { label: 'Total Actes',      value: totaux.montantTotal,    bg: 'linear-gradient(135deg,#4527a0,#9c27b0)', icon: 'bi-cash-coin' },
-            { label: 'Part Assurance',   value: totaux.partAssurance,   bg: 'linear-gradient(135deg,#c62828,#f48fb1)', icon: 'bi-shield-fill' },
-            { label: 'Encaissé Patients',value: totaux.montantEncaisse, bg: 'linear-gradient(135deg,#2e7d32,#66bb6a)', icon: 'bi-check-circle-fill' },
-            { label: 'Reste à Payer',    value: totaux.resteAPayer,     bg: 'linear-gradient(135deg,#e65100,#ffb74d)', icon: 'bi-exclamation-circle-fill' },
-            { label: 'Remises',          value: totaux.remise,          bg: 'linear-gradient(135deg,#1565c0,#42a5f5)', icon: 'bi-percent' },
+            { label: 'Total Actes',      value: totauxAffiches.montantTotal,    bg: 'linear-gradient(135deg,#4527a0,#9c27b0)', icon: 'bi-cash-coin' },
+            { label: 'Part Assurance',   value: totauxAffiches.partAssurance,   bg: 'linear-gradient(135deg,#c62828,#f48fb1)', icon: 'bi-shield-fill' },
+            { label: 'Encaissé Patients',value: totauxAffiches.montantEncaisse, bg: 'linear-gradient(135deg,#2e7d32,#66bb6a)', icon: 'bi-check-circle-fill' },
+            { label: 'Reste à Payer',    value: totauxAffiches.resteAPayer,     bg: 'linear-gradient(135deg,#e65100,#ffb74d)', icon: 'bi-exclamation-circle-fill' },
+            { label: 'Remises',          value: totauxAffiches.remise,          bg: 'linear-gradient(135deg,#1565c0,#42a5f5)', icon: 'bi-percent' },
           ].map((kpi, ki) => (
             <Col key={ki} xs={6} md>
               <div style={{ background: kpi.bg, borderRadius: 8, padding: '8px 12px', color: '#fff', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
@@ -116,9 +157,9 @@ export default function BilanPage() {
       )}
 
       {/* Récap par type acte */}
-      {Object.keys(parTypeActe).length > 0 && (
+      {Object.keys(parTypeActeAffiche).length > 0 && (
         <Row className="g-2 mb-2">
-          {Object.entries(parTypeActe).map(([type, val]: [string, any], i) => (
+          {Object.entries(parTypeActeAffiche).map(([type, val]: [string, any], i) => (
             <Col key={i} xs={6} md={3}>
               <div style={{ background: '#fff', borderRadius: 8, padding: '6px 10px', boxShadow: '0 1px 4px rgba(0,0,0,0.07)', borderLeft: '3px solid #7b1fa2' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -153,7 +194,10 @@ export default function BilanPage() {
             <Col xs="auto">
               <Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Type patient</Form.Label>
               <Form.Select size="sm" value={typePatient} onChange={e => setTypePatient(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem', width: 130 }}>
-                {['TOUS','Assuré','Non assuré'].map(t => <option key={t}>{t}</option>)}
+                <option value="TOUS">Tous</option>
+                <option value="ASSURE">Assuré</option>
+                <option value="NON ASSURE">Non assuré</option>
+                <option value="MUTUALISTE">Mutualiste</option>
               </Form.Select>
             </Col>
             <Col xs={12} md={2}><Form.Label style={{ fontSize: '0.65rem', fontWeight: 700, color: '#546e7a', letterSpacing: 1, textTransform: 'uppercase' }}>Recherche</Form.Label><Form.Control type="text" size="sm" placeholder="Patient, acte…" value={recherche} onChange={e => setRecherche(e.target.value)} style={{ borderRadius: 6, borderColor: '#b0bec5', fontSize: '0.76rem' }} /></Col>
@@ -178,27 +222,29 @@ export default function BilanPage() {
             <Table bordered className="mb-0" style={{ fontSize: '0.72rem', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                  {['Date','Type acte','Patient','Type patient','Total','Part pat.','Part ass.','Encaissé','Reste','Mode'].map((h, i) => (
+                  {['Date','Type acte','Désignation','Patient','Type patient','Total','Part pat.','Part ass.','Remise','Encaissé','Reste','Mode'].map((h, i) => (
                     <th key={i} style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #b0bec5' }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: '40px', color: '#78909c' }}><Spinner animation="border" size="sm" className="me-2" />Chargement…</td></tr>
+                  <tr><td colSpan={12} style={{ textAlign: 'center', padding: '40px', color: '#78909c' }}><Spinner animation="border" size="sm" className="me-2" />Chargement…</td></tr>
                 ) : lignesFiltrees.length === 0 ? (
-                  <tr><td colSpan={10} style={{ textAlign: 'center', padding: '50px', color: '#90a4ae' }}>
+                  <tr><td colSpan={12} style={{ textAlign: 'center', padding: '50px', color: '#90a4ae' }}>
                     <i className="bi bi-inbox" style={{ fontSize: '2.5rem', display: 'block', marginBottom: 8 }}></i>Aucune donnée pour cette période
                   </td></tr>
                 ) : lignesFiltrees.map((l, i) => (
                   <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#f7f9fc', borderLeft: `3px solid ${l.resteAPayer > 0 ? '#e53935' : '#43a047'}` }}>
                     <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>{l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '-'}</td>
                     <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}><Badge bg="secondary" style={{ fontSize: '0.62rem' }}>{l.typeActe}</Badge></td>
+                    <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>{l.designation || '-'}</td>
                     <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>{l.patient}</td>
-                    <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}><Badge bg={l.typePatient === 'Assuré' ? 'info' : 'secondary'} style={{ fontSize: '0.62rem' }}>{l.typePatient}</Badge></td>
+                    <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}><Badge bg={typePatientLabel(l.typePatient) === 'Assuré' ? 'info' : typePatientLabel(l.typePatient) === 'Mutualiste' ? 'primary' : 'secondary'} style={{ fontSize: '0.62rem' }}>{typePatientLabel(l.typePatient)}</Badge></td>
                     <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>{fmt(l.montantTotal)}</td>
                     <td style={{ padding: '3px 8px', textAlign: 'right', borderRight: '1px solid #e0e0e0' }}>{fmt(l.partPatient)}</td>
                     <td style={{ padding: '3px 8px', textAlign: 'right', borderRight: '1px solid #e0e0e0' }}>{fmt(l.partAssurance)}</td>
+                    <td style={{ padding: '3px 8px', textAlign: 'right', color: '#1565c0', borderRight: '1px solid #e0e0e0' }}>{fmt(l.remise)}</td>
                     <td style={{ padding: '3px 8px', textAlign: 'right', color: '#2e7d32', fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>{fmt(l.montantEncaisse)}</td>
                     <td style={{ padding: '3px 8px', textAlign: 'right', color: l.resteAPayer > 0 ? '#b71c1c' : '#2e7d32', fontWeight: 'bold', borderRight: '1px solid #e0e0e0' }}>{fmt(l.resteAPayer)}</td>
                     <td style={{ padding: '3px 8px' }}>{l.modePaiement}</td>
@@ -210,13 +256,13 @@ export default function BilanPage() {
         </Card.Body>
         <div style={{ background: '#eceff1', borderRadius: '0 0 8px 8px', padding: '6px 16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderTop: '2px solid #cfd8dc' }}>
           <span style={{ fontSize: '0.72rem', color: '#78909c' }}>{lignesFiltrees.length} ligne(s)</span>
-          {totaux && (
+          {totauxAffiches && (
             <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
-              <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#4527a0', textTransform: 'uppercase' }}>Total Actes</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#4527a0' }}>{fmt(totaux.montantTotal)} F</div></div>
+              <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#4527a0', textTransform: 'uppercase' }}>Total Actes</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#4527a0' }}>{fmt(totauxAffiches.montantTotal)} F</div></div>
               <div style={{ width: 1, height: 28, background: '#b0bec5' }}></div>
-              <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#2e7d32', textTransform: 'uppercase' }}>Encaissé</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#2e7d32' }}>{fmt(totaux.montantEncaisse)} F</div></div>
+              <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#2e7d32', textTransform: 'uppercase' }}>Encaissé</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#2e7d32' }}>{fmt(totauxAffiches.montantEncaisse)} F</div></div>
               <div style={{ width: 1, height: 28, background: '#b0bec5' }}></div>
-              <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#b71c1c', textTransform: 'uppercase' }}>Reste</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#b71c1c' }}>{fmt(totaux.resteAPayer)} F</div></div>
+              <div style={{ textAlign: 'right' }}><div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#b71c1c', textTransform: 'uppercase' }}>Reste</div><div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#b71c1c' }}>{fmt(totauxAffiches.resteAPayer)} F</div></div>
             </div>
           )}
         </div>

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IFactureAssur } from '@/models/factureAssur';
 import { IPaiementPartenaire } from '@/models/paiementPartenaire';
@@ -22,13 +22,12 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action') || 'liste';
-    const entrepriseId = searchParams.get('entrepriseId') || '';
     const assurance = searchParams.get('assurance') || '';
     const dateDebut = searchParams.get('dateDebut') || '';
     const dateFin = searchParams.get('dateFin') || '';
     const etat = searchParams.get('etat') || ''; // 'payee' | 'nonpayee' | ''
 
-    const filtreEntreprise = entrepriseId ? { entrepriseId } : {};
+    const filtreEntreprise = getTenantFilter(context);
 
     if (action === 'assurances') {
       // Liste des assurances distinctes depuis les facturations
@@ -102,6 +101,7 @@ export async function POST(request: NextRequest) {
   const FacturationAssur = getTenantModel<IFactureAssur>(connection, 'FactureAssur');
   const PaiementPartenaire = getTenantModel<IPaiementPartenaire>(connection, 'PaiementPartenaire');
   const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+  const tenantFilter = getTenantFilter(context);
 
   const session = await connection.startSession();
 
@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
     const { action } = body;
 
     if (action === 'payer') {
-      const { factureAssurId, montant, modePaiement, banque, numeroCheque, recuPar, datePaiement, entrepriseId } = body;
+      const { factureAssurId, montant, modePaiement, banque, numeroCheque, recuPar, datePaiement } = body;
       if (!factureAssurId || !montant) {
         return NextResponse.json({ success: false, message: 'Données manquantes' }, { status: 400 });
       }
@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
       let paiementResult: any;
 
       await session.withTransaction(async () => {
-        const facture = await FacturationAssur.findById(factureAssurId).session(session);
+        const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter }).session(session);
         if (!facture) {
           throw new Error('Facture introuvable');
         }
@@ -136,7 +136,7 @@ export async function POST(request: NextRequest) {
               FactureAssur: factureAssurId,
               NumChèque: numeroCheque || '',
               BanqueC: banque || '',
-              entrepriseId: entrepriseId || facture.entrepriseId || '',
+              entrepriseId: context.entrepriseId || facture.entrepriseId || '',
             },
           ],
           { session }
@@ -148,8 +148,8 @@ export async function POST(request: NextRequest) {
         const totalPaye = tousLesPaiements.reduce((s, p) => s + (p.MontantRecu || 0), 0);
         const estSolde = totalPaye >= (facture.PartAssurance || 0);
 
-        await FacturationAssur.findByIdAndUpdate(
-          factureAssurId,
+        await FacturationAssur.findOneAndUpdate(
+          { _id: factureAssurId, ...tenantFilter },
           {
             TotalPaye: totalPaye,
             Restapayer: Math.max(0, (facture.PartAssurance || 0) - totalPaye),
@@ -170,10 +170,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
       }
       await session.withTransaction(async () => {
-        const facture = await FacturationAssur.findById(factureAssurId).session(session);
+        const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter }).session(session);
         if (!facture) throw new Error('Facture introuvable');
-        await FacturationAssur.findByIdAndUpdate(
-          factureAssurId,
+        await FacturationAssur.findOneAndUpdate(
+          { _id: factureAssurId, ...tenantFilter },
           {
             DateDepot: new Date(),
             DepotPar: depotPar || '',
@@ -190,10 +190,10 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
       }
       await session.withTransaction(async () => {
-        const facture = await FacturationAssur.findById(factureAssurId).session(session);
+        const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter }).session(session);
         if (!facture) throw new Error('Facture introuvable');
-        await FacturationAssur.findByIdAndUpdate(
-          factureAssurId,
+        await FacturationAssur.findOneAndUpdate(
+          { _id: factureAssurId, ...tenantFilter },
           {
             DateRetrait: new Date(),
             RetirePar: retirePar || '',
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
       }
 
       await session.withTransaction(async () => {
-        const facture = await FacturationAssur.findById(factureAssurId).session(session);
+        const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter }).session(session);
         if (!facture) {
           throw new Error('Bordereau introuvable');
         }
@@ -271,7 +271,7 @@ export async function POST(request: NextRequest) {
         const FactureRecap = getTenantModel(connection, 'FactureRecap');
         await FactureRecap.deleteMany({ FactureAssur: factureAssurId }, { session });
 
-        await FacturationAssur.findByIdAndDelete(factureAssurId, { session });
+        await FacturationAssur.findOneAndDelete({ _id: factureAssurId, ...tenantFilter }, { session });
       });
 
       return NextResponse.json({ success: true, message: 'Bordereau annulé avec succès' });

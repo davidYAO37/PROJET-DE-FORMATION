@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { ICaisse } from '@/models/caisse';
 import { IConsultation } from '@/models/consultation';
@@ -34,6 +34,7 @@ export async function GET(request: NextRequest) {
     fin.setHours(23, 59, 59, 999);
 
     const lignes: any[] = [];
+    const tenantFilter = getTenantFilter(context);
 
     // TODO: ce cahier additionne plusieurs sources (Caisse, Consultation, Facturation, EncaissementCaisse)
     // qui peuvent se recouvrir. Pour des totaux fiables, il faudrait choisir une base unique
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
     // ── 1. CAISSE : Entrées → RECETTE, Sorties → DEPENSE ──────────────────────
     const docsCaisse = await caisse.find({
       dAteC: { $gte: debut, $lte: fin },
+      ...tenantFilter,
     }).lean();
 
     for (const c of docsCaisse) {
@@ -62,6 +64,7 @@ export async function GET(request: NextRequest) {
       Date_consulation: { $gte: debut, $lte: fin },
       StatutC: true,
       PrixClinique: { $ne: 0 },
+      ...tenantFilter,
     }).lean();
 
     for (const c of consultations) {
@@ -81,6 +84,7 @@ export async function GET(request: NextRequest) {
     // ── 3. FACTURATION : mode ≠ Chèque/Carte, DateFacturation dans période ─────
     const facturations = await Facturation.find({
       DateFacturation: { $gte: debut, $lte: fin },
+      ...tenantFilter,
     }).lean();
 
     for (const f of facturations) {
@@ -100,6 +104,7 @@ export async function GET(request: NextRequest) {
     // ── 4. ENCAISSEMENT_CAISSE : mode ≠ Chèque/Carte, DateEncaissement dans période ─
     const encaissements = await EncaissementCaisse.find({
       DateEncaissement: { $gte: debut, $lte: fin },
+      ...tenantFilter,
     }).lean();
 
     for (const e of encaissements) {

@@ -1,6 +1,6 @@
 // app/api/ListeAutreActes/route.ts
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IExamenHospitalisation } from "@/models/examenHospit";
 
@@ -26,7 +26,7 @@ export async function GET(req: NextRequest) {
 
         const typeActe = searchParams.get("typeActe");
 
-        const filter: any = { $or: [{ IdPatient: patientId }, { PatientP: patientId }] };
+        const filter: any = { $or: [{ IdPatient: patientId }, { PatientP: patientId }], ...getTenantFilter(context) };
         if (typeActe) {
             filter.Designationtypeacte = typeActe;
         }

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IModeDePaiement } from "@/models/ModeDePaiement";
 
@@ -12,9 +12,9 @@ export async function GET(req: NextRequest) {
     if (!context) return response;
     const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
 
-    // Pas de filtre entrepriseId ici : les modes de paiement sont isolés par tenant DB.
-    // Si un jour un mode est marqué entrepriseId, on peut le réintroduire.
-    const allModes = await ModeDePaiement.find({}).lean();
+    // Le filtre entrepriseId complète l'isolation par connexion lorsque plusieurs tenants partagent la base.
+    // Sur une base dédiée, getTenantFilter retourne un filtre vide.
+    const allModes = await ModeDePaiement.find(getTenantFilter(context)).lean();
 
     // Dédoublonner par valeur de Modepaiement (garder le premier document)
     const uniqueMap = new Map<string, any>();
@@ -62,7 +62,7 @@ export async function POST(req: NextRequest) {
 
         // Vérifier les doublons avant création
         if (body?.Modepaiement) {
-            const existant = await ModeDePaiement.findOne({ Modepaiement: body.Modepaiement }).lean();
+            const existant = await ModeDePaiement.findOne({ Modepaiement: body.Modepaiement, ...getTenantFilter(context) }).lean();
             if (existant) {
                 return NextResponse.json({
                     success: false,
@@ -71,7 +71,7 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        const modepaiements = await ModeDePaiement.create(body);
+        const modepaiements = await ModeDePaiement.create({ ...body, entrepriseId: context.entrepriseId });
 
         return NextResponse.json(modepaiements);
 

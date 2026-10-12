@@ -102,12 +102,11 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
   useEffect(() => {
     const chargerCaissieres = async () => {
       try {
-        // Récupérer l'ID entreprise depuis localStorage
-        const idEntreprise = localStorage.getItem('IdEntreprise');
+        // Identifier l'utilisateur courant pour le sélectionner par défaut
         const uidUtilisateur = localStorage.getItem('uid');
 
-        if (idEntreprise) {
-          const response = await fetch(`/api/utilisateurs?entrepriseId=${idEntreprise}`);
+        {
+          const response = await fetch('/api/utilisateurs');
           if (response.ok) {
             const data = await response.json();
             setCaissieres(data.data || []);

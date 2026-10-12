@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IConsultation } from '@/models/consultation';
 import { IFacturation } from '@/models/Facturation';
@@ -29,6 +29,11 @@ export async function GET(request: NextRequest) {
   const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
   const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(connection, 'EncaissementCaisse');
   const caisse = getTenantModel<ICaisse>(connection, 'Caisse');
+  const tenantFilter = getTenantFilter(context);
+  const findConsultations = (filter: Record<string, unknown>) => Consultation.find({ ...filter, ...tenantFilter });
+  const findFacturations = (filter: Record<string, unknown>) => Facturation.find({ ...filter, ...tenantFilter });
+  const findEncaissements = (filter: Record<string, unknown>) => EncaissementCaisse.find({ ...filter, ...tenantFilter });
+  const findCaisse = (filter: Record<string, unknown>) => caisse.find({ ...filter, ...tenantFilter });
 
   try {
     const { searchParams } = new URL(request.url);
@@ -67,7 +72,7 @@ export async function GET(request: NextRequest) {
 
     // ── CAS 1 : TOUS (Consultation PrixClinique + Facturation Montanttotal) ──
     if (optionPart === 1) {
-      const consultations = await Consultation.find({
+      const consultations = await findConsultations({
         Date_consulation: { $gte: debut, $lte: fin },
         StatutC: true,
       }).lean();
@@ -79,7 +84,7 @@ export async function GET(request: NextRequest) {
       }
 
       const factDate = facturationDateFilter(debut, fin);
-      const facturations = await Facturation.find(factDate as any).lean();
+      const facturations = await findFacturations(factDate as any).lean();
       for (const f of facturations) {
         const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
         const montant = (f.Montanttotal as number) || 0;
@@ -105,7 +110,7 @@ export async function GET(request: NextRequest) {
           qConsult['assurance'] = assurance;
         }
       }
-      const consultations = await Consultation.find(qConsult).lean();
+      const consultations = await findConsultations(qConsult).lean();
       for (const c of consultations) {
         const m = new Date(c.Date_consulation as Date).getMonth();
         // NON ASSURE : pas de part assurance, on prend le montant total (clinique)
@@ -123,7 +128,7 @@ export async function GET(request: NextRequest) {
             : { Assurance: assurance })
         : null;
       const qFact = factAssuranceClause ? { $and: [factDate, factAssuranceClause] } as any : factDate;
-      const facturations = await Facturation.find(qFact).lean();
+      const facturations = await findFacturations(qFact).lean();
       for (const f of facturations) {
         const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
         // NON ASSURE : pas de part assurance, on prend le montant total de l'acte
@@ -137,7 +142,7 @@ export async function GET(request: NextRequest) {
 
     // ── CAS 3 : PART PATIENT (Consultation.montantapayer + Facturation.TotalapayerPatient) ──
     if (optionPart === 3) {
-      const consultations = await Consultation.find({
+      const consultations = await findConsultations({
         Date_consulation: { $gte: debut, $lte: fin },
         StatutC: true,
       }).lean();
@@ -149,7 +154,7 @@ export async function GET(request: NextRequest) {
       }
 
       const factDate = facturationDateFilter(debut, fin);
-      const facturations = await Facturation.find(factDate as any).lean();
+      const facturations = await findFacturations(factDate as any).lean();
       for (const f of facturations) {
         const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
         const montant = (f.TotalapayerPatient as number) || (f.Montanttotal as number) || 0;
@@ -162,7 +167,7 @@ export async function GET(request: NextRequest) {
     if (optionPart === 4) {
       // ── ENCAISSEMENTS ──────────────────────────────────────────────────────
       // 1) Caisse entrées (groupées par Caisse.Operation)
-      const caisseEntrees = await caisse.find({
+      const caisseEntrees = await findCaisse({
         dAteC: { $gte: debut, $lte: fin },
         typeC: 'Entrée de caisse',
       }).lean();
@@ -176,7 +181,7 @@ export async function GET(request: NextRequest) {
       // 2) Consultation.Montantencaisse (filtré par modePaiement si précisé)
       const qC4Consult: any = { Date_consulation: { $gte: debut, $lte: fin }, StatutC: true };
       if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qC4Consult['Modepaiement'] = modePaiement;
-      const consultations = await Consultation.find(qC4Consult).lean();
+      const consultations = await findConsultations(qC4Consult).lean();
       for (const c of consultations) {
         const m = new Date(c.Date_consulation as Date).getMonth();
         const montant = (c.Montantencaisse as number) || 0;
@@ -189,7 +194,7 @@ export async function GET(request: NextRequest) {
       const qC4Fact: any = modePaiement && modePaiement !== 'TOUS LES PAIEMENTS'
         ? { $and: [factDateC4, { Modepaiement: modePaiement }] }
         : factDateC4;
-      const facturations = await Facturation.find(qC4Fact as any).lean();
+      const facturations = await findFacturations(qC4Fact as any).lean();
       for (const f of facturations) {
         const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
         const montant = (f.TotalPaye as number) || 0;
@@ -200,7 +205,7 @@ export async function GET(request: NextRequest) {
       // 4) EncaissementCaisse.Montantencaisse → libellé fixe (filtré par modePaiement si précisé)
       const qC4Encaiss: any = { DateEncaissement: { $gte: debut, $lte: fin } };
       if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qC4Encaiss['Modepaiement'] = modePaiement;
-      const encaissements = await EncaissementCaisse.find(qC4Encaiss).lean();
+      const encaissements = await findEncaissements(qC4Encaiss).lean();
       for (const e of encaissements) {
         const m = new Date(e.DateEncaissement as Date).getMonth();
         const montant = (e.Montantencaisse as number) || 0;
@@ -209,7 +214,7 @@ export async function GET(request: NextRequest) {
       }
 
       // ── DÉCAISSEMENTS (Caisse sorties) ────────────────────────────────────
-      const caisseSorties = await caisse.find({
+      const caisseSorties = await findCaisse({
         dAteC: { $gte: debut, $lte: fin },
         typeC: 'Sortie de caisse',
       }).lean();
@@ -238,27 +243,27 @@ export async function GET(request: NextRequest) {
 
       if (optionPart === 4) {
         // CAS 4 : Caisse N-1 (entrées - sorties) + Consultation.Montantencaisse + Facturation.TotalPaye + EncaissementCaisse
-        const caisseN1 = await caisse.find({ dAteC: { $gte: debutN1, $lte: finN1 } }).lean();
+        const caisseN1 = await findCaisse({ dAteC: { $gte: debutN1, $lte: finN1 } }).lean();
         for (const c of caisseN1) {
           if ((c.typeC as string) === 'Entrée de caisse') soldeOuvertureBase += (c.MOntantC as number) || 0;
           else if ((c.typeC as string) === 'Sortie de caisse') soldeOuvertureBase -= (c.MOntantC as number) || 0;
         }
         const qN1C: any = { Date_consulation: { $gte: debutN1, $lte: finN1 }, StatutC: true };
         if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qN1C['Modepaiement'] = modePaiement;
-        const consultN1 = await Consultation.find(qN1C).lean();
+        const consultN1 = await findConsultations(qN1C).lean();
         for (const c of consultN1) soldeOuvertureBase += (c.Montantencaisse as number) || 0;
         const factDateN1 = facturationDateFilter(debutN1, finN1);
         const qN1F: any = modePaiement && modePaiement !== 'TOUS LES PAIEMENTS'
           ? { $and: [factDateN1, { Modepaiement: modePaiement }] }
           : factDateN1;
-        const factN1 = await Facturation.find(qN1F as any).lean();
+        const factN1 = await findFacturations(qN1F as any).lean();
         for (const f of factN1) soldeOuvertureBase += (f.TotalPaye as number) || 0;
         const qN1E: any = { DateEncaissement: { $gte: debutN1, $lte: finN1 } };
         if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qN1E['Modepaiement'] = modePaiement;
-        const encaissN1 = await EncaissementCaisse.find(qN1E).lean();
+        const encaissN1 = await findEncaissements(qN1E).lean();
         for (const e of encaissN1) soldeOuvertureBase += (e.Montantencaisse as number) || 0;
       } else if (optionPart === 2) {
-        const consultN1 = await Consultation.find({
+        const consultN1 = await findConsultations({
           Date_consulation: { $gte: debutN1, $lte: finN1 },
           StatutC: true,
         }).lean();
@@ -266,12 +271,12 @@ export async function GET(request: NextRequest) {
           soldeOuvertureBase += (c.PartAssurance as number) || 0;
         }
         const factDateN1 = facturationDateFilter(debutN1, finN1);
-        const factN1 = await Facturation.find(factDateN1 as any).lean();
+        const factN1 = await findFacturations(factDateN1 as any).lean();
         for (const f of factN1) {
           soldeOuvertureBase += (f.PartAssuranceP as number) || 0;
         }
       } else {
-        const consultN1 = await Consultation.find({
+        const consultN1 = await findConsultations({
           Date_consulation: { $gte: debutN1, $lte: finN1 },
           StatutC: true,
         }).lean();
@@ -282,7 +287,7 @@ export async function GET(request: NextRequest) {
             : ((c.PrixClinique as number) || 0);
         }
         const factDateN1 = facturationDateFilter(debutN1, finN1);
-        const factN1 = await Facturation.find(factDateN1 as any).lean();
+        const factN1 = await findFacturations(factDateN1 as any).lean();
         for (const f of factN1) {
           // CAS 3 : TotalapayerPatient ; CAS 1 : Montanttotal
           soldeOuvertureBase += optionPart === 3

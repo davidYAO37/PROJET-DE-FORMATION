@@ -15,11 +15,19 @@ export interface TenantContext {
   user: AuthenticatedUser;
   userObjectId: Types.ObjectId;
   connection: mongoose.Connection;
+  entrepriseId?: string;
+  isSharedConnection: boolean;
 }
 
 type WithTenantResult =
   | { context: TenantContext; response: null }
   | { context: null; response: NextResponse };
+
+export function getTenantFilter(context: TenantContext): Record<string, string> {
+  return context.isSharedConnection && context.entrepriseId
+    ? { entrepriseId: context.entrepriseId }
+    : {};
+}
 
 export async function withTenant(
   req: NextRequest,
@@ -72,9 +80,16 @@ export async function withTenant(
     const connection = effectiveEntrepriseId
       ? await getTenantConnection(effectiveEntrepriseId)
       : await getPrimaryConnection();
+    const primaryConnection = await getPrimaryConnection();
     const userObjectId = new Types.ObjectId(payload.userId);
     return {
-      context: { user: payload as AuthenticatedUser, userObjectId, connection },
+      context: {
+        user: payload as AuthenticatedUser,
+        userObjectId,
+        connection,
+        entrepriseId: effectiveEntrepriseId,
+        isSharedConnection: connection === primaryConnection,
+      },
       response: null,
     };
   } catch (error) {

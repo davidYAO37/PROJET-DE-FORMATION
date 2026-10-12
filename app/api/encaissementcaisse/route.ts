@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
 import { IEncaissementCaisseAnnule } from '@/models/EncaissementCaisseAnnule';
@@ -18,6 +18,7 @@ export async function POST(req: NextRequest) {
   const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
   const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
   const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+  const tenantFilter = getTenantFilter(context);
   const body = await req.json();
   try {
     // Logique WinDev : vérifier le type et actualiser en conséquence
@@ -28,11 +29,11 @@ export async function POST(req: NextRequest) {
       // CAS "consultation"
       // On actualise le compte client
 
-      const consultation = await Consultation.findById(body.IDCONSULTATION);
+      const consultation = await Consultation.findOne({ _id: body.IDCONSULTATION, ...tenantFilter });
 
       if (consultation) {
         // On cherche le nombre et le montant déjà encaissé pour la consultation
-        const encaissementsExistants = await EncaissementCaisse.find({ IDCONSULTATION: String(body.IDCONSULTATION) });
+        const encaissementsExistants = await EncaissementCaisse.find({ IDCONSULTATION: String(body.IDCONSULTATION), ...tenantFilter });
         nMoncompteur = encaissementsExistants.length + 1;
         gnDejapaye = encaissementsExistants.reduce((sum, enc) => sum + (enc.Montantencaisse || 0), 0);
 
@@ -65,14 +66,15 @@ export async function POST(req: NextRequest) {
           Assure: consultation.Assure,
           IdPatient: consultation.PatientP,
           AnnulationOrdonneLe: '',
-          annulationOrdonnepar: ''
+          annulationOrdonnepar: '',
+          entrepriseId: context.entrepriseId
         });
 
         await nouvelEncaissement.save();
 
         // Gestion de la caution du patient : déduire directement le montant encaissé du compte provision
         if (body.Modepaiement === "Caution" && consultation.IdPatient) {
-          const patientCaution = await Patient.findById(consultation.IdPatient);
+          const patientCaution = await Patient.findOne({ _id: consultation.IdPatient, ...tenantFilter });
           if (patientCaution) {
             const montant = Number(montantClient) || 0;
             const provisionActuelle = Number(patientCaution.ProvisionClient) || 0;
@@ -87,7 +89,7 @@ export async function POST(req: NextRequest) {
       // AUTRE CAS (facturation)
       // On actualise le compte client
 
-      const facturation = await Facturation.findById(body.IDFACTURATION);
+      const facturation = await Facturation.findOne({ _id: body.IDFACTURATION, ...tenantFilter });
 
 
 
@@ -95,7 +97,7 @@ export async function POST(req: NextRequest) {
 
 
         // On cherche le nombre et le montant déjà encaissé pour la facturation
-        const encaissementsExistants = await EncaissementCaisse.find({ IDFACTURATION: String(body.IDFACTURATION) });
+        const encaissementsExistants = await EncaissementCaisse.find({ IDFACTURATION: String(body.IDFACTURATION), ...tenantFilter });
         nMoncompteur = encaissementsExistants.length + 1;
         gnDejapaye = encaissementsExistants.reduce((sum, enc) => sum + (enc.Montantencaisse || 0), 0);
 
@@ -124,14 +126,15 @@ export async function POST(req: NextRequest) {
           Assure: facturation.Assure,
           IdPatient: facturation.PatientP,
           AnnulationOrdonneLe: '',
-          annulationOrdonnepar: ''
+          annulationOrdonnepar: '',
+          entrepriseId: context.entrepriseId
         });
 
         await nouvelEncaissement.save();
 
         // Gestion de la caution du patient : déduire directement le montant encaissé du compte provision
         if (body.Modepaiement === "Caution" && facturation.IdPatient) {
-          const patientCaution = await Patient.findById(facturation.IdPatient);
+          const patientCaution = await Patient.findOne({ _id: facturation.IdPatient, ...tenantFilter });
           if (patientCaution) {
             const provisionActuelle = Number(patientCaution.ProvisionClient) || 0;
             const depenseActuelle = Number(patientCaution.DepenseProvision) || 0;
@@ -170,6 +173,7 @@ export async function GET(request: NextRequest) {
     const { context, response } = await withTenant(request, ROLES);
     if (!context) return response;
     const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
+    const tenantFilter = getTenantFilter(context);
 
     const { searchParams } = new URL(request.url);
     const idFacturation = searchParams.get('idFacturation');
@@ -182,11 +186,12 @@ export async function GET(request: NextRequest) {
     let encaissements: IEncaissementCaisse[] = [];
 
     if (all === '1' || all === 'true') {
-      encaissements = await EncaissementCaisse.find().sort({ DateEncaissement: -1 });
+      encaissements = await EncaissementCaisse.find(tenantFilter).sort({ DateEncaissement: -1 });
     } else if (patient && patient.trim() !== '') {
       // Équivalent de : POUR TOUT ENCAISSEMENT_CAISSE AVEC Nompatient=SAI_SAISIE_PATIENT
       encaissements = await EncaissementCaisse.find({ 
-        Patient: { $regex: patient.trim(), $options: 'i' } 
+        Patient: { $regex: patient.trim(), $options: 'i' },
+        ...tenantFilter
       }).sort({ DateEncaissement: -1 });
     } else if ((idConsultations && idConsultations.trim() !== '') || (idFacturations && idFacturations.trim() !== '')) {
       const consultationIdsList = idConsultations ? idConsultations.split(',').map(s => s.trim()).filter(Boolean) : [];
@@ -199,12 +204,12 @@ export async function GET(request: NextRequest) {
         orConditions.push({ IDFACTURATION: { $in: facturationIdsList } });
       }
       if (orConditions.length) {
-        encaissements = await EncaissementCaisse.find({ $or: orConditions }).sort({ DateEncaissement: -1 });
+        encaissements = await EncaissementCaisse.find({ $or: orConditions, ...tenantFilter }).sort({ DateEncaissement: -1 });
       }
     } else if (idConsultation && idConsultation.trim() !== '') {
-      encaissements = await EncaissementCaisse.find({ IDCONSULTATION: idConsultation.trim() }).sort({ DateEncaissement: -1 });
+      encaissements = await EncaissementCaisse.find({ IDCONSULTATION: idConsultation.trim(), ...tenantFilter }).sort({ DateEncaissement: -1 });
     } else if (idFacturation && idFacturation.trim() !== '') {
-      encaissements = await EncaissementCaisse.find({ IDFACTURATION: idFacturation.trim() }).sort({ DateEncaissement: -1 });
+      encaissements = await EncaissementCaisse.find({ IDFACTURATION: idFacturation.trim(), ...tenantFilter }).sort({ DateEncaissement: -1 });
     }
 
     return NextResponse.json(
@@ -239,6 +244,7 @@ export async function PATCH(request: NextRequest) {
     const { context, response } = await withTenant(request, ROLES);
     if (!context) return response;
     const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
+    const tenantFilter = getTenantFilter(context);
 
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
@@ -253,7 +259,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     // Équivalent de HLitRecherche(ENCAISSEMENT_CAISSE,IDPOINT_CAISSE,TABLE_ENCAISSEMENT_CAISSE.COL_IDPOINT_CAISSE)
-    const encaissement = await EncaissementCaisse.findById(id);
+    const encaissement = await EncaissementCaisse.findOne({ _id: id, ...tenantFilter });
 
     if (!encaissement) {
       return NextResponse.json({ success: false, message: 'Encaissement introuvable' }, { status: 404 });
@@ -315,6 +321,7 @@ export async function DELETE(request: NextRequest) {
     if (!context) return response;
     const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
     const EncaissementCaisseAnnule = getTenantModel<IEncaissementCaisseAnnule>(context.connection, "EncaissementCaisseAnnule");
+    const tenantFilter = getTenantFilter(context);
 
     const { searchParams } = new URL(request.url);
     let id = searchParams.get('id');
@@ -328,7 +335,7 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'ID d\'encaissement requis' }, { status: 400 });
     }
 
-    const encaissement = await EncaissementCaisse.findById(id);
+    const encaissement = await EncaissementCaisse.findOne({ _id: id, ...tenantFilter });
 
     if (!encaissement) {
       return NextResponse.json({ success: false, message: 'Encaissement introuvable' }, { status: 404 });
@@ -362,7 +369,7 @@ export async function DELETE(request: NextRequest) {
     });
 
     await annuler.save();
-    await EncaissementCaisse.findByIdAndDelete(id);
+    await EncaissementCaisse.findOneAndDelete({ _id: id, ...tenantFilter });
 
     return NextResponse.json({ success: true, message: 'Encaissement annulé avec succès' });
   } catch (error) {

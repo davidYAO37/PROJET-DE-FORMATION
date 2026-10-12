@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { Container, Card, Table, Badge, Button, Alert, Spinner } from 'react-bootstrap';
 import { useRouter } from 'next/navigation';
+import { calculateVitalPriority } from '@/lib/medicalSummary';
 
 interface PatientEnAttente {
   _id: string;
@@ -49,42 +50,13 @@ export default function ListePatientAttentes() {
 
   // Fonction pour calculer la priorité basée sur les constantes
   const calculerPrioriteSelonConstantes = (patient: PatientEnAttente): 'basse' | 'normale' | 'urgente' => {
-    const { temperature, tension, pouls } = patient;
-
     // Conversion des valeurs en nombres si possible
-    const temp = temperature ? parseFloat(temperature.replace(',', '.')) : null;
-    const tensionValues = tension ? tension.split('/').map(v => parseFloat(v.trim())) : [];
-    const poulsValue = pouls ? parseFloat(pouls.replace(',', '.')) : null;
-
     // Critères d'urgence
-    let scoreUrgence = 0;
-
     // Température : > 39°C ou < 35°C
-    if (temp) {
-      if (temp > 39 || temp < 35) scoreUrgence += 3;
-      else if (temp > 38 || temp < 36) scoreUrgence += 1;
-    }
-
     // Tension : systolique > 160 ou < 90, diastolique > 100 ou < 60
-    if (tensionValues.length >= 2) {
-      const [systolique, diastolique] = tensionValues;
-      if (systolique > 160 || systolique < 90 || diastolique > 100 || diastolique < 60) {
-        scoreUrgence += 3;
-      } else if (systolique > 140 || systolique < 100 || diastolique > 90 || diastolique < 70) {
-        scoreUrgence += 1;
-      }
-    }
-
     // Pouls : > 140 bpm ou < 40 bpm
-    if (poulsValue) {
-      if (poulsValue > 140 || poulsValue < 40) scoreUrgence += 3;
-      else if (poulsValue > 100 || poulsValue < 60) scoreUrgence += 1;
-    }
-
     // Détermination de la priorité
-    if (scoreUrgence >= 3) return 'urgente';
-    if (scoreUrgence >= 1) return 'normale';
-    return 'basse';
+    return calculateVitalPriority(patient);
   };
 
   const chargerPatientsEnAttente = async (isSilent = false) => {

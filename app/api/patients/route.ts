@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IPatient } from "@/models/patient";
 
@@ -9,17 +9,18 @@ export async function GET(req: NextRequest) {
   const { context, response } = await withTenant(req, ROLES);
   if (!context) return response;
   const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+  const tenantFilter = getTenantFilter(context);
   try {
     const { searchParams } = new URL(req.url);
     const Code_dossier = searchParams.get("Code_dossier");
 
     if (Code_dossier) {
       // Permet de vérifier existence d’un code
-      const patient = await Patient.findOne({ Code_dossier });
+      const patient = await Patient.findOne({ Code_dossier, ...tenantFilter });
       return NextResponse.json(patient ? [patient] : []);
     }
 
-    const patients = await Patient.find({});
+    const patients = await Patient.find(tenantFilter);
     return NextResponse.json(patients);
 
   } catch (error) {
@@ -31,12 +32,13 @@ export async function POST(req: NextRequest) {
   const { context, response } = await withTenant(req, ROLES);
   if (!context) return response;
   const Patient = getTenantModel<IPatient>(context.connection, "Patient");
+  const tenantFilter = getTenantFilter(context);
   try {
     const body = await req.json();
     let { Code_dossier } = body;
 
     // Vérification unicité côté serveur
-    const existing = await Patient.findOne({ Code_dossier });
+    const existing = await Patient.findOne({ Code_dossier, ...tenantFilter });
 
     if (existing) {
       // 👉 Cas 1 : l’utilisateur a tapé manuellement un code
@@ -49,7 +51,7 @@ export async function POST(req: NextRequest) {
 
       // 👉 Cas 2 : code auto (P00xxx) → on génère le suivant disponible
       let nextNum = 1;
-      const last = await Patient.findOne({ Code_dossier: /^P00\d+$/ })
+      const last = await Patient.findOne({ Code_dossier: /^P00\d+$/, ...tenantFilter })
         .sort({ Code_dossier: -1 })
         .collation({ locale: "en_US", numericOrdering: true }); // bien trier P009 < P010
 
@@ -62,7 +64,7 @@ export async function POST(req: NextRequest) {
 
       // Boucle tant qu’il y a collision (sécurité pour concurrence)
       let newCode = `P00${nextNum}`;
-      while (await Patient.findOne({ Code_dossier: newCode })) {
+      while (await Patient.findOne({ Code_dossier: newCode, ...tenantFilter })) {
         nextNum++;
         newCode = `P00${nextNum}`;
       }
@@ -70,6 +72,7 @@ export async function POST(req: NextRequest) {
     }
 
     body.Code_dossier = Code_dossier;
+    body.entrepriseId = context.entrepriseId;
 
     // Nettoyage des champs optionnels
     if (body.IDASSURANCE && typeof body.IDASSURANCE === "string" && body.IDASSURANCE !== "") {

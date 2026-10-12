@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IConsultation } from '@/models/consultation';
 import { IFacturation } from '@/models/Facturation';
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Identifiant médecin invalide' }, { status: 400 });
     }
 
-    const medecin = await Medecin.findById(medecinId).lean();
+    const medecin = await Medecin.findOne({ _id: medecinId, ...getTenantFilter(context) }).lean();
     if (!medecin) {
       return NextResponse.json({ success: false, message: 'Médecin introuvable' }, { status: 404 });
     }
@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
       StatutC: true,
       Statumed: { $ne: 1 },
       Date_consulation: { $gte: debut, $lte: fin },
+      ...getTenantFilter(context),
     }).lean();
 
     for (const c of consultations) {
@@ -92,12 +93,14 @@ export async function GET(request: NextRequest) {
     // 2. HONORAIRE PRESCRIPTION, EXECUTANT, AIDE OPERATOIRE, ANESTHESISTE
     const facturations = await Facturation.find({
       DatePres: { $gte: debut, $lte: fin },
+      ...getTenantFilter(context),
     }).lean();
 
     const facturationIds = facturations.map(f => f._id);
     const allLignes = await LignePrestation.find({
       idFacturation: { $in: facturationIds },
       statutPrescriptionMedecin: 3,
+      ...getTenantFilter(context),
     }).lean();
 
     const lignesParFacturation = new Map<string, any[]>();
@@ -320,7 +323,7 @@ export async function POST(request: NextRequest) {
 
     try {
       await session.withTransaction(async () => {
-      const medecinDoc = await Medecin.findById(medecinId).session(session).lean();
+      const medecinDoc = await Medecin.findOne({ _id: medecinId, ...getTenantFilter(context) }).session(session).lean();
       if (!medecinDoc) {
         throw new Error('Médecin introuvable');
       }
@@ -354,6 +357,7 @@ export async function POST(request: NextRequest) {
             NBAnestesiste: nbAnesthesiste,
             ParAnesthesiste: partAnest,
             MontantTotalAnestesiste: montantTotalAnest,
+            entrepriseId: context.entrepriseId,
           },
         ],
         { session }
@@ -376,21 +380,22 @@ export async function POST(request: NextRequest) {
               TAXE: a.taxe,
               Netapayer: a.netAPayer,
               Patient: a.patient,
+              entrepriseId: context.entrepriseId,
             },
           ],
           { session }
         );
 
         if (a.type === 'HONORAIRE CONSULTATION') {
-          await Consultation.findByIdAndUpdate(a.idActe, { Statumed: 1 }, { session });
+          await Consultation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { Statumed: 1 }, { session });
         } else if (a.type === 'HONORAIRE PRESCRIPTION') {
-          await Facturation.findByIdAndUpdate(a.idActe, { Statumed: '1' }, { session });
+          await Facturation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { Statumed: '1' }, { session });
         } else if (a.type === 'HONORAIRE EXECUTANT') {
-          await LignePrestation.findByIdAndUpdate(a.idActe, { statutExecutant: '1' }, { session });
+          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { statutExecutant: '1' }, { session });
         } else if (a.type === 'HONORAIRE AIDE OPERATOIRE') {
-          await LignePrestation.findByIdAndUpdate(a.idActe, { AideOperatoirePaye: 1 }, { session });
+          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { AideOperatoirePaye: 1 }, { session });
         } else if (a.type === 'HONORAIRE ANESTHESISTE') {
-          await LignePrestation.findByIdAndUpdate(a.idActe, { AnesthesistePaye: 1 }, { session });
+          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { AnesthesistePaye: 1 }, { session });
         }
       }
     });

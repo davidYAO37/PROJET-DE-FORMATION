@@ -729,3 +729,67 @@ export const createPrintWindowA4WithoutHeader = (
 
   return printWindow;
 };
+
+export const createPrintWindow80mm = (
+  title: string,
+  headerHTML: string,
+  contentHTML: string,
+  footerHTML: string
+): Window | null => {
+  const printWindow = window.open('', '', 'width=420,height=700');
+  if (!printWindow) return null;
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${title}</title>
+        <style>
+          @page { size: 80mm auto; margin: 2mm; }
+          @media print {
+            html, body { width: 76mm; margin: 0 !important; padding: 0 !important; }
+            * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+          }
+          * { box-sizing: border-box; }
+          body { width: 76mm; margin: 0 auto; padding: 2mm; color: #000; background: #fff; font-family: Arial, sans-serif; font-size: 10px; }
+          .thermal-header { text-align: center; margin-bottom: 3mm; }
+          .thermal-header .header { display: block !important; margin: 0 !important; }
+          .thermal-header .img { max-width: 100% !important; }
+          .thermal-header img { max-width: 28mm !important; max-height: 18mm !important; object-fit: contain; }
+          .thermal-header .header-text { font-size: 10px !important; text-align: center !important; color: #000 !important; }
+          .thermal-header .header-static { margin-bottom: 2mm !important; font-size: 14px !important; }
+          .thermal-copy { break-inside: avoid; page-break-inside: avoid; }
+          .thermal-title { margin: 2mm 0; text-align: center; font-size: 13px; font-weight: bold; }
+          .thermal-label { text-align: center; font-weight: bold; margin-bottom: 2mm; }
+          .thermal-row { display: flex; justify-content: space-between; gap: 3mm; margin-bottom: 1mm; }
+          .thermal-row span:first-child { font-weight: bold; }
+          .thermal-row span:last-child { text-align: right; overflow-wrap: anywhere; }
+          .thermal-separator { border-top: 1px dashed #000; margin: 2mm 0; }
+          .thermal-total { border-top: 1px solid #000; border-bottom: 1px solid #000; padding: 1.5mm 0; margin: 2mm 0; font-size: 11px; }
+          .thermal-cut { border-top: 1px dashed #000; margin: 4mm 0; text-align: center; height: 1px; }
+          .thermal-cut span { position: relative; top: -6px; padding: 0 2mm; background: #fff; font-size: 8px; }
+          .thermal-footer { margin-top: 3mm; text-align: center; font-size: 8px; }
+          .thermal-footer .footer, .thermal-footer .footer-static { margin-top: 2mm !important; padding-top: 2mm !important; font-size: 8px !important; }
+        </style>
+      </head>
+      <body>
+        <div class="thermal-header">${headerHTML}</div>
+        ${contentHTML}
+        <div class="thermal-footer">${footerHTML}</div>
+      </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.onafterprint = () => {
+      printWindow.close();
+    };
+  }, 600);
+
+  return printWindow;
+};

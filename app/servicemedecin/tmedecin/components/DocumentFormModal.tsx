@@ -85,10 +85,9 @@ export default function DocumentFormModal({
     setLoadingLists(true);
     const fetchLists = async () => {
       try {
-        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
         const [medRes, examRes] = await Promise.allSettled([
-          fetch(`/api/medecins${entrepriseId ? `?entrepriseId=${encodeURIComponent(entrepriseId)}` : ''}`),
-          fetch(`/api/examenhospitalisation/patient?patientId=${patientId}${entrepriseId ? `&entrepriseId=${encodeURIComponent(entrepriseId)}` : ''}`),
+          fetch('/api/medecins'),
+          fetch(`/api/examenhospitalisation/patient?patientId=${patientId}`),
         ]);
         if (medRes.status === 'fulfilled' && medRes.value.ok) {
           const medData = await medRes.value.json();
@@ -227,7 +226,6 @@ export default function DocumentFormModal({
       ajouterPar: authUser
         ? `${authUser.prenom || ''} ${authUser.nom || ''}`.trim() || authUser.email || 'Utilisateur'
         : 'Utilisateur',
-      entrepriseId: authUser?.entrepriseId || (typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : ''),
       document: fileBase64,
       extensionF: ext,
     };

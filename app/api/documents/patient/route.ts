@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { IDocumentPatient } from "@/models/documentpatient";
 import { IExamenHospitalisation } from "@/models/examenHospit";
 import { Types } from "mongoose";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: "L'ID du patient est requis" }, { status: 400 });
     }
 
-    const query: any = {};
+    const query: any = { ...getTenantFilter(context) };
     if (Types.ObjectId.isValid(patientId)) {
       query.$or = [{ patient: new Types.ObjectId(patientId) }, { idPatient: patientId }];
     } else {
@@ -72,7 +72,6 @@ export async function POST(req: NextRequest) {
       idprestation,
       extensionF,
       interpretation,
-      entrepriseId,
     } = body;
 
     if (!libeleDocument || libeleDocument.trim() === "") {
@@ -101,12 +100,12 @@ export async function POST(req: NextRequest) {
       idprestation,
       extensionF,
       interpretation,
-      entrepriseId,
+      entrepriseId: context.entrepriseId,
     });
 
     // Mise à jour de l'examen hospitalisation lié (si un idprestation est fourni)
     if (documentBuffer && idprestation && idprestation !== "0" && idprestation !== "") {
-      await ExamenHospitalisation.findByIdAndUpdate(idprestation, {
+      await ExamenHospitalisation.findOneAndUpdate({ _id: idprestation, ...getTenantFilter(context) }, {
         Document: documentBuffer,
         ExtensionF: extensionF,
       });

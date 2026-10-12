@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IAvisHospit } from '@/models/AvisHospit';
 import { IConsultation } from '@/models/consultation';
@@ -37,14 +37,15 @@ function getAvisHospitTenantModel(connection: Parameters<typeof getTenantModel>[
 async function resolveCodePrestation(
   connection: Parameters<typeof getTenantModel>[0],
   consultationId: unknown,
-  providedCode: unknown
+  providedCode: unknown,
+  tenantFilter: Record<string, string>
 ) {
   const codePrestation = typeof providedCode === 'string' ? providedCode.trim() : '';
   if (codePrestation) return codePrestation;
   if (!consultationId) return undefined;
 
   const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
-  const consultation = await Consultation.findById(consultationId).select('CodePrestation').lean();
+  const consultation = await Consultation.findOne({ _id: consultationId, ...tenantFilter }).select('CodePrestation').lean();
   return consultation?.CodePrestation || undefined;
 }
 
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
     const dateInterventionDebut = searchParams.get('dateInterventionDebut');
     const dateInterventionFin = searchParams.get('dateInterventionFin');
 
-    const query: Record<string, unknown> = {};
+    const query: Record<string, unknown> = { ...getTenantFilter(context) };
     if (consultationId) query.IDCONSULTATION = consultationId;
     if (patientId) query.IDPARTIENT = patientId;
     if (statut) query.statut = statut;
@@ -138,11 +139,12 @@ export async function POST(request: NextRequest) {
 
     const serviceFlags = setServiceFlags(body.serviceHospit);
     const etatFlags = setEtatFlags(body.etatPatient);
-    const codePrestation = await resolveCodePrestation(connection, body.IDCONSULTATION, body.codePrestation);
+    const codePrestation = await resolveCodePrestation(connection, body.IDCONSULTATION, body.codePrestation, getTenantFilter(context));
 
     const AvisHospit = getAvisHospitTenantModel(connection);
     const nouvelAvis = await AvisHospit.create({
       ...body,
+      entrepriseId: context.entrepriseId,
       codePrestation,
       ...serviceFlags,
       ...etatFlags,
@@ -197,7 +199,8 @@ export async function PUT(request: NextRequest) {
     const codePrestation = await resolveCodePrestation(
       connection,
       updateData.IDCONSULTATION,
-      updateData.codePrestation
+      updateData.codePrestation,
+      getTenantFilter(context)
     );
     if (codePrestation) updateData.codePrestation = codePrestation;
     if (updateData.DatePrevue) {
@@ -205,7 +208,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const AvisHospit = getAvisHospitTenantModel(connection);
-    const updated = await AvisHospit.findByIdAndUpdate(_id, updateData, { new: true, runValidators: true })
+    const updated = await AvisHospit.findOneAndUpdate({ _id, ...getTenantFilter(context) }, { ...updateData, entrepriseId: context.entrepriseId }, { new: true, runValidators: true })
       .populate('IDPARTIENT', 'Nom Prenoms Code_dossier')
       .populate('IDCONSULTATION', 'CodePrestation Date_consulation');
 
@@ -240,7 +243,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const AvisHospit = getAvisHospitTenantModel(connection);
-    const deleted = await AvisHospit.findByIdAndDelete(id);
+    const deleted = await AvisHospit.findOneAndDelete({ _id: id, ...getTenantFilter(context) });
 
     if (!deleted) {
       return NextResponse.json({ success: false, error: 'Avis introuvable' }, { status: 404 });

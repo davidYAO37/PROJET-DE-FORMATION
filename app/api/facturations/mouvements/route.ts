@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IConsultation } from '@/models/consultation';
 import { IFacturation } from '@/models/Facturation';
@@ -12,6 +12,7 @@ export async function GET(req: NextRequest) {
     const { connection } = context;
     const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
     const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
+    const tenantFilter = getTenantFilter(context);
 
     try {
     console.log('API mouvements prestations appelée');
@@ -52,7 +53,8 @@ export async function GET(req: NextRequest) {
       const consultations = await Consultation.find({
         Date_consulation: { $gte: debut, $lte: fin },
         montantapayer: { $ne: 0 },
-        StatutC: true
+        StatutC: true,
+        ...tenantFilter
       })
       .lean();
 
@@ -107,7 +109,8 @@ export async function GET(req: NextRequest) {
       
       const facturations = await Facturation.find({
         DatePres: { $gte: debut, $lte: fin },
-        TotalapayerPatient: { $ne: 0 }
+        TotalapayerPatient: { $ne: 0 },
+        ...tenantFilter
       })
       .lean();
 

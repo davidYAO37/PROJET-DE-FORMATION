@@ -294,8 +294,7 @@ export default function FacturesNonSoldesModal({ show, onHide, onPaiementSuccess
   useEffect(() => {
     const fetchModesPaiement = async () => {
       try {
-        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
-        const response = await fetch(`/api/modepaiement?entrepriseId=${encodeURIComponent(entrepriseId)}`);
+        const response = await fetch('/api/modepaiement');
         if (!response.ok) {
           setModesPaiement([]);
           return;

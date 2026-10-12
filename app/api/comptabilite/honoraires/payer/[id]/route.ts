@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IHonoraireMed } from '@/models/HonoraireMed';
 import { IHonorairePaye } from '@/models/HonorairePaye';
@@ -15,6 +15,7 @@ export async function PUT(
   const { connection } = context;
   const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
   const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+  const tenantFilter = getTenantFilter(context);
 
   const { id } = await params;
   const { honoraireId, ancienMontant, montant, modePaiement, banque, numeroCheque, payePar } = await request.json();
@@ -28,12 +29,12 @@ export async function PUT(
 
   try {
     await session.withTransaction(async () => {
-      const paiement = await HonorairePaye.findById(id).session(session);
+      const paiement = await HonorairePaye.findOne({ _id: id, ...tenantFilter }).session(session);
       if (!paiement) {
         throw new Error('Paiement introuvable');
       }
 
-      const honoraire = await HonoraireMed.findById(honoraireId).session(session);
+      const honoraire = await HonoraireMed.findOne({ _id: honoraireId, ...tenantFilter }).session(session);
       if (!honoraire) {
         throw new Error('Honoraire introuvable');
       }
@@ -46,8 +47,8 @@ export async function PUT(
         throw new Error('Le montant total payé dépasserait le net à payer');
       }
 
-      await HonorairePaye.findByIdAndUpdate(
-        id,
+      await HonorairePaye.findOneAndUpdate(
+        { _id: id, ...tenantFilter },
         {
           MontantPayé: montant,
           Restapayer: nouveauReste,
@@ -60,8 +61,8 @@ export async function PUT(
         { session }
       );
 
-      await HonoraireMed.findByIdAndUpdate(
-        honoraireId,
+      await HonoraireMed.findOneAndUpdate(
+        { _id: honoraireId, ...tenantFilter },
         {
           MontantPayé: nouveauPaye,
           Restapayer: nouveauReste,
@@ -92,6 +93,7 @@ export async function DELETE(
   const { connection } = context;
   const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
   const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+  const tenantFilter = getTenantFilter(context);
 
   const { id } = await params;
   const { honoraireId, montant } = await request.json();
@@ -101,12 +103,12 @@ export async function DELETE(
 
   try {
     await session.withTransaction(async () => {
-      const paiement = await HonorairePaye.findById(id).session(session);
+      const paiement = await HonorairePaye.findOne({ _id: id, ...tenantFilter }).session(session);
       if (!paiement) {
         throw new Error('Paiement introuvable');
       }
 
-      const honoraire = await HonoraireMed.findById(honoraireId).session(session);
+      const honoraire = await HonoraireMed.findOne({ _id: honoraireId, ...tenantFilter }).session(session);
       if (!honoraire) {
         throw new Error('Honoraire introuvable');
       }
@@ -115,9 +117,9 @@ export async function DELETE(
       const nouveauPaye = Math.max(0, (honoraire.MontantPayé || 0) - montantReel);
       const nouveauReste = (honoraire.Restapayer ?? 0) + montantReel;
 
-      await HonorairePaye.findByIdAndDelete(id, { session });
-      await HonoraireMed.findByIdAndUpdate(
-        honoraireId,
+      await HonorairePaye.findOneAndDelete({ _id: id, ...tenantFilter }, { session });
+      await HonoraireMed.findOneAndUpdate(
+        { _id: honoraireId, ...tenantFilter },
         {
           MontantPayé: nouveauPaye,
           Restapayer: nouveauReste,

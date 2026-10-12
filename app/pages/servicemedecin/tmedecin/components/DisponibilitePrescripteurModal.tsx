@@ -334,8 +334,6 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
 
     setUpdatingRdv(rdvId);
     try {
-      const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') : null;
-      
       // Récupérer les détails du rendez-vous pour obtenir le planning ID
       const rdv = rendezVous.find(r => r._id === rdvId);
       if (!rdv) {
@@ -356,7 +354,6 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
           StatutRdv: '1', // Toujours 1 lors de la validation initiale
           Statutrdvpris: true,
           RENDEZVOUSLE: new Date(), // DateSys() équivalent
-          entrepriseId
         })
       });
 
@@ -375,8 +372,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
           body: JSON.stringify({
             planningId: rdv.IDPLANNING_MED,
             decrement: 1, // ResteRDV -= 1
-            entrepriseId
-          })
+            })
         });
 
         if (!planningResponse.ok) {
@@ -682,10 +678,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
     // On doit faire un appel API pour obtenir tous les plannings de la date
     const fetchAllPlanningsForDate = async () => {
       try {
-        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') : null;
-        const url = entrepriseId 
-          ? `/api/planning-medecin/by-date?date=${selectedDate}&entrepriseId=${entrepriseId}`
-          : `/api/planning-medecin/by-date?date=${selectedDate}`;
+        const url = `/api/planning-medecin/by-date?date=${selectedDate}`;
         
         const response = await fetch(url);
         if (response.ok) {
@@ -787,8 +780,6 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
     setAddingRdv(true);
     
     try {
-      const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') : null;
-      
       // Calculer la prochaine disponibilité selon la logique demandée
       let nextDisponibilite: string;
       
@@ -833,8 +824,7 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
           Statutrdvpris: false,
           DESCRIPTION: '',
           PatientR: '',
-          Contact: '',
-          entrepriseId
+          Contact: ''
         })
       });
 
@@ -852,7 +842,6 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
         body: JSON.stringify({
           planningId: currentPlanning._id,
           increment: 1, // TotalRDV += 1, ResteRDV += 1
-          entrepriseId
         })
       });
 

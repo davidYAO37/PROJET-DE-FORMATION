@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IConsultation } from "@/models/consultation";
 import { IPatient } from "@/models/patient";
@@ -21,10 +21,10 @@ export async function GET(req: NextRequest) {
         const consultationId = searchParams.get("consultationId");
         const codePrestation = searchParams.get("codePrestation");
 
-        let query: any = {};
+        let query: any = { ...getTenantFilter(context) };
         
         if (patientId) {
-            query = { $or: [{ IdPatient: patientId }, { PatientP: patientId }] };
+            query = { $or: [{ IdPatient: patientId }, { PatientP: patientId }], ...getTenantFilter(context) };
         }
         
         if (consultationId) {
@@ -151,6 +151,7 @@ export async function POST(req: NextRequest) {
             statutPrescriptionMedecin: 2, // pour afficher l'acte dans la liste des actes prescrits
             AttenteAccueil: false, // Par défaut, le patient est en attente d'accueil
             attenteMedecin: 0, // Par défaut, le patient n'a pas encore vu le médecin
+            entrepriseId: context.entrepriseId,
         });
         await consultation.save();
 

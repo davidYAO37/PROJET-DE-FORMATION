@@ -37,7 +37,6 @@ const nowHHMM = () =>
   new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
 
 export default function FicheCaisseModal({ show, onHide, caisseId, onSaved }: Props) {
-  const [entrepriseId, setEntrepriseId] = useState('');
   const [utilisateur, setUtilisateur] = useState('');
   const [profil, setProfil] = useState('');
 
@@ -62,19 +61,17 @@ export default function FicheCaisseModal({ show, onHide, caisseId, onSaved }: Pr
   const isSortie = typeC === 'Sortie de caisse';
 
   useEffect(() => {
-    setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
     setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
     setProfil(localStorage.getItem('profil_utilisateur') || '');
   }, []);
 
   const chargerOperations = useCallback(async () => {
-    if (!entrepriseId) return;
-    const res = await fetch(`/api/operations?entrepriseId=${entrepriseId}`);
+    const res = await fetch('/api/operations');
     if (res.ok) {
       const json = await res.json();
       setOperations(json.data || []);
     }
-  }, [entrepriseId]);
+  }, []);
 
   const chargerFiche = useCallback(async () => {
     if (!caisseId) {
@@ -116,10 +113,10 @@ export default function FicheCaisseModal({ show, onHide, caisseId, onSaved }: Pr
   }, [caisseId, operations]);
 
   useEffect(() => {
-    if (show && entrepriseId) {
+    if (show) {
       chargerOperations();
     }
-  }, [show, entrepriseId, chargerOperations]);
+  }, [show, chargerOperations]);
 
   useEffect(() => {
     if (show && operations.length >= 0) {
@@ -173,7 +170,6 @@ export default function FicheCaisseModal({ show, onHide, caisseId, onSaved }: Pr
         AjouterParC: utilisateur,
         FonctionC: profil,
         MODifieParC: utilisateur,
-        entrepriseId,
       };
 
       const res = await fetch('/api/caisse', {

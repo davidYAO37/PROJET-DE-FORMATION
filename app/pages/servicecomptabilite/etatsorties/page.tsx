@@ -19,22 +19,16 @@ interface ICaisseDoc {
 }
 
 export default function EtatSortiesPage() {
-  const [entrepriseId, setEntrepriseId] = useState('');
   const [dateDebut, setDateDebut] = useState(today());
   const [dateFin, setDateFin] = useState(today());
   const [loading, setLoading] = useState(false);
   const [docs, setDocs] = useState<ICaisseDoc[]>([]);
   const [recherche, setRecherche] = useState('');
 
-  useEffect(() => {
-    setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
-  }, []);
-
   const charger = useCallback(async () => {
-    if (!entrepriseId) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ entrepriseId, dateDebut, dateFin, typeC: 'Sortie de caisse' });
+      const params = new URLSearchParams({ dateDebut, dateFin, typeC: 'Sortie de caisse' });
       const res = await fetch(`/api/caisse?${params}`);
       if (res.ok) {
         const json = await res.json();
@@ -43,9 +37,9 @@ export default function EtatSortiesPage() {
     } finally {
       setLoading(false);
     }
-  }, [entrepriseId, dateDebut, dateFin]);
+  }, [dateDebut, dateFin]);
 
-  useEffect(() => { if (entrepriseId) charger(); }, [charger, entrepriseId]);
+  useEffect(() => { charger(); }, [charger]);
 
   const filtres = docs.filter(d =>
     !recherche ||
@@ -163,7 +157,7 @@ export default function EtatSortiesPage() {
                   <tr key={i} style={{ background: i % 2 === 0 ? '#fff' : '#fff5f5', borderLeft: '3px solid #b71c1c' }}>
                     <td style={{ padding: '3px 8px', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>
                       {d.dAteC ? new Date(d.dAteC).toLocaleDateString('fr-FR') : '-'}
-                      {d.HeureC && <small style={{ color: '#90a4ae', marginLeft: 4 }}>{d.HeureC}</small>}
+                     {/*  {d.HeureC && <small style={{ color: '#90a4ae', marginLeft: 4 }}>{d.HeureC}</small>} */}
                     </td>
                     <td style={{ padding: '3px 8px', fontWeight: 700, borderRight: '1px solid #e0e0e0' }}>{d.Operation || '-'}</td>
                     <td style={{ padding: '3px 8px', maxWidth: 180, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>{d.MOtif || '-'}</td>

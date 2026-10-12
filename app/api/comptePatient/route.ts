@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IComptePatient } from "@/models/ComptePatient";
 import { IPatient } from "@/models/patient";
@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
         const { searchParams } = new URL(req.url);
         const IDPARTIENT = searchParams.get("IDPARTIENT");
 
-        const query: any = {};
+        const query: any = { ...getTenantFilter(context) };
         if (IDPARTIENT) query.IDPARTIENT = IDPARTIENT;
 
         const comptes = await ComptePatient.find(query)
@@ -68,13 +68,13 @@ export async function POST(req: NextRequest) {
             RecuPar: body.RecuPar || "",
             MotifCompte: body.MotifCompte || "",
         };
-        if (body.entrepriseId) compteData.entrepriseId = body.entrepriseId;
+        compteData.entrepriseId = context.entrepriseId;
 
         const newCompte = await ComptePatient.create(compteData);
 
         // Mise à jour du compte provision du patient
-        await Patient.findByIdAndUpdate(
-            body.IDPARTIENT,
+        await Patient.findOneAndUpdate(
+            { _id: body.IDPARTIENT, ...getTenantFilter(context) },
             { $inc: { ProvisionClient: montantCo } },
             { new: true }
         );

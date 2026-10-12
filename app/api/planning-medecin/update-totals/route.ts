@@ -1,6 +1,6 @@
 import { IPlanningMed } from "@/models/PlanningMed";
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const WRITE_ROLES = ["admin","medecin","accueil","radiologue"];
@@ -11,7 +11,7 @@ export async function PUT(req: NextRequest) {
   const PlanningMed = getTenantModel<IPlanningMed>(context.connection, "PlanningMed");
   try {
     const body = await req.json();
-    const { planningId, increment, entrepriseId } = body;
+    const { planningId, increment } = body;
 
     console.log('🔄 Mise à jour des totaux du planning:', planningId, 'increment:', increment);
 
@@ -22,19 +22,15 @@ export async function PUT(req: NextRequest) {
     }
 
     // Vérifier que le planning existe
-    const existingPlanning = await PlanningMed.findById(planningId);
+    const existingPlanning = await PlanningMed.findOne({ _id: planningId, ...getTenantFilter(context) });
     if (!existingPlanning) {
       return NextResponse.json({ error: "Planning non trouvé" }, { status: 404 });
     }
 
-    // Vérifier l'entreprise si spécifiée
-    if (entrepriseId && existingPlanning.entrepriseId !== entrepriseId) {
-      return NextResponse.json({ error: "Non autorisé" }, { status: 403 });
-    }
-
+    // L'appartenance au tenant est vérifiée dans la requête ci-dessus.
     // Mettre à jour les totaux
-    const updatedPlanning = await PlanningMed.findByIdAndUpdate(
-      planningId,
+    const updatedPlanning = await PlanningMed.findOneAndUpdate(
+      { _id: planningId, ...getTenantFilter(context) },
       {
         $inc: {
           TotalRDV: increment,

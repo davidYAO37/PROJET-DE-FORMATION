@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       Contact
     } = body;
 
-    const entrepriseId = context.user.entrepriseId;
+    const entrepriseId = context.entrepriseId;
 
     console.log('➕ Création d\'un nouveau rendez-vous pour le médecin:', IDMEDECIN);
 

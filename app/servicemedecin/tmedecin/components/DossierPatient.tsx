@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect } from 'react';
-import { Container, Card, Row, Col, Table, Button, Modal, Nav, Tab, Alert, Form, Spinner } from 'react-bootstrap';
+import { Container, Card, Row, Col, Table, Button, Modal, Nav, Tab, Alert, Form, Spinner, Badge } from 'react-bootstrap';
 import { FaUserInjured, FaHistory, FaNotesMedical, FaHospital, FaMicroscope, FaPills, FaFileAlt, FaThermometerHalf, FaWeight, FaHeartbeat, FaStethoscope, FaChevronDown, FaChevronRight, FaFileMedical, FaBriefcaseMedical, FaEdit, FaSave, FaPrint, FaImages, FaCheckCircle, FaClock, FaEye, FaClipboardList } from 'react-icons/fa';
 import dynamic from 'next/dynamic';
 import { DocumentPatient } from '@/types/DocumentPatient';
+import PatientSummaryPanel from './PatientSummaryPanel';
 
 const PrintFichePrescription = dynamic(
   () => import('@/app/pages/servicemedecin/MesImpressions/printFichePrescription'),
@@ -253,7 +254,7 @@ export default function DossierPatient({
   const [arretsTravail, setArretsTravail] = useState<ArretTravail[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [activeTab, setActiveTab] = useState('consultations');
+  const [activeTab, setActiveTab] = useState('summary');
   const [expandedConsultation, setExpandedConsultation] = useState<string | null>(null);
   const [printConsultationId, setPrintConsultationId] = useState<string | null>(null);
   const [expandedActe, setExpandedActe] = useState<string | null>(null);
@@ -673,9 +674,9 @@ export default function DossierPatient({
         <div id="dossier-patient-printable">
         {/* Informations Patient */}
         {patient && (
-          <Card className="mb-4">
-            <Card.Header className="bg-info text-white">
-              <h5 className="mb-0">Informations Patient</h5>
+          <Card className="mb-4 patient-identity-card">
+            <Card.Header>
+              <h5 className="mb-0 d-flex align-items-center"><FaUserInjured className="me-2 text-primary" />Informations patient</h5>
             </Card.Header>
             <Card.Body>
               <Row>
@@ -729,59 +730,73 @@ export default function DossierPatient({
         )}
 
         {/* Onglets pour les différentes sections */}
-        <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'consultations')}>
-          <Nav variant="tabs" className="mb-4">
-            <Nav.Item>
-              <Nav.Link eventKey="consultations">
-                <FaHistory className="me-1" />
-                Consultations ({consultations.length})
-              </Nav.Link>
-            </Nav.Item>
-            <Nav.Item>
-              <Nav.Link eventKey="antecedents">
-                <FaNotesMedical className="me-1" />
-                Antécédents
-              </Nav.Link>
-            </Nav.Item>
-            <Nav.Item>
-              <Nav.Link eventKey="hospitalisations">
-                <FaHospital className="me-1" />
-                Avis Hospitalisation ({avisHospit.length})
-              </Nav.Link>
-            </Nav.Item>
-            <Nav.Item>
-              <Nav.Link eventKey="examens-hospit">
-                <FaClipboardList className="me-1" />
-                Liste des hospitalisations ({examensHospit.length})
-              </Nav.Link>
-            </Nav.Item>
-            <Nav.Item>
-              <Nav.Link eventKey="examens">
-                <FaMicroscope className="me-1" />
-                Resultats Biologique  ({examensBiologiques.length})
-              </Nav.Link>
-            </Nav.Item>
-            <Nav.Item>
-              <Nav.Link eventKey="radiologie">
-                <FaImages className="me-1" />
-                Compte Rendu Radiologique ({comptesRendusRadiologiques.length})
-              </Nav.Link>
-            </Nav.Item>
-            <Nav.Item>
-              <Nav.Link eventKey="documents">
-                <FaFileMedical className="me-1" />
-                Documents
-              </Nav.Link>
-            </Nav.Item>
-            <Nav.Item>
-              <Nav.Link eventKey="prescriptions">
-                <FaPills className="me-1" />
-                Prescriptions ({prescriptions.length})
-              </Nav.Link>
-            </Nav.Item>
-          </Nav>
+        <Tab.Container activeKey={activeTab} onSelect={(k) => setActiveTab(k || 'summary')}>
+          <Row className="g-4 align-items-start">
+            <Col xs={12} md={4} lg={3} xl={3}>
+              <aside className="dossier-sidebar">
+                <div className="dossier-sidebar-title">Navigation du dossier</div>
+                <Nav variant="pills" className="flex-column dossier-sidebar-nav">
+                  <Nav.Item>
+                    <Nav.Link eventKey="summary">
+                      <span><FaClipboardList /> Synthèse</span>
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="consultations">
+                      <span><FaHistory /> Consultations</span>
+                      <Badge bg="light" text="dark">{consultations.length}</Badge>
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="antecedents">
+                      <span><FaNotesMedical /> Antécédents</span>
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="hospitalisations">
+                      <span><FaHospital /> Avis hospitalisation</span>
+                      <Badge bg="light" text="dark">{avisHospit.length}</Badge>
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="examens-hospit">
+                      <span><FaClipboardList /> Hospitalisations</span>
+                      <Badge bg="light" text="dark">{examensHospit.length}</Badge>
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="examens">
+                      <span><FaMicroscope /> Biologie</span>
+                      <Badge bg="light" text="dark">{examensBiologiques.length}</Badge>
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="radiologie">
+                      <span><FaImages /> Radiologie</span>
+                      <Badge bg="light" text="dark">{comptesRendusRadiologiques.length}</Badge>
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="documents">
+                      <span><FaFileMedical /> Documents</span>
+                    </Nav.Link>
+                  </Nav.Item>
+                  <Nav.Item>
+                    <Nav.Link eventKey="prescriptions">
+                      <span><FaPills /> Prescriptions</span>
+                      <Badge bg="light" text="dark">{prescriptions.length}</Badge>
+                    </Nav.Link>
+                  </Nav.Item>
+                </Nav>
+              </aside>
+            </Col>
 
-          <Tab.Content>
+            <Col xs={12} md={8} lg={9} xl={9} className="dossier-tab-column">
+              <Tab.Content className="dossier-tab-content">
+            <Tab.Pane eventKey="summary">
+              <PatientSummaryPanel patientId={patientId} />
+            </Tab.Pane>
+
             {/* Historique des Consultations */}
             <Tab.Pane eventKey="consultations">
               <Card>
@@ -1533,7 +1548,9 @@ export default function DossierPatient({
                 </Card.Body>
               </Card>
             </Tab.Pane>
-          </Tab.Content>
+              </Tab.Content>
+            </Col>
+          </Row>
         </Tab.Container>
         </div>
       </Modal.Body>
@@ -1710,5 +1727,140 @@ export default function DossierPatient({
       patientPrenoms={patientPrenoms}
       codeDossier={patient?.Code_dossier}
     />
+
+    <style jsx global>{`
+      .dossier-patient-modal .modal-dialog {
+        max-width: min(96vw, 1500px);
+      }
+      .dossier-patient-modal .modal-content {
+        border: 0;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 20px 60px rgba(15, 23, 42, 0.2);
+      }
+      .dossier-patient-modal .modal-header {
+        background: linear-gradient(135deg, #0d6efd, #084298) !important;
+        padding: 1rem 1.5rem;
+      }
+      .dossier-patient-modal .modal-body {
+        background: #f6f8fb;
+        padding: 1.25rem;
+      }
+      .dossier-patient-modal .modal-footer {
+        background: #fff;
+        border-top-color: #e9ecef;
+      }
+      .patient-identity-card {
+        border: 1px solid #e7ebf0;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+      }
+      .patient-identity-card .card-header {
+        padding: 0.9rem 1.1rem;
+        background: #fff;
+        border-bottom-color: #e7ebf0;
+      }
+      .patient-identity-card .table {
+        margin-bottom: 0;
+      }
+      .patient-identity-card .table > :not(caption) > * > * {
+        padding: 0.55rem 0.6rem;
+        border-bottom-color: #eef1f4;
+      }
+      .dossier-sidebar {
+        position: sticky;
+        top: 0;
+        padding: 0.75rem;
+        background: #fff;
+        border: 1px solid #e7ebf0;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+      }
+      .dossier-sidebar-title {
+        padding: 0.5rem 0.75rem 0.8rem;
+        color: #6c757d;
+        font-size: 0.72rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+      }
+      .dossier-sidebar-nav {
+        gap: 0.3rem;
+      }
+      .dossier-sidebar-nav .nav-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.5rem;
+        min-height: 44px;
+        padding: 0.65rem 0.75rem;
+        border-radius: 10px;
+        color: #344054;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: background-color 0.15s ease, color 0.15s ease, transform 0.15s ease;
+      }
+      .dossier-sidebar-nav .nav-link > span {
+        display: flex;
+        align-items: center;
+        gap: 0.65rem;
+        min-width: 0;
+      }
+      .dossier-sidebar-nav .nav-link svg {
+        width: 17px;
+        flex: 0 0 17px;
+      }
+      .dossier-sidebar-nav .nav-link:hover {
+        color: #0d6efd;
+        background: #eef5ff;
+        transform: translateX(2px);
+      }
+      .dossier-sidebar-nav .nav-link.active {
+        color: #fff;
+        background: linear-gradient(135deg, #0d6efd, #0a58ca);
+        box-shadow: 0 5px 12px rgba(13, 110, 253, 0.22);
+      }
+      .dossier-sidebar-nav .nav-link.active .badge {
+        color: #0d6efd !important;
+      }
+      .dossier-tab-content {
+        min-height: 420px;
+      }
+      .dossier-tab-content > .tab-pane > .card,
+      .dossier-tab-content > .tab-pane > div > .card {
+        border: 1px solid #e7ebf0;
+        border-radius: 14px;
+        box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05);
+      }
+      @media (max-width: 767.98px) {
+        .dossier-patient-modal .modal-dialog {
+          max-width: 100%;
+          margin: 0;
+        }
+        .dossier-patient-modal .modal-content {
+          min-height: 100vh;
+          border-radius: 0;
+        }
+        .dossier-sidebar {
+          position: static;
+          padding: 0.6rem;
+        }
+        .dossier-sidebar-nav {
+          display: grid !important;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+        .dossier-sidebar-nav .nav-link {
+          min-height: 48px;
+          font-size: 0.8rem;
+        }
+        .dossier-sidebar-nav .nav-link:hover {
+          transform: none;
+        }
+        .dossier-tab-column {
+          margin-top: 0.25rem;
+        }
+      }
+    `}</style>
   </>);
 }

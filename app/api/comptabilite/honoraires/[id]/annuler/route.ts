@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IHonoraireMed } from '@/models/HonoraireMed';
 import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
@@ -25,7 +25,7 @@ export async function POST(
   try {
     const { id } = await params;
 
-    const honoraire = await HonoraireMed.findById(id).lean();
+    const honoraire = await HonoraireMed.findOne({ _id: id, ...getTenantFilter(context) }).lean();
     if (!honoraire) {
       return NextResponse.json(
         { success: false, message: 'Bordereau introuvable.' },
@@ -55,7 +55,7 @@ export async function POST(
     }
 
     await LigneHonoraireMed.deleteMany({ HonoraireMed: id });
-    await HonoraireMed.findByIdAndDelete(id);
+    await HonoraireMed.findOneAndDelete({ _id: id, ...getTenantFilter(context) });
 
     return NextResponse.json({
       success: true,

@@ -21,7 +21,6 @@ export async function GET(request: NextRequest) {
     const dateFin = searchParams.get('dateFin');
     const modePaiement = searchParams.get('modePaiement') || '';
     const typePatient = searchParams.get('typePatient') || '';
-    const entrepriseId = searchParams.get('entrepriseId') || '';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.max(1, parseInt(searchParams.get('limit') || '1000', 10));
 
@@ -33,7 +32,9 @@ export async function GET(request: NextRequest) {
     const finDate = new Date(dateFin);
     finDate.setHours(23, 59, 59, 999);
 
-    const filtreEntreprise = entrepriseId ? { entrepriseId } : {};
+    const filtreEntreprise = context.isSharedConnection && context.entrepriseId
+      ? { entrepriseId: context.entrepriseId }
+      : {};
 
     // 1. Consultations payées dans la période
     const consultations = await Consultation.find({
@@ -71,7 +72,7 @@ export async function GET(request: NextRequest) {
         partAssurance: c.PartAssurance || 0,
         partPatient: c.montantapayer || 0,
         montantEncaisse: c.Montantencaisse || 0,
-        remise: 0,
+        remise: c.reduction || 0,
         resteAPayer: c.Restapayer || 0,
         medecin: c.Medecin || '',
         modePaiement: c.Modepaiement || '',
@@ -126,10 +127,10 @@ export async function GET(request: NextRequest) {
 
     if (typePatient && typePatient !== 'TOUS') {
       lignes = lignes.filter(l => {
-        const tp = (l.typePatient || '').toUpperCase();
-        if (typePatient === 'NON ASSURE') return tp === 'NON' || tp === '' || tp === 'NON ASSURE';
-        if (typePatient === 'ASSURE') return tp === 'OUI' || tp === 'ASSURE';
-        if (typePatient === 'MUTUALISTE') return tp === 'MUTUALISTE';
+        const tp = (l.typePatient || '').trim().toUpperCase();
+        if (typePatient === 'NON ASSURE') return tp === '' || tp.includes('NON');
+        if (typePatient === 'ASSURE') return (tp.includes('ASSURE') || tp === 'OUI') && !tp.includes('NON') && !tp.includes('MUTUALISTE');
+        if (typePatient === 'MUTUALISTE') return tp.includes('MUTUALISTE');
         return true;
       });
     }

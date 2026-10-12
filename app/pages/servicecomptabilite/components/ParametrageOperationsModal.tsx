@@ -126,7 +126,6 @@ const FicheOperation = ({
 };
 
 export default function ParametrageOperationsModal({ show, onHide }: Props) {
-  const [entrepriseId, setEntrepriseId] = useState('');
   const [operations, setOperations] = useState<IOperation[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -137,15 +136,10 @@ export default function ParametrageOperationsModal({ show, onHide }: Props) {
   const [enEdition, setEnEdition] = useState<Partial<IOperation> | null>(null);
   const [recherche, setRecherche] = useState('');
 
-  useEffect(() => {
-    setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
-  }, []);
-
   const charger = useCallback(async () => {
-    if (!entrepriseId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/operations?entrepriseId=${entrepriseId}`);
+      const res = await fetch('/api/operations');
       if (res.ok) {
         const json = await res.json();
         setOperations(json.data || []);
@@ -153,11 +147,11 @@ export default function ParametrageOperationsModal({ show, onHide }: Props) {
     } finally {
       setLoading(false);
     }
-  }, [entrepriseId]);
+  }, []);
 
   useEffect(() => {
-    if (show && entrepriseId) charger();
-  }, [show, entrepriseId, charger]);
+    if (show) charger();
+  }, [show, charger]);
 
   const handleValider = async (data: { Libeleo: string; TYPEOP: string }) => {
     setSaving(true);
@@ -165,8 +159,8 @@ export default function ParametrageOperationsModal({ show, onHide }: Props) {
     try {
       const isModif = !!enEdition?._id;
       const body = isModif
-        ? { action: 'modifier', id: enEdition!._id, ...data, entrepriseId }
-        : { ...data, entrepriseId };
+        ? { action: 'modifier', id: enEdition!._id, ...data }
+        : data;
 
       const res = await fetch('/api/operations', {
         method: 'POST',
@@ -194,7 +188,7 @@ export default function ParametrageOperationsModal({ show, onHide }: Props) {
       const res = await fetch('/api/operations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'supprimer', id: op._id, entrepriseId }),
+        body: JSON.stringify({ action: 'supprimer', id: op._id }),
       });
       const json = await res.json();
       if (json.success) {

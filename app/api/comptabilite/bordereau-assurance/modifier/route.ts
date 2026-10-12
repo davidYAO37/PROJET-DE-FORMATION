@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IFacturation } from '@/models/Facturation';
 import { IConsultation } from '@/models/consultation';
@@ -52,7 +52,7 @@ export async function PUT(request: NextRequest) {
       if (idSocieteAssurance !== undefined && idSocieteAssurance !== '') consData.IDSOCIETEASSURANCE = idSocieteAssurance;
       if (matricule !== undefined && matricule !== '') consData.numero_carte = matricule;
       if (numBon !== undefined && numBon !== '') consData.NumBon = numBon;
-      await Consultation.findByIdAndUpdate(idConsultation, { $set: consData });
+      await Consultation.findOneAndUpdate({ _id: idConsultation, ...getTenantFilter(context) }, { $set: consData });
     }
 
     // 2. Facturation (prestation / hospitalisation / pharmacie)
@@ -64,7 +64,7 @@ export async function PUT(request: NextRequest) {
       if (idSocieteAssurance !== undefined && idSocieteAssurance !== '') factData.IDSOCIETEASSURANCE = new mongoose.Types.ObjectId(idSocieteAssurance);
       if (matricule !== undefined && matricule !== '') factData.Numcarte = matricule;
       if (numBon !== undefined && numBon !== '') factData.NumBon = numBon;
-      await Facturation.findByIdAndUpdate(idFacturation, { $set: factData });
+      await Facturation.findOneAndUpdate({ _id: idFacturation, ...getTenantFilter(context) }, { $set: factData });
     }
 
     // 3. Prescription
@@ -76,7 +76,7 @@ export async function PUT(request: NextRequest) {
       if (idSocieteAssurance !== undefined && idSocieteAssurance !== '') presData.IDSOCIETEASSURANCE = idSocieteAssurance;
       if (matricule !== undefined && matricule !== '') presData.Numcarte = matricule;
       if (numBon !== undefined && numBon !== '') presData.NumBon = numBon;
-      await Prescription.findByIdAndUpdate(idPrescription, { $set: presData });
+      await Prescription.findOneAndUpdate({ _id: idPrescription, ...getTenantFilter(context) }, { $set: presData });
     }
 
     // 4. ExamenHospitalisation
@@ -88,7 +88,7 @@ export async function PUT(request: NextRequest) {
       if (idSocieteAssurance !== undefined && idSocieteAssurance !== '') hospData.IDSOCIETEASSURANCE = new mongoose.Types.ObjectId(idSocieteAssurance);
       if (matricule !== undefined && matricule !== '') hospData.Numcarte = matricule;
       if (numBon !== undefined && numBon !== '') hospData.NumBon = numBon;
-      await ExamenHospitalisation.findByIdAndUpdate(idHospitalisation, { $set: hospData });
+      await ExamenHospitalisation.findOneAndUpdate({ _id: idHospitalisation, ...getTenantFilter(context) }, { $set: hospData });
     }
 
     return NextResponse.json({ success: true, message: 'Ligne modifiée avec succès' });

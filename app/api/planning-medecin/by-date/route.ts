@@ -1,6 +1,6 @@
 import { IPlanningMed } from "@/models/PlanningMed";
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
@@ -12,7 +12,6 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const date = searchParams.get('date');
-    const entrepriseId = searchParams.get('entrepriseId');
 
     if (!date) {
       return NextResponse.json({ error: "Date requise" }, { status: 400 });
@@ -23,12 +22,9 @@ export async function GET(req: NextRequest) {
       DateDebut: {
         $gte: date,
         $lte: date + 'T23:59:59.999Z'
-      }
+      },
+      ...getTenantFilter(context)
     };
-
-    if (entrepriseId) {
-      query.entrepriseId = entrepriseId;
-    }
 
     // Récupérer tous les plannings de la date
     const plannings = await PlanningMed.find(query)

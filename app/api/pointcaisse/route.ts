@@ -4,7 +4,7 @@ import { IConsultation } from '@/models/consultation';
 import { IFacturation } from '@/models/Facturation';
 import { ILignePrestation } from '@/models/lignePrestation';
 import { IPatientPrescription } from '@/models/PatientPrescription';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 
 const READ_ROLES = ["admin", "caisse", "comptable", "accueil"];
@@ -47,7 +47,8 @@ export async function GET(request: NextRequest) {
     // 1. Ajouter les consultations (Le paiement en espèce)
     // Logique WinDev: POUR TOUT CONSULTATION
     const consultations = await Consultation.find({
-      Date_consulation: { $gte: debutDate, $lte: finDate }
+      Date_consulation: { $gte: debutDate, $lte: finDate },
+      ...getTenantFilter(context)
     });
 
     for (const consultation of consultations) {      
@@ -78,7 +79,8 @@ export async function GET(request: NextRequest) {
       $or: [
         { DateModif: { $gte: debutDate, $lte: finDate } },
         { DateFacturation: { $gte: debutDate, $lte: finDate } }
-      ]
+      ],
+      ...getTenantFilter(context)
     });
 
     const formatListeNumerotee = (items: string[]) =>
@@ -160,7 +162,8 @@ export async function GET(request: NextRequest) {
     // 3. Ajouter les encaissements existants
     // Logique WinDev: POUR TOUT ENCAISSEMENT_CAISSE
     const encaissements = await EncaissementCaisse.find({
-      DateEncaissement: { $gte: debutDate, $lte: finDate }
+      DateEncaissement: { $gte: debutDate, $lte: finDate },
+      ...getTenantFilter(context)
     });
 
     for (const encaissement of encaissements) {     

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IFactureRecap } from '@/models/factureRecap';
 import { IFactureAssur } from '@/models/factureAssur';
@@ -27,7 +27,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Récupérer le bordereau (FactureAssur) pour l'entête
-    const factureAssur = await FacturationAssur.findById(idFactureAssur).lean() as any;
+    const factureAssur = await FacturationAssur.findOne({ _id: idFactureAssur, ...getTenantFilter(context) }).lean() as any;
     if (!factureAssur) {
       return NextResponse.json({ success: false, message: 'Bordereau introuvable' }, { status: 404 });
     }

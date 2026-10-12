@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IConsultation } from '@/models/consultation';
 import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
@@ -36,7 +36,8 @@ export async function GET(request: NextRequest) {
     const consultations = await (Consultation as any).find({
       statutPrescriptionMedecin: { $gte: 2 },
       Restapayer: { $gt: 0 },
-      Date_consulation: { $gte: debutDate, $lte: finDate }
+      Date_consulation: { $gte: debutDate, $lte: finDate },
+      ...getTenantFilter(context)
     });
 
     for (const consultation of consultations) {
@@ -68,7 +69,8 @@ export async function GET(request: NextRequest) {
     // ===== PARTIE 2: FACTURATIONS =====
     const facturations = await (Facturation as any).find({
       Restapayer: { $gt: 0 },
-      DateFacturation: { $gte: debutDate, $lte: finDate }
+      DateFacturation: { $gte: debutDate, $lte: finDate },
+      ...getTenantFilter(context)
     });
 
     for (const facturation of facturations) {

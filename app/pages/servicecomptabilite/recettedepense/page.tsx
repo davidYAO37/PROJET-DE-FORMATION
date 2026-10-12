@@ -33,7 +33,6 @@ const SOURCE_COLORS: Record<string, string> = {
 
 export default function RecetteDepensePage() {
   const { entreprise } = useEntreprise();
-  const [entrepriseId, setEntrepriseId] = useState('');
   const [dateDebut, setDateDebut] = useState(getFirstDayOfMonth());
   const [dateFin, setDateFin] = useState(today());
   const [loading, setLoading] = useState(false);
@@ -43,12 +42,10 @@ export default function RecetteDepensePage() {
   const [utilisateur, setUtilisateur] = useState('');
 
   useEffect(() => {
-    setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
     setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
   }, []);
 
   const charger = useCallback(async () => {
-    if (!entrepriseId) return;
     setLoading(true);
     try {
       const params = new URLSearchParams({ dateDebut, dateFin });
@@ -61,9 +58,9 @@ export default function RecetteDepensePage() {
     } finally {
       setLoading(false);
     }
-  }, [entrepriseId, dateDebut, dateFin]);
+  }, [dateDebut, dateFin]);
 
-  useEffect(() => { if (entrepriseId) charger(); }, [charger, entrepriseId]);
+  useEffect(() => { charger(); }, [charger]);
 
   const printRecetteDepense = () => {
     const headerHTML = generatePrintHeader(entreprise);

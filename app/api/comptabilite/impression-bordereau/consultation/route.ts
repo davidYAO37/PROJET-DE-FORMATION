@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IConsultation } from '@/models/consultation';
 import { IPatient } from '@/models/patient';
@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Référence facture requise' }, { status: 400 });
     }
 
-    const consultations = await Consultation.find({ Numfacture: numfacture })
+    const consultations = await Consultation.find({ Numfacture: numfacture, ...getTenantFilter(context) })
       .populate({ path: 'IdPatient', select: 'Nom Prenoms' })
       .lean() as any[];
 

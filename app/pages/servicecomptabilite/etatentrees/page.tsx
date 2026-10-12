@@ -19,22 +19,16 @@ interface ICaisseDoc {
 }
 
 export default function EtatEntreesPage() {
-  const [entrepriseId, setEntrepriseId] = useState('');
   const [dateDebut, setDateDebut] = useState(today());
   const [dateFin, setDateFin] = useState(today());
   const [loading, setLoading] = useState(false);
   const [docs, setDocs] = useState<ICaisseDoc[]>([]);
   const [recherche, setRecherche] = useState('');
 
-  useEffect(() => {
-    setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
-  }, []);
-
   const charger = useCallback(async () => {
-    if (!entrepriseId) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ entrepriseId, dateDebut, dateFin, typeC: 'Entrée de caisse' });
+      const params = new URLSearchParams({ dateDebut, dateFin, typeC: 'Entrée de caisse' });
       const res = await fetch(`/api/caisse?${params}`);
       if (res.ok) {
         const json = await res.json();
@@ -43,9 +37,9 @@ export default function EtatEntreesPage() {
     } finally {
       setLoading(false);
     }
-  }, [entrepriseId, dateDebut, dateFin]);
+  }, [dateDebut, dateFin]);
 
-  useEffect(() => { if (entrepriseId) charger(); }, [charger, entrepriseId]);
+  useEffect(() => { charger(); }, [charger]);
 
   const filtres = docs.filter(d =>
     !recherche ||

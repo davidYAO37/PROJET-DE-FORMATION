@@ -35,8 +35,7 @@ export default function FicheComptePatient({ show, onHide, patient, onSaved }: F
   useEffect(() => {
     const fetchModes = async () => {
       try {
-        const entrepriseId = typeof window !== 'undefined' ? localStorage.getItem('IdEntreprise') || '' : '';
-        const res = await fetch(`/api/modepaiement?entrepriseId=${encodeURIComponent(entrepriseId)}`);
+        const res = await fetch('/api/modepaiement');
         if (res.ok) {
           const json = await res.json();
           const modes = Array.isArray(json?.data) ? json.data : [];

@@ -1,6 +1,6 @@
 import { IRendezVous } from "@/models/RendezVous";
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const WRITE_ROLES = ["admin", "medecin", "accueil", "radiologue"];
@@ -20,7 +20,7 @@ export async function PUT(req: NextRequest) {
     }
 
     // Vérifier que le rendez-vous existe (tenant isolé par connexion)
-    const existingRdv = await RendezVous.findById(rdvId);
+    const existingRdv = await RendezVous.findOne({ _id: rdvId, ...getTenantFilter(context) });
     if (!existingRdv) {
       return NextResponse.json({ error: "Rendez-vous non trouvé" }, { status: 404 });
     }
@@ -54,8 +54,8 @@ export async function PUT(req: NextRequest) {
     };
 
     // Mettre à jour le rendez-vous
-    const updatedRdv = await RendezVous.findByIdAndUpdate(
-      rdvId,
+    const updatedRdv = await RendezVous.findOneAndUpdate(
+      { _id: rdvId, ...getTenantFilter(context) },
       updateData,
       { new: true }
     );

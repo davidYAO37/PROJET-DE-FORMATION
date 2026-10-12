@@ -2,8 +2,7 @@ import { IMedecin } from "@/models/medecin";
 import { UserCollection } from "@/models/users.model";
 import { NextRequest, NextResponse } from "next/server";
 import { hashPassword } from "@/utils/auth";
-import { getImpersonateEntrepriseId } from "@/lib/auth";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier", "facturation", "radiologue", "technicienlabo"];
@@ -14,16 +13,7 @@ export async function GET(req: NextRequest) {
   if (!context) return response;
   const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   try {
-    const { searchParams } = new URL(req.url);
-    const entrepriseId = searchParams.get("entrepriseId");
-
-    let medecins;
-    if (entrepriseId) {
-      medecins = await Medecin.find({ entrepriseId });
-    } else {
-      medecins = await Medecin.find({});
-    }
-
+    const medecins = await Medecin.find(getTenantFilter(context));
     return NextResponse.json(medecins);
   } catch (error) {
     console.error('Erreur API médecins:', error);
@@ -37,26 +27,7 @@ export async function POST(req: NextRequest) {
   const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   try {
     const body = await req.json();
-    const impersonatedEntrepriseId = await getImpersonateEntrepriseId(req);
-    const tenantEntrepriseId = context.user.type === "adminsuper"
-      ? (impersonatedEntrepriseId || context.user.entrepriseId)
-      : context.user.entrepriseId;
-
-    let entrepriseId = body.entrepriseId || req.headers.get("x-entreprise-id") || tenantEntrepriseId || null;
-
-    if (context.user.type !== "adminsuper" && (!tenantEntrepriseId || !entrepriseId || String(tenantEntrepriseId) !== String(entrepriseId))) {
-      return NextResponse.json(
-        { error: "L'entreprise du médecin doit correspondre au tenant de l'utilisateur." },
-        { status: 403 }
-      );
-    }
-
-    if (context.user.type === "adminsuper" && tenantEntrepriseId && entrepriseId && String(tenantEntrepriseId) !== String(entrepriseId)) {
-      return NextResponse.json(
-        { error: "L'entreprise du médecin ne correspond pas au tenant courant." },
-        { status: 403 }
-      );
-    }
+    const entrepriseId = context.entrepriseId;
 
     if (!entrepriseId) {
       return NextResponse.json({ error: "Une entreprise valide est requise pour créer un médecin." }, { status: 400 });

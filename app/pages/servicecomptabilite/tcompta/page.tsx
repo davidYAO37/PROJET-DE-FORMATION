@@ -14,25 +14,20 @@ export default function DashboardComptabilite() {
   const router = useRouter();
   const [kpis, setKpis] = useState<any>(null);
   const [loading, setLoading] = useState(false);
-  const [entrepriseId, setEntrepriseId] = useState('');
-
-  useEffect(() => {
-    setEntrepriseId(localStorage.getItem('IdEntreprise') || '');
-  }, []);
 
   const chargerKpis = useCallback(async () => {
     setLoading(true);
     try {
       const dateAuj = today();
       // Bilan du jour
-      const res = await fetch(`/api/comptabilite/bilan?dateDebut=${dateAuj}&dateFin=${dateAuj}&entrepriseId=${entrepriseId}`);
+      const res = await fetch(`/api/comptabilite/bilan?dateDebut=${dateAuj}&dateFin=${dateAuj}`);
       if (res.ok) {
         const json = await res.json();
         setKpis({ ...json.totaux, parTypeActe: json.parTypeActe, count: json.count });
       }
 
       // Honoraires non soldés (sans filtre de date)
-      const resH = await fetch(`/api/comptabilite/honoraires?dateDebut=2000-01-01&dateFin=${dateAuj}&entrepriseId=${entrepriseId}`);
+      const resH = await fetch(`/api/comptabilite/honoraires?dateDebut=2000-01-01&dateFin=${dateAuj}`);
       if (resH.ok) {
         const jsonH = await resH.json();
         setKpis((prev: any) => ({
@@ -43,7 +38,7 @@ export default function DashboardComptabilite() {
       }
 
       // Factures assurance non soldées
-      const resA = await fetch(`/api/comptabilite/factureAssurance?etat=nonpayee&entrepriseId=${entrepriseId}`);
+      const resA = await fetch('/api/comptabilite/factureAssurance?etat=nonpayee');
       if (resA.ok) {
         const jsonA = await resA.json();
         setKpis((prev: any) => ({
@@ -57,11 +52,11 @@ export default function DashboardComptabilite() {
     } finally {
       setLoading(false);
     }
-  }, [entrepriseId]);
+  }, []);
 
   useEffect(() => {
-    if (entrepriseId !== undefined) chargerKpis();
-  }, [chargerKpis, entrepriseId]);
+    chargerKpis();
+  }, [chargerKpis]);
 
   const handleLogout = () => {
     localStorage.clear();

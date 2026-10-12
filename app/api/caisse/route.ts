@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { ICaisse } from '@/models/caisse';
 
@@ -12,20 +12,19 @@ export async function GET(request: NextRequest) {
 
   try {
     const { searchParams } = new URL(request.url);
-    const entrepriseId = searchParams.get('entrepriseId') || '';
     const id = searchParams.get('id') || '';
+    const tenantFilter = getTenantFilter(context);
     const dateDebut = searchParams.get('dateDebut') || '';
     const dateFin = searchParams.get('dateFin') || '';
     const typeC = searchParams.get('typeC') || '';
 
     if (id) {
-      const doc = await caisse.findById(id).lean();
+      const doc = await caisse.findOne({ _id: id, ...tenantFilter }).lean();
       if (!doc) return NextResponse.json({ success: false, message: 'Introuvable' }, { status: 404 });
       return NextResponse.json({ success: true, data: doc });
     }
 
-    const filtre: any = {};
-    if (entrepriseId) filtre.entrepriseId = entrepriseId;
+    const filtre: any = { ...tenantFilter };
     if (typeC) filtre.typeC = typeC;
     if (dateDebut && dateFin) {
       const debut = new Date(dateDebut);
@@ -46,6 +45,7 @@ export async function POST(request: NextRequest) {
   const { context, response } = await withTenant(request, ROLES);
   if (!context) return response;
   const caisse = getTenantModel<ICaisse>(context.connection, 'Caisse');
+  const tenantFilter = getTenantFilter(context);
 
   try {
     const body = await request.json();
@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       const {
         typeC, Operation, MOtif, MOntantC,
         dAteC, HeureC, NomPrenoms, Contact, serviceC,
-        AjouterParC, FonctionC, entrepriseId,
+        AjouterParC, FonctionC,
       } = body;
 
       const doc = new caisse({
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         serviceC,
         AjouterParC,
         FonctionC,
-        entrepriseId,
+        entrepriseId: context.entrepriseId,
       });
 
       await doc.save();
@@ -81,11 +81,11 @@ export async function POST(request: NextRequest) {
       const {
         id, typeC, Operation, MOtif, MOntantC,
         dAteC, HeureC, NomPrenoms, Contact, serviceC,
-        MODifieParC, FonctionC, entrepriseId,
+        MODifieParC, FonctionC,
       } = body;
 
-      const updated = await caisse.findByIdAndUpdate(
-        id,
+      const updated = await caisse.findOneAndUpdate(
+        { _id: id, ...tenantFilter },
         {
           typeC,
           Operation,
@@ -99,7 +99,7 @@ export async function POST(request: NextRequest) {
           MODifieParC,
           FonctionC,
           MODifLe: new Date(),
-          entrepriseId,
+          entrepriseId: context.entrepriseId,
         },
         { new: true }
       );
@@ -109,7 +109,8 @@ export async function POST(request: NextRequest) {
 
     if (action === 'supprimer') {
       const { id } = body;
-      await caisse.findByIdAndDelete(id);
+      const deleted = await caisse.findOneAndDelete({ _id: id, ...tenantFilter });
+      if (!deleted) return NextResponse.json({ success: false, message: 'Introuvable' }, { status: 404 });
       return NextResponse.json({ success: true, message: 'Supprimé' });
     }
 

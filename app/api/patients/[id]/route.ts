@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { getTenantFilter, withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import mongoose from "mongoose";
 import { IPatient } from "@/models/patient";
@@ -17,7 +17,7 @@ export async function GET(
   const { id } = await routeContext.params;
 
   try {
-    const patient = await Patient.findById(id);
+    const patient = await Patient.findOne({ _id: id, ...getTenantFilter(context) });
     if (!patient) {
       return NextResponse.json({ message: "Patient non trouvé" }, { status: 404 });
     }
@@ -39,7 +39,7 @@ export async function DELETE(
   const { id } = await routeContext.params;
   try {
     // Vérifier si le patient existe
-    const patient = await Patient.findById(id);
+    const patient = await Patient.findOne({ _id: id, ...getTenantFilter(context) });
     if (!patient) {
       return NextResponse.json({ message: "Patient non trouvé" }, { status: 404 });
     }
@@ -60,7 +60,7 @@ export async function DELETE(
     }
 
     // Si aucune consultation, procéder à la suppression
-    const deleted = await Patient.findByIdAndDelete(id);
+    const deleted = await Patient.findOneAndDelete({ _id: id, ...getTenantFilter(context) });
     return NextResponse.json({ message: "Patient supprimé" }, { status: 200 });
   } catch (error) {
     console.error('Erreur API DELETE /api/patients/[id]:', error);
@@ -97,7 +97,7 @@ export async function PUT(
       body.matriculepatient = '';
     }
 
-    const updatedPatient = await Patient.findByIdAndUpdate(id, body, {
+    const updatedPatient = await Patient.findOneAndUpdate({ _id: id, ...getTenantFilter(context) }, { ...body, entrepriseId: context.entrepriseId }, {
       new: true,
       runValidators: true,
     });

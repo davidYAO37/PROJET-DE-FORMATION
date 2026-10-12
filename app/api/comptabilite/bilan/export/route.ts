@@ -31,17 +31,23 @@ export async function GET(request: NextRequest) {
     const debutDate = new Date(dateDebut);
     const finDate = new Date(dateFin);
     finDate.setHours(23, 59, 59, 999);
+    const filtreEntreprise = context.isSharedConnection && context.entrepriseId
+      ? { entrepriseId: context.entrepriseId }
+      : {};
 
     const consultations = await Consultation.find({
       Date_consulation: { $gte: debutDate, $lte: finDate },
+      ...filtreEntreprise,
     }).lean();
 
     const facturations = await Facturation.find({
       DateFacturation: { $gte: debutDate, $lte: finDate },
+      ...filtreEntreprise,
     }).lean();
 
     const encaissements = await EncaissementCaisse.find({
       DateEncaissement: { $gte: debutDate, $lte: finDate },
+      ...filtreEntreprise,
     }).lean();
 
     let lignes: any[] = [];

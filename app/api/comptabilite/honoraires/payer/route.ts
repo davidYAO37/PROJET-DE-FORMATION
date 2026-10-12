@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IHonoraireMed } from '@/models/HonoraireMed';
 import { IHonorairePaye } from '@/models/HonorairePaye';
@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
   const { connection } = context;
   const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');
   const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+  const tenantFilter = getTenantFilter(context);
 
   const body = await request.json();
   const {
@@ -39,7 +40,7 @@ export async function POST(request: NextRequest) {
     let result: any;
 
     await session.withTransaction(async () => {
-      const honoraire = await HonoraireMed.findById(honoraireId).session(session).lean();
+      const honoraire = await HonoraireMed.findOne({ _id: honoraireId, ...tenantFilter }).session(session).lean();
       if (!honoraire) {
         throw new Error('Bordereau introuvable.');
       }
@@ -52,8 +53,8 @@ export async function POST(request: NextRequest) {
       const nouveauReste = reste - montantClient;
       const montantPaye = ((honoraire.MontantPayé as number) || 0) + montantClient;
 
-      await HonoraireMed.findByIdAndUpdate(
-        honoraireId,
+      await HonoraireMed.findOneAndUpdate(
+        { _id: honoraireId, ...tenantFilter },
         {
           Restapayer: Math.round(nouveauReste),
           MontantPayé: Math.round(montantPaye),
@@ -76,6 +77,7 @@ export async function POST(request: NextRequest) {
             BanqueC: banque || '',
             NCheque: nCheque || '',
             Modepaiement: modePaiement || 'Espèce',
+            entrepriseId: context.entrepriseId,
           },
         ],
         { session }

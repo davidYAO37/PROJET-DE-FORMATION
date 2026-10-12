@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IFacturation } from '@/models/Facturation';
 
@@ -21,6 +21,7 @@ export async function GET(request: NextRequest) {
     const facturations = await Facturation.find({
       Numfacture: numfacture,
       Designationtypeacte: 'PHARMACIE',
+      ...getTenantFilter(context),
     })
       .sort({ SOCIETE_PATIENT: 1, DateModif: 1 })
       .lean() as any[];

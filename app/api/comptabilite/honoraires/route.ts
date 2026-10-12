@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withTenant } from '@/lib/withTenant';
+import { getTenantFilter, withTenant } from '@/lib/withTenant';
 import { getTenantModel } from '@/lib/tenantModels';
 import { IHonoraireMed } from '@/models/HonoraireMed';
 import { IHonorairePaye } from '@/models/HonorairePaye';
@@ -22,12 +22,11 @@ export async function GET(request: NextRequest) {
     const dateDebut = searchParams.get('dateDebut');
     const dateFin = searchParams.get('dateFin');
     const medecinId = searchParams.get('medecinId') || '';
-    const entrepriseId = searchParams.get('entrepriseId') || '';
     const action = searchParams.get('action') || 'liste';
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.max(1, parseInt(searchParams.get('limit') || '1000', 10));
 
-    const filtreEntreprise = entrepriseId ? { entrepriseId } : {};
+    const filtreEntreprise = getTenantFilter(context);
 
     if (action === 'medecins') {
       const medecins = await Medecin.find({ ...filtreEntreprise }).lean();
