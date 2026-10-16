@@ -1,32 +1,8 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {
-  Button,
-  Table,
-  Container,
-  Form,
-  InputGroup,
-  Row,
-  Col,
-  Pagination,
-  Toast,
-  ToastContainer,
-  Spinner,
-  Modal,
-  Badge,
-  Card,
-  Alert,
-} from "react-bootstrap";
-import {
-  FaEdit,
-  FaHistory,
-  FaPlus,
-  FaCheck,
-  FaPause,
-  FaTrash,
-  FaEye,
-} from "react-icons/fa";
+import {Button,Table,Container,Form,InputGroup,Row, Col,Pagination,Toast,ToastContainer,Spinner,Modal,  Badge,  Card,  Alert,} from "react-bootstrap";
+import {  FaEdit,  FaHistory,  FaPlus,  FaCheck,  FaPause,  FaTrash,  FaEye,} from "react-icons/fa";
 import { Entreprise } from "@/types/entreprise";
 import LicenceStatusBadge from "@/components/licence/LicenceStatusBadge";
 import ModuleLabels from "@/components/licence/ModuleLabels";

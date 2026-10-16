@@ -7,7 +7,7 @@ const WRITE_ROLES = ["admin", "pharmacien", "caisse"];
 
 // PUT /api/sortiestock/[id] - Mettre à jour une sortie de stock
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(request, WRITE_ROLES);
+    const { context, response } = await withTenant(request, WRITE_ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
 
@@ -39,7 +39,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 // DELETE /api/sortiestock/[id] - Supprimer une sortie de stock
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(request, WRITE_ROLES);
+    const { context, response } = await withTenant(request, WRITE_ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
 

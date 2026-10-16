@@ -4,9 +4,10 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IParamBiochimie } from "@/models/paramBiochimie";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_actes_biologie"] };
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ParamBiochimie = getTenantModel<IParamBiochimie>(context.connection, "ParamBiochimie");
     try {
@@ -28,7 +29,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     }
 }
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ParamBiochimie = getTenantModel<IParamBiochimie>(context.connection, "ParamBiochimie");
 

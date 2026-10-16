@@ -100,29 +100,32 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const session = await context.connection.startSession();
-    session.startTransaction();
-
     // Nettoyer le header avant la mise à jour/création
     const cleanedHeader = cleanPayload(header);
 
     let savedExamen;
+    let examenCree = false;
     if (header._id) {
       savedExamen = await ExamenHospitalisation.findByIdAndUpdate(
         header._id,
         { ...cleanedHeader, updatedAt: new Date() },
-        { new: true, session }
+        { new: true }
       );
       if (!savedExamen) throw new Error("Examen introuvable pour mise à jour");
     } else {
+      const existant = await ExamenHospitalisation.findOne({
+        CodePrestation: cleanedHeader.CodePrestation,
+        Designationtypeacte: cleanedHeader.Designationtypeacte,
+      }).lean();
       savedExamen = await ExamenHospitalisation.findOneAndUpdate(
         {
           CodePrestation: cleanedHeader.CodePrestation,
           Designationtypeacte: cleanedHeader.Designationtypeacte,
         },
         { ...cleanedHeader, updatedAt: new Date() },
-        { new: true, upsert: true, setDefaultsOnInsert: true, session }
+        { new: true, upsert: true, setDefaultsOnInsert: true }
       );
+      examenCree = !existant;
     }
 
     const factData = {
@@ -133,12 +136,12 @@ export async function POST(req: NextRequest) {
       SaisiPar: Recupar,
     };
 
-    const createdFacture = await Facturation.create([factData], { session });
-    const factureSaved = Array.isArray(createdFacture) ? createdFacture[0] : createdFacture;
+    const factureSaved = await Facturation.create(factData);
+    const lignesCreees: string[] = [];
 
-    // Enregistrement des lignes
-    await Promise.all(
-      lignes.map(async (l: any) => {
+    try {
+      // Enregistrement des lignes
+      for (const l of lignes) {
         const ligneDoc = {
           ...l,
           idHospitalisation: savedExamen._id,
@@ -146,15 +149,21 @@ export async function POST(req: NextRequest) {
           dateLignePrestation: new Date(),
         };
         if (l.IDLignePrestation) {
-          await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, ligneDoc, { session });
+          await LignePrestation.findByIdAndUpdate(l.IDLignePrestation, ligneDoc);
         } else {
-          await LignePrestation.create([ligneDoc], { session });
+          const created = await LignePrestation.create(ligneDoc);
+          lignesCreees.push(String(created._id));
         }
-      })
-    );
-
-    await session.commitTransaction();
-    session.endSession();
+      }
+    } catch (err) {
+      // Rollback manuel : supprimer les lignes créées, la facture et l'examen nouvellement créé
+      await Promise.allSettled([
+        lignesCreees.length > 0 ? LignePrestation.deleteMany({ _id: { $in: lignesCreees } }) : Promise.resolve(),
+        Facturation.deleteOne({ _id: factureSaved._id }),
+        examenCree ? ExamenHospitalisation.deleteOne({ _id: savedExamen._id }) : Promise.resolve(),
+      ]);
+      throw err;
+    }
 
     return NextResponse.json({
       success: true,

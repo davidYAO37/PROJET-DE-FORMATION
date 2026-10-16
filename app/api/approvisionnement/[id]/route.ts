@@ -8,7 +8,7 @@ const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // -------------------- MODIFICATION D'UN ACHAT ET TOUTES ENTREESTOCK --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Approvisionnement = getTenantModel<IApprovisionnement>(context.connection, "Approvisionnement");
     try {
@@ -31,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN ACHAT ET TOUS SES ENTREESTOCK --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Approvisionnement = getTenantModel<IApprovisionnement>(context.connection, "Approvisionnement");
     const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");

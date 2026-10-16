@@ -15,7 +15,7 @@ const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
     if (!facturation) return null;
 
     const lignesPayees = lignes || [];
-    const totalPrix = lignesPayees.reduce((s: number, l: any) => s + Number(l?.prixTotal || 0), 0);
+    const totalPrix = Math.round(lignesPayees.reduce((s: number, l: any) => s + Number(l?.prixTotal || 0), 0));
 
     const formatDate = (d?: string) => d ? new Date(d).toLocaleDateString('fr-FR') : '-';
 
@@ -58,7 +58,7 @@ const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
           fontSize: 14,
           fontStyle: bold ? 'italic' : 'normal'
         }}>
-          {(value ?? 0).toLocaleString()}
+          {Math.round(value ?? 0).toLocaleString()}
         </span>
       </div>
     );
@@ -178,10 +178,10 @@ const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
                   <tr key={String(l?._id || `ligne-${i}`)}>
                     <td style={{ textAlign: 'left' }}>{l?.nomMedicament || '-'}</td>
                     <td className="text-center">{Number(l?.QteP || 0)}</td>
-                    <td className="text-center">{Number(l?.prixUnitaire || 0).toLocaleString('fr-FR')}</td>
-                    <td className="text-center">{Number(l?.prixTotal || 0).toLocaleString('fr-FR')}</td>
-                    <td className="text-center">{Number(l?.partAssurance || 0).toLocaleString('fr-FR')}</td>
-                    <td className="text-center">{Number(l?.partAssure || 0).toLocaleString('fr-FR')}</td>
+                    <td className="text-center">{Math.round(Number(l?.prixUnitaire || 0)).toLocaleString('fr-FR')}</td>
+                    <td className="text-center">{Math.round(Number(l?.prixTotal || 0)).toLocaleString('fr-FR')}</td>
+                    <td className="text-center">{Math.round(Number(l?.partAssurance || 0)).toLocaleString('fr-FR')}</td>
+                    <td className="text-center">{Math.round(Number(l?.partAssure || 0)).toLocaleString('fr-FR')}</td>
                   </tr>
                 ))
               ) : (
@@ -194,8 +194,8 @@ const RecuPharmaciePrint = forwardRef<HTMLDivElement, RecuPharmaciePrintProps>(
               <tr style={{ fontWeight: 'bold', background: '#f0f0f0' }}>
                 <td colSpan={3} className="text-center">Totaux</td>
                 <td className="text-center">{totalPrix.toLocaleString('fr-FR')}</td>
-                <td className="text-center">{Number(facturation?.PartAssuranceP || 0).toLocaleString('fr-FR')}</td>
-                <td className="text-center">{Number(facturation?.Partassure || 0).toLocaleString('fr-FR')}</td>
+                <td className="text-center">{Math.round(Number(facturation?.PartAssuranceP || 0)).toLocaleString('fr-FR')}</td>
+                <td className="text-center">{Math.round(Number(facturation?.Partassure || 0)).toLocaleString('fr-FR')}</td>
               </tr>
             </tbody>
           </table>

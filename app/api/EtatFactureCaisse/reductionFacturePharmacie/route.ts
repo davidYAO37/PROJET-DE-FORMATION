@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
     try {
-        const { context, response } = await withTenant(req, ROLES);
+        const { context, response } = await withTenant(req, ROLES, { actions: ["reduction_facture"] });
         if (!context) return response;
         const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
 

@@ -7,6 +7,7 @@ export interface ActeClinique {
     prixPreferentiel: number;
     coefficient: number;
     MontantAuMed?: number;
+    ActePourApporteur?: boolean;
     IDFAMILLE_ACTE_BIOLOGIE?: string; // Gardé en string pour le frontend, converti en ObjectId dans l'API
     consultationviste?: boolean;
     resultatacte?: string;

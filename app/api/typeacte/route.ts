@@ -5,6 +5,7 @@ import { ITypeActe } from "@/models/TypeActe";
 
 const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_actes_clinique"] };
 
 // GET toutes les types d’acte
 export async function GET(req: NextRequest) {
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
 
 // POST ajout d’un type d’acte
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
     try {

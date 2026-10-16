@@ -28,6 +28,8 @@ const SOURCE_COLORS: Record<string, string> = {
   'CONSULTATION':   'primary',
   'FACTURATION':    'info',
   'ENCAISSEMENT':   'secondary',
+  'HONORAIRE MEDECIN': 'warning',
+  'HONORAIRE APPORTEURS': 'info',
 };
 
 

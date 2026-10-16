@@ -41,6 +41,7 @@ export async function POST(req: NextRequest) {
     const licencePriceRaw = formData.get("licencePrice") as string | null;
     const licencePrice = licencePriceRaw ? parseFloat(licencePriceRaw) || 0 : 0;
     const maintenanceAccepted = formData.get("maintenanceAccepted") === "true";
+    const travailleAvecApporteur = formData.get("travailleAvecApporteur") === "true";
     const requestedDbName = (formData.get("dbName") as string) || "";
     const logoFile = formData.get("logoFile") as File | null;
 
@@ -109,6 +110,7 @@ export async function POST(req: NextRequest) {
       maintenancePrice,
       licencePrice,
       maintenanceAccepted,
+      travailleAvecApporteur,
       dbName,
       mongoUri,
     };

@@ -11,7 +11,7 @@ const WRITE_ROLES = ["admin", "pharmacien"];
 // POST /api/gestionstock/inventaire/ajuster
 // Body: { lignes: [{ stockId, IDMEDICAMENT, Medicament, Reference, qteTheorique, qtePhysique, saisiPar }] }
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
     const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");

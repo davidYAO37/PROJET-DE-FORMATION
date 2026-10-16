@@ -5,11 +5,26 @@ import { IConsultation } from '@/models/consultation';
 import { IFacturation } from '@/models/Facturation';
 import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
 import { ICaisse } from '@/models/caisse';
+import { IHonorairePaye } from '@/models/HonorairePaye';
+import { IPaiementApporteur } from '@/models/PaiementApporteur';
+import { Entreprise, IEntreprise } from '@/models/entreprise';
 
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 const MOIS_LABELS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const MODES_EXCLUS = ['chèque', 'carte de crédit'];
+
+async function apporteurActif(entrepriseId?: string) {
+  if (!entrepriseId) return true;
+  const entreprise = await Entreprise.findById(entrepriseId).lean<IEntreprise | null>();
+  return !!entreprise?.travailleAvecApporteur;
+}
+
+const modeExclu = (mode?: string | null) => {
+  if (!mode) return false;
+  const normalise = mode.toLowerCase().trim();
+  return MODES_EXCLUS.some(m => normalise.includes(m));
+};
 
 function ventilerParMois(montant: number, moisIndex: number): number[] {
   const arr = new Array(12).fill(0);
@@ -29,6 +44,8 @@ export async function GET(request: NextRequest) {
   const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
   const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(connection, 'EncaissementCaisse');
   const caisse = getTenantModel<ICaisse>(connection, 'Caisse');
+  const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+  const PaiementApporteur = getTenantModel<IPaiementApporteur>(connection, 'PaiementApporteur');
   const tenantFilter = getTenantFilter(context);
   const findConsultations = (filter: Record<string, unknown>) => Consultation.find({ ...filter, ...tenantFilter });
   const findFacturations = (filter: Record<string, unknown>) => Facturation.find({ ...filter, ...tenantFilter });
@@ -223,6 +240,35 @@ export async function GET(request: NextRequest) {
         const montant = (c.MOntantC as number) || 0;
         if (montant === 0) continue;
         addDecaiss((c.Operation as string) || 'SORTIE CAISSE', m, montant);
+      }
+
+      // ── DÉCAISSEMENTS HONORAIRES MÉDECINS ───────────────────────────────────
+      const paiementsMedecins = await HonorairePaye.find({
+        Date: { $gte: debut, $lte: fin },
+        ...tenantFilter,
+      }).lean();
+      for (const p of paiementsMedecins) {
+        if (modeExclu(p.Modepaiement)) continue;
+        const m = new Date(p.Date as Date).getMonth();
+        const montant = (p.MontantPayé as number) || 0;
+        if (montant === 0) continue;
+        addDecaiss('HONORAIRE MEDECIN', m, montant);
+      }
+
+      // ── DÉCAISSEMENTS HONORAIRES APPORTEURS ─────────────────────────────────
+      const afficherApporteurs = await apporteurActif(context.entrepriseId);
+      if (afficherApporteurs) {
+        const paiementsApporteurs = await PaiementApporteur.find({
+          date: { $gte: debut, $lte: fin },
+          ...tenantFilter,
+        }).lean();
+        for (const p of paiementsApporteurs) {
+          if (modeExclu(p.modePaiement)) continue;
+          const m = new Date(p.date as Date).getMonth();
+          const montant = (p.montant as number) || 0;
+          if (montant === 0) continue;
+          addDecaiss('HONORAIRE APPORTEURS', m, montant);
+        }
       }
     }
 

@@ -243,11 +243,11 @@ export default function PharmacieCaisseModal({
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
-      Montanttotal: totaux.montantTotal,
-      PartAssurance: totaux.partAssurance,
-      PartAssure: totaux.partAssure,
-      Remise: totaux.remise,
-      Restapayer: totaux.resteAPayer,
+      Montanttotal: Math.round(totaux.montantTotal || 0),
+      PartAssurance: Math.round(totaux.partAssurance || 0),
+      PartAssure: Math.round(totaux.partAssure || 0),
+      Remise: Math.round(totaux.remise || 0),
+      Restapayer: Math.round(totaux.resteAPayer || 0),
     }));
   }, [totaux]);
 
@@ -359,12 +359,12 @@ export default function PharmacieCaisseModal({
             designation: pp.nomMedicament || "",
             quantite: Number(pp.QteP) || 1,
             posologie: pp.posologie || "",
-            prixUnitaire: Number(pp.prixUnitaire) || 0,
-            total: Number(pp.prixTotal) || 0,
+            prixUnitaire: Math.round(Number(pp.prixUnitaire) || 0),
+            total: Math.round(Number(pp.prixTotal) || 0),
             paye: pp.actePayeCaisse === "Payé" || false,
             refuse: pp.exclusionActe === "Refuser" || pp.ExclusionActae === "Refuser",
-            partAssurance: Number(pp.partAssurance) || 0,
-            partAssure: Number(pp.partAssure) || 0,
+            partAssurance: Math.round(Number(pp.partAssurance) || 0),
+            partAssure: Math.round(Number(pp.partAssure) || 0),
             DATE: pp.DatePres ? (typeof pp.DatePres === 'string' ? pp.DatePres : new Date(pp.DatePres).toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
             reference: pp.reference || "",
             payeLe: pp.payeLe ? (typeof pp.payeLe === 'string' ? pp.payeLe : new Date(pp.payeLe).toISOString().split('T')[0]) : undefined,
@@ -514,12 +514,12 @@ export default function PharmacieCaisseModal({
       medicamentId: pp.medicament?.toString() || pp.IDMEDICAMENT || "",
       designation: pp.nomMedicament || "",
       quantite: Number(pp.QteP) || 1,
-      prixUnitaire: Number(pp.prixUnitaire) || 0,
-      total: Number(pp.prixTotal) || 0,
+      prixUnitaire: Math.round(Number(pp.prixUnitaire) || 0),
+      total: Math.round(Number(pp.prixTotal) || 0),
       paye: pp.actePayeCaisse === "Payé" || false,
       refuse: pp.exclusionActe === "Refuser" || pp.ExclusionActae === "Refuser",
-      partAssurance: Number(pp.partAssurance) || 0,
-      partAssure: Number(pp.partAssure) || 0,
+      partAssurance: Math.round(Number(pp.partAssurance) || 0),
+      partAssure: Math.round(Number(pp.partAssure) || 0),
       DATE: new Date().toISOString().split('T')[0], // Toujours la date du jour par défaut
       reference: pp.reference || "",
       payeLe: pp.payeLe ? (typeof pp.payeLe === 'string' ? pp.payeLe : new Date(pp.payeLe).toISOString().split('T')[0]) : undefined,
@@ -589,9 +589,9 @@ export default function PharmacieCaisseModal({
 
     // 1) Ajouter ou modifier la prescription (selon nMonid = 0 ou non)
     // Calculer TotalapayerPatient et Restapayer selon la logique WLangage
-    let totalAPayerPatient = Math.max(0, totaux.partAssure - (totaux.remise || 0));
+    let totalAPayerPatient = Math.round(Math.max(0, totaux.partAssure - (totaux.remise || 0)));
     let restapayer = 0;
-    let montantEncaisseFinal = montantEncaisse;
+    let montantEncaisseFinal = Math.round(montantEncaisse || 0);
 
     // SI montantEncaisse = TotalapayerPatient ALORS Restapayer = 0
     if (montantEncaisse >= totalAPayerPatient) {
@@ -605,7 +605,7 @@ export default function PharmacieCaisseModal({
     }
     // SI montantEncaisse < TotalapayerPatient ALORS Restapayer = TotalapayerPatient - montantEncaisse
     else {
-      restapayer = totalAPayerPatient - montantEncaisse;
+      restapayer = Math.round(totalAPayerPatient - montantEncaisse);
     }
 
     let prescriptionPayload: any = {
@@ -621,13 +621,13 @@ export default function PharmacieCaisseModal({
       Designation: "PHARMACIE",
       DatePres: consultation.DatePres || toYMD(now),
       Rclinique: "",
-      Montanttotal: totaux.montantTotal,
-      PartAssuranceP: totaux.partAssurance,
-      Partassure: totaux.partAssure,
-      MontantRecu: montantEncaisseFinal,
+      Montanttotal: Math.round(totaux.montantTotal || 0),
+      PartAssuranceP: Math.round(totaux.partAssurance || 0),
+      Partassure: Math.round(totaux.partAssure || 0),
+      MontantRecu: Math.round(montantEncaisseFinal || 0),
       Assurance: consultation.assurance || "",
       Taux: consultation.tauxAssurance || 0,
-      REMISE: totaux.remise,
+      REMISE: Math.round(totaux.remise || 0),
       MotifRemise: (formData.MotifRemise || "").trim(),
       TotalapayerPatient: totalAPayerPatient,
       Restapayer: restapayer,
@@ -693,14 +693,14 @@ export default function PharmacieCaisseModal({
       DatePres: consultation.DatePres || toYMD(now),
       SaisiPar: gsUtilisateur,
       Rclinique: "",
-      Montanttotal: totaux.montantTotal,
-      MontantRecu: montantEncaisseFinal,
-      reduction: totaux.remise,
+      Montanttotal: Math.round(totaux.montantTotal || 0),
+      MontantRecu: Math.round(montantEncaisseFinal || 0),
+      reduction: Math.round(totaux.remise || 0),
       MotifRemise: (formData.MotifRemise || "").trim(),
       Restapayer: restapayer,
       TotalapayerPatient: totalAPayerPatient,
-      PartAssuranceP: totaux.partAssurance,
-      Partassure: totaux.partAssure,
+      PartAssuranceP: Math.round(totaux.partAssurance || 0),
+      Partassure: Math.round(totaux.partAssure || 0),
       Taux: consultation.tauxAssurance || 0,
       Assurance: consultation.assurance || "",
       IDASSURANCE: consultation.IDASSURANCE || "",
@@ -749,11 +749,11 @@ export default function PharmacieCaisseModal({
         posologie: (ligne.posologie || "").trim(),
         DatePres: lineDate,
         heureFacturation: toTimeHHMMSS(now),
-        prixUnitaire: Number(ligne.prixUnitaire) || 0,
-        prixTotal: Number(ligne.total) || 0,
+        prixUnitaire: Math.round(Number(ligne.prixUnitaire) || 0),
+        prixTotal: Math.round(Number(ligne.total) || 0),
         nomMedicament: ligne.designation || "",
-        partAssurance: Number(ligne.partAssurance) || 0,
-        partAssure: Number(ligne.partAssure) || 0,
+        partAssurance: Math.round(Number(ligne.partAssurance) || 0),
+        partAssure: Math.round(Number(ligne.partAssure) || 0),
         CodePrestation: codePrestation,
         medicament: ligne.medicamentId,
         exclusionActe,
@@ -850,8 +850,8 @@ export default function PharmacieCaisseModal({
         Reference: reference,
         Quantite: Number(ligne.quantite) || 0,
         ModeVente: ligne.modeVente || "DETAIL",
-        Prix_unitaire: Number(ligne.prixUnitaire) || 0,
-        Prix_TotalS: Number(ligne.total) || 0,
+        Prix_unitaire: Math.round(Number(ligne.prixUnitaire) || 0),
+        Prix_TotalS: Math.round(Number(ligne.total) || 0),
         Motif: "Vente",
         Observations: "",
         SaisiPar: gsUtilisateur,

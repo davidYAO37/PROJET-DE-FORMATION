@@ -339,6 +339,38 @@ export default function FactureAssurancePage() {
     window.open(`/pages/MesImpressions/impression-bordereau/facture-recap?idFactureAssur=${id}`, '_blank');
   };
 
+  const handleAnnulerBordereau = async (f: FactureAssurHistorique) => {
+    if ((f.totalPaye || 0) > 0) {
+      setMessage({ type: 'danger', text: "Impossible d'annuler : des paiements ont déjà été enregistrés sur ce bordereau." });
+      return;
+    }
+    const ok = window.confirm(
+      `Voulez-vous vraiment annuler le bordereau ${f.Reference} ?\n\nCette action supprimera le bordereau et libérera les actes associés.`
+    );
+    if (!ok) return;
+    setLoadingHistorique(true);
+    setMessage(null);
+    try {
+      const res = await fetch('/api/comptabilite/factureAssurance', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'annuler', factureAssurId: f._id, annulePar: utilisateur }),
+      });
+      const json = await res.json();
+      if (json.success) {
+        setMessage({ type: 'success', text: 'Bordereau annulé avec succès.' });
+        if (selectedFacture?._id === f._id) setSelectedFacture(null);
+        await chargerHistorique();
+      } else {
+        setMessage({ type: 'danger', text: json.message || "Erreur lors de l'annulation." });
+        setLoadingHistorique(false);
+      }
+    } catch {
+      setMessage({ type: 'danger', text: 'Erreur serveur.' });
+      setLoadingHistorique(false);
+    }
+  };
+
   return (
     <div style={{ background: '#f0f4f8', minHeight: '100vh', padding: '8px 10px' }}>
       {/* HEADER */}
@@ -716,9 +748,14 @@ export default function FactureAssurancePage() {
                             <button title="Facture récap" onClick={e => { e.stopPropagation(); handleRecapFacture(f); }} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
                               <i className="bi bi-file-earmark-bar-graph-fill" style={{ fontSize: '0.9rem', color: '#6a1b9a' }}></i>
                             </button>
-                           {/*  <button title="Supprimer" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-                              <i className="bi bi-trash-fill" style={{ fontSize: '0.9rem', color: '#b71c1c' }}></i>
-                            </button> */}
+                            <button
+                              title={(f.totalPaye || 0) > 0 ? 'Annulation impossible : des paiements ont été enregistrés' : 'Annuler le bordereau'}
+                              disabled={(f.totalPaye || 0) > 0}
+                              onClick={e => { e.stopPropagation(); handleAnnulerBordereau(f); }}
+                              style={{ background: 'none', border: 'none', cursor: (f.totalPaye || 0) > 0 ? 'not-allowed' : 'pointer', padding: 2 }}
+                            >
+                              <i className="bi bi-trash-fill" style={{ fontSize: '0.9rem', color: (f.totalPaye || 0) > 0 ? '#bdbdbd' : '#b71c1c' }}></i>
+                            </button>
                           </div>
                         </td>
                         <td style={{ padding: '3px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #e0e0e0' }}>{f.Reference}</td>

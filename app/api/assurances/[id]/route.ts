@@ -4,9 +4,10 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IAssurance } from "@/models/assurance";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_assurances"] };
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const Assurance = getTenantModel<IAssurance>(context.connection, "Assurance");
     const body = await req.json();
@@ -20,7 +21,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const Assurance = getTenantModel<IAssurance>(context.connection, "Assurance");
     const { id } = await params;

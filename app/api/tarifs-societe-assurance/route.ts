@@ -9,6 +9,7 @@ import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_assurances"] };
 
 // GET /api/tarifs-societe-assurance?societeAssuranceId=...&assuranceId=...
 export async function GET(req: NextRequest) {
@@ -89,7 +90,7 @@ export async function GET(req: NextRequest) {
 // PUT /api/tarifs-societe-assurance
 export async function PUT(req: NextRequest) {
     try {
-        const { context, response } = await withTenant(req, WRITE_ROLES);
+        const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
         if (!context) return response;
         const TarifSocieteAssurance = getTenantModel<ITarifSocieteAssurance>(context.connection, "TarifSocieteAssurance");
         const body = await req.json();

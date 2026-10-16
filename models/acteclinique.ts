@@ -12,6 +12,7 @@ export interface IActeClinique extends Omit<Document, '_id'> {
     montantacte?: number;
     TYPEACTE?: string;
     MontantAuMed?: number;
+    ActePourApporteur?: boolean;
     resultatacte?: string;
     IDFAMILLE_ACTE_BIOLOGIE?: mongoose.Types.ObjectId;
     TypeResultat?: number;
@@ -36,6 +37,7 @@ const ActeCliniqueSchema: Schema<IActeClinique> = new Schema({
     montantacte: { type: Number },
     TYPEACTE: { type: String },
     MontantAuMed: { type: Number },
+    ActePourApporteur: { type: Boolean, default: false },
     resultatacte: { type: String },
     IDFAMILLE_ACTE_BIOLOGIE: { type: Schema.Types.ObjectId, ref: "FamilleActe" },
     TypeResultat: { type: Number },

@@ -4,10 +4,11 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IFamilleActe } from "@/models/familleActe";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_actes_biologie"] };
 
 // PUT : modifier une famille bilologique
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const FamilleActe = getTenantModel<IFamilleActe>(context.connection, "FamilleActe");
     try {
@@ -27,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE : supprimer une famille biologique
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const FamilleActe = getTenantModel<IFamilleActe>(context.connection, "FamilleActe");
     try {

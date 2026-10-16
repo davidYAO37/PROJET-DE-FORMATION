@@ -165,14 +165,14 @@ useEffect(() => {
       Payéoupas: false,
       Payele: new Date().toISOString().split('T')[0],
       Heure: new Date().toTimeString().split(' ')[0],
-      TotalapayerPatient: totaux.partAssure || 0,
+      TotalapayerPatient: Math.round(totaux.partAssure || 0),
       Caissiere: currentUser || "",
-      
+
       // Champs additionnels pour complétude
-      Montanttotal: totaux.montantTotal || 0,
-      PartAssurance: totaux.partAssurance || 0,
-      PartAssure: totaux.partAssure || 0,
-      Remise: totaux.remise || 0,
+      Montanttotal: Math.round(totaux.montantTotal || 0),
+      PartAssurance: Math.round(totaux.partAssurance || 0),
+      PartAssure: Math.round(totaux.partAssure || 0),
+      Remise: Math.round(totaux.remise || 0),
       Modepaiement: prescription.Modepaiement || "",
     };
 
@@ -377,11 +377,11 @@ const isGeneratedId = (id: string): boolean => {
             medicamentId: pp.medicament?.toString() || pp.IDMEDICAMENT || "",
             designation: pp.nomMedicament || "",
             quantite: Number(pp.QteP) || 1,
-            prixUnitaire: Number(pp.prixUnitaire) || 0,
-            total: Number(pp.prixTotal) || 0,
+            prixUnitaire: Math.round(Number(pp.prixUnitaire) || 0),
+            total: Math.round(Number(pp.prixTotal) || 0),
             refuse: pp.exclusionActe === "Refuser" || pp.ExclusionActae === "Refuser",
-            partAssurance: Number(pp.partAssurance) || 0,
-            partAssure: Number(pp.partAssure) || 0,
+            partAssurance: Math.round(Number(pp.partAssurance) || 0),
+            partAssure: Math.round(Number(pp.partAssure) || 0),
             DatePres: normalizeDate(pp.DatePres),
             reference: pp.reference || "",
             Exclus: pp.exclusionActe || pp.ExclusionActae || "NON",
@@ -487,9 +487,9 @@ const isGeneratedId = (id: string): boolean => {
   // Mettre à jour le formulaire de paiement quand les totaux changent
   useEffect(() => {
     setFormData({
-      Montanttotal: totaux.montantTotal,
-      PartAssurance: totaux.partAssurance,
-      PartAssure: totaux.partAssure,
+      Montanttotal: Math.round(totaux.montantTotal || 0),
+      PartAssurance: Math.round(totaux.partAssurance || 0),
+      PartAssure: Math.round(totaux.partAssure || 0),
     });
   }, [totaux]);
 
@@ -572,11 +572,11 @@ const isGeneratedId = (id: string): boolean => {
       medicamentId: pp.medicament?.toString() || pp.IDMEDICAMENT || "",
       designation: pp.nomMedicament || "",
       quantite: Number(pp.QteP) || 1, // Corrigé: QteP selon le modèle
-      prixUnitaire: Number(pp.prixUnitaire) || 0, // Corrigé: prixUnitaire selon le modèle
-      total: Number(pp.prixTotal) || 0, // Corrigé: prixTotal selon le modèle
+      prixUnitaire: Math.round(Number(pp.prixUnitaire) || 0), // Corrigé: prixUnitaire selon le modèle
+      total: Math.round(Number(pp.prixTotal) || 0), // Corrigé: prixTotal selon le modèle
       refuse: pp.exclusionActe === "Refuser", // Corrigé: exclusionActe selon le modèle
-      partAssurance: Number(pp.partAssurance) || 0, // Corrigé: partAssurance selon le modèle
-      partAssure: Number(pp.partAssure) || 0, // Corrigé: partAssure selon le modèle
+      partAssurance: Math.round(Number(pp.partAssurance) || 0), // Corrigé: partAssurance selon le modèle
+      partAssure: Math.round(Number(pp.partAssure) || 0), // Corrigé: partAssure selon le modèle
       DatePres: normalizeDate(pp.DatePres),
       reference: pp.reference || "", // Corrigé: reference selon le modèle
       Exclus: pp.exclusionActe || "NON", // Corrigé: exclusionActe selon le modèle
@@ -642,11 +642,11 @@ const isGeneratedId = (id: string): boolean => {
       QteP: Number(ligne.quantite) || 1, // Champ requis, s'assurer que c'est un nombre
       posologie: ligne.posologie || "", // Champ requis
       DatePres: datePres, // Champ requis - sera converti en Date par MongoDB
-      prixUnitaire: Number(ligne.prixUnitaire) || 0, // Champ requis
-      prixTotal: Number(ligne.total) || 0, // Champ requis
+      prixUnitaire: Math.round(Number(ligne.prixUnitaire) || 0), // Champ requis
+      prixTotal: Math.round(Number(ligne.total) || 0), // Champ requis
       nomMedicament: ligne.designation || "", // Champ requis
-      partAssurance: Number(ligne.partAssurance) || 0, // Champ requis
-      partAssure: Number(ligne.partAssure) || 0, // Champ requis
+      partAssurance: Math.round(Number(ligne.partAssurance) || 0), // Champ requis
+      partAssure: Math.round(Number(ligne.partAssure) || 0), // Champ requis
       CodePrestation: codePrestation || "", // Champ requis
 
       // Champs optionnels

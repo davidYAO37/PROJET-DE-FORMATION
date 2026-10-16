@@ -5,6 +5,7 @@ import { IFamilleActe } from "@/models/familleActe";
 
 const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_actes_biologie"] };
 
 // GET toutes les famille actes bilogique
 export async function GET(req: NextRequest) {
@@ -17,7 +18,7 @@ export async function GET(req: NextRequest) {
 
 // POST ajout d’un type d’acte
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const FamilleActe = getTenantModel<IFamilleActe>(context.connection, "FamilleActe");
     try {

@@ -5,10 +5,25 @@ import { ICaisse } from '@/models/caisse';
 import { IConsultation } from '@/models/consultation';
 import { IFacturation } from '@/models/Facturation';
 import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
+import { IHonorairePaye } from '@/models/HonorairePaye';
+import { IPaiementApporteur } from '@/models/PaiementApporteur';
+import { Entreprise, IEntreprise } from '@/models/entreprise';
 
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 const MODES_EXCLUS = ['chèque', 'carte de crédit'];
+
+async function apporteurActif(entrepriseId?: string) {
+  if (!entrepriseId) return true;
+  const entreprise = await Entreprise.findById(entrepriseId).lean<IEntreprise | null>();
+  return !!entreprise?.travailleAvecApporteur;
+}
+
+const modeExclu = (mode?: string | null) => {
+  if (!mode) return false;
+  const normalise = mode.toLowerCase().trim();
+  return MODES_EXCLUS.some(m => normalise.includes(m));
+};
 
 export async function GET(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
@@ -18,6 +33,10 @@ export async function GET(request: NextRequest) {
   const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
   const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
   const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(connection, 'EncaissementCaisse');
+  const HonorairePaye = getTenantModel<IHonorairePaye>(connection, 'HonorairePaye');
+  const PaiementApporteur = getTenantModel<IPaiementApporteur>(connection, 'PaiementApporteur');
+  getTenantModel(connection, 'Medecin');
+  getTenantModel(connection, 'Apporteur');
 
   try {
     const { searchParams } = new URL(request.url);
@@ -68,8 +87,7 @@ export async function GET(request: NextRequest) {
     }).lean();
 
     for (const c of consultations) {
-      const mode = (c.Modepaiement || '').toLowerCase();
-      if (MODES_EXCLUS.some(m => mode.includes(m))) continue;
+      if (modeExclu(c.Modepaiement)) continue;
       lignes.push({
         date: c.Date_consulation,
         libelle: c.designationC || 'CONSULTATION',
@@ -88,8 +106,7 @@ export async function GET(request: NextRequest) {
     }).lean();
 
     for (const f of facturations) {
-      const mode = (f.Modepaiement || '').toLowerCase();
-      if (MODES_EXCLUS.some(m => mode.includes(m))) continue;
+      if (modeExclu(f.Modepaiement)) continue;
       lignes.push({
         date: f.DateFacturation,
         libelle: f.Designationtypeacte || '',
@@ -108,8 +125,7 @@ export async function GET(request: NextRequest) {
     }).lean();
 
     for (const e of encaissements) {
-      const mode = (e.Modepaiement || '').toLowerCase();
-      if (MODES_EXCLUS.some(m => mode.includes(m))) continue;
+      if (modeExclu(e.Modepaiement)) continue;
       lignes.push({
         date: e.DateEncaissement,
         libelle: e.Designation || '',
@@ -119,6 +135,53 @@ export async function GET(request: NextRequest) {
         depense: 0,
         source: 'ENCAISSEMENT',
       });
+    }
+
+    // ── 5. HONORAIRES MÉDECINS : paiements des bordereaux médecins ─────────────
+    const paiementsMedecins = await HonorairePaye.find({
+      Date: { $gte: debut, $lte: fin },
+      ...tenantFilter,
+    }).populate('Medecin', 'nom prenoms').lean();
+
+    for (const p of paiementsMedecins) {
+      if (modeExclu(p.Modepaiement)) continue;
+      const medecin = p.Medecin && typeof p.Medecin === 'object'
+        ? `${(p.Medecin as any).nom || ''} ${(p.Medecin as any).prenoms || ''}`.trim()
+        : '';
+      lignes.push({
+        date: p.Date,
+        libelle: 'HONORAIRE MEDECIN',
+        motif: 'Paiement honoraire médecin',
+        nomPrenoms: medecin,
+        recette: 0,
+        depense: p.MontantPayé || 0,
+        source: 'HONORAIRE MEDECIN',
+      });
+    }
+
+    // ── 6. HONORAIRES APPORTEURS : paiements des bordereaux apporteurs ─────────
+    const paiementsApporteurs = await PaiementApporteur.find({
+      date: { $gte: debut, $lte: fin },
+      ...tenantFilter,
+    }).populate('Apporteur', 'nom').lean();
+
+    const afficherApporteurs = await apporteurActif(context.entrepriseId);
+    if (afficherApporteurs) {
+      for (const p of paiementsApporteurs) {
+        if (modeExclu(p.modePaiement)) continue;
+        const apporteur = p.Apporteur && typeof p.Apporteur === 'object'
+          ? (p.Apporteur as any).nom || ''
+          : '';
+        lignes.push({
+          date: p.date,
+          libelle: 'HONORAIRE APPORTEURS',
+          motif: 'Paiement honoraire apporteur',
+          nomPrenoms: apporteur,
+          recette: 0,
+          depense: p.montant || 0,
+          source: 'HONORAIRE APPORTEURS',
+        });
+      }
     }
 
     // ── Tri par date croissante ────────────────────────────────────────────────

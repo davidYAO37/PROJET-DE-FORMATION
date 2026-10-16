@@ -7,7 +7,7 @@ const WRITE_ROLES = ["admin", "pharmacien"];
 
 // -------------------- MODIFICATION D'UN STOCK --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
     try {
@@ -27,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN STOCK --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
     try {

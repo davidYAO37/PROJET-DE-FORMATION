@@ -5,6 +5,8 @@ import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable"];
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_assurances"
+const WRITE_OPTIONS = { actions: ["parametrage_assurances"] };
 
 // GET /api/societeassurance?assuranceId=xxx
 export async function GET(request: NextRequest) {
@@ -30,7 +32,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/societeassurance
 export async function POST(request: NextRequest) {
-    const { context, response } = await withTenant(request, WRITE_ROLES);
+    const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const SocieteAssurance = getTenantModel<ISocieteAssurance>(context.connection, "SocieteAssurance");
 
@@ -54,7 +56,7 @@ export async function POST(request: NextRequest) {
 
 // PUT /api/societeassurance
 export async function PUT(request: NextRequest) {
-    const { context, response } = await withTenant(request, WRITE_ROLES);
+    const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const SocieteAssurance = getTenantModel<ISocieteAssurance>(context.connection, "SocieteAssurance");
 
@@ -77,7 +79,7 @@ export async function PUT(request: NextRequest) {
 
 // DELETE /api/societeassurance
 export async function DELETE(request: NextRequest) {
-    const { context, response } = await withTenant(request, WRITE_ROLES);
+    const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const SocieteAssurance = getTenantModel<ISocieteAssurance>(context.connection, "SocieteAssurance");
 

@@ -3,11 +3,14 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IActeClinique } from "@/models/acteclinique";
 import { ITarifAssurance } from "@/models/tarifassurance";
+import { Entreprise, IEntreprise } from "@/models/entreprise";
 
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_actes_clinique"
+const WRITE_OPTIONS = { actions: ["parametrage_actes_clinique"] };
 
 export async function PUT(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
     const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
@@ -22,6 +25,16 @@ export async function PUT(req: NextRequest) {
         const acteAvant = await ActeClinique.findById(id).lean();
         if (!acteAvant) {
             return NextResponse.json({ error: "Acte introuvable" }, { status: 404 });
+        }
+
+        // Si l'entreprise ne travaille pas avec des apporteurs, forcer ActePourApporteur à faux
+        let apporteurActif = true;
+        if (context.entrepriseId) {
+            const entreprise = await Entreprise.findById(context.entrepriseId).lean<IEntreprise | null>();
+            apporteurActif = !!entreprise?.travailleAvecApporteur;
+        }
+        if (!apporteurActif) {
+            body.ActePourApporteur = false;
         }
 
         const acteModifie = await ActeClinique.findByIdAndUpdate(id, body, { new: true });
@@ -43,7 +56,7 @@ export async function PUT(req: NextRequest) {
 }
 
 export async function DELETE(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
     const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");

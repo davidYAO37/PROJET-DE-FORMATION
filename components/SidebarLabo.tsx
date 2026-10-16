@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Button, Modal, Nav } from 'react-bootstrap';
+import ParametrageEntryLink from '@/components/ParametrageEntryLink';
+import AutresServicesLinks from '@/components/AutresServicesLinks';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import ActeBiochimie from '@/app/dashboard/parametres/acteBiochimie/page';
 import ActeBiologie from '@/app/dashboard/parametres/acteBiologie/page';
@@ -207,6 +209,10 @@ export default function SidebarLabo() {
                             )}
                         </Nav.Item>
                     ))}
+                        <Nav.Item className="mb-2">
+                          <ParametrageEntryLink />
+                          <AutresServicesLinks current={["laboratoire"]} />
+                        </Nav.Item>
                 </Nav>
                 </SidebarBlockOverlay>
                 <div className="mt-auto px-3 pb-3">

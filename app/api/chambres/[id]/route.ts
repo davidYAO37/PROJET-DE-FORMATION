@@ -22,7 +22,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response } = await withTenant(req, ['admin', 'accueil']);
+  const { context, response } = await withTenant(req, ['admin', 'accueil'], { actions: ["parametrage_general"] });
   if (!context) return response;
   const { connection } = context;
 
@@ -75,7 +75,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response } = await withTenant(req, ['admin']);
+  const { context, response } = await withTenant(req, ['admin'], { actions: ["parametrage_general"] });
   if (!context) return response;
   const { connection } = context;
 

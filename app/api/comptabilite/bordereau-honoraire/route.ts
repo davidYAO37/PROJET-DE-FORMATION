@@ -220,7 +220,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES, { actions: ["export_comptable"] });
   if (!context) return tenantErrorResponse;
   const { connection } = context;
   const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
@@ -252,40 +252,40 @@ export async function POST(request: NextRequest) {
     const nbAideOperatoire = actes.filter(a => a.type === 'HONORAIRE AIDE OPERATOIRE' && a.totalMedecin > 0).length;
     const nbAnesthesiste = actes.filter(a => a.type === 'HONORAIRE ANESTHESISTE' && a.totalMedecin > 0).length;
 
-    const montantTotalHono = actes
+    const montantTotalHono = arrondi(actes
       .filter(a => a.type === 'HONORAIRE CONSULTATION')
-      .reduce((s, a) => s + a.totalActe, 0);
-    const partHono = actes
+      .reduce((s, a) => s + a.totalActe, 0));
+    const partHono = arrondi(actes
       .filter(a => a.type === 'HONORAIRE CONSULTATION')
-      .reduce((s, a) => s + a.totalMedecin, 0);
+      .reduce((s, a) => s + a.totalMedecin, 0));
 
-    const montantTotalPrescrip = actes
+    const montantTotalPrescrip = arrondi(actes
       .filter(a => a.type === 'HONORAIRE PRESCRIPTION')
-      .reduce((s, a) => s + a.totalActe, 0);
-    const partPres = actes
+      .reduce((s, a) => s + a.totalActe, 0));
+    const partPres = arrondi(actes
       .filter(a => a.type === 'HONORAIRE PRESCRIPTION')
-      .reduce((s, a) => s + a.totalMedecin, 0);
+      .reduce((s, a) => s + a.totalMedecin, 0));
 
-    const montantTotalExecut = actes
+    const montantTotalExecut = arrondi(actes
       .filter(a => a.type === 'HONORAIRE EXECUTANT')
-      .reduce((s, a) => s + a.totalActe, 0);
-    const partExecut = actes
+      .reduce((s, a) => s + a.totalActe, 0));
+    const partExecut = arrondi(actes
       .filter(a => a.type === 'HONORAIRE EXECUTANT')
-      .reduce((s, a) => s + a.totalMedecin, 0);
+      .reduce((s, a) => s + a.totalMedecin, 0));
 
-    const montantTotalAide = actes
+    const montantTotalAide = arrondi(actes
       .filter(a => a.type === 'HONORAIRE AIDE OPERATOIRE')
-      .reduce((s, a) => s + a.totalActe, 0);
-    const partAide = actes
+      .reduce((s, a) => s + a.totalActe, 0));
+    const partAide = arrondi(actes
       .filter(a => a.type === 'HONORAIRE AIDE OPERATOIRE')
-      .reduce((s, a) => s + a.totalMedecin, 0);
+      .reduce((s, a) => s + a.totalMedecin, 0));
 
-    const montantTotalAnest = actes
+    const montantTotalAnest = arrondi(actes
       .filter(a => a.type === 'HONORAIRE ANESTHESISTE')
-      .reduce((s, a) => s + a.totalActe, 0);
-    const partAnest = actes
+      .reduce((s, a) => s + a.totalActe, 0));
+    const partAnest = arrondi(actes
       .filter(a => a.type === 'HONORAIRE ANESTHESISTE')
-      .reduce((s, a) => s + a.totalMedecin, 0);
+      .reduce((s, a) => s + a.totalMedecin, 0));
 
     for (const a of actes) {
       totalActe += a.totalActe;
@@ -318,99 +318,98 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const session = await connection.startSession();
     let honoraireResult: any = null;
+    const statutsModifies: Array<{ idActe: string; revert: () => Promise<any> }> = [];
 
     try {
-      await session.withTransaction(async () => {
-      const medecinDoc = await Medecin.findOne({ _id: medecinId, ...getTenantFilter(context) }).session(session).lean();
+      const medecinDoc = await Medecin.findOne({ _id: medecinId, ...getTenantFilter(context) }).lean();
       if (!medecinDoc) {
-        throw new Error('Médecin introuvable');
+        return NextResponse.json({ success: false, message: 'Médecin introuvable' }, { status: 404 });
       }
 
-      const [honoraire] = await HonoraireMed.create(
-        [
-          {
-            date: new Date(),
-            Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-            Montanttotal: totalActe,
-            MontantJour: totalMedecin,
-            MontantPayé: 0,
-            Restapayer: netAPayer,
-            Medecin: new mongoose.Types.ObjectId(medecinId),
-            DEBUTD: new Date(dateDebut),
-            FIND: new Date(dateFin),
-            NBHONRAIRE: nbConsultation,
-            montanttotalhono: montantTotalHono,
-            parthonoraire: partHono,
-            NBPRESCRIPTION: nbPrescription,
-            montanttaotalPrescrip: montantTotalPrescrip,
-            partpres: partPres,
-            NBEXECUTANT: nbExecutant,
-            MontanttotalExeut: montantTotalExecut,
-            partexcu: partExecut,
-            Totalnetapayer: netAPayer,
-            Totalretenue: totalTaxe,
-            NBAideOperatoire: nbAideOperatoire,
-            ParAide: partAide,
-            MontantAideTotal: montantTotalAide,
-            NBAnestesiste: nbAnesthesiste,
-            ParAnesthesiste: partAnest,
-            MontantTotalAnestesiste: montantTotalAnest,
-            entrepriseId: context.entrepriseId,
-          },
-        ],
-        { session }
-      );
-
-      honoraireResult = honoraire;
+      honoraireResult = await HonoraireMed.create({
+        date: new Date(),
+        Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        Montanttotal: totalActe,
+        MontantJour: totalMedecin,
+        MontantPayé: 0,
+        Restapayer: netAPayer,
+        Medecin: new mongoose.Types.ObjectId(medecinId),
+        DEBUTD: new Date(dateDebut),
+        FIND: new Date(dateFin),
+        NBHONRAIRE: nbConsultation,
+        montanttotalhono: montantTotalHono,
+        parthonoraire: partHono,
+        NBPRESCRIPTION: nbPrescription,
+        montanttaotalPrescrip: montantTotalPrescrip,
+        partpres: partPres,
+        NBEXECUTANT: nbExecutant,
+        MontanttotalExeut: montantTotalExecut,
+        partexcu: partExecut,
+        Totalnetapayer: netAPayer,
+        Totalretenue: totalTaxe,
+        NBAideOperatoire: nbAideOperatoire,
+        ParAide: partAide,
+        MontantAideTotal: montantTotalAide,
+        NBAnestesiste: nbAnesthesiste,
+        ParAnesthesiste: partAnest,
+        MontantTotalAnestesiste: montantTotalAnest,
+        entrepriseId: context.entrepriseId,
+      });
 
       for (const a of actes) {
-        await LigneHonoraireMed.create(
-          [
-            {
-              DatePres: a.date ? new Date(a.date) : new Date(),
-              IdPres: a.idActe,
-              PrestationMed: a.acte,
-              Montantpres: a.totalMedecin,
-              Medecin: new mongoose.Types.ObjectId(medecinId),
-              HonoraireMed: honoraire._id,
-              Totalacte: a.totalActe,
-              TYPEACTE: a.type,
-              TAXE: a.taxe,
-              Netapayer: a.netAPayer,
-              Patient: a.patient,
-              entrepriseId: context.entrepriseId,
-            },
-          ],
-          { session }
-        );
+        await LigneHonoraireMed.create({
+          DatePres: a.date ? new Date(a.date) : new Date(),
+          IdPres: a.idActe,
+          PrestationMed: a.acte,
+          Montantpres: arrondi(a.totalMedecin),
+          Medecin: new mongoose.Types.ObjectId(medecinId),
+          HonoraireMed: honoraireResult._id,
+          Totalacte: arrondi(a.totalActe),
+          TYPEACTE: a.type,
+          TAXE: arrondi(a.taxe),
+          Netapayer: arrondi(a.netAPayer),
+          Patient: a.patient,
+          entrepriseId: context.entrepriseId,
+        });
 
         if (a.type === 'HONORAIRE CONSULTATION') {
-          await Consultation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { Statumed: 1 }, { session });
+          await Consultation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { Statumed: 1 });
+          statutsModifies.push({ idActe: a.idActe, revert: () => Consultation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { Statumed: 0 }) });
         } else if (a.type === 'HONORAIRE PRESCRIPTION') {
-          await Facturation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { Statumed: '1' }, { session });
+          await Facturation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { Statumed: '1' });
+          statutsModifies.push({ idActe: a.idActe, revert: () => Facturation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { Statumed: '0' }) });
         } else if (a.type === 'HONORAIRE EXECUTANT') {
-          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { statutExecutant: '1' }, { session });
+          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { statutExecutant: '1' });
+          statutsModifies.push({ idActe: a.idActe, revert: () => LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { statutExecutant: '0' }) });
         } else if (a.type === 'HONORAIRE AIDE OPERATOIRE') {
-          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { AideOperatoirePaye: 1 }, { session });
+          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { AideOperatoirePaye: 1 });
+          statutsModifies.push({ idActe: a.idActe, revert: () => LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { AideOperatoirePaye: 0 }) });
         } else if (a.type === 'HONORAIRE ANESTHESISTE') {
-          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { AnesthesistePaye: 1 }, { session });
+          await LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { AnesthesistePaye: 1 });
+          statutsModifies.push({ idActe: a.idActe, revert: () => LignePrestation.findOneAndUpdate({ _id: a.idActe, ...getTenantFilter(context) }, { AnesthesistePaye: 0 }) });
         }
       }
-    });
 
-    return NextResponse.json({
-      success: true,
-      message: 'Bordereau médecin créé avec succès',
-      data: honoraireResult,
-    });
-  } catch (error) {
-    console.error('Erreur POST bordereau honoraire:', error);
-    const msg = error instanceof Error ? error.message : 'Erreur';
-    const status = msg.includes('introuvable') ? 404 : msg.includes('invalide') ? 400 : 500;
-    return NextResponse.json({ success: false, message: msg }, { status });
-  } finally {
-    await session.endSession();
-  }
+      return NextResponse.json({
+        success: true,
+        message: 'Bordereau médecin créé avec succès',
+        data: honoraireResult,
+      });
+    } catch (error) {
+      console.error('Erreur POST bordereau honoraire:', error);
+      // Rollback manuel : rétablir les statuts modifiés puis supprimer les lignes et le bordereau créés
+      for (const s of statutsModifies) {
+        try { await s.revert(); } catch {}
+      }
+      if (honoraireResult?._id) {
+        try {
+          await LigneHonoraireMed.deleteMany({ HonoraireMed: honoraireResult._id, ...getTenantFilter(context) });
+          await HonoraireMed.deleteOne({ _id: honoraireResult._id, ...getTenantFilter(context) });
+        } catch {}
+      }
+      const msg = error instanceof Error ? error.message : 'Erreur';
+      const status = msg.includes('introuvable') ? 404 : msg.includes('invalide') ? 400 : 500;
+      return NextResponse.json({ success: false, message: msg }, { status });
+    }
 }

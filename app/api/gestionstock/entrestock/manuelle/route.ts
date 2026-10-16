@@ -8,7 +8,7 @@ import { IPharmacie } from "@/models/Pharmacie";
 const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien"];
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
     const Stock = getTenantModel<IStock>(context.connection, "Stock");

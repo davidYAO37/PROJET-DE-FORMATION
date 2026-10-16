@@ -4,10 +4,11 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { ITypeActe } from "@/models/TypeActe";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_actes_clinique"] };
 
 // PUT : modifier un type d’acte
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
     try {
@@ -27,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE : supprimer un type d’acte
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
     try {

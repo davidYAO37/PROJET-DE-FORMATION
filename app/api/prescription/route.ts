@@ -6,6 +6,9 @@ import { getTenantModel } from "@/lib/tenantModels";
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
 const WRITE_ROLES = ["admin", "medecin", "caisse", "infirmier"];
 
+// Tous les montants doivent être des entiers
+const toInt = (v: any) => Math.round(Number(v) || 0);
+
 export async function GET(request: NextRequest) {
     const { context, response } = await withTenant(request, READ_ROLES);
     if (!context) return response;
@@ -48,15 +51,15 @@ export async function POST(request: NextRequest) {
             DatePres: body.DatePres ? new Date(body.DatePres) : new Date(),
             SaisiPar: body.Caissiere,
             Rclinique: body.Rclinique || "",
-            Montanttotal: body.Montanttotal,
+            Montanttotal: toInt(body.Montanttotal),
             Taux: body.Taux,
-            PartAssurance: body.PartAssuranceP || body.PartAssurance,
-            PartAssure: body.Partassuré || body.PartAssure,
-            Remise: body.REMISE || body.Remise,
+            PartAssurance: toInt(body.PartAssuranceP || body.PartAssurance),
+            PartAssure: toInt(body.Partassuré || body.PartAssure),
+            Remise: toInt(body.REMISE || body.Remise),
             MotifRemise: body.MotifRemise,
             Assurance: body.Assurance,
-            MontantRecu: body.MontantRecu || body.Montanttotal,
-            Restapayer: body.Restapayer,
+            MontantRecu: toInt(body.MontantRecu || body.Montanttotal),
+            Restapayer: toInt(body.Restapayer),
             NomMed: body.NomMed,
             StatutFacture: true,
             //Numfacture: body.Numfacture,
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
             Payéoupas: body.Payéoupas,
             Payele: body.Payele,
             Heure: body.Heure,
-            TotalapayerPatient: body.TotalapayerPatient,
+            TotalapayerPatient: toInt(body.TotalapayerPatient),
             IDpriseCharge: body.IDpriseCharge,
             Caissiere: body.Caissiere
         };

@@ -5,6 +5,8 @@ import { IActeParamLabo } from "@/models/acteParamLabo";
 
 const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_actes_biologie"
+const WRITE_OPTIONS = { actions: ["parametrage_actes_biologie"] };
 
 export async function GET(request: NextRequest) {
   const { context, response } = await withTenant(request, READ_ROLES);
@@ -63,7 +65,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { context, response } = await withTenant(request, WRITE_ROLES);
+  const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const ActeParamLabo = getTenantModel<IActeParamLabo>(context.connection, "ActeParamLabo");
 
@@ -84,7 +86,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const { context, response } = await withTenant(request, WRITE_ROLES);
+  const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const ActeParamLabo = getTenantModel<IActeParamLabo>(context.connection, "ActeParamLabo");
 
@@ -168,7 +170,7 @@ export async function PUT(request: NextRequest) {
 }
 
 export async function DELETE(request: NextRequest) {
-  const { context, response } = await withTenant(request, WRITE_ROLES);
+  const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const ActeParamLabo = getTenantModel<IActeParamLabo>(context.connection, "ActeParamLabo");
 

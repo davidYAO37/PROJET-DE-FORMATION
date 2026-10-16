@@ -12,7 +12,7 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <Verifconnecion>
-      <RoleGuard allowedRoles={['accueil', 'admin']}>
+      <RoleGuard allowedRoles={['accueil', 'accueil-caisse', 'admin']}>
       <div className="d-flex flex-column flex-md-row min-vh-100" style={{ minHeight: '100vh' }}>
         <Sidebaraccueil />
         <main className="flex-grow-1 p-3">

@@ -8,7 +8,7 @@ import { IParamBiochimie } from "@/models/paramBiochimie";
 const WRITE_ROLES = ["admin", "biologiste", "technicienlabo"];
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_actes_biologie"] });
     if (!context) return response;
     const BiochimieTraitement = getTenantModel<IBiochimieTraitement>(context.connection, "BiochimieTraitement");
     const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");

@@ -5,10 +5,12 @@ import { IActeClinique } from "@/models/acteclinique";
 import { ITarifAssurance } from "@/models/tarifassurance";
 
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_actes_clinique"
+const WRITE_OPTIONS = { actions: ["parametrage_actes_clinique"] };
 
 // -------------------- MODIFICATION D'UN ACTE ET TOUS SES TARIFS --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
     const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
@@ -64,7 +66,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN ACTE ET TOUS SES TARIFS --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
     const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");

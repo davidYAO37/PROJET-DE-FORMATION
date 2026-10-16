@@ -176,7 +176,7 @@ function MedicamentSelect({ medicaments, selectedId, onSelect, disabled = false 
                 )}
                 {medicament.PrixVente && (
                   <div style={{ fontSize: '11px', color: '#28a745' }}>
-                    💰 {medicament.PrixVente} FCFA
+                    💰 {toInt(medicament.PrixVente).toLocaleString()} FCFA
                   </div>
                 )}
               </div>
@@ -193,18 +193,22 @@ function generateLineId(): string {
   return Math.random().toString(36).substr(2, 9);
 }
 
+// Tous les montants doivent être des entiers
+const toInt = (n: number) => Math.round(n || 0);
+
 // Fonction pour créer une nouvelle ligne vide
 function emptyLigne(medicament?: IMedicament): ILigneMedicament {
+  const prixVente = toInt(medicament?.PrixVente || 0);
   return {
     id: generateLineId(),
     medicamentId: medicament?._id || "",
     designation: medicament?.Designation || "",
     quantite: 1,
-    prixUnitaire: medicament?.PrixVente || 0,
-    total: medicament?.PrixVente || 0,
+    prixUnitaire: prixVente,
+    total: prixVente,
     refuse: false,
     partAssurance: 0,
-    partAssure: medicament?.PrixVente || 0,
+    partAssure: prixVente,
     DATE: new Date().toISOString().split('T')[0], // Date du jour par défaut
     reference: medicament?.Reference || "", // Ajouter la référence du médicament
     Exclus: "", // Ajouter le champ Exclus
@@ -299,22 +303,22 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
     // POUR TOUTE LIGNE DE TABLE_PARTIENT_PRESCRIPTION
     lignes.forEach(ligne => {
       // TABLE_PARTIENT_PRESCRIPTION.COL_PrixTotal=TABLE_PARTIENT_PRESCRIPTION.COL_QtéP*TABLE_PARTIENT_PRESCRIPTION.COL_Prixunitaire
-      const prixTotal = ligne.quantite * ligne.prixUnitaire;
+      const prixTotal = toInt(ligne.quantite * ligne.prixUnitaire);
       ligne.total = prixTotal;
 
       // Accepter ou Refuser
       // SI TABLE_PARTIENT_PRESCRIPTION.COL_Exclus="NON" ALORS
       if (ligne.Exclus === "NON") {
         // TABLE_PARTIENT_PRESCRIPTION.COL_PartAssurance=(TABLE_PARTIENT_PRESCRIPTION.COL_PrixTotal*SAI_Taux_Assurance)/100
-        ligne.partAssurance = (prixTotal * tauxAssurance) / 100;
+        ligne.partAssurance = toInt((prixTotal * tauxAssurance) / 100);
         // TABLE_PARTIENT_PRESCRIPTION.COL_PartAssure=TABLE_PARTIENT_PRESCRIPTION.COL_PrixTotal-TABLE_PARTIENT_PRESCRIPTION.COL_PartAssurance
-        ligne.partAssure = prixTotal - ligne.partAssurance;
+        ligne.partAssure = toInt(prixTotal - ligne.partAssurance);
       } else {
         // SINON
         // TABLE_PARTIENT_PRESCRIPTION.COL_PartAssurance=0
         ligne.partAssurance = 0;
         // TABLE_PARTIENT_PRESCRIPTION.COL_PartAssure=TABLE_PARTIENT_PRESCRIPTION.COL_PrixTotal
-        ligne.partAssure = prixTotal;
+        ligne.partAssure = toInt(prixTotal);
       }
 
       // MONTOTAL+=TABLE_PARTIENT_PRESCRIPTION.COL_PrixTotal
@@ -333,19 +337,19 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
     // SI SAI_REMISE="" OU SAI_REMISE=0 ALORS
     if (remise === 0) {
       // SAI_Partassuré=moNtoassure
-      SAI_Partassuré = moNtoassure;
+      SAI_Partassuré = toInt(moNtoassure);
       // SAI_PartAssuranceP=moToassurance
-      SAI_PartAssuranceP = moToassurance;
+      SAI_PartAssuranceP = toInt(moToassurance);
       // SAI_Montanttotal=MONTOTAL
-      SAI_Montanttotal = MONTOTAL;
+      SAI_Montanttotal = toInt(MONTOTAL);
     } else {
       // SINON
       // SAI_Montanttotal=MONTOTAL-SAI_REMISE
-      SAI_Montanttotal = MONTOTAL - remise;
+      SAI_Montanttotal = toInt(MONTOTAL - remise);
       // SAI_PartAssuranceP=(SAI_Montanttotal*SAI_Taux_Assurance)/100
-      SAI_PartAssuranceP = (SAI_Montanttotal * tauxAssurance) / 100;
+      SAI_PartAssuranceP = toInt((SAI_Montanttotal * tauxAssurance) / 100);
       // SAI_Partassuré=SAI_Montanttotal-SAI_PartAssuranceP
-      SAI_Partassuré = SAI_Montanttotal - SAI_PartAssuranceP;
+      SAI_Partassuré = toInt(SAI_Montanttotal - SAI_PartAssuranceP);
     }
 
     // SAI_MontantRendu=SAI_MontantRecu-SAI_Partassuré
@@ -406,18 +410,19 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
       // TABLE_PARTIENT_PRESCRIPTION.COL_Reference=PHARMACIE.Reference
       // TABLE_PARTIENT_PRESCRIPTION.COL_StatuPrescriptionMedecin=2
 
+      const prixVente = toInt(medicament.PrixVente || 0);
       updateLigne(id, {
         medicamentId: medicament._id, // COL_MédicamentID=PHARMACIE.IDMEDICAMENT
         designation: medicament.Designation,
-        prixUnitaire: medicament.PrixVente || 0, // COL_Prixunitaire=PHARMACIE.PrixVente
+        prixUnitaire: prixVente, // COL_Prixunitaire=PHARMACIE.PrixVente
         quantite: 1, // COL_QtéP=1
-        total: medicament.PrixVente || 0,
+        total: prixVente,
         DATE: new Date().toISOString().split('T')[0], // COL_Date=DateSys()
         Exclus: "NON", // COL_Exclus="NON"
         StatuPrescriptionMedecin: 2, // COL_StatuPrescriptionMedecin=2
         reference: medicament.Reference || "", // COL_Reference=PHARMACIE.Reference
         partAssurance: 0,
-        partAssure: medicament.PrixVente || 0
+        partAssure: prixVente
       });
 
       // Facture_Pharmacie() - Calcul des totaux
@@ -429,12 +434,12 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
   const handleQuantiteChange = (id: string, quantite: number) => {
     const ligne = lignes.find(l => l.id === id);
     if (ligne) {
-      const newTotal = quantite * ligne.prixUnitaire;
+      const newTotal = toInt(quantite * ligne.prixUnitaire);
       updateLigne(id, {
         quantite,
         total: newTotal,
-        partAssurance: !ligne.refuse ? (newTotal * tauxAssurance) / 100 : 0,
-        partAssure: !ligne.refuse ? newTotal - ((newTotal * tauxAssurance) / 100) : newTotal
+        partAssurance: !ligne.refuse ? toInt((newTotal * tauxAssurance) / 100) : 0,
+        partAssure: !ligne.refuse ? toInt(newTotal - ((newTotal * tauxAssurance) / 100)) : newTotal
       });
       // Facture_Pharmacie() - Recalculer les totaux
       calculerTotaux();
@@ -462,13 +467,13 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
           const updatedLigne = { ...ligne, refuse: !ligne.refuse };
 
           // Recalculer les parts assurance/patient immédiatement
-          const prixTotal = updatedLigne.quantite * updatedLigne.prixUnitaire;
+          const prixTotal = toInt(updatedLigne.quantite * updatedLigne.prixUnitaire);
           if (!updatedLigne.refuse) {
-            updatedLigne.partAssurance = (prixTotal * tauxAssurance) / 100;
-            updatedLigne.partAssure = prixTotal - updatedLigne.partAssurance;
+            updatedLigne.partAssurance = toInt((prixTotal * tauxAssurance) / 100);
+            updatedLigne.partAssure = toInt(prixTotal - updatedLigne.partAssurance);
           } else {
             updatedLigne.partAssurance = 0;
-            updatedLigne.partAssure = prixTotal;
+            updatedLigne.partAssure = toInt(prixTotal);
           }
 
           return updatedLigne;
@@ -561,7 +566,7 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
                       title={isLigneLocked ? "Ligne verrouillée - statut prescription = 3" : ""}
                     />
                   </td>
-                  <td className="text-end">{ligne.prixUnitaire.toLocaleString()}</td>
+                  <td className="text-end">{toInt(ligne.prixUnitaire).toLocaleString()}</td>
                   <td>
                     <Form.Control
                       type="text"

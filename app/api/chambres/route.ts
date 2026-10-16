@@ -35,7 +35,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { context, response } = await withTenant(req, ['admin', 'accueil']);
+  const { context, response } = await withTenant(req, ['admin', 'accueil'], { actions: ["parametrage_general"] });
   if (!context) return response;
   const { connection } = context;
 

@@ -8,7 +8,7 @@ import { IActeClinique } from "@/models/acteclinique";
 const WRITE_ROLES = ["admin", "biologiste", "technicienlabo"];
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_actes_biologie"] });
     if (!context) return response;
     const VitesseTraitement = getTenantModel<IVitesseTraitement>(context.connection, "VitesseTraitement");
     const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");

@@ -5,6 +5,7 @@ import { IParametreCRendu } from "@/models/ParametreCRendu";
 
 const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_actes_radio"] };
 
 // GET - Récupérer tous les paramètres de compte rendu
 export async function GET(request: NextRequest) {
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
 
 // POST - Créer un nouveau paramètre de compte rendu
 export async function POST(request: NextRequest) {
-  const { context, response } = await withTenant(request, WRITE_ROLES);
+  const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const ParametreCRendu = getTenantModel<IParametreCRendu>(context.connection, "ParametreCRendu");
 

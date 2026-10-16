@@ -17,6 +17,14 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
         console.log("🔄 PUT /api/patientprescription/[id] - ID:", id, "Body:", body);
 
+        // Forcer les montants en entiers
+        const montantFields = ["prixUnitaire", "prixTotal", "partAssurance", "partAssure", "priseCharge"];
+        for (const field of montantFields) {
+            if (body[field] !== undefined && body[field] !== null && body[field] !== "") {
+                body[field] = Math.round(Number(body[field]) || 0);
+            }
+        }
+
         const updated = await PatientPrescription.findByIdAndUpdate(id, body, { new: true });
 
         if (!updated) {

@@ -24,6 +24,7 @@ export interface IEntreprise extends Document {
   dbName?: string;
   statut?: EntrepriseStatut;
   isActive?: boolean;
+  travailleAvecApporteur?: boolean;
 
   // Licence
   licenceType?: LicenceType;
@@ -69,6 +70,7 @@ const EntrepriseSchema = new Schema<IEntreprise>(
       default: "active",
     },
     isActive: { type: Boolean, default: true },
+    travailleAvecApporteur: { type: Boolean, default: false },
 
     // Licence
     licenceType: {

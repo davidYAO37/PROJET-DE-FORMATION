@@ -6,11 +6,16 @@ import { IAssurance } from "@/models/assurance";
 import { IFacturation } from "@/models/Facturation";
 import { IPatient } from "@/models/patient";
 import { IConsultation } from "@/models/consultation";
+import { IApporteur } from "@/models/Apporteur";
+import { Entreprise, IEntreprise } from "@/models/entreprise";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 const WRITE_ROLES = ["admin", "medecin", "biologiste", "infirmier", "caisse"];
+
+// Tous les montants doivent être des entiers
+const toInt = (v: any) => Math.round(Number(v) || 0);
 
 export async function GET(req: NextRequest) {
     try {
@@ -91,6 +96,14 @@ export async function POST(req: NextRequest) {
         const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");
         const Patient = getTenantModel<IPatient>(context.connection, "Patient");
         const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
+        const Apporteur = getTenantModel<IApporteur>(context.connection, "Apporteur");
+
+        // Vérifier si l'entreprise travaille avec des apporteurs
+        let apporteurActif = true;
+        if (context.entrepriseId) {
+            const entreprise = await Entreprise.findById(context.entrepriseId).lean<IEntreprise | null>();
+            apporteurActif = !!entreprise?.travailleAvecApporteur;
+        }
 
         const body = await req.json();
         const { header, lignes, Recupar } = body || {};
@@ -288,6 +301,12 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        const apporteur = apporteurActif && header.apporteurId ? await Apporteur.findById(header.apporteurId).lean() : null;
+        const contientActeApporteur = apporteurActif && lignes.some((l: any) => l.StatutApporteur === "OUI");
+        if (contientActeApporteur && !apporteur) {
+            return NextResponse.json({ error: "Un apporteur valide est obligatoire" }, { status: 400 });
+        }
+
         // Mise à jour ou insertion des lignes de prestation
         const results = await Promise.allSettled(
             lignes.map(async (l: any, index: number) => {
@@ -304,32 +323,36 @@ export async function POST(req: NextRequest) {
                         IdPatient: patientId || l.IdPatient,
                         qte: l.QteP || 1,
                         dateLignePrestation: l.DATE ? new Date(l.DATE) : new Date(),
-                        prix: l.Prixunitaire || 0,
-                        prixTotal: l.PrixTotal || 0,
-                        partAssurance: l.PartAssurance || 0,
-                        partAssure: l.PartAssure || 0,
+                        prix: toInt(l.Prixunitaire),
+                        prixTotal: toInt(l.PrixTotal),
+                        partAssurance: toInt(l.PartAssurance),
+                        partAssure: toInt(l.PartAssure),
                         tauxAssurance: header.Taux || 0,
                         prestation: l.Acte || "",
                         coefficientActe: l.Coefficient || 1,
                         lettreCle: l.Lettre_Cle || "",
                         idActe: l.IDACTE,
-                        prixClinique: l.Accepter || 0,
-                        reliquatPatient: l.Reliquat || 0,
-                        montantMedecinExecutant: l.Montant_MedExecutant || 0,
+                        prixClinique: toInt(l.Accepter),
+                        reliquatPatient: toInt(l.Reliquat),
+                        montantMedecinExecutant: toInt(l.Montant_MedExecutant),
                         numMedecinExecutant: (l.StatutMedecinActe === "OUI" && header.medecinId) ? header.medecinId : "",
                         acteMedecin: l.StatutMedecinActe === "OUI" ? "OUI" : "NON",
-                        totalCoefficient: l.TotalRelicatCoefAssur || 0,
-                        reliquatCoefAssurance: l.Coef_ASSUR || 0,
+                        acteApporteur: apporteurActif && l.StatutApporteur === "OUI" ? "OUI" : "NON",
+                        idApporteur: apporteurActif && l.StatutApporteur === "OUI" ? apporteur?._id : undefined,
+                        tauxApporteur: apporteurActif && l.StatutApporteur === "OUI" ? Number(apporteur?.taux || 0) : 0,
+                        montantApporteur: apporteurActif && l.StatutApporteur === "OUI" ? toInt(Number(l.PrixTotal || 0) * Number(apporteur?.taux || 0) / 100) : 0,
+                        totalCoefficient: toInt(l.TotalRelicatCoefAssur),
+                        reliquatCoefAssurance: toInt(l.Coef_ASSUR),
                         exclusionActe: l.Exclusion || "Accepter",
                         coefficientAssur: l.COEFFICIENT_ASSURANCE || 0,
-                        tarifAssurance: l.TARIF_ASSURANCE || 0,
-                        totalSurplus: (l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0),
-                        montantTotalAPayer: (l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0) + (l.PartAssure || 0),
-                        prixAccepte: l.Accepter || 0,
-                        prixRefuse: l.Refuser || 0,
+                        tarifAssurance: toInt(l.TARIF_ASSURANCE),
+                        totalSurplus: toInt((l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0)),
+                        montantTotalAPayer: toInt((l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0) + (l.PartAssure || 0)),
+                        prixAccepte: toInt(l.Accepter),
+                        prixRefuse: toInt(l.Refuser),
                         statutPrescriptionMedecin: l.Statutprescription || 2,
                         coefficientClinique: l.CoefClinique || l.Coefficient || 1,
-                        taxe: l.TAXE || 0,
+                        taxe: toInt(l.TAXE),
                         Assurance: header.Assurance || "",
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",

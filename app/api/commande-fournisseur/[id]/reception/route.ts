@@ -23,7 +23,7 @@ const ROLES = ["admin","medecin","accueil","infirmier","pharmacien"];
  * - Met à jour le statut : RECEPTION_PARTIELLE ou SOLDEE (tout reçu)
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return tenantErrorResponse;
     const { connection } = context;
     const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(connection, "CommandeFournisseur");

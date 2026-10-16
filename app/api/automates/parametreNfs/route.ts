@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_actes_biologie"] });
     if (!context) return response;
     const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
     try {

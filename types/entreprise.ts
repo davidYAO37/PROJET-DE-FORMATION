@@ -18,6 +18,7 @@ export interface Entreprise {
   mongoUri?: string;
   statut?: EntrepriseStatut;
   isActive?: boolean;
+  travailleAvecApporteur?: boolean;
 
   // Licence
   licenceType?: LicenceType;

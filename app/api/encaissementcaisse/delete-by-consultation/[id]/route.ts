@@ -7,7 +7,7 @@ export const dynamic = 'force-dynamic';
 
 // Supprimer tous les encaissements pour une consultation
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ["admin"]);
+    const { context, response } = await withTenant(req, ["admin"], { actions: ["annulation_encaissement"] });
     if (!context) return response;
     const EncaissementCaisse = getTenantModel<IEncaissementCaisse>(context.connection, "EncaissementCaisse");
 

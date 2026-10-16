@@ -84,23 +84,23 @@ export async function GET(request: NextRequest) {
       const id = String(h._id);
       const lignesH = lignesParHonoraire.get(id) || [];
       const paiementsH = paiementsParHonoraire.get(id) || [];
-      const totalPaye = paiementsH.reduce((s, p) => s + (p.MontantPayé || 0), 0);
+      const totalPaye = Math.round(paiementsH.reduce((s, p) => s + (p.MontantPayé || 0), 0));
       return {
         ...h,
         lignes: lignesH,
         paiements: paiementsH,
         totalPaye,
-        resteAPayer: (h.Totalnetapayer || 0) - totalPaye,
+        resteAPayer: Math.round((h.Totalnetapayer || 0) - totalPaye),
       };
     });
 
     const totaux = {
-      totalHonoraires: data.reduce((s, h) => s + (h.montanttotalhono || 0), 0),
-      totalPrescription: data.reduce((s, h) => s + (h.montanttaotalPrescrip || 0), 0),
-      totalExecutant: data.reduce((s, h) => s + (h.MontanttotalExeut || 0), 0),
-      totalNetAPayer: data.reduce((s, h) => s + (h.Totalnetapayer || 0), 0),
-      totalPaye: data.reduce((s, h) => s + (h.totalPaye || 0), 0),
-      totalReste: data.reduce((s, h) => s + (h.resteAPayer || 0), 0),
+      totalHonoraires: Math.round(data.reduce((s, h) => s + (h.montanttotalhono || 0), 0)),
+      totalPrescription: Math.round(data.reduce((s, h) => s + (h.montanttaotalPrescrip || 0), 0)),
+      totalExecutant: Math.round(data.reduce((s, h) => s + (h.MontanttotalExeut || 0), 0)),
+      totalNetAPayer: Math.round(data.reduce((s, h) => s + (h.Totalnetapayer || 0), 0)),
+      totalPaye: Math.round(data.reduce((s, h) => s + (h.totalPaye || 0), 0)),
+      totalReste: Math.round(data.reduce((s, h) => s + (h.resteAPayer || 0), 0)),
     };
 
     return NextResponse.json({ success: true, data, totaux, count: data.length, total, page, limit });

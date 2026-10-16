@@ -1,13 +1,15 @@
 "use client";
 import axios from "axios";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { Modal, Button } from "react-bootstrap";
 import { useLicenceModules } from "@/hooks/useLicenceModules";
-import { LicenceModuleCode } from "@/lib/licenceModules";
+import { LicenceModuleCode, ALL_MODULE_CODES } from "@/lib/licenceModules";
+import PermissionsSelector, { defaultPermissionsForRole } from "@/components/PermissionsSelector";
 
 const USER_ROLES: { value: string; label: string; module?: LicenceModuleCode }[] = [
   { value: "admin", label: "Administrateur" },
   { value: "accueil", label: "Service Accueil", module: "accueil" },
+  { value: "accueil-caisse", label: "Accueil + Caisse" },
   { value: "biologiste", label: "Biologiste", module: "biologiste" },
   { value: "caisse", label: "Caissière", module: "caisse" },
   { value: "comptable", label: "Comptabilité", module: "comptabilite" },
@@ -44,8 +46,25 @@ const SignupForm = () => {
   const [blockingUser, setBlockingUser] = useState<any | null>(null);
   const [blockMessage, setBlockMessage] = useState("");
   const [showBlockModal, setShowBlockModal] = useState(false);
-  const { hasModule } = useLicenceModules();
-  const availableRoles = USER_ROLES.filter(role => !role.module || hasModule(role.module));
+  const { hasModule, modules } = useLicenceModules();
+  // Ne garder que les codes connus du catalogue ; si la licence ne contient
+  // aucun code valide, on retombe sur "tous les modules" (comme le serveur).
+  const tenantModules = useMemo(() => {
+    if (!modules || modules.length === 0) return undefined;
+    const valid = modules.filter((m) => ALL_MODULE_CODES.includes(m));
+    return valid.length > 0 ? valid : undefined;
+  }, [modules]);
+  // Permissions personnalisées (création + édition)
+  const [permServices, setPermServices] = useState<string[]>([]);
+  const [permActions, setPermActions] = useState<string[]>([]);
+  const [permCustomized, setPermCustomized] = useState(false);
+  const [editServices, setEditServices] = useState<string[]>([]);
+  const [editActions, setEditActions] = useState<string[]>([]);
+  const [editCustomized, setEditCustomized] = useState(false);
+  const availableRoles = USER_ROLES.filter(role => {
+    if (role.value === "accueil-caisse") return hasModule("accueil") && hasModule("caisse");
+    return !role.module || hasModule(role.module);
+  });
 
   useEffect(() => {
     // Récupérer l'ID entreprise de l'utilisateur connecté
@@ -198,6 +217,16 @@ const SignupForm = () => {
     setEditingUser(user);
     setEditType(user.type || "");
     setEditMessage("");
+    // Pré-remplir avec les permissions stockées, sinon les défauts du rôle
+    setEditCustomized(!!user.permissions?.customized);
+    if (user.permissions?.customized) {
+      setEditServices(user.permissions.services || []);
+      setEditActions(user.permissions.actions || []);
+    } else {
+      const defaults = defaultPermissionsForRole(user.type || "", tenantModules);
+      setEditServices(defaults.services);
+      setEditActions(defaults.actions);
+    }
     setShowEditModal(true);
   };
 
@@ -218,17 +247,23 @@ const SignupForm = () => {
     setEditMessage("Mise à jour en cours...");
 
     try {
+      const isPrivileged = editType === "admin" || editType === "adminsuper";
       const response = await axios.put(`/api/new-users/${editingUser._id}`, {
         nom: editingUser.nom,
         prenom: editingUser.prenom,
         email: editingUser.email,
         type: editType,
+        permissions: isPrivileged
+          ? { services: [], actions: [], customized: false }
+          : { services: editServices, actions: editActions, customized: editCustomized },
       });
 
       if (response.status === 200) {
-        setEditMessage("✅ Rôle mis à jour avec succès !");
+        setEditMessage("✅ Rôle et permissions mis à jour avec succès !");
         setUsers(users.map(user =>
-          user._id === editingUser._id ? { ...user, type: editType } : user
+          user._id === editingUser._id
+            ? { ...user, type: editType, permissions: { services: editServices, actions: editActions, customized: !isPrivileged && editCustomized } }
+            : user
         ));
 
         setTimeout(() => {
@@ -336,7 +371,14 @@ const SignupForm = () => {
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const next = { ...form, [e.target.name]: e.target.value };
+    setForm(next);
+    if (e.target.name === "type") {
+      const defaults = defaultPermissionsForRole(e.target.value, tenantModules);
+      setPermServices(defaults.services);
+      setPermActions(defaults.actions);
+      setPermCustomized(false);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -355,6 +397,9 @@ const SignupForm = () => {
         ...form,
         password: password,
       };
+      if (form.type && form.type !== "admin" && form.type !== "adminsuper") {
+        payload.permissions = { services: permServices, actions: permActions, customized: permCustomized };
+      }
       if (entrepriseId) {
         payload.entrepriseId = entrepriseId;
       } else {
@@ -368,6 +413,8 @@ const SignupForm = () => {
         // Réinitialiser le formulaire tout en conservant l'entreprise courante
         setForm({ nom: "", prenom: "", email: "", type: "", entrepriseId: entrepriseId });
         setPassword("");
+        setPermServices([]);
+        setPermActions([]);
         // Rafraîchir la liste des utilisateurs
         fetchUsers();
         // Fermer la modal après un délai
@@ -498,6 +545,27 @@ const SignupForm = () => {
                   ))}
                 </select>
               </div>
+              {form.type && form.type !== "admin" && (
+                <div className="col-12">
+                  <PermissionsSelector
+                    services={permServices}
+                    actions={permActions}
+                    availableModules={tenantModules}
+                    role={form.type}
+                    onChange={({ services, actions }) => {
+                      setPermServices(services);
+                      setPermActions(actions);
+                      setPermCustomized(true);
+                    }}
+                    onResetToDefaults={() => {
+                      const defaults = defaultPermissionsForRole(form.type, tenantModules);
+                      setPermServices(defaults.services);
+                      setPermActions(defaults.actions);
+                      setPermCustomized(false);
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="mt-3">
@@ -860,6 +928,7 @@ const SignupForm = () => {
             show={showEditModal}
             onHide={handleCancelEdit}
             centered
+            size="lg"
           >
             <Modal.Header closeButton>
               <Modal.Title>
@@ -898,7 +967,12 @@ const SignupForm = () => {
                     <select
                       className="form-select"
                       value={editType}
-                      onChange={(e) => setEditType(e.target.value)}
+                      onChange={(e) => {
+                        setEditType(e.target.value);
+                        const defaults = defaultPermissionsForRole(e.target.value, tenantModules);
+                        setEditServices(defaults.services);
+                        setEditActions(defaults.actions);
+                      }}
                     >
                       <option value="">Sélectionnez un rôle</option>
                       {availableRoles.map(role => (
@@ -906,6 +980,26 @@ const SignupForm = () => {
                       ))}
                     </select>
                   </div>
+
+                  {editType && editType !== "admin" && (
+                    <PermissionsSelector
+                      services={editServices}
+                      actions={editActions}
+                      availableModules={tenantModules}
+                      role={editType}
+                      onChange={({ services, actions }) => {
+                        setEditServices(services);
+                        setEditActions(actions);
+                        setEditCustomized(true);
+                      }}
+                      onResetToDefaults={() => {
+                        const defaults = defaultPermissionsForRole(editType, tenantModules);
+                        setEditServices(defaults.services);
+                        setEditActions(defaults.actions);
+                        setEditCustomized(false);
+                      }}
+                    />
+                  )}
                 </>
               )}
             </Modal.Body>

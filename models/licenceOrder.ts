@@ -10,6 +10,7 @@ export type LicenceOrderStatus =
 export type LicencePaymentMethod = "wave" | "manual" | "bank_transfer";
 
 export interface ILicenceOrder extends Document {
+  reference?: string;
   entrepriseId: Types.ObjectId;
   initiatedBy: Types.ObjectId;
   action: LicenceOrderAction;
@@ -46,6 +47,7 @@ export interface ILicenceOrder extends Document {
 
 const LicenceOrderSchema = new Schema<ILicenceOrder>(
   {
+    reference: { type: String, unique: true, sparse: true, index: true },
     entrepriseId: {
       type: Schema.Types.ObjectId,
       ref: "Entreprise",

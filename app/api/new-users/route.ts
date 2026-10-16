@@ -7,10 +7,11 @@ import { hashPassword, generateLocalUID } from "@/utils/auth";
 import { requireAuth, getImpersonateEntrepriseId } from "@/lib/auth";
 import { getTenantConnection } from "@/lib/tenantDb";
 import { getTenantModel } from "@/lib/tenantModels";
+import { sanitizePermissions } from "@/lib/permissions";
 
 export const POST = async (req: NextRequest) => {
   try {
-    const { user: currentUser, error } = await requireAuth(req, ["admin"]);
+    const { user: currentUser, error } = await requireAuth(req, ["admin"], { actions: ["gestion_utilisateurs"] });
     if (error) return error;
 
     await db();
@@ -30,7 +31,7 @@ export const POST = async (req: NextRequest) => {
       _id: tenantEntrepriseId,
       isActive: true,
       statut: "active",
-    }).select("_id").lean();
+    }).select("_id modules").lean();
 
     if (!entreprise) {
       return NextResponse.json({ message: "L'entreprise sélectionnée est introuvable ou inactive." }, { status: 400 });
@@ -52,12 +53,24 @@ export const POST = async (req: NextRequest) => {
       return NextResponse.json({ message: "Cet email est déjà enregistré" }, { status: 400 });
     }
 
+    // Permissions personnalisées : limitées aux modules de licence du tenant.
+    // admin/adminsuper gardent l'accès complet, pas besoin de stocker.
+    const tenantModules = (entreprise as any).modules as string[] | undefined;
+    const isPrivileged = user.type === "admin" || user.type === "adminsuper";
+    const sanitizedPermissions = !isPrivileged
+      ? sanitizePermissions(user.permissions, tenantModules)
+      : null;
+    if (user.permissions != null && !isPrivileged && !sanitizedPermissions) {
+      return NextResponse.json({ message: "Permissions invalides." }, { status: 400 });
+    }
+
     // Hasher le mot de passe et générer un UID local
     const hashedPassword = await hashPassword(user.password || user.email); // Utiliser l'email comme mot de passe par défaut
     const localUID = generateLocalUID();
 
     const newUser = new UserCollection({
       ...user,
+      permissions: sanitizedPermissions || { services: [], actions: [], customized: false },
       password: hashedPassword,
       uid: localUID
     });
@@ -91,7 +104,8 @@ export const POST = async (req: NextRequest) => {
         prenom: newUser.prenom,
         email: newUser.email,
         type: newUser.type,
-        uid: newUser.uid
+        uid: newUser.uid,
+        permissions: newUser.permissions
       }
     }, { status: 201 });
   } catch (error) {

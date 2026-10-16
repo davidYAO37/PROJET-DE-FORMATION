@@ -5,6 +5,8 @@ import { IActeClinique } from "@/models/acteclinique";
 import { ITarifAssurance } from "@/models/tarifassurance";
 
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_actes_clinique"
+const WRITE_OPTIONS = { actions: ["parametrage_actes_clinique"] };
 
 // Fonction utilitaire de nettoyage des nombres
 function cleanNumber(value: any): number {
@@ -42,7 +44,7 @@ function cleanText(value: any): string {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
     const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");

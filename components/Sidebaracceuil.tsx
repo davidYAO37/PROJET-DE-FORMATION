@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
+import ParametrageEntryLink from '@/components/ParametrageEntryLink';
+import AutresServicesLinks from '@/components/AutresServicesLinks';
 import TransfertPatientModal from '@/app/pages/serviceaccueil/components/TransfertPatientModal';
 import SalleAttenteModal from '@/app/pages/serviceaccueil/components/SalleAttenteModal';
 import SalleConstante from '@/app/pages/serviceaccueil/components/SalleConstante';
@@ -13,6 +15,7 @@ import DisponibiliteMedecinModal from './DisponibiliteMedecinModal';
 import ModalPointSaisieAccueil from './ModalPointSaisieAccueil';
 import { useRouter } from 'next/navigation';
 import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
+import { useAuthUser } from '@/hooks/useAuthUser';
 const menu = [
   { label: 'Tableau de bord', path: '/pages/serviceaccueil/tpatient', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
   { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
@@ -32,6 +35,7 @@ const menu = [
 export default function Sidebaracceuil() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user: authUser } = useAuthUser();
   const [open, setOpen] = useState(false);
   const [showTransfertModal, setShowTransfertModal] = useState(false);
   const [showSalleAttenteModal, setShowSalleAttenteModal] = useState(false);
@@ -142,6 +146,24 @@ export default function Sidebaracceuil() {
           <span className="sidebar-title-medical ms-2">EasyMedical</span>
         </div>
         <hr className="sidebar-separator-medical" />
+        {authUser?.type === 'accueil-caisse' && (
+          <div className="px-3 mb-3 d-flex flex-column gap-2">
+            <button
+              className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+              onClick={() => router.push('/pages/serviceaccueilcaisse/taccueilcaisse')}
+            >
+              <i className="bi bi-speedometer2"></i>
+              <span>Tableau de bord</span>
+            </button>
+            <button
+              className="btn btn-outline-warning w-100 d-flex align-items-center justify-content-center gap-2"
+              onClick={() => router.push('/pages/servicecaisse/tcaisse')}
+            >
+              <i className="bi bi-cash-stack"></i>
+              <span>Aller à la caisse</span>
+            </button>
+          </div>
+        )}
         <SidebarBlockOverlay module="accueil">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
@@ -176,6 +198,10 @@ export default function Sidebaracceuil() {
               )}
             </Nav.Item>
           ))}
+          <Nav.Item className="mb-2">
+            <ParametrageEntryLink />
+            <AutresServicesLinks current={["accueil"]} />
+          </Nav.Item>
         </Nav>
         </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">

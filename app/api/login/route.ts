@@ -6,6 +6,7 @@ import { User } from "@/models/users.model";
 import { Entreprise } from "@/models/entreprise";
 import { getLicenceStatus } from "@/lib/licence";
 import { JournalConnexion } from "@/models/journalConnexion";
+import { getUserPermissions } from "@/lib/permissions";
 
 const MAX_ATTEMPTS = 4;
 const LOCK_DURATION_MINUTES = 30;
@@ -208,6 +209,7 @@ export async function POST(req: NextRequest) {
       isLocked: false,
       failedAttempts: 0,
       remainingAttempts: MAX_ATTEMPTS,
+      permissions: getUserPermissions(user),
     };
 
     const response = NextResponse.json(

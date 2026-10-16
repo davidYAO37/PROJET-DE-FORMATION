@@ -18,6 +18,10 @@ export interface LignePrestation {
     idTypeActe: string;
     idActe: string;
     idApporteur?: string;
+    acteApporteur?: string;
+    montantApporteur?: number;
+    tauxApporteur?: number;
+    apporteurPaye?: boolean;
     reliquatPatient?: number;
     totalCoefficient?: number;
     prixClinique?: number;

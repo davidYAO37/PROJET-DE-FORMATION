@@ -22,7 +22,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Fournisseur = getTenantModel<IFournisseur>(context.connection, "Fournisseur");
     try {

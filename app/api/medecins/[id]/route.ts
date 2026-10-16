@@ -5,6 +5,8 @@ import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_medecins"
+const WRITE_OPTIONS = { actions: ["parametrage_medecins"] };
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { context, response } = await withTenant(req, READ_ROLES);
@@ -21,7 +23,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response } = await withTenant(req, WRITE_ROLES);
+  const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   const { id } = await params;
@@ -39,7 +41,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response } = await withTenant(req, WRITE_ROLES);
+  const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   const { id } = await params;

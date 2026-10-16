@@ -6,7 +6,7 @@ import { IFournisseur } from "@/models/Fournisseur";
 const ROLES = ["admin","medecin","accueil","infirmier","pharmacien"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Fournisseur = getTenantModel<IFournisseur>(context.connection, "Fournisseur");
     try {
@@ -21,7 +21,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Fournisseur = getTenantModel<IFournisseur>(context.connection, "Fournisseur");
     try {

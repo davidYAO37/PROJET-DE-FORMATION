@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import mongoose, { Model, Types } from "mongoose";
 import { verifyToken, getTokenFromCookies, getImpersonateEntrepriseId, type JWTPayload } from "./auth";
+import { expandAllowedRoles } from "@/lib/roleUtils";
+import { hasActionPermission, matchesAllowedRoles } from "@/lib/permissions";
+import { db } from "@/db/mongoConnect";
+import { User } from "@/models/users.model";
 import { getTenantConnection, getPrimaryConnection } from "./tenantDb";
 import { getTenantModel, type TenantDocument } from "./tenantModels";
 
@@ -29,9 +33,19 @@ export function getTenantFilter(context: TenantContext): Record<string, string> 
     : {};
 }
 
+export interface WithTenantOptions {
+  /**
+   * Actions requises : l'utilisateur doit posséder TOUTES ces actions.
+   * Alternative au rôle : un utilisateur dont le type n'est pas dans
+   * allowedRoles mais qui possède ces actions passe.
+   */
+  actions?: string[];
+}
+
 export async function withTenant(
   req: NextRequest,
-  allowedRoles?: string[]
+  allowedRoles?: string[],
+  options?: WithTenantOptions
 ): Promise<WithTenantResult> {
   const token =
     req.cookies.get("easy_medical_token")?.value || (await getTokenFromCookies());
@@ -61,7 +75,37 @@ export async function withTenant(
     };
   }
 
-  if (allowedRoles && !allowedRoles.includes(payload.type) && payload.type !== "adminsuper") {
+  const effectiveRoles = expandAllowedRoles(allowedRoles);
+  const roleAllowedByToken =
+    !effectiveRoles ||
+    effectiveRoles.includes(payload.type) ||
+    payload.type === "adminsuper";
+
+  // Le JWT ne contient que le type : si le rôle ne suffit pas ou si des
+  // actions sont exigées, on recharge l'utilisateur en base pour évaluer ses
+  // permissions personnalisées (services/actions).
+  let dbUser: { type?: string; permissions?: { services?: string[]; actions?: string[]; customized?: boolean } } | null = null;
+  const needsUserDoc = !roleAllowedByToken || !!options?.actions?.length;
+  if (needsUserDoc) {
+    await db();
+    dbUser = await User.findById(payload.userId).select("type permissions").lean();
+    if (!dbUser) {
+      return {
+        context: null,
+        response: NextResponse.json({ message: "Utilisateur introuvable" }, { status: 401 }),
+      };
+    }
+  }
+
+  const roleAllowed =
+    roleAllowedByToken || (dbUser ? matchesAllowedRoles(dbUser, allowedRoles) : false);
+
+  const hasRequiredActions =
+    !!options?.actions?.length &&
+    (dbUser ? options.actions.every((a) => hasActionPermission(dbUser, a)) : payload.type === "adminsuper");
+  const actionsOk = !options?.actions?.length || hasRequiredActions;
+
+  if (!actionsOk || (!roleAllowed && !hasRequiredActions)) {
     return {
       context: null,
       response: NextResponse.json({ message: "Accès interdit" }, { status: 403 }),

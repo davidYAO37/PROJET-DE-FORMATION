@@ -29,6 +29,7 @@ export default function AjouterEntreprise({
   const [maintenancePrice, setMaintenancePrice] = useState<number | string>(0);
   const [licencePrice, setLicencePrice] = useState<number | string>(0);
   const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
+  const [travailleAvecApporteur, setTravailleAvecApporteur] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleNomSocieteChange = (value: string) => {
@@ -65,6 +66,7 @@ export default function AjouterEntreprise({
       formData.append("maintenancePrice", String(maintenancePrice ?? 0));
       formData.append("licencePrice", String(licencePrice ?? 0));
       formData.append("maintenanceAccepted", String(maintenanceAccepted));
+      formData.append("travailleAvecApporteur", String(travailleAvecApporteur));
 
       if (LogoEFile) {
         formData.append("logoFile", LogoEFile);
@@ -90,6 +92,7 @@ export default function AjouterEntreprise({
         setMaintenancePrice(0);
         setLicencePrice(0);
         setMaintenanceAccepted(false);
+        setTravailleAvecApporteur(false);
         onHide();
       }
     } catch (error) {
@@ -217,6 +220,20 @@ export default function AjouterEntreprise({
                         <Form.Text className="text-muted">
                           Activé = l&apos;entreprise a accepté la maintenance : l&apos;accès sera bloqué si la maintenance expire sans être renouvelée.
                           Désactivé = aucun blocage lié à la maintenance (licence perpétuelle utilisable sans limite).
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="travaille-avec-apporteur-switch"
+                          label="L'entreprise travaille avec des apporteurs"
+                          checked={travailleAvecApporteur}
+                          onChange={(e) => setTravailleAvecApporteur(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Active la gestion des apporteurs et de leurs honoraires pour cette entreprise.
                         </Form.Text>
                       </Form.Group>
                     </Col>

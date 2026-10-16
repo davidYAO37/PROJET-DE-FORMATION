@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Container, Form, Button, Row, Col, Card } from 'react-bootstrap';
 import axios from 'axios';
+import { SERVICE_HOME } from '@/lib/permissions';
 
 export default function ConnexionPage() {
   const [email, setEmail] = useState('');
@@ -61,10 +62,17 @@ export default function ConnexionPage() {
           else if (profil?.type === 'biologiste') router.push('/pages/servicebiologiste/tbiologiste');
           else if (profil?.type === 'technicienlabo') router.push('/pages/servicelaboratoire/tlaboratoire');
           else if (profil?.type === 'caisse') router.push('/pages/servicecaisse/tcaisse');
+          else if (profil?.type === 'accueil-caisse') router.push('/pages/serviceaccueilcaisse/taccueilcaisse');
           else if (profil?.type === 'comptable') router.push('/pages/servicecomptabilite/tcompta');
           else if (profil?.type === 'facturation') router.push('/pages/servicefacturation/tfacturation');
           else if (profil?.type === 'accueil') router.push('/pages/serviceaccueil/tpatient');
           else if (profil?.type === 'adminsuper') router.push('/dashboard');
+          else {
+            // Rôle sans page dédiée ou utilisateur personnalisé :
+            // redirection vers le premier service autorisé.
+            const firstService = profil?.permissions?.services?.[0];
+            router.push((firstService && SERVICE_HOME[firstService]) || '/dashboard');
+          }
         }, 1000);
       } else {
         setMessage('Erreur lors de la récupération du profil');

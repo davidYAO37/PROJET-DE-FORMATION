@@ -46,6 +46,7 @@ export type Assurance = {
 export type ExamenHospitalisationForm = {
     patientId: string;
     medecinId: string;
+    apporteurId: string;
     medecinAnesthesisteId: string;
     dateEntree: string;
     dateSortie: string;
@@ -107,6 +108,7 @@ export type ExamenHospitalisationForm = {
 export const defaultFormData: ExamenHospitalisationForm = {
     patientId: "",
     medecinId: "",
+    apporteurId: "",
     medecinAnesthesisteId: "",
     dateEntree: "",
     dateSortie: "",

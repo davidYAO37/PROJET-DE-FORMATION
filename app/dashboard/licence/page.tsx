@@ -475,7 +475,7 @@ export default function LicencePage() {
                   {orders.map((o) => (
                     <ListGroup.Item key={o._id} className="d-flex justify-content-between align-items-center">
                       <div>
-                        <div><strong>#{o._id}</strong> — {o.action} — {o.status}</div>
+                        <div><strong>{o.reference}</strong> — {o.entrepriseName || "—"} — {o.action} — {o.status}</div>
                         <div className="small text-muted">Montant: {o.amount?.toLocaleString?.("fr-FR") || o.amount} {o.currency}</div>
                       </div>
                       <div className="d-flex gap-2">

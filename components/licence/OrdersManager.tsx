@@ -6,7 +6,9 @@ import { FaSearch, FaFilePdf, FaPrint, FaEye, FaCheck, FaTrash, FaDownload } fro
 
 interface OrderLight {
     _id: string;
+    reference?: string;
     entrepriseId: string;
+    entrepriseName?: string;
     action: string;
     status: string;
     amount: number;
@@ -71,7 +73,9 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
             return (
                 o._id.toLowerCase().includes(s) ||
                 o.action.toLowerCase().includes(s) ||
-                String(o.amount).includes(s)
+                String(o.amount).includes(s) ||
+                o.reference?.toLowerCase().includes(s) ||
+                o.entrepriseName?.toLowerCase().includes(s) || false
             );
         }
         return true;
@@ -183,8 +187,8 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
                             <tbody>
                                 {paginated.map((o) => (
                                     <tr key={o._id}>
-                                        <td>{o._id}</td>
-                                        <td>{o.entrepriseId}</td>
+                                        <td>{o.reference}</td>
+                                        <td>{o.entrepriseName || "—"}</td>
                                         <td>{o.action === "maintenance" ? "Maintenance" : "Achat licence"}</td>
                                         <td>{o.amount?.toLocaleString?.('fr-FR') || o.amount} {o.currency}</td>
                                         <td>{o.action === "maintenance" ? "12 mois" : "Perpétuelle"}</td>
@@ -222,7 +226,7 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
 
             <Modal show={!!selectedOrder} onHide={() => setSelectedOrder(null)} size="lg" centered>
                 <Modal.Header closeButton>
-                    <Modal.Title>Commande #{selectedOrder?._id}</Modal.Title>
+                    <Modal.Title>Commande {selectedOrder?.reference}</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
                     {selectedOrder && (
@@ -241,7 +245,7 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
                                     </Col>
                                     <Col md={6}>
                                         <h6>Entreprise</h6>
-                                        <div>{selectedOrder.entrepriseId}</div>
+                                        <div>{selectedOrder.entrepriseName || selectedOrder.entrepriseId}</div>
                                     </Col>
                                 </Row>
                             </Tab>

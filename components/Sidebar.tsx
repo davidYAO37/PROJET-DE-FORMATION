@@ -7,12 +7,14 @@ import Link from "next/link";
 import ListePlanningModal from "./ListePlanningModal";
 import DisponibiliteMedecinModal from "./DisponibiliteMedecinModal";
 import { useAuthUser } from "@/hooks/useAuthUser";
+import { useEntreprise } from "@/hooks/useEntreprise";
 import ModifierMotDePasseModal from "@/components/ModifierMotDePasseModal";
 import GestionLienAutomate from "@/components/GestionLienAutomate";
 import GestionParametreNfs from "@/components/GestionParametreNfs";
 import { useRouter } from "next/navigation";
 import { ListeAnnulationEncaissementModal, ListeAnnulationFactureModal } from "@/app/pages/servicecaisse/components";
 import ProtectedAccordionItem from "@/components/licence/ProtectedAccordionItem";
+import { SERVICE_HOME } from "@/lib/permissions";
 
 export default function Sidebar() {
   const [showMenu, setShowMenu] = useState(false);
@@ -24,8 +26,18 @@ export default function Sidebar() {
   const [showLienAutomateModal, setShowLienAutomateModal] = useState(false);
   const [showParametreNfsModal, setShowParametreNfsModal] = useState(false);
   const { user, loading } = useAuthUser();
+  const { entreprise } = useEntreprise();
   const pathname = usePathname();
   const router = useRouter();
+
+  // Permissions : les utilisateurs non-admin n'ont accès au dashboard que
+  // pour leurs actions de paramétrage autorisées.
+  const isPrivileged = !loading && (user?.type === "admin" || user?.type === "adminsuper");
+  const userActions: string[] = user?.permissions?.actions || [];
+  const hasAction = (code: string) =>
+    isPrivileged || userActions.includes("*") || userActions.includes(code);
+  const hasAnyAction = (...codes: string[]) => codes.some(hasAction);
+  const serviceHome = SERVICE_HOME[user?.permissions?.services?.[0] || ""];
 
   const handleListePlanningClick = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -103,8 +115,21 @@ export default function Sidebar() {
               Guide d&apos;utilisation
             </Link>
           </li>
+          {!isPrivileged && serviceHome && (
+            <li>
+              <Link
+                href={serviceHome}
+                className="sidebar-link-medical d-flex align-items-center"
+              >
+                <i className="bi bi-arrow-left-circle me-2 text-success"></i>
+                Retour à mon service
+              </Link>
+            </li>
+          )}
         </ul>
         <Accordion alwaysOpen className="w-100 px-2">
+          {isPrivileged && (
+          <>
           <ProtectedAccordionItem
             eventKey="0"
             module="accueil"
@@ -429,6 +454,8 @@ export default function Sidebar() {
               </li>
             </ul>
           </ProtectedAccordionItem>
+          </>
+          )}
           {/* Paramètre utilisateur */}
           <Accordion.Item eventKey="9">
             <Accordion.Header>
@@ -441,6 +468,14 @@ export default function Sidebar() {
             <Accordion.Body className="ps-2">
               <ul className="nav flex-column gap-2">
                 {/* Parametre clinique */}
+                {hasAnyAction(
+                  "parametrage_actes_clinique",
+                  "parametrage_assurances",
+                  "parametrage_actes_radio",
+                  "parametrage_medecins",
+                  "parametrage_general",
+                  "gestion_utilisateurs"
+                ) && (
                 <Accordion.Item eventKey="10">
                   <Accordion.Header>
                     <i
@@ -451,6 +486,7 @@ export default function Sidebar() {
                   </Accordion.Header>
                   <Accordion.Body className="ps-2">
                     <ul className="nav flex-column gap-2">
+                      {hasAction("parametrage_actes_clinique") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/actes"
@@ -460,6 +496,8 @@ export default function Sidebar() {
                           Gestion Actes Cliniques
                         </Link>
                       </li>
+                      )}
+                      {hasAction("parametrage_assurances") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/SocietePartenaire"
@@ -469,6 +507,8 @@ export default function Sidebar() {
                           Gestion Sociétés Partenaires
                         </Link>
                       </li>
+                      )}
+                      {hasAction("parametrage_actes_clinique") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/affection"
@@ -478,6 +518,8 @@ export default function Sidebar() {
                           Gestion Affection
                         </Link>
                       </li>
+                      )}
+                      {hasAction("parametrage_actes_radio") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/parametreCRendu"
@@ -487,6 +529,8 @@ export default function Sidebar() {
                           Paramètre Compte rendu
                         </Link>
                       </li>
+                      )}
+                      {hasAction("gestion_utilisateurs") && (
                       <li>
                         {!loading && user ? (
                           user.type === "adminsuper" ? (
@@ -516,7 +560,9 @@ export default function Sidebar() {
                           </Link>
                         )}
                       </li>
+                      )}
                       {/* gestion des chambres */}
+                      {hasAction("parametrage_general") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/chambres"
@@ -526,9 +572,11 @@ export default function Sidebar() {
                           Gestion Chambres
                         </Link>
                       </li>
+                      )}
 
 
 
+                      {hasAction("parametrage_medecins") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/medecin"
@@ -538,6 +586,19 @@ export default function Sidebar() {
                           Gestion Medecins
                         </Link>
                       </li>
+                      )}
+                      {hasAction("parametrage_general") && entreprise?.travailleAvecApporteur && (
+                      <li>
+                        <Link
+                          href="/dashboard/parametres/apporteurs"
+                          className="sidebar-link-medical d-flex align-items-center"
+                        >
+                          <i className="bi bi-person-lines-fill me-2 text-warning"></i>{" "}
+                          Gestion Apporteurs
+                        </Link>
+                      </li>
+                      )}
+                      {hasAction("parametrage_general") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/infirmier"
@@ -547,6 +608,8 @@ export default function Sidebar() {
                           Gestion Infirmiers
                         </Link>
                       </li>
+                      )}
+                      {hasAction("parametrage_assurances") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/assurances"
@@ -556,7 +619,9 @@ export default function Sidebar() {
                           Gestion Assurances
                         </Link>
                       </li>
+                      )}
 
+                      {hasAction("parametrage_actes_clinique") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/Typeacte"
@@ -566,6 +631,8 @@ export default function Sidebar() {
                           Gestion Type d'actes
                         </Link>
                       </li>
+                      )}
+                      {hasAction("parametrage_general") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/modepaiement"
@@ -575,6 +642,7 @@ export default function Sidebar() {
                           Gestion Mode Paiement
                         </Link>
                       </li>
+                      )}
                       <li>
                         <button
                           className="sidebar-link-medical d-flex align-items-center w-100 text-start border-0 bg-transparent"
@@ -588,8 +656,10 @@ export default function Sidebar() {
                     </ul>
                   </Accordion.Body>
                 </Accordion.Item>
+                )}
 
                 {/* parametre medicament */}
+                {hasAction("parametrage_pharmacie") && (
                 <Accordion.Item eventKey="11">
                   <Accordion.Header>
                     <i
@@ -600,6 +670,7 @@ export default function Sidebar() {
                   </Accordion.Header>
                   <Accordion.Body className="ps-2">
                     <ul className="nav flex-column gap-2">
+                      {hasAction("parametrage_pharmacie") && (
                       <li>
                         <Link
                           href="/dashboard/parametres/medicaments"
@@ -609,6 +680,8 @@ export default function Sidebar() {
                           Liste médicaments
                         </Link>
                       </li>
+                      )}
+                      {hasAction("parametrage_pharmacie") && (
                       <li>
                         <Link
                           href="/dashboard/medicamentachat"
@@ -618,11 +691,14 @@ export default function Sidebar() {
                           Gestion Achats
                         </Link>
                       </li>
+                      )}
                     </ul>
                   </Accordion.Body>
                 </Accordion.Item>
+                )}
 
                 {/* Paramètre laboratoire */}
+                {hasAction("parametrage_actes_biologie") && (
                 <Accordion.Item eventKey="12">
                   <Accordion.Header>
                     <i
@@ -683,6 +759,7 @@ export default function Sidebar() {
                     </ul>
                   </Accordion.Body>
                 </Accordion.Item>
+                )}
                 {!loading && user && user.type !== "adminsuper" && (
                   <li>
                     <Link

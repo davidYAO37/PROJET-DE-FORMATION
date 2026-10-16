@@ -5,10 +5,11 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_assurances"] };
 
 // Synchronise tous les actes cliniques dans les tarifs d'une assurance
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
     const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");

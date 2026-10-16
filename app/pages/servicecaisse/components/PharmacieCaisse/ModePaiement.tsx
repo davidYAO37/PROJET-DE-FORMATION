@@ -35,7 +35,7 @@ export default function ModePaiement({
 }: Props) {
     const [modesPaiement, setModesPaiement] = useState<ModeDePaiement[]>([]);
     const provision = useProvisionPatient(patientId);
-    const totalAPayer = Math.max(0, (totaux?.partAssure || 0) - (formData.Remise || 0));
+    const totalAPayer = Math.round(Math.max(0, (totaux?.partAssure || 0) - (formData.Remise || 0)));
     const cautionDisponible = isCautionAvailable(provision, totalAPayer);
 
     // Récupérer les modes de paiement depuis l'API
@@ -73,7 +73,8 @@ export default function ModePaiement({
                             <Form.Label>Total facture</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={totaux?.montantTotal || 0}
+                                step={1}
+                                value={Math.round(totaux?.montantTotal || 0)}
                                 readOnly
                             />
                         </Form.Group>
@@ -84,7 +85,8 @@ export default function ModePaiement({
                             <Form.Label>Part Assurance</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={totaux?.partAssurance || 0}
+                                step={1}
+                                value={Math.round(totaux?.partAssurance || 0)}
                                 readOnly
                             />
                         </Form.Group>
@@ -95,7 +97,8 @@ export default function ModePaiement({
                             <Form.Label>Part Patient</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={totaux?.partAssure || 0}
+                                step={1}
+                                value={Math.round(totaux?.partAssure || 0)}
                                 readOnly
                             />
                         </Form.Group>
@@ -108,8 +111,9 @@ export default function ModePaiement({
                         <Form.Label>Montant à Regler</Form.Label>
                         <Form.Control
                             type="number"
+                            step={1}
                             className="bg-info-subtle"
-                            value={Math.max(0, (totaux?.partAssure || 0) - (formData.Remise || 0))}
+                            value={Math.round(Math.max(0, (totaux?.partAssure || 0) - (formData.Remise || 0)))}
                             readOnly
                         />
                     </Form.Group>
@@ -117,8 +121,9 @@ export default function ModePaiement({
                         <Form.Label>Reduction (FCFA)</Form.Label>
                         <Form.Control
                             type="number"
-                            value={formData.Remise}
-                            onChange={(e) => setFormData({ ...formData, Remise: Number(e.target.value) })}
+                            step={1}
+                            value={Math.round(Number(formData.Remise) || 0)}
+                            onChange={(e) => setFormData({ ...formData, Remise: Math.round(Number(e.target.value) || 0) })}
                         />
                     </Form.Group>
                     <Form.Group className="col-6 p-0 me-1 px-3">
@@ -140,7 +145,8 @@ export default function ModePaiement({
                             <Form.Label>Reste à payer</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={Math.max(0, (totaux?.partAssure || 0) - (formData.Remise || 0) - montantEncaisse)}
+                                step={1}
+                                value={Math.round(Math.max(0, (totaux?.partAssure || 0) - (formData.Remise || 0) - montantEncaisse))}
                                 readOnly
                                 size="lg"
                             />
@@ -182,13 +188,14 @@ export default function ModePaiement({
                             <Form.Label>Montant Encaissé</Form.Label>
                             <Form.Control
                                 type="number"
+                                step={1}
                                 name="montantEncaisse"
-                                value={montantEncaisse}
+                                value={Math.round(montantEncaisse || 0)}
                                 max={totaux?.resteAPayer || 0}
                                 onChange={(e) => {
                                     const parsed = Number(e.target.value);
                                     const maxValue = totaux?.resteAPayer || 0;
-                                    const validValue = Number.isNaN(parsed) ? 0 : Math.max(0, Math.min(parsed, maxValue));
+                                    const validValue = Number.isNaN(parsed) ? 0 : Math.round(Math.max(0, Math.min(parsed, maxValue)));
                                     setMontantEncaisse(validValue);
                                 }}
                                 size="lg"

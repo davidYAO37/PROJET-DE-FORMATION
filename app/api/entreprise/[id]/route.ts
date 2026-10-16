@@ -57,6 +57,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const licencePrice = licencePriceRaw ? parseFloat(licencePriceRaw as string) || 0 : undefined;
       const maintenanceAcceptedRaw = formData.get("maintenanceAccepted") as string | null;
       const maintenanceAccepted = maintenanceAcceptedRaw !== null ? maintenanceAcceptedRaw === "true" : undefined;
+      const travailleAvecApporteurRaw = formData.get("travailleAvecApporteur") as string | null;
+      const travailleAvecApporteur = travailleAvecApporteurRaw !== null ? travailleAvecApporteurRaw === "true" : undefined;
       const logoFile = formData.get("logoFile") as File | null;
 
       let logoPath = LogoE; // Par défaut, garde le chemin existant
@@ -90,6 +92,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (typeof maintenancePrice !== "undefined") updateData.maintenancePrice = maintenancePrice;
       if (typeof licencePrice !== "undefined") updateData.licencePrice = licencePrice;
       if (typeof maintenanceAccepted !== "undefined") updateData.maintenanceAccepted = maintenanceAccepted;
+      if (typeof travailleAvecApporteur !== "undefined") updateData.travailleAvecApporteur = travailleAvecApporteur;
     } else {
       // Gérer JSON (ancien format)
       const body = await req.json();

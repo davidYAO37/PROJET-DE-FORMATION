@@ -11,6 +11,9 @@ import { ILigneFacture } from '@/models/ligneFacture';
 
 const ROLES = ['admin', 'adminsuper', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
+// Tous les montants doivent être des entiers
+const toInt = (v: any) => Math.round(Number(v) || 0);
+
 export async function GET(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
   if (!context) return tenantErrorResponse;
@@ -67,21 +70,21 @@ export async function GET(request: NextRequest) {
     const data = factures.map(f => {
       const id = String(f._id);
       const paiementsF = paiementsParFacture.get(id) || [];
-      const totalPaye = paiementsF.reduce((s, p) => s + (p.MontantRecu || 0), 0);
+      const totalPaye = toInt(paiementsF.reduce((s, p) => s + (p.MontantRecu || 0), 0));
       return {
         ...f,
         paiements: paiementsF,
         totalPaye,
-        resteAPayer: Math.max(0, (f.PartAssurance || 0) - totalPaye),
+        resteAPayer: toInt(Math.max(0, (f.PartAssurance || 0) - totalPaye)),
       };
     });
 
     const totaux = {
-      totalFacture: data.reduce((s, f) => s + (f.MontantTotalFacture || 0), 0),
-      totalPartAssurance: data.reduce((s, f) => s + (f.PartAssurance || 0), 0),
-      totalPartAssure: data.reduce((s, f) => s + (f.Partassure || 0), 0),
-      totalPaye: data.reduce((s, f) => s + (f.totalPaye || 0), 0),
-      totalReste: data.reduce((s, f) => s + (f.resteAPayer || 0), 0),
+      totalFacture: toInt(data.reduce((s, f) => s + (f.MontantTotalFacture || 0), 0)),
+      totalPartAssurance: toInt(data.reduce((s, f) => s + (f.PartAssurance || 0), 0)),
+      totalPartAssure: toInt(data.reduce((s, f) => s + (f.Partassure || 0), 0)),
+      totalPaye: toInt(data.reduce((s, f) => s + (f.totalPaye || 0), 0)),
+      totalReste: toInt(data.reduce((s, f) => s + (f.resteAPayer || 0), 0)),
     };
 
     return NextResponse.json({ success: true, data, totaux, count: data.length });
@@ -95,7 +98,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES, { actions: ["export_comptable"] });
   if (!context) return tenantErrorResponse;
   const { connection } = context;
   const FacturationAssur = getTenantModel<IFactureAssur>(connection, 'FactureAssur');
@@ -103,65 +106,56 @@ export async function POST(request: NextRequest) {
   const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
   const tenantFilter = getTenantFilter(context);
 
-  const session = await connection.startSession();
-
   try {
     const body = await request.json();
     const { action } = body;
 
     if (action === 'payer') {
-      const { factureAssurId, montant, modePaiement, banque, numeroCheque, recuPar, datePaiement } = body;
+      const { factureAssurId, montant: montantBrut, modePaiement, banque, numeroCheque, recuPar, datePaiement } = body;
+      const montant = toInt(montantBrut);
       if (!factureAssurId || !montant) {
         return NextResponse.json({ success: false, message: 'Données manquantes' }, { status: 400 });
       }
 
-      let paiementResult: any;
+      const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter });
+      if (!facture) {
+        return NextResponse.json({ success: false, message: 'Facture introuvable' }, { status: 404 });
+      }
 
-      await session.withTransaction(async () => {
-        const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter }).session(session);
-        if (!facture) {
-          throw new Error('Facture introuvable');
-        }
+      const paiement = await PaiementPartenaire.create({
+        Assurance: facture.Assurance,
+        DatePaiement: datePaiement ? new Date(datePaiement) : new Date(),
+        Recupar: recuPar || '',
+        MontantRecu: montant,
+        SaisiLe: new Date(),
+        SaisiPar: recuPar || '',
+        Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
+        FactureAssur: factureAssurId,
+        NumChèque: numeroCheque || '',
+        BanqueC: banque || '',
+        entrepriseId: context.entrepriseId || facture.entrepriseId || '',
+      });
 
-        const [paiement] = await PaiementPartenaire.create(
-          [
-            {
-              Assurance: facture.Assurance,
-              DatePaiement: datePaiement ? new Date(datePaiement) : new Date(),
-              Recupar: recuPar || '',
-              MontantRecu: montant,
-              SaisiLe: new Date(),
-              SaisiPar: recuPar || '',
-              Heure: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
-              FactureAssur: factureAssurId,
-              NumChèque: numeroCheque || '',
-              BanqueC: banque || '',
-              entrepriseId: context.entrepriseId || facture.entrepriseId || '',
-            },
-          ],
-          { session }
-        );
-
-        const tousLesPaiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId })
-          .session(session)
-          .lean();
-        const totalPaye = tousLesPaiements.reduce((s, p) => s + (p.MontantRecu || 0), 0);
+      try {
+        const tousLesPaiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId }).lean();
+        const totalPaye = toInt(tousLesPaiements.reduce((s, p) => s + (p.MontantRecu || 0), 0));
         const estSolde = totalPaye >= (facture.PartAssurance || 0);
 
         await FacturationAssur.findOneAndUpdate(
           { _id: factureAssurId, ...tenantFilter },
           {
             TotalPaye: totalPaye,
-            Restapayer: Math.max(0, (facture.PartAssurance || 0) - totalPaye),
+            Restapayer: toInt(Math.max(0, (facture.PartAssurance || 0) - totalPaye)),
             etat_facture: estSolde,
-          },
-          { session }
+          }
         );
+      } catch (err) {
+        // Rollback : supprimer le paiement créé
+        await PaiementPartenaire.deleteOne({ _id: paiement._id, ...tenantFilter }).catch(() => {});
+        throw err;
+      }
 
-        paiementResult = paiement;
-      });
-
-      return NextResponse.json({ success: true, message: 'Paiement enregistré', data: paiementResult });
+      return NextResponse.json({ success: true, message: 'Paiement enregistré', data: paiement });
     }
 
     if (action === 'depot') {
@@ -169,18 +163,16 @@ export async function POST(request: NextRequest) {
       if (!factureAssurId) {
         return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
       }
-      await session.withTransaction(async () => {
-        const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter }).session(session);
-        if (!facture) throw new Error('Facture introuvable');
-        await FacturationAssur.findOneAndUpdate(
-          { _id: factureAssurId, ...tenantFilter },
-          {
-            DateDepot: new Date(),
-            DepotPar: depotPar || '',
-          },
-          { session }
-        );
-      });
+      const updated = await FacturationAssur.findOneAndUpdate(
+        { _id: factureAssurId, ...tenantFilter },
+        {
+          DateDepot: new Date(),
+          DepotPar: depotPar || '',
+        }
+      );
+      if (!updated) {
+        return NextResponse.json({ success: false, message: 'Facture introuvable' }, { status: 404 });
+      }
       return NextResponse.json({ success: true, message: 'Dépôt enregistré' });
     }
 
@@ -189,18 +181,16 @@ export async function POST(request: NextRequest) {
       if (!factureAssurId) {
         return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
       }
-      await session.withTransaction(async () => {
-        const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter }).session(session);
-        if (!facture) throw new Error('Facture introuvable');
-        await FacturationAssur.findOneAndUpdate(
-          { _id: factureAssurId, ...tenantFilter },
-          {
-            DateRetrait: new Date(),
-            RetirePar: retirePar || '',
-          },
-          { session }
-        );
-      });
+      const updated = await FacturationAssur.findOneAndUpdate(
+        { _id: factureAssurId, ...tenantFilter },
+        {
+          DateRetrait: new Date(),
+          RetirePar: retirePar || '',
+        }
+      );
+      if (!updated) {
+        return NextResponse.json({ success: false, message: 'Facture introuvable' }, { status: 404 });
+      }
       return NextResponse.json({ success: true, message: 'Retrait enregistré' });
     }
 
@@ -210,69 +200,63 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ success: false, message: 'ID facture requis' }, { status: 400 });
       }
 
-      await session.withTransaction(async () => {
-        const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter }).session(session);
-        if (!facture) {
-          throw new Error('Bordereau introuvable');
-        }
+      const facture = await FacturationAssur.findOne({ _id: factureAssurId, ...tenantFilter });
+      if (!facture) {
+        return NextResponse.json({ success: false, message: 'Bordereau introuvable' }, { status: 404 });
+      }
 
-        const paiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId })
-          .session(session)
-          .lean();
-        const totalPaye = paiements.reduce((s: number, p: any) => s + (p.MontantRecu || 0), 0);
-        if (totalPaye > 0) {
-          throw new Error('Impossible d\'annuler : des paiements ont déjà été enregistrés');
-        }
+      const paiements = await PaiementPartenaire.find({ FactureAssur: factureAssurId }).lean();
+      const totalPaye = paiements.reduce((s: number, p: any) => s + (p.MontantRecu || 0), 0);
+      if (totalPaye > 0) {
+        return NextResponse.json({ success: false, message: 'Impossible d\'annuler : des paiements ont déjà été enregistrés' }, { status: 400 });
+      }
 
-        const reference = facture.Reference || '';
-        const LigneFacture = getTenantModel<ILigneFacture>(connection, 'LigneFacture');
-        const lignes = await LigneFacture.find({ FactureAssur: factureAssurId })
-          .session(session)
-          .lean();
+      const reference = facture.Reference || '';
+      const LigneFacture = getTenantModel<ILigneFacture>(connection, 'LigneFacture');
+      const lignes = await LigneFacture.find({ FactureAssur: factureAssurId }).lean();
 
-        const consultationsIds = lignes.filter(l => l.IDCONSULTATION).map(l => l.IDCONSULTATION!);
-        const prescriptionsIds = lignes.filter(l => l.IDPRESCRIPTION).map(l => l.IDPRESCRIPTION!);
-        const facturationsIds = lignes.filter(l => l.IDFACTURATION).map(l => l.IDFACTURATION!);
-        const hospitalisationsIds = lignes.filter(l => l.idHospitalisation).map(l => l.idHospitalisation!);
+      const consultationsIds = lignes.filter(l => l.IDCONSULTATION).map(l => l.IDCONSULTATION!);
+      const prescriptionsIds = lignes.filter(l => l.IDPRESCRIPTION).map(l => l.IDPRESCRIPTION!);
+      const facturationsIds = lignes.filter(l => l.IDFACTURATION).map(l => l.IDFACTURATION!);
+      const hospitalisationsIds = lignes.filter(l => l.idHospitalisation).map(l => l.idHospitalisation!);
 
-        const resetFields = { $set: { StatutFacture: false, Numfacture: '' } };
+      const resetFields = { $set: { StatutFacture: false, Numfacture: '' } };
 
-        if (consultationsIds.length > 0) {
-          const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
-          await Consultation.updateMany({ _id: { $in: consultationsIds } }, resetFields, { session });
-        }
+      if (consultationsIds.length > 0) {
+        const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+        await Consultation.updateMany({ _id: { $in: consultationsIds } }, resetFields);
+      }
 
-        if (prescriptionsIds.length > 0) {
-          const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
-          await Prescription.updateMany({ _id: { $in: prescriptionsIds } }, resetFields, { session });
-        }
+      if (prescriptionsIds.length > 0) {
+        const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
+        await Prescription.updateMany({ _id: { $in: prescriptionsIds } }, resetFields);
+      }
 
-        if (facturationsIds.length > 0) {
-          await Facturation.updateMany({ _id: { $in: facturationsIds } }, resetFields, { session });
-        }
+      if (facturationsIds.length > 0) {
+        await Facturation.updateMany({ _id: { $in: facturationsIds } }, resetFields);
+      }
 
-        if (hospitalisationsIds.length > 0) {
-          const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
-          await ExamenHospitalisation.updateMany({ _id: { $in: hospitalisationsIds } }, resetFields, { session });
-        }
+      if (hospitalisationsIds.length > 0) {
+        const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
+        await ExamenHospitalisation.updateMany({ _id: { $in: hospitalisationsIds } }, resetFields);
+      }
 
-        if (reference) {
-          const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
-          await Consultation.updateMany({ Numfacture: reference }, resetFields, { session });
-          const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
-          await Prescription.updateMany({ Numfacture: reference }, resetFields, { session });
-          await Facturation.updateMany({ Numfacture: reference }, resetFields, { session });
-          const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
-          await ExamenHospitalisation.updateMany({ Numfacture: reference }, resetFields, { session });
-        }
+      if (reference) {
+        const Consultation = getTenantModel<IConsultation>(connection, 'Consultation');
+        await Consultation.updateMany({ Numfacture: reference }, resetFields);
+        const Prescription = getTenantModel<IPrescription>(connection, 'Prescription');
+        await Prescription.updateMany({ Numfacture: reference }, resetFields);
+        await Facturation.updateMany({ Numfacture: reference }, resetFields);
+        const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(connection, 'ExamenHospitalisation');
+        await ExamenHospitalisation.updateMany({ Numfacture: reference }, resetFields);
+      }
 
-        await LigneFacture.deleteMany({ FactureAssur: factureAssurId }, { session });
+      await LigneFacture.deleteMany({ FactureAssur: factureAssurId });
 
-        const FactureRecap = getTenantModel(connection, 'FactureRecap');
-        await FactureRecap.deleteMany({ FactureAssur: factureAssurId }, { session });
+      const FactureRecap = getTenantModel(connection, 'FactureRecap');
+      await FactureRecap.deleteMany({ FactureAssur: factureAssurId });
 
-        await FacturationAssur.findOneAndDelete({ _id: factureAssurId, ...tenantFilter }, { session });
-      });
+      await FacturationAssur.findOneAndDelete({ _id: factureAssurId, ...tenantFilter });
 
       return NextResponse.json({ success: true, message: 'Bordereau annulé avec succès' });
     }
@@ -283,7 +267,5 @@ export async function POST(request: NextRequest) {
     const msg = error instanceof Error ? error.message : 'Erreur';
     const status = msg.includes('introuvable') ? 404 : msg.includes('annuler') || msg.includes('déjà été enregistrés') ? 400 : 500;
     return NextResponse.json({ success: false, message: msg }, { status });
-  } finally {
-    await session.endSession();
   }
 }

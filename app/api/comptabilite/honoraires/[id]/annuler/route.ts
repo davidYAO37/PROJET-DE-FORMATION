@@ -13,7 +13,7 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES, { actions: ["export_comptable"] });
   if (!context) return tenantErrorResponse;
   const { connection } = context;
   const HonoraireMed = getTenantModel<IHonoraireMed>(connection, 'HonoraireMed');

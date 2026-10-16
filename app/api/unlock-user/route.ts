@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth";
 
 export const POST = async (req: NextRequest) => {
   try {
-    const { user: currentUser, error } = await requireAuth(req, ["admin"]);
+    const { user: currentUser, error } = await requireAuth(req, ["admin"], { actions: ["gestion_utilisateurs"] });
     if (error) return error;
 
     const { email } = await req.json();

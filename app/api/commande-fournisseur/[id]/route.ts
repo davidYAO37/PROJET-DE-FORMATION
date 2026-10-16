@@ -16,7 +16,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(context.connection, "CommandeFournisseur");
     const { id } = await params;
@@ -31,7 +31,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(_req, ROLES);
+    const { context, response } = await withTenant(_req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(context.connection, "CommandeFournisseur");
     const { id } = await params;

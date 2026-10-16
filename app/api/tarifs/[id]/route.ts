@@ -6,6 +6,7 @@ import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin","medecin","accueil","caisse","comptable","biologiste","technicienlabo","radiologue","pharmacien"];
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_assurances"] };
 
 // ✅ Récupération des tarifs ou initialisation si vides
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -54,7 +55,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 // ✅ Mise à jour des tarifs (sauvegarde)
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
-        const { context, response } = await withTenant(req, WRITE_ROLES);
+        const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
         if (!context) return response;
         const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
         const { id } = await params;

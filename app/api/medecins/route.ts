@@ -7,6 +7,8 @@ import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier", "facturation", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_medecins"
+const WRITE_OPTIONS = { actions: ["parametrage_medecins"] };
 
 export async function GET(req: NextRequest) {
   const { context, response } = await withTenant(req, READ_ROLES);
@@ -22,7 +24,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { context, response } = await withTenant(req, WRITE_ROLES);
+  const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const Medecin = getTenantModel<IMedecin>(context.connection, "Medecin");
   try {

@@ -6,7 +6,7 @@ import { IConsultation } from "@/models/consultation";
 const ROLES = ["admin", "caisse", "comptable", "accueil"];
 
 export async function GET(req: NextRequest) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["annulation_encaissement"] });
     if (!context) return response;
     const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
     getTenantModel(context.connection, "Patient");

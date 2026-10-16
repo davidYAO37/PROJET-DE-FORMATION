@@ -56,7 +56,8 @@ export default function ModePaiementPharmAccueil({
                             <Form.Label>Total facture</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={totaux?.montantTotal || 0}
+                                step={1}
+                                value={Math.round(totaux?.montantTotal || 0)}
                                 readOnly
                             />
                         </Form.Group>
@@ -67,7 +68,8 @@ export default function ModePaiementPharmAccueil({
                             <Form.Label>Part Assurance</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={totaux?.partAssurance || 0}
+                                step={1}
+                                value={Math.round(totaux?.partAssurance || 0)}
                                 readOnly
                             />
                         </Form.Group>
@@ -78,7 +80,8 @@ export default function ModePaiementPharmAccueil({
                             <Form.Label>Part Patient</Form.Label>
                             <Form.Control
                                 type="number"
-                                value={totaux?.partAssure || 0}
+                                step={1}
+                                value={Math.round(totaux?.partAssure || 0)}
                                 readOnly
                             />
                         </Form.Group>
@@ -91,8 +94,9 @@ export default function ModePaiementPharmAccueil({
                         <Form.Label>Montant à Regler</Form.Label>
                         <Form.Control
                             type="number"
+                            step={1}
                             className="bg-info-subtle"
-                            value={Math.max(0, (totaux?.partAssure || 0))}
+                            value={Math.round(Math.max(0, (totaux?.partAssure || 0)))}
                             readOnly
                         />
                     </Form.Group>

@@ -6,6 +6,9 @@ import { getTenantModel } from "@/lib/tenantModels";
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier"];
 const WRITE_ROLES = ["admin", "medecin", "caisse", "infirmier"];
 
+// Tous les montants doivent être des entiers
+const toInt = (v: any) => Math.round(Number(v) || 0);
+
 // GET /api/patientprescriptionFacture?reference=xxx&IDPRESCRIPTION=xxx&_id=xxx&CodePrestation=xxx
 export async function GET(request: NextRequest) {
     const { context, response } = await withTenant(request, READ_ROLES);
@@ -83,11 +86,11 @@ export async function POST(request: NextRequest) {
             ModeVente: body.ModeVente === "BOITE" || body.ModeVente === "DETAIL" ? body.ModeVente : undefined,
             posologie: body.posologie || "",
             DatePres: body.DatePres ? new Date(body.DatePres) : new Date(),
-            prixUnitaire: Number(body.prixUnitaire) || 0,
-            prixTotal: Number(body.prixTotal) || 0,
+            prixUnitaire: toInt(body.prixUnitaire),
+            prixTotal: toInt(body.prixTotal),
             nomMedicament: body.nomMedicament || "",
-            partAssurance: Number(body.partAssurance) || 0,
-            partAssure: Number(body.partAssure) || 0,
+            partAssurance: toInt(body.partAssurance),
+            partAssure: toInt(body.partAssure),
             CodePrestation: body.CodePrestation,
             // Champs optionnels
             reference: body.reference,
@@ -109,7 +112,7 @@ export async function POST(request: NextRequest) {
         // Ne pas mapper IDpriseCharge vers priseCharge car IDpriseCharge est un string (ID)
         // Ne l'inclure que si c'est un nombre valide
         if (body.priseCharge !== undefined && body.priseCharge !== null && body.priseCharge !== "") {
-            const priseChargeNum = Number(body.priseCharge);
+            const priseChargeNum = toInt(body.priseCharge);
             if (!isNaN(priseChargeNum) && typeof body.priseCharge !== 'string') {
                 patientPrescriptionData.priseCharge = priseChargeNum;
             }

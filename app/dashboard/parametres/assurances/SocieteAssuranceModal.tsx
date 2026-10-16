@@ -18,6 +18,15 @@ type Props = {
     assurance: Assurance | null;
 };
 
+const getSocietes = (data: unknown): SocieteAssurance[] => {
+    if (Array.isArray(data)) return data;
+    if (data && typeof data === "object" && "societes" in data) {
+        const societes = (data as { societes?: unknown }).societes;
+        return Array.isArray(societes) ? societes : [];
+    }
+    return [];
+};
+
 export default function SocieteAssuranceModal({ show, onHide, assurance }: Props) {
     const [societes, setSocietes] = useState<SocieteAssurance[]>([]);
     const [loading, setLoading] = useState(false);
@@ -48,13 +57,13 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
                             body: JSON.stringify({ societe: assurance.designationassurance, assuranceId: assurance._id })
                         });
                         if (res.ok) {
-                            const societes = await res.json();
-                            setSocietes(societes);
+                            const data = await res.json();
+                            setSocietes(getSocietes(data));
                         } else {
                             setSocietes([]);
                         }
                     } else {
-                        setSocietes(Array.isArray(data) ? data : []);
+                        setSocietes(getSocietes(data));
                     }
                 })
                 .finally(() => setLoading(false));
@@ -73,10 +82,9 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
         });
         if (res.ok) {
             const data = await res.json();
-            const societesList = data.societes || data;
             const created = data.created;
 
-            setSocietes(societesList);
+            setSocietes(getSocietes(data));
             setForm({ societe: "" });
 
             // Initialiser les tarifs propres de la société comme une copie des tarifs assurance
@@ -99,7 +107,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
         });
         if (res.ok) {
             const data = await res.json();
-            setSocietes(data);
+            setSocietes(getSocietes(data));
             setEditId(null);
             setEditSurplus(null);
         }
@@ -122,7 +130,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
         });
         if (res.ok) {
             const data = await res.json();
-            setSocietes(data);
+            setSocietes(getSocietes(data));
         }
         setDeletingId(null);
     };

@@ -110,9 +110,9 @@ export async function GET(request: NextRequest) {
         taux: f.Taux || '',
         patient: f.PatientP || '',
         prestation: isPharmacie ? 'PHARMACIE' : (f.Designationtypeacte || 'PRESTATION'),
-        montantTotal: f.Montanttotal || 0,
-        partAssurance: f.PartAssuranceP || 0,
-        partAssure: f.TotalapayerPatient || 0,
+        montantTotal: arrondi(f.Montanttotal || 0),
+        partAssurance: arrondi(f.PartAssuranceP || 0),
+        partAssure: arrondi(f.TotalapayerPatient || 0),
         societePatient: f.SOCIETE_PATIENT || '',
         typeActe: isPharmacie ? 'PHARMACIE' : (f.Designationtypeacte || 'PRESTATION'),
         aHospitalisation,
@@ -145,9 +145,9 @@ export async function GET(request: NextRequest) {
         taux: String(c.tauxAssurance || ''),
         patient: c.PatientP || '',
         prestation: c.designationC || 'CONSULTATION',
-        montantTotal: c.PrixClinique || 0,
-        partAssurance: c.PartAssurance || 0,
-        partAssure: c.montantapayer || 0,
+        montantTotal: arrondi(c.PrixClinique || 0),
+        partAssurance: arrondi(c.PartAssurance || 0),
+        partAssure: arrondi(c.montantapayer || 0),
         societePatient: c.SOCIETE_PATIENT || '',
         typeActe: 'CONSULTATION',
         aHospitalisation: 0,
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES, { actions: ["export_comptable"] });
   if (!context) return tenantErrorResponse;
   const { connection } = context;
   const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');
@@ -194,116 +194,89 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, message: 'Identifiant assurance invalide' }, { status: 400 });
   }
 
-  const session = await connection.startSession();
   let factureAssur: any;
+  let reference = '';
 
   try {
-    await session.withTransaction(async () => {
-      const assurance = await Assurance.findById(assuranceId).session(session).lean();
-      if (!assurance) {
-        throw new Error('Assurance introuvable');
-      }
+    const assurance = await Assurance.findById(assuranceId).lean();
+    if (!assurance) {
+      return NextResponse.json({ success: false, message: 'Assurance introuvable' }, { status: 404 });
+    }
 
-      const total = lignes.reduce(
-        (s, l) => ({
-          montantTotal: s.montantTotal + (l.montantTotal || 0),
-          partAssurance: s.partAssurance + (l.partAssurance || 0),
-          partAssure: s.partAssure + (l.partAssure || 0),
-        }),
-        { montantTotal: 0, partAssurance: 0, partAssure: 0 }
-      );
+    const total = lignes.reduce(
+      (s, l) => ({
+        montantTotal: s.montantTotal + (l.montantTotal || 0),
+        partAssurance: s.partAssurance + (l.partAssurance || 0),
+        partAssure: s.partAssure + (l.partAssure || 0),
+      }),
+      { montantTotal: 0, partAssurance: 0, partAssure: 0 }
+    );
 
-      const debutF = new Date(dateDebut);
-      const finF = new Date(dateFin);
-      const dateSys = new Date();
-      const reference = `${Date.now()}${finF.getMonth() + 1}${finF.getMonth() + 1}${finF.getFullYear()}`;
+    const debutF = new Date(dateDebut);
+    const finF = new Date(dateFin);
+    const dateSys = new Date();
+    reference = `${Date.now()}${finF.getMonth() + 1}${finF.getMonth() + 1}${finF.getFullYear()}`;
 
-      [factureAssur] = await FacturationAssur.create(
-        [
-          {
-            Reference: reference,
-            Date: dateSys,
-            MontantTotalFacture: arrondi(total.montantTotal),
-            Partassure: arrondi(total.partAssure),
-            PartAssurance: arrondi(total.partAssurance),
-            DebutF: debutF,
-            FinF: finF,
-            Saisirpar: saisirpar || '',
-            Assurance: assurance.designationassurance,
-            etat_facture: false,
-            TotalPaye: 0,
-            Restapayer: arrondi(total.partAssurance),
-            entrepriseId: context.entrepriseId || '',
-          },
-        ],
-        { session }
-      );
+    factureAssur = await FacturationAssur.create({
+      Reference: reference,
+      Date: dateSys,
+      MontantTotalFacture: arrondi(total.montantTotal),
+      Partassure: arrondi(total.partAssure),
+      PartAssurance: arrondi(total.partAssurance),
+      DebutF: debutF,
+      FinF: finF,
+      Saisirpar: saisirpar || '',
+      Assurance: assurance.designationassurance,
+      etat_facture: false,
+      TotalPaye: 0,
+      Restapayer: arrondi(total.partAssurance),
+      entrepriseId: context.entrepriseId || '',
+    });
 
+    try {
       for (const l of lignes) {
-        await LigneFacture.create(
-          [
-            {
-              DateFacture: l.date ? new Date(l.date) : dateSys,
-              TotalHT: l.montantTotal || 0,
-              FactureAssur: factureAssur._id,
-              ACTEF: l.prestation,
-              NumBon: l.numBon,
-              Matricule: l.matricule,
-              Partassure: l.partAssure || 0,
-              PartAssurance: l.partAssurance || 0,
-              Totalacte: l.montantTotal || 0,
-              TYPEACTE: l.typeActe,
-              SaisiLe: dateSys,
-              SaisiPar: saisirpar || '',
-              Beneficiaire: l.patient,
-              SOCIETE_PATIENT: l.societePatient || '',
-              IDCONSULTATION: l.idConsultation ? new mongoose.Types.ObjectId(l.idConsultation) : undefined,
-              IDPRESCRIPTION: l.idPrescription ? new mongoose.Types.ObjectId(l.idPrescription) : undefined,
-              idHospitalisation: l.idHospitalisation ? new mongoose.Types.ObjectId(l.idHospitalisation) : undefined,
-              IDFACTURATION: l.idFacturation ? new mongoose.Types.ObjectId(l.idFacturation) : undefined,
-              AHospitalisation: l.aHospitalisation || 0,
-              entrepriseId: context.entrepriseId,
-            },
-          ],
-          { session }
-        );
+        await LigneFacture.create({
+          DateFacture: l.date ? new Date(l.date) : dateSys,
+          TotalHT: arrondi(l.montantTotal || 0),
+          FactureAssur: factureAssur._id,
+          ACTEF: l.prestation,
+          NumBon: l.numBon,
+          Matricule: l.matricule,
+          Partassure: arrondi(l.partAssure || 0),
+          PartAssurance: arrondi(l.partAssurance || 0),
+          Totalacte: arrondi(l.montantTotal || 0),
+          TYPEACTE: l.typeActe,
+          SaisiLe: dateSys,
+          SaisiPar: saisirpar || '',
+          Beneficiaire: l.patient,
+          SOCIETE_PATIENT: l.societePatient || '',
+          IDCONSULTATION: l.idConsultation ? new mongoose.Types.ObjectId(l.idConsultation) : undefined,
+          IDPRESCRIPTION: l.idPrescription ? new mongoose.Types.ObjectId(l.idPrescription) : undefined,
+          idHospitalisation: l.idHospitalisation ? new mongoose.Types.ObjectId(l.idHospitalisation) : undefined,
+          IDFACTURATION: l.idFacturation ? new mongoose.Types.ObjectId(l.idFacturation) : undefined,
+          AHospitalisation: l.aHospitalisation || 0,
+          entrepriseId: context.entrepriseId,
+        });
       }
 
       const consultationsIds = lignes.filter(l => l.idConsultation).map(l => l.idConsultation!);
       const prescriptionsIds = lignes.filter(l => l.idPrescription).map(l => l.idPrescription!);
       const facturationsIds = lignes.filter(l => l.idFacturation).map(l => l.idFacturation!);
+      const setFacture = { $set: { StatutFacture: true, Numfacture: reference } };
 
       if (consultationsIds.length > 0) {
-        await Consultation.updateMany(
-          { _id: { $in: consultationsIds }, ...getTenantFilter(context) },
-          { $set: { StatutFacture: true, Numfacture: reference } },
-          { session }
-        );
+        await Consultation.updateMany({ _id: { $in: consultationsIds }, ...getTenantFilter(context) }, setFacture);
       }
-
       if (prescriptionsIds.length > 0) {
-        await Prescription.updateMany(
-          { _id: { $in: prescriptionsIds }, ...getTenantFilter(context) },
-          { $set: { StatutFacture: true, Numfacture: reference } },
-          { session }
-        );
+        await Prescription.updateMany({ _id: { $in: prescriptionsIds }, ...getTenantFilter(context) }, setFacture);
       }
-
       if (facturationsIds.length > 0) {
-        await Facturation.updateMany(
-          { _id: { $in: facturationsIds }, ...getTenantFilter(context) },
-          { $set: { StatutFacture: true, Numfacture: reference } },
-          { session }
-        );
+        await Facturation.updateMany({ _id: { $in: facturationsIds }, ...getTenantFilter(context) }, setFacture);
       }
 
       const hospitalisationsIds = lignes.filter(l => l.idHospitalisation).map(l => l.idHospitalisation!);
       if (hospitalisationsIds.length > 0) {
-        await ExamenHospitalisation.updateMany(
-          { _id: { $in: hospitalisationsIds }, ...getTenantFilter(context) },
-          { $set: { StatutFacture: true, Numfacture: reference } },
-          { session }
-        );
+        await ExamenHospitalisation.updateMany({ _id: { $in: hospitalisationsIds }, ...getTenantFilter(context) }, setFacture);
       }
 
       const typesActes = new Map<string, { montant: number; partAssurance: number; partAssure: number }>();
@@ -317,28 +290,36 @@ export async function POST(request: NextRequest) {
       }
 
       for (const [acte, montants] of typesActes.entries()) {
-        await FactureRecap.create(
-          [
-            {
-              Numfacture: reference,
-              ACTE: acte,
-              montantacte: arrondi(montants.montant),
-              Partassure: arrondi(montants.partAssure),
-              PartAssurance: arrondi(montants.partAssurance),
-              DebutF: debutF,
-              FinF: finF,
-              DateSaisie: dateSys,
-              FactureAssur: factureAssur._id,
-              Assurance: assurance.designationassurance,
-              CreePar: saisirpar || '',
-              NCC: (assurance as any).NCC || '',
-              entrepriseId: context.entrepriseId,
-            },
-          ],
-          { session }
-        );
+        await FactureRecap.create({
+          Numfacture: reference,
+          ACTE: acte,
+          montantacte: arrondi(montants.montant),
+          Partassure: arrondi(montants.partAssure),
+          PartAssurance: arrondi(montants.partAssurance),
+          DebutF: debutF,
+          FinF: finF,
+          DateSaisie: dateSys,
+          FactureAssur: factureAssur._id,
+          Assurance: assurance.designationassurance,
+          CreePar: saisirpar || '',
+          NCC: (assurance as any).NCC || '',
+          entrepriseId: context.entrepriseId,
+        });
       }
-    });
+    } catch (err) {
+      // Rollback manuel : rétablir les statuts puis supprimer les documents créés
+      const resetFields = { $set: { StatutFacture: false, Numfacture: '' } };
+      await Promise.allSettled([
+        Consultation.updateMany({ Numfacture: reference, ...getTenantFilter(context) }, resetFields),
+        Prescription.updateMany({ Numfacture: reference, ...getTenantFilter(context) }, resetFields),
+        Facturation.updateMany({ Numfacture: reference, ...getTenantFilter(context) }, resetFields),
+        ExamenHospitalisation.updateMany({ Numfacture: reference, ...getTenantFilter(context) }, resetFields),
+        LigneFacture.deleteMany({ FactureAssur: factureAssur._id, ...getTenantFilter(context) }),
+        FactureRecap.deleteMany({ FactureAssur: factureAssur._id, ...getTenantFilter(context) }),
+        FacturationAssur.deleteOne({ _id: factureAssur._id, ...getTenantFilter(context) }),
+      ]);
+      throw err;
+    }
 
     return NextResponse.json({
       success: true,
@@ -350,7 +331,5 @@ export async function POST(request: NextRequest) {
     const msg = error instanceof Error ? error.message : 'Erreur';
     const status = msg.includes('introuvable') ? 404 : msg.includes('Données manquantes') || msg.includes('invalide') ? 400 : 500;
     return NextResponse.json({ success: false, message: msg }, { status });
-  } finally {
-    await session.endSession();
   }
 }

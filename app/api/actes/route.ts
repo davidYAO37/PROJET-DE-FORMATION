@@ -2,9 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IActeClinique } from "@/models/acteclinique";
+import { Entreprise, IEntreprise } from "@/models/entreprise";
 
 const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_actes_clinique"
+const WRITE_OPTIONS = { actions: ["parametrage_actes_clinique"] };
 
 export async function GET(req: NextRequest) {
     const { context, response } = await withTenant(req, READ_ROLES);
@@ -26,13 +29,23 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
 
     const body = await req.json();
 
     console.log("POST /api/actes - Données reçues:", body);
+
+    // Si l'entreprise ne travaille pas avec des apporteurs, forcer ActePourApporteur à faux
+    let apporteurActif = true;
+    if (context.entrepriseId) {
+        const entreprise = await Entreprise.findById(context.entrepriseId).lean<IEntreprise | null>();
+        apporteurActif = !!entreprise?.travailleAvecApporteur;
+    }
+    if (!apporteurActif) {
+        body.ActePourApporteur = false;
+    }
 
     try {
         const acte = await ActeClinique.create(body);

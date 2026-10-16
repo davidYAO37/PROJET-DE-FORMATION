@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Form, Row, Spinner } from 'react-bootstrap';
+import { Card, Col, Form, Row, Spinner } from 'react-bootstrap';
 import { ExamenHospitalisationForm } from '@/types/examenHospitalisation';
 import { IMedecin } from '@/models/medecin';
 import { getMedecins } from '@/app/pages/services/medecinService';
@@ -8,20 +8,29 @@ interface CliniqueInfoProps {
     formData: ExamenHospitalisationForm;
     setFormData: React.Dispatch<React.SetStateAction<ExamenHospitalisationForm>>;
     hasActesMedecin: boolean;
+    hasActesApporteur: boolean;
+    apporteurActif?: boolean;
 }
 
+type Apporteur = { _id: string; nom: string; taux: number };
 
 
 
-export default function CliniqueInfoCaisseManuelle({ formData, setFormData, hasActesMedecin }: CliniqueInfoProps) {
+
+export default function CliniqueInfoCaisseManuelle({ formData, setFormData, hasActesMedecin, hasActesApporteur, apporteurActif = true }: CliniqueInfoProps) {
     const [medecinExecutant, setMedecinExecutant] = useState<IMedecin[]>([]);
+    const [apporteurs, setApporteurs] = useState<Apporteur[]>([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchMedecinExecutant = async () => {
             try {
-                const data = await getMedecins();
+                const [data, apporteursData] = await Promise.all([
+                    getMedecins(),
+                    fetch("/api/apporteurs?actifs=true").then(res => res.json()),
+                ]);
                 setMedecinExecutant(data);
+                setApporteurs(Array.isArray(apporteursData) ? apporteursData : []);
             } catch (error) {
                 console.error('Erreur lors du chargement des médecins:', error);
             } finally {
@@ -43,6 +52,17 @@ export default function CliniqueInfoCaisseManuelle({ formData, setFormData, hasA
         }
     }, [hasActesMedecin, formData.medecinId, setFormData]);
 
+    // Réinitialiser l'apporteur si la fonctionnalité est désactivée ou s'il n'y a pas d'actes apporteur
+    useEffect(() => {
+        if ((!apporteurActif || !hasActesApporteur) && formData.apporteurId) {
+            setFormData(prev => ({
+                ...prev,
+                apporteurId: '',
+                apporteurNom: ''
+            }));
+        }
+    }, [apporteurActif, hasActesApporteur, formData.apporteurId, setFormData]);
+
     
     const handleMedecinExecutantChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const medecinId = e.target.value;
@@ -58,8 +78,8 @@ export default function CliniqueInfoCaisseManuelle({ formData, setFormData, hasA
         <Card>
             <Card.Header> Clinique Info</Card.Header>
             <Card.Body className=" justify-content-between align-items-center ">
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                    <Form.Group className="col-6 me-4 ">
+                <Row className="g-3 align-items-end mb-2">
+                    <Form.Group as={Col} md={4}>
                         <Form.Label>Renseignements Cliniques</Form.Label>
                         <Form.Control
                             as="textarea"
@@ -69,7 +89,7 @@ export default function CliniqueInfoCaisseManuelle({ formData, setFormData, hasA
                         />
                     </Form.Group>
 
-                    <Form.Group className="col-6 px-3 me-4">
+                    <Form.Group as={Col} md={4}>
                         <Form.Label>Médecin Exécutant</Form.Label>
                         {loading ? (
                             <div className="text-center">
@@ -100,7 +120,16 @@ export default function CliniqueInfoCaisseManuelle({ formData, setFormData, hasA
                             </Form.Select>
                         )}
                     </Form.Group>
-                </div>
+                    {apporteurActif && (
+                    <Form.Group as={Col} md={4}>
+                        <Form.Label>Apporteur</Form.Label>
+                        <Form.Select value={formData.apporteurId || ""} onChange={e => setFormData(prev => ({ ...prev, apporteurId: e.target.value }))} required={hasActesApporteur} disabled={!hasActesApporteur || loading}>
+                            <option value="">{hasActesApporteur ? "Sélectionner un apporteur" : "Aucun acte pour apporteur"}</option>
+                            {apporteurs.map(a => <option key={a._id} value={a._id}>{a.nom} ({a.taux}%)</option>)}
+                        </Form.Select>
+                    </Form.Group>
+                    )}
+                </Row>
             </Card.Body>
         </Card>
 

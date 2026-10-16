@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
 
 // POST /api/stock - Créer un nouveau stock
 export async function POST(request: NextRequest) {
-    const { context, response } = await withTenant(request, ROLES);
+    const { context, response } = await withTenant(request, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
 

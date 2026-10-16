@@ -4,6 +4,7 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IPharmacie } from "@/models/Pharmacie";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_pharmacie"] };
 
 // Fonction utilitaire de nettoyage
 function cleanNumber(value: any): number {
@@ -26,7 +27,7 @@ function cleanNumber(value: any): number {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
 

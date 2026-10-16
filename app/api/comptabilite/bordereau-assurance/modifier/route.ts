@@ -10,7 +10,7 @@ import mongoose from 'mongoose';
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 export async function PUT(request: NextRequest) {
-  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+  const { context, response: tenantErrorResponse } = await withTenant(request, ROLES, { actions: ["export_comptable"] });
   if (!context) return tenantErrorResponse;
   const { connection } = context;
   const Facturation = getTenantModel<IFacturation>(connection, 'Facturation');

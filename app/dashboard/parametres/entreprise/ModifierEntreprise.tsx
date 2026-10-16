@@ -27,6 +27,7 @@ export default function ModifierEntreprise({
   const [maintenancePrice, setMaintenancePrice] = useState<number | string>(0);
   const [licencePrice, setLicencePrice] = useState<number | string>(0);
   const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
+  const [travailleAvecApporteur, setTravailleAvecApporteur] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -52,6 +53,7 @@ export default function ModifierEntreprise({
       setMaintenancePrice(entreprise?.maintenancePrice ?? 0);
       setLicencePrice(entreprise?.licencePrice ?? 0);
       setMaintenanceAccepted(!!entreprise?.maintenanceAccepted);
+      setTravailleAvecApporteur(!!entreprise?.travailleAvecApporteur);
 
       // Configurer le preview du logo existant
       if (entreprise.LogoE) {
@@ -86,6 +88,7 @@ export default function ModifierEntreprise({
       formData.append("maintenancePrice", String(maintenancePrice ?? 0));
       formData.append("licencePrice", String(licencePrice ?? 0));
       formData.append("maintenanceAccepted", String(maintenanceAccepted));
+      formData.append("travailleAvecApporteur", String(travailleAvecApporteur));
 
       // Ajouter le fichier seulement si un nouveau fichier est sélectionné
       if (LogoEFile) {
@@ -208,6 +211,20 @@ export default function ModifierEntreprise({
                         <Form.Text className="text-muted">
                           Activé = l&apos;entreprise a accepté la maintenance : l&apos;accès sera bloqué si la maintenance expire sans être renouvelée.
                           Désactivé = aucun blocage lié à la maintenance (licence perpétuelle utilisable sans limite).
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="travaille-avec-apporteur-switch-edit"
+                          label="L'entreprise travaille avec des apporteurs"
+                          checked={travailleAvecApporteur}
+                          onChange={(e) => setTravailleAvecApporteur(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Active la gestion des apporteurs et de leurs honoraires pour cette entreprise.
                         </Form.Text>
                       </Form.Group>
                     </Col>

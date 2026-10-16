@@ -6,8 +6,11 @@ import ListeActe from "./ListeActe";
 import ModifierActe from "./ModifierActe";
 import { ActeClinique } from "@/types/acteclinique";
 import AjouterActe from "./AjouterActe";
+import { useEntreprise } from "@/hooks/useEntreprise";
 
 export default function ActesPage() {
+    const { entreprise } = useEntreprise();
+    const apporteurActif = !!entreprise?.travailleAvecApporteur;
     const [actes, setActes] = useState<ActeClinique[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -103,8 +106,8 @@ export default function ActesPage() {
             )}
 
             {/* Modales */}
-            <AjouterActe show={showAdd} onHide={() => setShowAdd(false)} onAdd={handleAdd} />
-            <ModifierActe show={showEdit} onHide={() => setShowEdit(false)} acte={selected} onSave={handleEdit} />
+            <AjouterActe show={showAdd} onHide={() => setShowAdd(false)} onAdd={handleAdd} apporteurActif={apporteurActif} />
+            <ModifierActe show={showEdit} onHide={() => setShowEdit(false)} acte={selected} onSave={handleEdit} apporteurActif={apporteurActif} />
         </div>
     );
 }

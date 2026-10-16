@@ -5,6 +5,7 @@ import { IParamBiochimie } from "@/models/paramBiochimie";
 
 const READ_ROLES = ["admin", "accueil", "biologiste", "caisse", "comptable", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_actes_biologie"] };
 
 export async function GET(req: NextRequest) {
     const { context, response } = await withTenant(req, READ_ROLES);
@@ -20,7 +21,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ParamBiochimie = getTenantModel<IParamBiochimie>(context.connection, "ParamBiochimie");
 

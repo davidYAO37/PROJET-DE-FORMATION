@@ -9,6 +9,9 @@ import { IConsultation } from "@/models/consultation";
 
 const ROLES = ["admin", "medecin", "accueil", "infirmier", "biologiste", "technicienlabo"];
 
+// Tous les montants doivent être des entiers
+const toInt = (v: any) => Math.round(Number(v) || 0);
+
 export async function GET(req: NextRequest) {
     const { context, response } = await withTenant(req, ROLES);
     if (!context) return response;
@@ -202,32 +205,32 @@ export async function POST(req: NextRequest) {
                         IdPatient: patientId || l.IdPatient,
                         qte: l.QteP || 1,
                         dateLignePrestation: l.DATE ? new Date(l.DATE) : new Date(),
-                        prix: l.Prixunitaire || 0,
-                        prixTotal: l.PrixTotal || 0,
-                        partAssurance: l.PartAssurance || 0,
-                        partAssure: l.PartAssure || 0,
+                        prix: toInt(l.Prixunitaire),
+                        prixTotal: toInt(l.PrixTotal),
+                        partAssurance: toInt(l.PartAssurance),
+                        partAssure: toInt(l.PartAssure),
                         tauxAssurance: header.Taux || 0,
                         prestation: l.Acte || "",
                         coefficientActe: l.Coefficient || 1,
                         lettreCle: l.Lettre_Cle || "",
                         idActe: l.IDACTE,
-                        prixClinique: l.Accepter || 0,
-                        reliquatPatient: l.Reliquat || 0,
-                        montantMedecinExecutant: l.Montant_MedExecutant || 0,
+                        prixClinique: toInt(l.Accepter),
+                        reliquatPatient: toInt(l.Reliquat),
+                        montantMedecinExecutant: toInt(l.Montant_MedExecutant),
                         numMedecinExecutant: (l.StatutMedecinActe === "OUI" && header.medecinId) ? header.medecinId : "",
                         acteMedecin: l.StatutMedecinActe === "OUI" ? "OUI" : "NON",
-                        totalCoefficient: l.TotalRelicatCoefAssur || 0,
-                        reliquatCoefAssurance: l.Coef_ASSUR || 0,
+                        totalCoefficient: toInt(l.TotalRelicatCoefAssur),
+                        reliquatCoefAssurance: toInt(l.Coef_ASSUR),
                         exclusionActe: l.Exclusion || "Accepter",
                         coefficientAssur: l.COEFFICIENT_ASSURANCE || 0,
-                        tarifAssurance: l.TARIF_ASSURANCE || 0,
-                        totalSurplus: (l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0),
-                        montantTotalAPayer: (l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0) + (l.PartAssure || 0),
-                        prixAccepte: l.Accepter || 0,
-                        prixRefuse: l.Refuser || 0,
+                        tarifAssurance: toInt(l.TARIF_ASSURANCE),
+                        totalSurplus: toInt((l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0)),
+                        montantTotalAPayer: toInt((l.Reliquat || 0) + (l.TotalRelicatCoefAssur || 0) + (l.PartAssure || 0)),
+                        prixAccepte: toInt(l.Accepter),
+                        prixRefuse: toInt(l.Refuser),
                         statutPrescriptionMedecin: l.Statutprescription || 2,
                         coefficientClinique: l.CoefClinique || l.Coefficient || 1,
-                        taxe: l.TAXE || 0,
+                        taxe: toInt(l.TAXE),
                         Assurance: header.Assurance || "",
                         medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",

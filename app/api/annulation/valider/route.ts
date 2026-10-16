@@ -74,7 +74,7 @@ async function archiverAnnulationFacture(
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["annulation_encaissement"] });
     if (!context) return response;
     const Consultation = getTenantModel<IConsultation>(context.connection, "Consultation");
     const Facturation = getTenantModel<IFacturation>(context.connection, "Facturation");

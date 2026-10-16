@@ -4,10 +4,11 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IParametreCRendu } from "@/models/ParametreCRendu";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_actes_radio"] };
 
 // PUT - Mettre à jour un paramètre de compte rendu
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response } = await withTenant(request, WRITE_ROLES);
+  const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const ParametreCRendu = getTenantModel<IParametreCRendu>(context.connection, "ParametreCRendu");
 
@@ -57,7 +58,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 
 // DELETE - Supprimer un paramètre de compte rendu
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response } = await withTenant(request, WRITE_ROLES);
+  const { context, response } = await withTenant(request, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
   const ParametreCRendu = getTenantModel<IParametreCRendu>(context.connection, "ParametreCRendu");
 

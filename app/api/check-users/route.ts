@@ -6,7 +6,7 @@ import { requireAuth } from "@/lib/auth";
 
 export const GET = async (req: NextRequest) => {
   try {
-    const { user: currentUser, error } = await requireAuth(req, ["admin"]);
+    const { user: currentUser, error } = await requireAuth(req, ["admin"], { actions: ["gestion_utilisateurs"] });
     if (error) return error;
 
     await db();
@@ -18,9 +18,10 @@ export const GET = async (req: NextRequest) => {
         : { entrepriseId: currentUser!.entrepriseId };
 
     const userCount = await UserCollection.countDocuments(filter);
-    const users = await UserCollection.find(filter, { 
-      _id: 1, nom: 1, prenom: 1, email: 1, type: 1, uid: 1, entrepriseId: 1, 
-      isLocked: 1, failedAttempts: 1, remainingAttempts: 1, lockedUntil: 1
+    const users = await UserCollection.find(filter, {
+      _id: 1, nom: 1, prenom: 1, email: 1, type: 1, uid: 1, entrepriseId: 1,
+      isLocked: 1, failedAttempts: 1, remainingAttempts: 1, lockedUntil: 1,
+      permissions: 1
     }).lean();
     
     return NextResponse.json({
@@ -37,7 +38,8 @@ export const GET = async (req: NextRequest) => {
         isLocked: u.isLocked || false,
         failedAttempts: u.failedAttempts || 0,
         remainingAttempts: u.remainingAttempts || 4,
-        lockedUntil: u.lockedUntil || null
+        lockedUntil: u.lockedUntil || null,
+        permissions: u.permissions || null
       }))
     });
   } catch (error) {

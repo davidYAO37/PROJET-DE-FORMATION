@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic';
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'facturation', 'caisse'];
 
 export async function GET(request: NextRequest) {
-    const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
+    const { context, response: tenantErrorResponse } = await withTenant(request, ROLES, { actions: ["annulation_encaissement"] });
     if (!context) return tenantErrorResponse;
     const Facturation = getTenantModel<IFacturation>(context.connection, 'Facturation');
 

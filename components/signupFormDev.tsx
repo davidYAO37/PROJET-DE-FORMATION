@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { Modal, Button } from "react-bootstrap";
 import EntrepriseSelect from "./EntrepriseSelect";
+import PermissionsSelector, { defaultPermissionsForRole } from "@/components/PermissionsSelector";
 
 const SignupFormDev = () => {
   const [form, setForm] = useState({ nom: "", prenom: "", email: "", type: "", entrepriseId: "" });
@@ -27,9 +28,22 @@ const SignupFormDev = () => {
   const [blockingUser, setBlockingUser] = useState<any | null>(null);
   const [blockMessage, setBlockMessage] = useState("");
   const [showBlockModal, setShowBlockModal] = useState(false);
+  // Permissions personnalisées (création + édition) — super-admin : tous modules
+  const [permServices, setPermServices] = useState<string[]>([]);
+  const [permActions, setPermActions] = useState<string[]>([]);
+  const [permCustomized, setPermCustomized] = useState(false);
+  const [editServices, setEditServices] = useState<string[]>([]);
+  const [editActions, setEditActions] = useState<string[]>([]);
+  const [editCustomized, setEditCustomized] = useState(false);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const next = { ...form, [e.target.name]: e.target.value };
+    setForm(next);
+    if (e.target.name === "type") {
+      const defaults = defaultPermissionsForRole(e.target.value);
+      setPermServices(defaults.services);
+      setPermActions(defaults.actions);
+    }
   };
 
   useEffect(() => {
@@ -183,6 +197,15 @@ const SignupFormDev = () => {
     setEditingUser(user);
     setEditType(user.type || "");
     setEditMessage("");
+    setEditCustomized(!!user.permissions?.customized);
+    if (user.permissions?.customized) {
+      setEditServices(user.permissions.services || []);
+      setEditActions(user.permissions.actions || []);
+    } else {
+      const defaults = defaultPermissionsForRole(user.type || "");
+      setEditServices(defaults.services);
+      setEditActions(defaults.actions);
+    }
     setShowEditModal(true);
   };
 
@@ -203,11 +226,15 @@ const SignupFormDev = () => {
     setEditMessage("Mise à jour en cours...");
 
     try {
+      const isPrivileged = editType === "admin" || editType === "adminsuper";
       const response = await axios.put(`/api/new-users/${editingUser._id}`, {
         nom: editingUser.nom,
         prenom: editingUser.prenom,
         email: editingUser.email,
         type: editType,
+        permissions: isPrivileged
+          ? { services: [], actions: [], customized: false }
+          : { services: editServices, actions: editActions, customized: editCustomized },
       });
 
       if (response.status === 200) {
@@ -295,16 +322,20 @@ const SignupFormDev = () => {
       }
 
       // Création utilisateur via API locale
-      const response = await axios.post("/api/new-users", {
-        ...form,
-        password: password
-      });
+      const payload: any = { ...form, password };
+      if (form.type && form.type !== "admin" && form.type !== "adminsuper") {
+        payload.permissions = { services: permServices, actions: permActions, customized: permCustomized };
+      }
+      const response = await axios.post("/api/new-users", payload);
 
       if (response.status === 201) {
         setMessage("✅ Compte créé avec succès. Vous pouvez maintenant vous connecter !");
         // Réinitialiser le formulaire
         setForm({ nom: "", prenom: "", email: "", type: "", entrepriseId: "" });
         setPassword("");
+        setPermServices([]);
+        setPermActions([]);
+        setPermCustomized(false);
         // Rafraîchir la liste des utilisateurs
         fetchUsers();
         // Fermer la modal après un délai
@@ -421,6 +452,7 @@ const SignupFormDev = () => {
                   <option value="">Sélectionnez un rôle</option>
                   <option value="admin">Administrateur</option>
                   <option value="accueil">Service Accueil</option>
+                  <option value="accueil-caisse">Accueil + Caisse</option>
                   <option value="biologiste">Biologiste</option>
                   <option value="caisse">Caissière</option>
                   <option value="comptable">Comptabilité</option>
@@ -440,6 +472,26 @@ const SignupFormDev = () => {
                   required
                 />
               </div>
+              {form.type && form.type !== "admin" && form.type !== "adminsuper" && (
+                <div className="col-12">
+                  <PermissionsSelector
+                    services={permServices}
+                    actions={permActions}
+                    role={form.type}
+                    onChange={({ services, actions }) => {
+                      setPermServices(services);
+                      setPermActions(actions);
+                      setPermCustomized(true);
+                    }}
+                    onResetToDefaults={() => {
+                      const defaults = defaultPermissionsForRole(form.type);
+                      setPermServices(defaults.services);
+                      setPermActions(defaults.actions);
+                      setPermCustomized(false);
+                    }}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="d-flex justify-content-end gap-2 mt-4">
@@ -788,6 +840,7 @@ const SignupFormDev = () => {
               show={showEditModal}
               onHide={handleCancelEdit}
               centered
+              size="lg"
             >
               <Modal.Header closeButton>
                 <Modal.Title>
@@ -826,11 +879,17 @@ const SignupFormDev = () => {
                       <select
                         className="form-select"
                         value={editType}
-                        onChange={(e) => setEditType(e.target.value)}
+                        onChange={(e) => {
+                          setEditType(e.target.value);
+                          const defaults = defaultPermissionsForRole(e.target.value);
+                          setEditServices(defaults.services);
+                          setEditActions(defaults.actions);
+                        }}
                       >
                         <option value="">Sélectionnez un rôle</option>
                         <option value="admin">Administrateur</option>
                         <option value="accueil">Service Accueil</option>
+                        <option value="accueil-caisse">Accueil + Caisse</option>
                         <option value="biologiste">Biologiste</option>
                         <option value="caisse">Caissière</option>
                         <option value="comptable">Comptabilité</option>
@@ -842,6 +901,25 @@ const SignupFormDev = () => {
                         <option value="facturation">Facturation</option>
                       </select>
                     </div>
+
+                    {editType && editType !== "admin" && editType !== "adminsuper" && (
+                      <PermissionsSelector
+                        services={editServices}
+                        actions={editActions}
+                        role={editType}
+                        onChange={({ services, actions }) => {
+                          setEditServices(services);
+                          setEditActions(actions);
+                          setEditCustomized(true);
+                        }}
+                        onResetToDefaults={() => {
+                          const defaults = defaultPermissionsForRole(editType);
+                          setEditServices(defaults.services);
+                          setEditActions(defaults.actions);
+                          setEditCustomized(false);
+                        }}
+                      />
+                    )}
                   </>
                 )}
               </Modal.Body>

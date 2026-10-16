@@ -9,7 +9,7 @@ import { ILienAutomate } from "@/models/lienAutomate";
 const WRITE_ROLES = ["admin", "biologiste", "technicienlabo"];
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_actes_biologie"] });
     if (!context) return response;
     const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
     const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");

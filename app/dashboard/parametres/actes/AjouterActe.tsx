@@ -9,9 +9,10 @@ type Props = {
     show: boolean;
     onHide: () => void;
     onAdd: (a: ActeClinique) => void;
+    apporteurActif?: boolean;
 };
 
-export default function AjouterActe({ show, onHide, onAdd }: Props) {
+export default function AjouterActe({ show, onHide, onAdd, apporteurActif = true }: Props) {
     const [form, setForm] = useState({
         designationacte: "",
         lettreCle: "",
@@ -20,6 +21,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
         prixMutuel: 0,
         prixPreferentiel: 0,
         MontantAuMed: 0,
+        ActePourApporteur: false,
         MontantAnesthesiste: 0,
         MontantAideOperatoire: 0,
         IDFAMILLE_ACTE_BIOLOGIE: "",
@@ -68,6 +70,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                 prixMutuel: Number(form.prixMutuel),
                 prixPreferentiel: Number(form.prixPreferentiel),
                 MontantAuMed: Number(form.MontantAuMed),
+                ActePourApporteur: apporteurActif ? Boolean(form.ActePourApporteur) : false,
                 MontantAnesthesiste: Number(form.MontantAnesthesiste),
                 MontantAideOperatoire: Number(form.MontantAideOperatoire),
                 IDFAMILLE_ACTE_BIOLOGIE: form.IDFAMILLE_ACTE_BIOLOGIE || undefined,
@@ -96,6 +99,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                 prixMutuel: data.prixMutuel,
                 prixPreferentiel: data.prixPreferentiel,
                 MontantAuMed: data.MontantAuMed,
+                ActePourApporteur: data.ActePourApporteur,
                 IDFAMILLE_ACTE_BIOLOGIE: data.IDFAMILLE_ACTE_BIOLOGIE,
                 consultationviste: data.consultationviste,
                 resultatacte: data.resultatacte,
@@ -110,7 +114,7 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                 ActeNonFacturable: data.ActeNonFacturable,
             };
             onAdd(acteData);
-            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, MontantAnesthesiste: 0, MontantAideOperatoire: 0, IDFAMILLE_ACTE_BIOLOGIE: "", consultationviste: false, ActeNonFacturable: false });
+            setForm({ designationacte: "", lettreCle: "", coefficient: 0, prixClinique: 0, prixMutuel: 0, prixPreferentiel: 0, MontantAuMed: 0, ActePourApporteur: false, MontantAnesthesiste: 0, MontantAideOperatoire: 0, IDFAMILLE_ACTE_BIOLOGIE: "", consultationviste: false, ActeNonFacturable: false });
         } catch (err: any) {
             setError(err.message);
         } finally {
@@ -177,13 +181,24 @@ export default function AjouterActe({ show, onHide, onAdd }: Props) {
                             </Form.Group>
                         </Col>
                     </Row>
-                    <Form.Group className="mb-2">
-                        <Form.Label>Acte pour Médecin ?</Form.Label>
-                        <Form.Select name="MontantAuMed" value={form.MontantAuMed.toString()} onChange={(e) => setForm({ ...form, MontantAuMed: Number(e.target.value) })}>
-                            <option value="0">Non</option>
-                            <option value="1">Oui</option>
-                        </Form.Select>
-                    </Form.Group>
+                    <Row className="mb-2">
+                        <Col md={6}>
+                            <Form.Label>Acte pour Médecin ?</Form.Label>
+                            <Form.Select name="MontantAuMed" value={form.MontantAuMed.toString()} onChange={(e) => setForm({ ...form, MontantAuMed: Number(e.target.value) })}>
+                                <option value="0">Non</option>
+                                <option value="1">Oui</option>
+                            </Form.Select>
+                        </Col>
+                        {apporteurActif && (
+                        <Col md={6}>
+                            <Form.Label>Acte pour Apporteur ?</Form.Label>
+                            <Form.Select name="ActePourApporteur" value={form.ActePourApporteur ? "1" : "0"} onChange={(e) => setForm({ ...form, ActePourApporteur: e.target.value === "1" })}>
+                                <option value="0">Non</option>
+                                <option value="1">Oui</option>
+                            </Form.Select>
+                        </Col>
+                        )}
+                    </Row>
                     <Row className="mb-2">
                         <Col md={6}>
                             <Form.Group>

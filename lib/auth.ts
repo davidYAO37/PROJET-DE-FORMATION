@@ -5,6 +5,13 @@ import { User } from "@/models/users.model";
 import { Entreprise } from "@/models/entreprise";
 import { getLicenceStatus } from "@/lib/licence";
 import { db } from "@/db/mongoConnect";
+import { expandAllowedRoles } from "@/lib/roleUtils";
+import {
+  getUserPermissions,
+  hasActionPermission,
+  matchesAllowedRoles,
+  type ResolvedPermissions,
+} from "@/lib/permissions";
 
 // Chemins toujours accessibles même si la licence de l'entreprise est bloquée :
 // l'utilisateur doit pouvoir consulter son statut et régulariser sa situation
@@ -33,6 +40,18 @@ const TOKEN_NAME = "easy_medical_token";
 const TOKEN_MAX_AGE = 60 * 60 * 24 * 7;
 const IMPERSONATE_COOKIE = "easy_medical_impersonate";
 const IMPERSONATE_MAX_AGE = 60 * 60 * 4; // 4h, session de support limitée
+
+// En production derrière HTTP simple (ex. install locale sur le LAN via
+// http://192.168.x.x:3000), un cookie Secure est refusé par le navigateur et
+// la session ne persiste jamais. COOKIE_SECURE=false permet de le désactiver
+// explicitement ; par défaut on garde secure=true en production.
+function isSecureCookie(): boolean {
+  const override = process.env.COOKIE_SECURE;
+  if (override !== undefined && override !== "") {
+    return override === "true";
+  }
+  return process.env.NODE_ENV === "production";
+}
 
 export interface JWTPayload {
   userId: string;
@@ -66,6 +85,7 @@ export interface CurrentUser {
   type: string;
   entrepriseId?: string;
   uid: string;
+  permissions: ResolvedPermissions;
 }
 
 export async function getCurrentUser(req?: NextRequest): Promise<CurrentUser | null> {
@@ -88,16 +108,45 @@ export async function getCurrentUser(req?: NextRequest): Promise<CurrentUser | n
     type: user.type || "user",
     entrepriseId: user.entrepriseId ? user.entrepriseId.toString() : payload.entrepriseId,
     uid: user.uid || "",
+    permissions: getUserPermissions(user),
   };
 }
 
-export async function requireAuth(req: NextRequest, allowedRoles?: string[]) {
+export interface RequireAuthOptions {
+  /**
+   * Actions requises : l'utilisateur doit posséder TOUTES ces actions.
+   * Peut servir d'alternative au rôle : un utilisateur dont le type n'est
+   * pas dans allowedRoles mais qui possède les actions requises passe.
+   */
+  actions?: string[];
+}
+
+export async function requireAuth(
+  req: NextRequest,
+  allowedRoles?: string[],
+  options?: RequireAuthOptions
+) {
   const user = await getCurrentUser(req);
   if (!user) {
     return { error: NextResponse.json({ message: "Non authentifié" }, { status: 401 }), user: null };
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.type) && user.type !== "adminsuper") {
+  const effectiveRoles = expandAllowedRoles(allowedRoles);
+  const roleAllowed =
+    !effectiveRoles ||
+    effectiveRoles.includes(user.type) ||
+    user.type === "adminsuper" ||
+    // Repli : services personnalisés couvrant les services des rôles demandés
+    matchesAllowedRoles(user, allowedRoles);
+
+  const hasRequiredActions =
+    !!options?.actions?.length &&
+    options.actions.every((action) => hasActionPermission(user, action));
+  const actionsOk = !options?.actions?.length || hasRequiredActions;
+
+  // Accès si : rôle OK + actions requises OK, ou bien rôle KO mais toutes les
+  // actions requises sont accordées (accès alternatif par permission).
+  if (!actionsOk || (!roleAllowed && !hasRequiredActions)) {
     return { error: NextResponse.json({ message: "Accès interdit" }, { status: 403 }), user: null };
   }
 
@@ -127,7 +176,7 @@ export async function requireAuth(req: NextRequest, allowedRoles?: string[]) {
 export async function setAuthCookie(response: NextResponse, token: string) {
   response.cookies.set(TOKEN_NAME, token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureCookie(),
     sameSite: "strict",
     path: "/",
     maxAge: TOKEN_MAX_AGE,
@@ -137,7 +186,7 @@ export async function setAuthCookie(response: NextResponse, token: string) {
 export async function removeAuthCookie(response: NextResponse) {
   response.cookies.set(TOKEN_NAME, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureCookie(),
     sameSite: "strict",
     path: "/",
     maxAge: 0,
@@ -147,7 +196,7 @@ export async function removeAuthCookie(response: NextResponse) {
 export function setImpersonateCookie(response: NextResponse, entrepriseId: string) {
   response.cookies.set(IMPERSONATE_COOKIE, entrepriseId, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureCookie(),
     sameSite: "strict",
     path: "/",
     maxAge: IMPERSONATE_MAX_AGE,
@@ -157,7 +206,7 @@ export function setImpersonateCookie(response: NextResponse, entrepriseId: strin
 export function clearImpersonateCookie(response: NextResponse) {
   response.cookies.set(IMPERSONATE_COOKIE, "", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: isSecureCookie(),
     sameSite: "strict",
     path: "/",
     maxAge: 0,

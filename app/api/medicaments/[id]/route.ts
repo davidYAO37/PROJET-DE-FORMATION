@@ -7,7 +7,7 @@ const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // -------------------- MODIFICATION D'UN Medicament --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     try {
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN MEDICAMENT  --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     try {

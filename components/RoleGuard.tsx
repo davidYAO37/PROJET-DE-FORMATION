@@ -2,10 +2,13 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { SERVICE_HOME, matchesAllowedRoles } from "@/lib/permissions";
 
 interface RoleGuardProps {
   /** Types d'utilisateur autorisés pour cette section (en plus de "adminsuper", toujours autorisé). */
   allowedRoles: string[];
+  /** Actions dont au moins une doit être possédée pour accéder à la section. */
+  allowedActions?: string[];
   children: React.ReactNode;
 }
 
@@ -25,6 +28,7 @@ const ROLE_HOME: Record<string, string> = {
   comptable: "/pages/servicecomptabilite/tcompta",
   facturation: "/pages/servicefacturation/tfacturation",
   accueil: "/pages/serviceaccueil/tpatient",
+  "accueil-caisse": "/pages/serviceaccueilcaisse/taccueilcaisse",
 };
 
 /**
@@ -36,7 +40,7 @@ const ROLE_HOME: Record<string, string> = {
  * section s'afficher (menu, mise en page), même si les appels API sous-jacents
  * finissent par échouer selon leurs propres restrictions de rôle.
  */
-export default function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
+export default function RoleGuard({ allowedRoles, allowedActions, children }: RoleGuardProps) {
   const [status, setStatus] = useState<"loading" | "allowed" | "denied">("loading");
   const router = useRouter();
 
@@ -48,11 +52,30 @@ export default function RoleGuard({ allowedRoles, children }: RoleGuardProps) {
       .then((data) => {
         if (cancelled) return;
         const type = data?.user?.type;
-        if (type && (type === "adminsuper" || allowedRoles.includes(type))) {
+        const userServices: string[] = data?.user?.permissions?.services || [];
+        const userActions: string[] = data?.user?.permissions?.actions || [];
+        const hasAllowedAction =
+          !!allowedActions?.length &&
+          (userActions.includes("*") ||
+            allowedActions.some((a) => userActions.includes(a)));
+        const allowed =
+          !!type &&
+          (type === "adminsuper" ||
+            allowedRoles.includes(type) ||
+            // Repli : les services personnalisés couvrent un rôle autorisé
+            matchesAllowedRoles(
+              { type, permissions: { services: userServices, customized: true } },
+              allowedRoles
+            ) ||
+            hasAllowedAction);
+        if (allowed) {
           setStatus("allowed");
         } else {
           setStatus("denied");
-          const home = (type && ROLE_HOME[type]) || "/connexion";
+          const home =
+            (type && ROLE_HOME[type]) ||
+            (userServices.length > 0 && SERVICE_HOME[userServices[0]]) ||
+            "/connexion";
           setTimeout(() => {
             if (!cancelled) router.replace(home);
           }, 1200);

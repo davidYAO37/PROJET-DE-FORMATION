@@ -7,7 +7,7 @@ const WRITE_ROLES = ["admin"];
 
 // Supprime les doublons de tarifs pour une assurance donnée
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_assurances"] });
     if (!context) return response;
     const TarifAssurance = getTenantModel<ITarifAssurance>(context.connection, "TarifAssurance");
     const { assuranceId } = await req.json();

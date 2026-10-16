@@ -34,9 +34,26 @@ export async function GET(req: NextRequest) {
       filter.entrepriseId = user.entrepriseId;
     }
 
-    const orders = await LicenceOrder.find(filter)
+    const rawOrders = await LicenceOrder.find(filter)
       .sort({ createdAt: -1 })
-      .limit(500);
+      .limit(500)
+      .populate("entrepriseId", "NomSociete")
+      .lean();
+
+    const orders = rawOrders.map((o) => {
+      const populated = o.entrepriseId as any;
+      const createdYear = o.createdAt
+        ? new Date(o.createdAt).getFullYear()
+        : new Date().getFullYear();
+      return {
+        ...o,
+        reference:
+          o.reference ||
+          `CMD-${createdYear}-${String(o._id).slice(-6).toUpperCase()}`,
+        entrepriseId: populated?._id?.toString?.() || o.entrepriseId?.toString?.(),
+        entrepriseName: populated?.NomSociete || "—",
+      };
+    });
 
     return NextResponse.json(orders);
   } catch (err) {

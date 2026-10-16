@@ -20,7 +20,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES, { actions: ["parametrage_general"] });
   if (!context) return tenantErrorResponse;
   const Infirmier = getTenantModel<IInfirmier>(context.connection, 'Infirmier');
   const { id } = await params;
@@ -36,7 +36,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES, { actions: ["parametrage_general"] });
   if (!context) return tenantErrorResponse;
   const Infirmier = getTenantModel<IInfirmier>(context.connection, 'Infirmier');
   const { id } = await params;

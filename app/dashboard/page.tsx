@@ -18,6 +18,12 @@ export default function DashboardPage() {
 
   // Charger les statistiques du tenant
   useEffect(() => {
+    if (userLoading) return;
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+
     const chargerStats = async () => {
       try {
         const response = await fetch('/api/dashboard/stats');

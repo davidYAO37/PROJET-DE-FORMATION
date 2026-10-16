@@ -5,6 +5,7 @@ import Verifconnecion from '@/components/verifconnecion';
 import RoleGuard from '@/components/RoleGuard';
 import ImpersonationBanner from '@/components/ImpersonationBanner';
 import LicenceAlertBanner from '@/components/licence/LicenceAlertBanner';
+import { ALL_ACTION_CODES } from '@/lib/permissions';
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 export const metadata = {
@@ -15,7 +16,8 @@ export const metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
         <Verifconnecion>
-            <RoleGuard allowedRoles={['admin']}>
+            {/* admin + tout utilisateur ayant au moins une action de paramétrage */}
+            <RoleGuard allowedRoles={['admin']} allowedActions={[...ALL_ACTION_CODES]}>
             <div className="d-flex flex-column min-vh-100" style={{ minHeight: '100vh' }}>
                 <ImpersonationBanner />
                 <LicenceAlertBanner />

@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Nav, Badge } from 'react-bootstrap';
+import ParametrageEntryLink from '@/components/ParametrageEntryLink';
+import AutresServicesLinks from '@/components/AutresServicesLinks';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import DisponibilitePrescriptuerModalRadio from '@/app/pages/serviceradio/tradio/components/DisponibilitePrescripteurModalRadio';
@@ -228,6 +230,10 @@ export default function SidebarRadio() {
               )}
             </Nav.Item>
           ))}
+          <Nav.Item className="mb-2">
+            <ParametrageEntryLink />
+            <AutresServicesLinks current={["radio"]} />
+          </Nav.Item>
         </Nav>
         </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">

@@ -4,9 +4,10 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IModeDePaiement } from "@/models/ModeDePaiement";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_general"] };
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
     const body = await req.json();
@@ -34,7 +35,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
     const { id } = await params;

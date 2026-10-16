@@ -287,7 +287,14 @@ export async function createLicenceOrder(
 
   const amount = input.amount || (items || []).reduce((s, it) => s + (it?.total || 0), 0);
 
+  const year = new Date().getFullYear();
+  const orderCount = await LicenceOrder.countDocuments({
+    createdAt: { $gte: new Date(year, 0, 1) },
+  });
+  const reference = `CMD-${year}-${String(orderCount + 1).padStart(4, "0")}`;
+
   const order = await LicenceOrder.create({
+    reference,
     entrepriseId: new Types.ObjectId(input.entrepriseId),
     initiatedBy: new Types.ObjectId(input.initiatedBy),
     action: input.action,

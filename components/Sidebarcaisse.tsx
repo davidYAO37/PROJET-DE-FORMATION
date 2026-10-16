@@ -3,6 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
+import ParametrageEntryLink from '@/components/ParametrageEntryLink';
+import AutresServicesLinks from '@/components/AutresServicesLinks';
 import { useEffect, useState } from 'react';
 import ExamenHospitalisationModalCaisse from '@/app/pages/servicecaisse/components/FactureExamHospit/ExamenHospitModalCaisse';
 import ExamenHospitalisationModalCaisseManuelle from '@/app/pages/servicecaisse/components/FactureExamHospitManuelle/ExamenHospitModalCaisseManuelle';
@@ -16,6 +18,7 @@ import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import { useRouter } from 'next/navigation';
 import { logFetchIssue } from '@/lib/clientFetchLog';
 import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
+import { useAuthUser } from '@/hooks/useAuthUser';
 
 
 const menu = [
@@ -37,6 +40,7 @@ const menu = [
 export default function Sidebarcaisse() {
   const pathname = usePathname();
   const router = useRouter();
+  const { user: authUser } = useAuthUser();
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState('');
   const [showFactureModal, setShowFactureModal] = useState(false);
@@ -286,6 +290,24 @@ export default function Sidebarcaisse() {
           <span className="sidebar-title-medical ms-2">EasyMedical</span>
         </div>
         <hr className="sidebar-separator-medical" />
+        {authUser?.type === 'accueil-caisse' && (
+          <div className="px-3 mb-3 d-flex flex-column gap-2">
+            <button
+              className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+              onClick={() => router.push('/pages/serviceaccueilcaisse/taccueilcaisse')}
+            >
+              <i className="bi bi-speedometer2"></i>
+              <span>Tableau de bord</span>
+            </button>
+            <button
+              className="btn btn-outline-info w-100 d-flex align-items-center justify-content-center gap-2"
+              onClick={() => router.push('/pages/serviceaccueil/tpatient')}
+            >
+              <i className="bi bi-arrow-left"></i>
+              <span>Retour à l&apos;accueil</span>
+            </button>
+          </div>
+        )}
         <SidebarBlockOverlay module="caisse">
         <Nav className="flex-column px-3">
           {menu.map((item, index) => (
@@ -342,6 +364,10 @@ export default function Sidebarcaisse() {
               )}
             </Nav.Item>
           ))}
+          <Nav.Item className="mb-2" style={{ cursor: 'pointer' }}>
+            <ParametrageEntryLink />
+            <AutresServicesLinks current={["caisse"]} />
+          </Nav.Item>
         </Nav>
         </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">

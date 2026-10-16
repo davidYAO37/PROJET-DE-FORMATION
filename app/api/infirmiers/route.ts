@@ -28,7 +28,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
+  const { context, response: tenantErrorResponse } = await withTenant(req, ROLES, { actions: ["parametrage_general"] });
   if (!context) return tenantErrorResponse;
   const Infirmier = getTenantModel<IInfirmier>(context.connection, 'Infirmier');
 

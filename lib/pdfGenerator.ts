@@ -134,7 +134,7 @@ export async function generateOrderFormPdf(order: ILicenceOrder): Promise<string
     if (entreprise?.email) doc.text(`Email: ${entreprise.email}`, leftX, doc.y);
     if (entreprise?.NCC) doc.text(`NCC: ${entreprise.NCC}`, leftX, doc.y);
 
-    doc.fontSize(10).text(`Commande #: ${order._id}`, rightX, 130, { align: "right" });
+    doc.fontSize(10).text(`Commande #: ${order.reference || `CMD-${new Date(order.createdAt || Date.now()).getFullYear()}-${String(order._id).slice(-6).toUpperCase()}`}`, rightX, 130, { align: "right" });
     doc.text(`Date: ${new Date(order.createdAt || Date.now()).toLocaleDateString('fr-FR')}`, { align: "right" });
     doc.text(`Objet: ${order.action === "maintenance" ? "Maintenance annuelle" : "Achat licence perpétuelle"}`, { align: "right" });
 
@@ -202,7 +202,7 @@ export async function generateReceiptPdf(order: ILicenceOrder): Promise<string> 
     const provider = getProviderInfo();
     const doc = new PDFDocument({ size: "A4", margin: 48 });
 
-    const orderRef = `BC-EASY-${String(order._id).slice(-6).toUpperCase()}`;
+    const orderRef = order.reference || `CMD-${new Date(order.createdAt || Date.now()).getFullYear()}-${String(order._id).slice(-6).toUpperCase()}`;
     const paidDate = order.paidAt ? new Date(order.paidAt) : new Date();
 
     doc.fontSize(16).font("Helvetica-Bold").text(`REÇU DE PAIEMENT — ${provider.name.toUpperCase()}`, { align: "center" });

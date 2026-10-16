@@ -69,7 +69,7 @@ interface HonoraireHistorique {
   }[];
 }
 
-const fmt = (n: number) => (n || 0).toLocaleString('fr-FR');
+const fmt = (n: number) => Math.round(n || 0).toLocaleString('fr-FR');
 const today = () => new Date().toISOString().split('T')[0];
 
 const typeBadge = (type: string) => {
@@ -320,7 +320,7 @@ export default function HonorairesPage() {
 
   const handlePayer = async () => {
     if (!honorairePaiement) return;
-    const montant = Number(montantClient);
+    const montant = Math.round(Number(montantClient));
     if (!montant || montant <= 0) {
       setMessage({ type: 'danger', text: 'Veuillez saisir un montant valide.' });
       return;

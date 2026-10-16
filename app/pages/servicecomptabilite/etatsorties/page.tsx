@@ -4,6 +4,10 @@ import { Card, Row, Col, Button, Form, Table, Spinner, Badge } from 'react-boots
 
 const fmt = (n: number) => (n || 0).toLocaleString('fr-FR');
 const today = () => new Date().toISOString().split('T')[0];
+const modeExclu = (mode?: string | null) => {
+  const m = (mode || '').toLowerCase();
+  return m.includes('chèque') || m.includes('carte de crédit');
+};
 
 interface ICaisseDoc {
   _id: string;
@@ -29,11 +33,52 @@ export default function EtatSortiesPage() {
     setLoading(true);
     try {
       const params = new URLSearchParams({ dateDebut, dateFin, typeC: 'Sortie de caisse' });
-      const res = await fetch(`/api/caisse?${params}`);
-      if (res.ok) {
-        const json = await res.json();
-        setDocs(json.data || []);
+      const [resCaisse, resMed, resApp] = await Promise.all([
+        fetch(`/api/caisse?${params}`),
+        fetch(`/api/comptabilite/honoraires/payer?dateDebut=${dateDebut}&dateFin=${dateFin}`),
+        fetch(`/api/comptabilite/honoraires-apporteurs/payer?dateDebut=${dateDebut}&dateFin=${dateFin}`),
+      ]);
+      const rows: ICaisseDoc[] = [];
+      if (resCaisse.ok) {
+        const json = await resCaisse.json();
+        rows.push(...(json.data || []));
       }
+      if (resMed.ok) {
+        const json = await resMed.json();
+        for (const p of json.data || []) {
+          if (modeExclu(p.Modepaiement)) continue;
+          rows.push({
+            _id: p._id,
+            Operation: 'HONORAIRE MEDECIN',
+            MOtif: `Paiement honoraire médecin${p.Modepaiement ? ` (${p.Modepaiement})` : ''}`,
+            MOntantC: p.MontantPayé || 0,
+            dAteC: p.Date,
+            HeureC: p.Heure,
+            NomPrenoms: p.Medecin ? `${p.Medecin.nom || ''} ${p.Medecin.prenoms || ''}`.trim() : '',
+            serviceC: 'Comptabilité',
+            AjouterParC: p.PayéPar || '',
+          });
+        }
+      }
+      if (resApp.ok) {
+        const json = await resApp.json();
+        for (const p of json.data || []) {
+          if (modeExclu(p.modePaiement)) continue;
+          rows.push({
+            _id: p._id,
+            Operation: 'HONORAIRE APPORTEURS',
+            MOtif: `Paiement honoraire apporteur${p.modePaiement ? ` (${p.modePaiement})` : ''}`,
+            MOntantC: p.montant || 0,
+            dAteC: p.date,
+            HeureC: p.heure,
+            NomPrenoms: p.Apporteur?.nom || '',
+            serviceC: 'Comptabilité',
+            AjouterParC: p.payePar || '',
+          });
+        }
+      }
+      rows.sort((a, b) => new Date(b.dAteC || 0).getTime() - new Date(a.dAteC || 0).getTime());
+      setDocs(rows);
     } finally {
       setLoading(false);
     }

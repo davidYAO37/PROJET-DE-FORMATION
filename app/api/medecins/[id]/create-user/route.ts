@@ -6,9 +6,10 @@ import { UserCollection } from '@/models/users.model';
 import { hashPassword } from '@/utils/auth';
 
 const WRITE_ROLES = ['admin'];
+const WRITE_OPTIONS = { actions: ["gestion_utilisateurs"] };
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response } = await withTenant(req, WRITE_ROLES);
+  const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
   if (!context) return response;
 
   const { id } = await params;

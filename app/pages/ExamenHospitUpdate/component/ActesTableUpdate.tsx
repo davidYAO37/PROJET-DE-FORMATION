@@ -19,6 +19,7 @@ export interface IActeClinique {
     MontantAuMed?: string | number; // "1" ou 1
     MontantAnesthesiste?: string | number; // "1" ou 1
     MontantAideOperatoire?: string | number; // "1" ou 1
+    ActePourApporteur?: boolean;
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     ORdonnacementAffichage?: number;
     // ... autres champs si besoin
@@ -54,6 +55,7 @@ export interface ILignePrestation {
     TotalRelicatCoefAssur: number;
     Montant_MedExecutant: number;
     StatutMedecinActe: string;
+    StatutApporteur: string;
     StatutMedecinAnesthesiste: string; // "NON" ou "OUI"
     StatutMedecinAideOperatoire: string; // "NON" ou "OUI"
     IDACTE: string; // _id de l'acte
@@ -255,6 +257,7 @@ const emptyLigne = (): ILignePrestation => ({
     TotalRelicatCoefAssur: 0,
     Montant_MedExecutant: 0,
     StatutMedecinActe: "NON",
+    StatutApporteur: "NON",
     StatutMedecinAnesthesiste: "NON", // "NON" par défaut
     StatutMedecinAideOperatoire: "NON", // "NON" par défaut
     IDACTE: "",
@@ -308,6 +311,7 @@ export default function TablePrestationsUpdate({ assuranceId = 1, saiTaux = 0, a
                     MontantAuMed: a.MontantAuMed,
                     MontantAnesthesiste: a.MontantAnesthesiste,
                     MontantAideOperatoire: a.MontantAideOperatoire,
+                    ActePourApporteur: a.ActePourApporteur === true || a.ActePourApporteur === 1 || a.ActePourApporteur === "1" || a.ActePourApporteur === "OUI",
                     IDFAMILLE_ACTE_BIOLOGIE: a.IDFAMILLE_ACTE_BIOLOGIE,
                     ORdonnacementAffichage: a.ORdonnacementAffichage,
                 }));
@@ -840,6 +844,7 @@ export default function TablePrestationsUpdate({ assuranceId = 1, saiTaux = 0, a
             ligne.StatutMedecinActe = "NON";
             ligne.Montant_MedExecutant = 0;
         }
+        ligne.StatutApporteur = acte?.ActePourApporteur ? "OUI" : "NON";
     }
 
     function facturePharmacie() {
@@ -997,6 +1002,7 @@ export default function TablePrestationsUpdate({ assuranceId = 1, saiTaux = 0, a
                     copy.StatutMedecinActe = "NON";
                     copy.Montant_MedExecutant = 0;
                 }
+                copy.StatutApporteur = acte.ActePourApporteur ? "OUI" : "NON";
 
                 // Logique pour MontantAnesthesiste
                 if (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1") {

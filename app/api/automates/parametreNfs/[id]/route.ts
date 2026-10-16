@@ -6,7 +6,7 @@ import { IParametreNfs } from "@/models/parametreNfs";
 const WRITE_ROLES = ["admin"];
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_actes_biologie"] });
     if (!context) return response;
     const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
     try {
@@ -36,7 +36,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 }
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(_req, WRITE_ROLES);
+    const { context, response } = await withTenant(_req, WRITE_ROLES, { actions: ["parametrage_actes_biologie"] });
     if (!context) return response;
     const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
     try {

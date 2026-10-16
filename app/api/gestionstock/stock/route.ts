@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
     const body = await req.json();

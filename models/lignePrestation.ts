@@ -21,6 +21,10 @@ export interface ILignePrestation extends Omit<Document, '_id'> {
     idTypeActe: Types.ObjectId | string;
     idActe: Types.ObjectId | string;
     idApporteur?: Types.ObjectId | string;
+    acteApporteur?: string;
+    montantApporteur?: number;
+    tauxApporteur?: number;
+    apporteurPaye?: boolean;
     reliquatPatient?: number;
     totalCoefficient?: number;
     prixClinique?: number;
@@ -106,6 +110,10 @@ const LignePrestationSchema = new Schema<ILignePrestation>(
         idTypeActe: { type: Schema.Types.ObjectId, ref: "NatureActe" },
         idActe: { type: Schema.Types.ObjectId, ref: "ActeClinique", required: true },
         idApporteur: { type: Schema.Types.ObjectId, ref: "Apporteur" },
+        acteApporteur: { type: String, default: "NON" },
+        montantApporteur: { type: Number, default: 0 },
+        tauxApporteur: { type: Number, default: 0 },
+        apporteurPaye: { type: Boolean, default: false },
         reliquatPatient: { type: Number },
         totalCoefficient: { type: Number },
         prixClinique: { type: Number },

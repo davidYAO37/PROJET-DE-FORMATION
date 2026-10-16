@@ -3,6 +3,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { Nav, Badge } from 'react-bootstrap';
+import ParametrageEntryLink from '@/components/ParametrageEntryLink';
+import AutresServicesLinks from '@/components/AutresServicesLinks';
 import { useState, useEffect } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import DisponibilitePrescriptuerModal from '@/app/pages/servicemedecin/tmedecin/components/DisponibilitePrescripteurModal';
@@ -201,6 +203,10 @@ export default function SidebarMedecin() {
               )}
             </Nav.Item>
           ))}
+          <Nav.Item className="mb-2">
+            <ParametrageEntryLink />
+            <AutresServicesLinks current={["medecin"]} />
+          </Nav.Item>
         </Nav>
         </SidebarBlockOverlay>
         <div className="mt-auto px-3 pb-3">

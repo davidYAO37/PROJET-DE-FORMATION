@@ -2,6 +2,8 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
+import ParametrageEntryLink from '@/components/ParametrageEntryLink';
+import AutresServicesLinks from '@/components/AutresServicesLinks';
 import { useEffect, useState } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
@@ -19,7 +21,8 @@ interface MenuItem {
 
 const menu: MenuItem[] = [
   { label: 'Tableau de bord', path: `${BASE}/tcompta`, icon: 'bi-speedometer2', color: 'text-primary' },
-  { label: 'Honoraires', path: `${BASE}/honoraires`, icon: 'bi-person-badge-fill', color: 'text-warning' },
+  { label: 'Honoraires médecins', path: `${BASE}/honoraires`, icon: 'bi-person-badge-fill', color: 'text-warning' },
+  { label: 'Honoraires apporteurs', path: `${BASE}/honoraires-apporteurs`, icon: 'bi-people-fill', color: 'text-info' },
   { label: 'Caisse', path: `${BASE}/caisse`, icon: 'bi-cash-register', color: 'text-success' },
   { label: 'État des entrées', path: `${BASE}/etatentrees`, icon: 'bi-arrow-down-circle-fill', color: 'text-success' },
   { label: 'État des sorties', path: `${BASE}/etatsorties`, icon: 'bi-arrow-up-circle-fill', color: 'text-danger' },
@@ -108,6 +111,10 @@ export default function SidebarComptabilite() {
               </Nav.Item>
             );
           })}
+          <Nav.Item className="mb-2">
+            <ParametrageEntryLink />
+            <AutresServicesLinks current={["comptabilite"]} />
+          </Nav.Item>
         </Nav>
         </SidebarBlockOverlay>
 

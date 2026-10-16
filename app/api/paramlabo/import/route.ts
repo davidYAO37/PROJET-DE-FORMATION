@@ -4,6 +4,8 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IParamLabo } from "@/models/paramLabo";
 
 const WRITE_ROLES = ["admin"];
+// Accès alternatif : utilisateurs ayant l'action "parametrage_actes_biologie"
+const WRITE_OPTIONS = { actions: ["parametrage_actes_biologie"] };
 
 const RTF_DESTINATIONS = new Set([
     "fonttbl",
@@ -84,7 +86,7 @@ function rtfToText(value: unknown): string {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ParamLabo = getTenantModel<IParamLabo>(context.connection, "ParamLabo");
 

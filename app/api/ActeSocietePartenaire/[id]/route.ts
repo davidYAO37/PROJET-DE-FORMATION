@@ -4,10 +4,11 @@ import { getTenantModel } from "@/lib/tenantModels";
 import { IActeSocietePartenaire } from "@/models/acteSocietePartenaire";
 
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_assurances"] };
 
 // PUT : modifier un acte société partenaire
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeSocietePartenaire = getTenantModel<IActeSocietePartenaire>(context.connection, "ActeSocietePartenaire");
     try {
@@ -27,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // DELETE : supprimer un acte société partenaire
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ActeSocietePartenaire = getTenantModel<IActeSocietePartenaire>(context.connection, "ActeSocietePartenaire");
     try {

@@ -7,7 +7,7 @@ const ROLES = ["admin", "medecin", "accueil", "infirmier"];
 
 // -------------------- SUPPRESSION D'UNE ENTRÉE EN STOCK --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES);
+    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
     if (!context) return response;
     const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
     try {

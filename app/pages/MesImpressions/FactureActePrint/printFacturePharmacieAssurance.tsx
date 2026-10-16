@@ -26,7 +26,7 @@ interface PrintFacturePharmacieAssuranceProps {
 // Fonction utilitaire pour formater les nombres
 const formatNumber = (num: number | undefined | null): string => {
     if (num === undefined || num === null) return '0';
-    return Number(num).toLocaleString('fr-FR');
+    return Math.round(Number(num)).toLocaleString('fr-FR');
 };
 
 // Fonction utilitaire pour calculer la somme d'un champ
@@ -304,19 +304,19 @@ const PrintFacturePharmacieAssurance = forwardRef<HTMLDivElement, PrintFacturePh
                             <div style={{ textAlign: 'center' }}>
                                 <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '5px' }}>TOTAL GÉNÉRAL</div>
                                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#2c3e50' }}>
-                                    {totalGeneral.toLocaleString('fr-FR')} FCFA
+                                    {Math.round(totalGeneral).toLocaleString('fr-FR')} FCFA
                                 </div>
                             </div>
                             <div style={{ textAlign: 'center' }}>
                                 <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '5px' }}>PART ASSURANCE</div>
                                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#28a745' }}>
-                                    {montantAssurance.toLocaleString('fr-FR')} FCFA
+                                    {Math.round(montantAssurance).toLocaleString('fr-FR')} FCFA
                                 </div>
                             </div>
                             <div style={{ textAlign: 'center' }}>
                                 <div style={{ fontSize: '10px', color: '#6c757d', marginBottom: '5px' }}>PART PATIENT</div>
                                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#dc3545' }}>
-                                    {montantPatient.toLocaleString('fr-FR')} FCFA
+                                    {Math.round(montantPatient).toLocaleString('fr-FR')} FCFA
                                 </div>
                             </div>
                         </div>

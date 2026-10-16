@@ -5,6 +5,7 @@ import { IModeDePaiement } from "@/models/ModeDePaiement";
 
 const READ_ROLES = ["admin", "adminsuper", "accueil", "biologiste", "caisse", "comptable", "facturation", "infirmier", "medecin", "pharmacien", "radiologue", "technicienlabo"];
 const WRITE_ROLES = ["admin"];
+const WRITE_OPTIONS = { actions: ["parametrage_general"] };
 
 export async function GET(req: NextRequest) {
 
@@ -52,7 +53,7 @@ export async function GET(req: NextRequest) {
 
 export async function POST(req: NextRequest) {
 
-    const { context, response } = await withTenant(req, WRITE_ROLES);
+    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
     if (!context) return response;
     const ModeDePaiement = getTenantModel<IModeDePaiement>(context.connection, "ModeDePaiement");
 

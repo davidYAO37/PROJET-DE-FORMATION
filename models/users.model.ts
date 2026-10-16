@@ -9,6 +9,11 @@ export interface IUser extends Document {
   type?: string;
   uid?: string;
   entrepriseId?: Types.ObjectId;
+  permissions?: {
+    services?: string[];
+    actions?: string[];
+    customized?: boolean;
+  };
   failedAttempts?: number;
   remainingAttempts?: number;
   isLocked?: boolean;
@@ -27,6 +32,11 @@ const UserSchema = new Schema<IUser>(
     type: { type: String, default: "medecin" },
     uid: { type: String, unique: true, sparse: true },
     entrepriseId: { type: Schema.Types.ObjectId, ref: "Entreprise" },
+    permissions: {
+      services: { type: [String], default: undefined },
+      actions: { type: [String], default: undefined },
+      customized: { type: Boolean, default: false },
+    },
     failedAttempts: { type: Number, default: 0 },
     remainingAttempts: { type: Number, default: 4 },
     isLocked: { type: Boolean, default: false },

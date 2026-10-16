@@ -207,11 +207,14 @@ function generateLineId(): string {
   return Math.random().toString(36).substr(2, 9);
 }
 
+// Tous les montants doivent être des entiers
+const toInt = (n: number) => Math.round(n || 0);
+
 // Fonction utilitaire pour obtenir le prix unitaire selon le mode de vente
 function getPrixUnitaire(medicament: IMedicament | undefined, mode: "DETAIL" | "BOITE"): number {
   if (!medicament) return 0;
-  if (mode === "BOITE") return medicament.PrixVenteConditionnement || medicament.PrixVente || 0;
-  return medicament.PrixVenteUnite || medicament.PrixVente || 0;
+  if (mode === "BOITE") return toInt(medicament.PrixVenteConditionnement || medicament.PrixVente || 0);
+  return toInt(medicament.PrixVenteUnite || medicament.PrixVente || 0);
 }
 
 // Fonction pour créer une nouvelle ligne vide
@@ -314,19 +317,19 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
     let montantRecu = 0;
 
     lignes.forEach(ligne => {
-      const prixTotal = ligne.quantite * ligne.prixUnitaire;
+      const prixTotal = toInt(ligne.quantite * ligne.prixUnitaire);
       ligne.total = prixTotal;
 
       // SI COL_Refusé="" ALORS
       if (!ligne.refuse) {
         // COL_PartAssurance = (COL_PrixTotal * SAI_Taux_Assur) / 100
-        ligne.partAssurance = Math.round((prixTotal * tauxAssurance) / 100);
+        ligne.partAssurance = toInt((prixTotal * tauxAssurance) / 100);
         // COL_PartAssure = COL_PrixTotal - COL_PartAssurance
-        ligne.partAssure = prixTotal - ligne.partAssurance;
+        ligne.partAssure = toInt(prixTotal - ligne.partAssurance);
       } else {
         // SINON
         ligne.partAssurance = 0;
-        ligne.partAssure = prixTotal;
+        ligne.partAssure = toInt(prixTotal);
       }
 
       // SI COL_FActuré="Payé" ALORS
@@ -359,13 +362,13 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
     // SI SAI_REMISE=0 ALORS
     if (remise === 0) {
       // SAI_Total_a_payer_Patient = SAI_Partassuré
-      totalAPayerPatient = partAssure;
+      totalAPayerPatient = toInt(partAssure);
       // SAI_Reste_a_payer = SAI_Total_a_payer_Patient
       resteAPayer = totalAPayerPatient;
     } else {
       // SINON
       // SAI_Total_a_payer_Patient = SAI_Partassuré - SAI_REMISE
-      totalAPayerPatient = Math.max(0, partAssure - remise);
+      totalAPayerPatient = toInt(Math.max(0, partAssure - remise));
       // SAI_Reste_a_payer = SAI_Total_a_payer_Patient
       resteAPayer = totalAPayerPatient;
     }
@@ -373,9 +376,9 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
     // Notifier le parent des nouveaux totaux
     if (onTotauxChange) {
       onTotauxChange({
-        montantTotal,
-        partAssurance,
-        partAssure,
+        montantTotal: toInt(montantTotal),
+        partAssurance: toInt(partAssurance),
+        partAssure: toInt(partAssure),
         montantRecu,
         resteAPayer
       });
@@ -426,12 +429,12 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
       designation: medicament.Designation,
       prixUnitaire: prixUnitaire,
       quantite: quantite,
-      total: total,
+      total: toInt(total),
       reference: medicament.Reference || medicament.CodeBarre || "", // Utiliser la référence du médicament (ex: RIV-3)
       modeVente: mode,
       // Calculer les parts assurance/patient selon le taux
-      partAssurance: Math.round((total * tauxAssurance) / 100),
-      partAssure: total - Math.round((total * tauxAssurance) / 100)
+      partAssurance: toInt((total * tauxAssurance) / 100),
+      partAssure: toInt(total - ((total * tauxAssurance) / 100))
     });
 
     // Recalculer les totaux généraux
@@ -442,13 +445,13 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
   const handleQuantiteChange = (id: string, quantite: number) => {
     const ligne = lignes.find(l => l.id === id);
     if (ligne) {
-      const newTotal = quantite * ligne.prixUnitaire;
+      const newTotal = toInt(quantite * ligne.prixUnitaire);
       updateLigne(id, {
         quantite,
         total: newTotal,
         // Recalculer les parts assurance/patient
-        partAssurance: !ligne.refuse ? Math.round((newTotal * tauxAssurance) / 100) : 0,
-        partAssure: !ligne.refuse ? newTotal - Math.round((newTotal * tauxAssurance) / 100) : newTotal
+        partAssurance: !ligne.refuse ? toInt((newTotal * tauxAssurance) / 100) : 0,
+        partAssure: !ligne.refuse ? toInt(newTotal - ((newTotal * tauxAssurance) / 100)) : newTotal
       });
       // Recalculer les totaux généraux
       setTimeout(() => calculerTotaux(), 0);
@@ -465,14 +468,14 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
       const newQuantite = mode === "BOITE" && ligne.modeVente === "DETAIL" && qteParCond > 1
         ? Math.max(1, Math.ceil(ligne.quantite / qteParCond))
         : (mode === "DETAIL" && ligne.modeVente === "BOITE" ? Math.max(1, ligne.quantite * qteParCond) : ligne.quantite);
-      const newTotal = newQuantite * prix;
+      const newTotal = toInt(newQuantite * prix);
       updateLigne(id, {
         modeVente: mode,
         prixUnitaire: prix,
         quantite: newQuantite,
         total: newTotal,
-        partAssurance: !ligne.refuse ? Math.round((newTotal * tauxAssurance) / 100) : 0,
-        partAssure: !ligne.refuse ? newTotal - Math.round((newTotal * tauxAssurance) / 100) : newTotal
+        partAssurance: !ligne.refuse ? toInt((newTotal * tauxAssurance) / 100) : 0,
+        partAssure: !ligne.refuse ? toInt(newTotal - ((newTotal * tauxAssurance) / 100)) : newTotal
       });
       setTimeout(() => calculerTotaux(), 0);
     }
@@ -541,13 +544,13 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
           const updatedLigne = { ...ligne, refuse: nextRefuse, paye: nextRefuse ? false : ligne.paye };
 
           // Recalculer les parts assurance/patient immédiatement
-          const prixTotal = updatedLigne.quantite * updatedLigne.prixUnitaire;
+          const prixTotal = toInt(updatedLigne.quantite * updatedLigne.prixUnitaire);
           if (!updatedLigne.refuse) {
-            updatedLigne.partAssurance = Math.round((prixTotal * tauxAssurance) / 100);
-            updatedLigne.partAssure = prixTotal - updatedLigne.partAssurance;
+            updatedLigne.partAssurance = toInt((prixTotal * tauxAssurance) / 100);
+            updatedLigne.partAssure = toInt(prixTotal - updatedLigne.partAssurance);
           } else {
             updatedLigne.partAssurance = 0;
-            updatedLigne.partAssure = prixTotal;
+            updatedLigne.partAssure = toInt(prixTotal);
             updatedLigne.payePar = "";
             updatedLigne.payeLe = "";
             updatedLigne.payeA = "";
@@ -644,8 +647,8 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
                     size="sm"
                   />
                 </td>
-                <td className="text-end">{ligne.prixUnitaire.toLocaleString()}</td>
-                <td className="text-end fw-bold">{ligne.total.toLocaleString()}</td>
+                <td className="text-end">{toInt(ligne.prixUnitaire).toLocaleString()}</td>
+                <td className="text-end fw-bold">{toInt(ligne.total).toLocaleString()}</td>
                 <td className="text-center">
                   <Form.Check
                     type="checkbox"

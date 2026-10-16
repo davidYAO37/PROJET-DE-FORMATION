@@ -2,9 +2,12 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
+import ParametrageEntryLink from '@/components/ParametrageEntryLink';
+import AutresServicesLinks from '@/components/AutresServicesLinks';
 import { useEffect, useState } from 'react';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
+import { useEntreprise } from '@/hooks/useEntreprise';
 
 const BASE = '/pages/servicefacturation';
 
@@ -16,9 +19,10 @@ interface MenuItem {
   isMdp?: boolean;
 }
 
-const menu: MenuItem[] = [
+const getMenu = (apporteurActif: boolean): MenuItem[] => [
   { label: 'Tableau de bord', path: `${BASE}/tfacturation`, icon: 'bi-speedometer2', color: 'text-primary' },
   { label: 'Honoraires Médecins', path: `${BASE}/honoraires`, icon: 'bi-person-badge-fill', color: 'text-warning' },
+  ...(apporteurActif ? [{ label: 'Honoraires Apporteurs', path: `${BASE}/honoraires-apporteurs`, icon: 'bi-people-fill', color: 'text-info' }] : []),
   { label: 'Facturation assurances', path: `${BASE}/factureassurance`, icon: 'bi-shield-fill-check', color: 'text-danger' },
   { label: 'Guide d\'utilisation', path: `${BASE}/guide`, icon: 'bi-book-half', color: 'text-primary' },
   { label: 'Mot de passe', path: '#', icon: 'bi-key-fill', color: 'text-secondary', isMdp: true },
@@ -27,6 +31,7 @@ const menu: MenuItem[] = [
 export default function SidebarFacturation() {
   const pathname = usePathname();
   const router = useRouter();
+  const { entreprise } = useEntreprise();
   const [open, setOpen] = useState(false);
   const [user, setUser] = useState('');
   const [showMdp, setShowMdp] = useState(false);
@@ -80,7 +85,7 @@ export default function SidebarFacturation() {
 
         <SidebarBlockOverlay module="facturation">
         <Nav className="flex-column px-3">
-          {menu.map((item, index) => {
+          {getMenu(!!entreprise?.travailleAvecApporteur).map((item, index) => {
             const isActive = pathname === item.path || pathname.startsWith(item.path + '/');
             return (
               <Nav.Item key={index} className="mb-2">
@@ -106,6 +111,10 @@ export default function SidebarFacturation() {
               </Nav.Item>
             );
           })}
+          <Nav.Item className="mb-2">
+            <ParametrageEntryLink />
+            <AutresServicesLinks current={["facturation"]} />
+          </Nav.Item>
         </Nav>
         </SidebarBlockOverlay>
 

@@ -9,6 +9,7 @@ import TablePrestationsCaisse from "./ActesTableCaisse";
 import CliniqueInfoCaisse from "./CliniqueInfoCaisse";
 import ActionsButtonsCaisse from "./ActionsButtonsCaisse";
 import PaiementInfoCaisse from "./PaiementInfoCaisse";
+import { useEntreprise } from "@/hooks/useEntreprise";
 
 
 // Définition des paramètres de l'URL
@@ -42,6 +43,9 @@ export default function HospitalisationPageCaisse({
     searchParams,
     onSuccess
 }: HospitalisationPageCaisseProps) {
+
+    const { entreprise } = useEntreprise();
+    const apporteurActif = !!entreprise?.travailleAvecApporteur;
 
     const {
         id,
@@ -201,6 +205,7 @@ export default function HospitalisationPageCaisse({
                 TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
                 Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
                 StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
+                StatutApporteur: l.acteApporteur === "OUI" ? "OUI" : "NON",
                 StatutMedecinAnesthesiste: l.StatutMedecinAnesthesiste ?? "NON",
                 StatutMedecinAideOperatoire: l.StatutMedecinAideOperatoire ?? "NON",
                 IDAnesthesiste: l.IDAnesthesiste || "",
@@ -490,6 +495,7 @@ export default function HospitalisationPageCaisse({
                 TotalRelicatCoefAssur: Number(l.totalCoefficient ?? 0),
                 Montant_MedExecutant: Number(l.montantMedecinExecutant ?? 0),
                 StatutMedecinActe: l.acteMedecin === "OUI" ? "OUI" : "NON",
+                StatutApporteur: l.acteApporteur === "OUI" ? "OUI" : "NON",
                 StatutMedecinAnesthesiste: l.StatutMedecinAnesthesiste ?? "NON",
                 StatutMedecinAideOperatoire: l.StatutMedecinAideOperatoire ?? "NON",
                 IDAnesthesiste: l.IDAnesthesiste || "",
@@ -691,6 +697,8 @@ export default function HospitalisationPageCaisse({
                                 formData={formData}
                                 setFormData={setFormData}
                                 hasActesMedecin={currentLignes.some(ligne => ligne.StatutMedecinActe === "OUI")}
+                                hasActesApporteur={currentLignes.some(ligne => ligne.StatutApporteur === "OUI")}
+                                apporteurActif={apporteurActif}
                             />
                         </Col>
                     </Row>
@@ -777,6 +785,14 @@ export default function HospitalisationPageCaisse({
                                 return;
                             }
 
+                            const lignesAvecApporteur = apporteurActif
+                                ? lignesValides.filter((l) => (l.StatutApporteur || "").toUpperCase() === "OUI")
+                                : [];
+                            if (lignesAvecApporteur.length > 0 && !(formData.apporteurId || "").trim()) {
+                                alert("Merci de choisir l'apporteur");
+                                return;
+                            }
+
                             const lignesPayees = lignesValides.filter((l) => l.AFacturer === "Payé");
                             if (lignesPayees.length === 0) {
                                 alert("Merci de régler une facture avant cette action ");
@@ -822,6 +838,7 @@ export default function HospitalisationPageCaisse({
                                 TotalReliquatPatient: formData.surplus || 0,
                                 SOCIETE_PATIENT: societeValue || "",
                                 medecinId: medecinExecutantId || "",
+                                apporteurId: apporteurActif && lignesAvecApporteur.length > 0 ? formData.apporteurId : "",
                                 medecinPrescripteur: (formData.medecinPrescripteur || "").toString().trim(),
                                 MontantRecu: Number.isFinite(montantEncaisse) ? montantEncaisse : 0,
                                 reduction: formData.reduction || 0,

@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Nav } from 'react-bootstrap';
+import ParametrageEntryLink from '@/components/ParametrageEntryLink';
+import AutresServicesLinks from '@/components/AutresServicesLinks';
 import ModifierMotDePasseModal from '@/components/ModifierMotDePasseModal';
 import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 
@@ -120,6 +122,10 @@ export default function SidebarPharmacie() {
                             </a>
                         </Nav.Item>
                     ))}
+                        <Nav.Item className="mb-2">
+                          <ParametrageEntryLink />
+                          <AutresServicesLinks current={["pharmacie"]} />
+                        </Nav.Item>
                 </Nav>
                 </SidebarBlockOverlay>
 

@@ -17,6 +17,7 @@ export interface IActeClinique {
     PrixMutualiste?: number;
     PrixAssure?: number;
     MontantAuMed?: string | number; // "1" ou 1
+    ActePourApporteur?: boolean;
     IDFAMILLE_ACTE_BIOLOGIE?: string;
     ORdonnacementAffichage?: number;
     // ... autres champs si besoin
@@ -62,6 +63,7 @@ export interface ILignePrestation {
     medecinExecutant?: string;
     MedecinAffiche: string;
     StatutMedecinActe: string;
+    StatutApporteur: string;
     StatutMedecinAnesthesiste: string; // "NON" ou "OUI"
     StatutMedecinAideOperatoire: string; // "NON" ou "OUI"
     IDACTE: string; // _id de l'acte
@@ -274,6 +276,7 @@ const emptyLigne = (): ILignePrestation => ({
     medecinExecutant: "",
     MedecinAffiche: "",
     StatutMedecinActe: "NON",
+    StatutApporteur: "NON",
     StatutMedecinAnesthesiste: "NON", // "NON" par défaut
     StatutMedecinAideOperatoire: "NON", // "NON" par défaut
     IDACTE: "",
@@ -337,6 +340,7 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
                     PrixMutualiste: a.prixMutuel,
                     PrixAssure: a.prixPreferentiel,
                     MontantAuMed: a.MontantAuMed,
+                    ActePourApporteur: a.ActePourApporteur === true || a.ActePourApporteur === 1 || a.ActePourApporteur === "1" || a.ActePourApporteur === "OUI",
                     IDFAMILLE_ACTE_BIOLOGIE: a.IDFAMILLE_ACTE_BIOLOGIE,
                     ORdonnacementAffichage: a.ORdonnacementAffichage,
                     MontantAnesthesiste: a.MontantAnesthesiste,
@@ -427,6 +431,7 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
             StatutMedecinAideOperatoire: line.StatutMedecinAideOperatoire ?? "NON",
             // Autres champs avec valeurs par défaut si nécessaire
             StatutMedecinActe: line.StatutMedecinActe || "NON",
+            StatutApporteur: line.StatutApporteur || "NON",
             Montant_MedExecutant: line.Montant_MedExecutant || 0,
             MontantAnesthesiste: line.MontantAnesthesiste || 0,
             MontantAideOperatoire: line.MontantAideOperatoire || 0,
@@ -838,6 +843,7 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
             ligne.StatutMedecinActe = "NON";
             ligne.Montant_MedExecutant = 0;
         }
+        ligne.StatutApporteur = acte?.ActePourApporteur ? "OUI" : "NON";
         if (acte && (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1")) {
             ligne.MontantAnesthesiste = ligne.PrixTotal;
         } else {
@@ -1109,6 +1115,7 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
                     copy.StatutMedecinActe = "NON";
                     copy.Montant_MedExecutant = 0;
                 }
+                copy.StatutApporteur = acte.ActePourApporteur ? "OUI" : "NON";
 
                 // Logique pour MontantAnesthesiste - statut
                 if (acte.MontantAnesthesiste === 1 || acte.MontantAnesthesiste === "1") {
