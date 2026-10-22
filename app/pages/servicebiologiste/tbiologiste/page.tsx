@@ -167,7 +167,7 @@ export default function Dashboard() {
           animation: blink 1.5s ease-in-out infinite;
         }
       `}</style>
-      <h2 className="mb-4 text-primary">Bienvenue sur le Tableau de Bord</h2>
+      <h2 className="mb-4 text-primary">{getUtilisateur()} - Bienvenue sur le Tableau de Bord</h2>
       <Row className="g-4 mt-2">
         <Col>
           <Card className="shadow-sm">

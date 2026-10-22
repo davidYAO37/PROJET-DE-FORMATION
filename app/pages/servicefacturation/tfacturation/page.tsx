@@ -215,7 +215,15 @@ export default function TableauDeBordFacturation() {
           <div style={{ color: '#fff', fontSize: '1.05rem', fontWeight: 800 }}>Service Facturation</div>
           <div style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.7rem' }}>{new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
         </div>
-        <i className="bi bi-receipt-cutoff" style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.2)' }}></i>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {utilisateur && (
+            <span style={{ color: '#fff', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 5 }}>
+              <i className="bi bi-person-circle"></i>
+              {utilisateur}
+            </span>
+          )}
+          <i className="bi bi-receipt-cutoff" style={{ fontSize: '2rem', color: 'rgba(255,255,255,0.2)' }}></i>
+        </div>
       </div>
 
       {/* Sélecteur période */}

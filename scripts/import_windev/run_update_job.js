@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const { spawn } = require('child_process');
 const mongoose = require('mongoose');
@@ -5,6 +6,13 @@ const mongoose = require('mongoose');
 const [enterpriseId, jobId] = process.argv.slice(2);
 const centralUri = process.env.MONGODB_URI || process.env.MONGO_URI;
 const exportDir = process.env.WINDEV_EXPORT_DIR;
+const cleanupExportDir = process.env.WINDEV_CLEANUP_DIR === '1';
+
+function removeExportDir() {
+  if (cleanupExportDir && exportDir) {
+    try { fs.rmSync(exportDir, { recursive: true, force: true }); } catch {}
+  }
+}
 
 function tenantUri(uri, dbName) {
   const parsed = new URL(uri);
@@ -99,6 +107,7 @@ async function main() {
     { _id: jobObjectId },
     { $set: { status: 'completed', progress: 100, currentStep: '', finishedAt: new Date(), logs: logs.join('\n') } },
   );
+  removeExportDir();
   await mongoose.disconnect();
 }
 
@@ -117,6 +126,7 @@ main().catch(async (error) => {
       }
     }
   } finally {
+    removeExportDir();
     await mongoose.disconnect().catch(() => undefined);
     process.exit(1);
   }

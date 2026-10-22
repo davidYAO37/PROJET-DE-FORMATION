@@ -46,6 +46,11 @@ function PageContent() {
     const [showAjouter, setShowAjouter]           = useState(false);
     const [showModifier, setShowModifier]         = useState(false);
     const [selectedAppro, setSelectedAppro]       = useState<Approvisionnement | null>(null);
+    const [utilisateur, setUtilisateur]           = useState('');
+
+    useEffect(() => {
+        setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
+    }, []);
 
     // Filtres approvisionnements
     const [searchAppro, setSearchAppro]   = useState("");
@@ -123,6 +128,12 @@ function PageContent() {
                         <span>{info.icon}</span> {info.titre}
                     </small>
                 </div>
+                {utilisateur && (
+                    <span className="ms-auto text-muted fw-semibold">
+                        <i className="bi bi-person-circle me-1"></i>
+                        {utilisateur}
+                    </span>
+                )}
             </div>
 
             {vue === "dashboard" && <TableauBordStock />}

@@ -165,6 +165,10 @@ export default function AccueilCaisseDashboard() {
     }
   `;
 
+  const nomUtilisateur =
+    `${user?.nom || ''} ${user?.prenom || ''}`.trim() ||
+    (typeof window !== 'undefined' ? localStorage.getItem('nom_utilisateur') || '' : '');
+
   const renderBadge = (value: number) =>
     loading ? (
       <Spinner animation="border" variant="light" />
@@ -183,6 +187,12 @@ export default function AccueilCaisseDashboard() {
             <FaCashRegister className="me-2" />
             Tableau de bord - Accueil & Caisse
           </h2>
+          {nomUtilisateur && (
+            <span className="text-muted fw-semibold ms-auto me-3">
+              <FaUserCheck className="me-1" />
+              {nomUtilisateur}
+            </span>
+          )}
           <Button variant="outline-danger" onClick={handleLogout}>
             <FaSignOutAlt className="me-1" />
             Se déconnecter

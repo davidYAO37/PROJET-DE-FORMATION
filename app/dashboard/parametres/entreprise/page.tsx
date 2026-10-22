@@ -1,5 +1,6 @@
 'use client';
 import React, { useEffect, useState } from 'react';
+import axios from 'axios';
 import { useRouter } from 'next/navigation';
 import { Button, Table, Container, Form, InputGroup, Row, Col, Pagination, Toast, ToastContainer, Spinner, Modal } from 'react-bootstrap';
 import { FaEdit, FaTrash, FaPlus, FaEye, FaUsers, FaSync, FaStop } from 'react-icons/fa';
@@ -29,6 +30,8 @@ export default function Entreprises() {
   const [updateEntrepriseId, setUpdateEntrepriseId] = useState('');
   const [updateLoading, setUpdateLoading] = useState(false);
   const [updateJob, setUpdateJob] = useState<{ _id?: string; status?: string; progress?: number; currentStep?: string; error?: string } | null>(null);
+  const [updateFiles, setUpdateFiles] = useState<File[]>([]);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -150,19 +153,35 @@ export default function Entreprises() {
     setUpdateLoading(true);
     setUpdateJob({ status: 'pending', progress: 0 });
     try {
-      const response = await fetch('/api/adminsuper/windev-update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ entrepriseId: updateEntrepriseId }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Impossible de lancer la mise à jour');
-      showNotification(data.message, 'info');
+      let message: string;
+      if (updateFiles.length) {
+        const form = new FormData();
+        form.append('entrepriseId', updateEntrepriseId);
+        updateFiles.forEach((file) => form.append('files', file));
+        const response = await axios.post('/api/adminsuper/windev-update', form, {
+          withCredentials: true,
+          onUploadProgress: (event) => setUploadPercent(event.total ? Math.round((event.loaded * 100) / event.total) : null),
+        });
+        message = response.data?.message;
+      } else {
+        const response = await fetch('/api/adminsuper/windev-update', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ entrepriseId: updateEntrepriseId }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Impossible de lancer la mise à jour');
+        message = data.message;
+      }
+      showNotification(message || 'Mise à jour lancée', 'info');
+      setUploadPercent(null);
       refreshUpdateStatus(updateEntrepriseId);
     } catch (err) {
       setUpdateLoading(false);
-      showNotification(err instanceof Error ? err.message : 'Erreur de mise à jour', 'danger');
+      setUploadPercent(null);
+      const axiosMessage = axios.isAxiosError(err) ? err.response?.data?.message : null;
+      showNotification(axiosMessage || (err instanceof Error ? err.message : 'Erreur de mise à jour'), 'danger');
     }
   };
 
@@ -416,9 +435,35 @@ export default function Entreprises() {
                 ))}
               </Form.Select>
             </Form.Group>
+            <Form.Group className="mt-3">
+              <Form.Label>Dossier d'export WinDev</Form.Label>
+              <Form.Control
+                type="file"
+                multiple
+                disabled={updateLoading}
+                ref={(el: HTMLInputElement | null) => { if (el) el.setAttribute('webkitdirectory', ''); }}
+                onChange={(event) => setUpdateFiles(Array.from((event.target as HTMLInputElement).files || []))}
+              />
+              <Form.Text className="text-muted">
+                {updateFiles.length > 0
+                  ? `${updateFiles.length} fichier(s) sélectionné(s) — ils seront envoyés au serveur.`
+                  : "Sélectionnez le dossier contenant les exports .xlsx/.csv depuis ce poste. Si vide, le dossier configuré sur le serveur (WINDEV_EXPORT_DIR) est utilisé."}
+              </Form.Text>
+            </Form.Group>
             <div className="alert alert-warning mt-3 mb-0">
-              Vérifiez la base sélectionnée avant de continuer. L’import utilise les fichiers configurés sur le serveur et ne copie jamais les mots de passe WinDev.
+              Vérifiez la base sélectionnée avant de continuer. L’import ne copie jamais les mots de passe WinDev.
             </div>
+            {uploadPercent !== null && (
+              <div className="mt-3">
+                <div className="d-flex justify-content-between">
+                  <span>Envoi des fichiers vers le serveur</span>
+                  <span>{uploadPercent}%</span>
+                </div>
+                <div className="progress">
+                  <div className="progress-bar" style={{ width: `${uploadPercent}%` }} />
+                </div>
+              </div>
+            )}
             {updateJob && (
               <div className="mt-3">
                 <div className="d-flex justify-content-between">

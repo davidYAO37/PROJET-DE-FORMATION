@@ -239,7 +239,7 @@ export default function Dashboard() {
           100% { transform: translateX(-100%); }
         }
       `}</style>
-      <h2 className="mb-4 text-primary text-center">Bienvenue sur le Tableau de Bord</h2>
+      <h2 className="mb-4 text-primary text-center">{getUtilisateur() || 'Utilisateur'} - Bienvenue sur le Tableau de Bord</h2>
       <Row className="g-4 mt-2">
         <Col xs={12}>
           <Card className="shadow-sm">

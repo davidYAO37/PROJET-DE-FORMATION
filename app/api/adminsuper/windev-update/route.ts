@@ -1,5 +1,6 @@
 import { execSync, spawn } from "child_process";
 import fs from "fs";
+import os from "os";
 import path from "path";
 import mongoose from "mongoose";
 import { NextRequest, NextResponse } from "next/server";
@@ -31,10 +32,16 @@ export async function POST(req: NextRequest) {
   if (error) return error;
   if (user!.type !== "adminsuper") return NextResponse.json({ message: "Accès interdit" }, { status: 403 });
 
-  const { entrepriseId } = await req.json();
+  let entrepriseId = "";
+  let uploaded: File[] = [];
+  if ((req.headers.get("content-type") || "").includes("multipart/form-data")) {
+    const form = await req.formData();
+    entrepriseId = String(form.get("entrepriseId") || "");
+    uploaded = form.getAll("files").filter((f): f is File => f instanceof File && /\.(xlsx|xls|csv)$/i.test(f.name));
+  } else {
+    entrepriseId = (await req.json())?.entrepriseId || "";
+  }
   if (!entrepriseId || !mongoose.isValidObjectId(entrepriseId)) return NextResponse.json({ message: "Entreprise invalide" }, { status: 400 });
-  const exportDir = process.env.WINDEV_EXPORT_DIR;
-  if (!exportDir || !fs.existsSync(exportDir)) return NextResponse.json({ message: "WINDEV_EXPORT_DIR est absent ou inaccessible sur le serveur" }, { status: 503 });
 
   await db();
   const connectionDb = mongoose.connection.db;
@@ -45,26 +52,47 @@ export async function POST(req: NextRequest) {
   const active = await jobs.findOne({ entrepriseId: new mongoose.Types.ObjectId(entrepriseId), status: { $in: ["pending", "running"] } });
   if (active) return NextResponse.json({ message: "Une mise à jour est déjà en cours", job: active }, { status: 409 });
 
-  const result = await jobs.insertOne({
-    entrepriseId: new mongoose.Types.ObjectId(entrepriseId),
-    entreprise: entreprise.NomSociete || "",
-    dbName: entreprise.dbName,
-    status: "pending",
-    progress: 0,
-    createdAt: new Date(),
-    createdBy: new mongoose.Types.ObjectId(user!._id),
-  });
-  const worker = path.join(process.cwd(), "scripts", "import_windev", "run_update_job.js");
-  const child = spawn(process.execPath, [worker, entrepriseId, result.insertedId.toString()], {
-    cwd: process.cwd(),
-    env: process.env,
-    detached: true,
-    stdio: "ignore",
-  });
-  await jobs.updateOne({ _id: result.insertedId }, { $set: { pid: child.pid } });
-  child.unref();
+  let exportDir = process.env.WINDEV_EXPORT_DIR;
+  let isUploadDir = false;
+  if (uploaded.length) {
+    exportDir = path.join(/*turbopackIgnore: true*/ os.tmpdir(), `windev-import-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`);
+    fs.mkdirSync(/*turbopackIgnore: true*/ exportDir, { recursive: true });
+    try {
+      for (const file of uploaded) {
+        fs.writeFileSync(path.join(/*turbopackIgnore: true*/ exportDir, path.basename(file.name)), Buffer.from(await file.arrayBuffer()));
+      }
+    } catch {
+      fs.rmSync(/*turbopackIgnore: true*/ exportDir, { recursive: true, force: true });
+      return NextResponse.json({ message: "Impossible d'enregistrer les fichiers envoyés" }, { status: 500 });
+    }
+    isUploadDir = true;
+  }
+  if (!exportDir || !fs.existsSync(/*turbopackIgnore: true*/ exportDir)) return NextResponse.json({ message: "Sélectionnez le dossier d'export WinDev ou configurez WINDEV_EXPORT_DIR sur le serveur" }, { status: 503 });
 
-  return NextResponse.json({ message: `Mise à jour lancée pour ${entreprise.NomSociete}`, jobId: result.insertedId }, { status: 202 });
+  try {
+    const result = await jobs.insertOne({
+      entrepriseId: new mongoose.Types.ObjectId(entrepriseId),
+      entreprise: entreprise.NomSociete || "",
+      dbName: entreprise.dbName,
+      status: "pending",
+      progress: 0,
+      createdAt: new Date(),
+      createdBy: new mongoose.Types.ObjectId(user!._id),
+    });
+    const worker = path.join(process.cwd(), "scripts", "import_windev", "run_update_job.js");
+    const child = spawn(process.execPath, [worker, entrepriseId, result.insertedId.toString()], {
+      env: { ...process.env, WINDEV_EXPORT_DIR: exportDir, WINDEV_CLEANUP_DIR: isUploadDir ? "1" : "" },
+      detached: true,
+      stdio: "ignore",
+    });
+    await jobs.updateOne({ _id: result.insertedId }, { $set: { pid: child.pid } });
+    child.unref();
+
+    return NextResponse.json({ message: `Mise à jour lancée pour ${entreprise.NomSociete}`, jobId: result.insertedId }, { status: 202 });
+  } catch (err) {
+    if (isUploadDir && exportDir) fs.rmSync(/*turbopackIgnore: true*/ exportDir, { recursive: true, force: true });
+    throw err;
+  }
 }
 
 function killWindowsProcess(pid?: number) {

@@ -14,6 +14,11 @@ export default function Caisse() {
   const [prestations, setPrestations] = useState<any[]>([]);
   const [prescriptions, setPrescriptions] = useState<any[]>([]);
   const [facturesNonSoldées, setFacturesNonSoldées] = useState<any[]>([]);
+  const [utilisateur, setUtilisateur] = useState('');
+
+  useEffect(() => {
+    setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
+  }, []);
 
   // Fonction pour recharger les données
   const rechargerDonnées = async () => {
@@ -138,6 +143,12 @@ export default function Caisse() {
             <FaClock className="me-2" />
             Tableau de Bord
           </h2>
+          {utilisateur && (
+            <span className="text-muted fw-semibold ms-auto me-3">
+              <FaUserCheck className="me-1" />
+              {utilisateur}
+            </span>
+          )}
           <Button variant="outline-danger" onClick={handleLogout}>
             Se déconnecter
           </Button>

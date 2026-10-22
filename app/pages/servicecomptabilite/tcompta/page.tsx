@@ -14,6 +14,11 @@ export default function DashboardComptabilite() {
   const router = useRouter();
   const [kpis, setKpis] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [utilisateur, setUtilisateur] = useState('');
+
+  useEffect(() => {
+    setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
+  }, []);
 
   const chargerKpis = useCallback(async () => {
     setLoading(true);
@@ -83,7 +88,13 @@ export default function DashboardComptabilite() {
               {new Date().toLocaleDateString('fr-FR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
             </small>
           </div>
-          <div className="d-flex gap-2">
+          <div className="d-flex gap-2 align-items-center">
+            {utilisateur && (
+              <span className="text-muted fw-semibold me-2">
+                <i className="bi bi-person-circle me-1"></i>
+                {utilisateur}
+              </span>
+            )}
             <Button variant="outline-secondary" size="sm" onClick={chargerKpis} disabled={loading}>
               {loading ? <Spinner size="sm" animation="border" /> : <><i className="bi bi-arrow-clockwise me-1"></i>Actualiser</>}
             </Button>

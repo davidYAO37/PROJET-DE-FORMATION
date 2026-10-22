@@ -25,6 +25,11 @@ export default function TpatientPage() {
   const [rdvCount, setRdvCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [utilisateur, setUtilisateur] = useState('');
+
+  useEffect(() => {
+    setUtilisateur(localStorage.getItem('nom_utilisateur') || '');
+  }, []);
   
   // États pour le planning - plus besoin d'entrepriseId
 
@@ -93,6 +98,12 @@ export default function TpatientPage() {
             <FaUserCheck className="me-2" />
             Tableau de Bord - Service Accueil
           </h2>
+          {utilisateur && (
+            <span className="text-muted fw-semibold ms-auto me-3">
+              <FaUserCheck className="me-1" />
+              {utilisateur}
+            </span>
+          )}
           <Button variant="outline-danger" onClick={handleLogout}>
             <FaSignOutAlt className="me-1" />
             Se déconnecter
