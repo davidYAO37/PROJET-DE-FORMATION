@@ -41,6 +41,7 @@ interface Consultation {
   Poids?: string;
   DatePres?: string;
   IDMEDECIN?: string;
+  Medecin?: string;
   tauxAssurance?: number;
   assurance?: string;
   IDASSURANCE?: string;
@@ -132,14 +133,14 @@ useEffect(() => {
 }, []);
   // PROCÉDURE Modifie_prescription() selon le pseudo-code
   const modifiePrescription = useCallback(async (gxMonidORDONNANCE?: string): Promise<any> => {
-    // Récupérer le nom du médecin si IDMEDECIN existe
-    let nomMed = "";
+    // Récupérer le nom du médecin si IDMEDECIN existe (sinon : médecin externe saisi sur la consultation)
+    let nomMed = consultation.Medecin || "";
     if (consultation.IDMEDECIN) {
       try {
         const medecinRes = await fetch(`/api/medecins/${consultation.IDMEDECIN}`);
         if (medecinRes.ok) {
           const medecin = await medecinRes.json();
-          nomMed = medecin.nom || "";
+          nomMed = medecin.nom || nomMed;
         }
       } catch (error) {
         console.error("Erreur lors de la récupération du médecin:", error);

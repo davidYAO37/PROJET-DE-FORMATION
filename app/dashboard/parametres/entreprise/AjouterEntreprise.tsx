@@ -30,6 +30,7 @@ export default function AjouterEntreprise({
   const [licencePrice, setLicencePrice] = useState<number | string>(0);
   const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
   const [travailleAvecApporteur, setTravailleAvecApporteur] = useState(false);
+  const [portailPatient, setPortailPatient] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleNomSocieteChange = (value: string) => {
@@ -67,6 +68,7 @@ export default function AjouterEntreprise({
       formData.append("licencePrice", String(licencePrice ?? 0));
       formData.append("maintenanceAccepted", String(maintenanceAccepted));
       formData.append("travailleAvecApporteur", String(travailleAvecApporteur));
+      formData.append("portailPatient", String(portailPatient));
 
       if (LogoEFile) {
         formData.append("logoFile", LogoEFile);
@@ -93,6 +95,7 @@ export default function AjouterEntreprise({
         setLicencePrice(0);
         setMaintenanceAccepted(false);
         setTravailleAvecApporteur(false);
+        setPortailPatient(false);
         onHide();
       }
     } catch (error) {
@@ -234,6 +237,22 @@ export default function AjouterEntreprise({
                         />
                         <Form.Text className="text-muted">
                           Active la gestion des apporteurs et de leurs honoraires pour cette entreprise.
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="portail-patient-switch"
+                          label="Activer le portail patient"
+                          checked={portailPatient}
+                          onChange={(e) => setPortailPatient(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Activé = les patients de cette entreprise peuvent se connecter au portail
+                          (consultation du dossier, résultats, demandes de rendez-vous) et
+                          l&apos;entreprise apparaît dans la liste des établissements du portail.
                         </Form.Text>
                       </Form.Group>
                     </Col>

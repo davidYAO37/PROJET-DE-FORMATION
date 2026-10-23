@@ -5,6 +5,7 @@ import { buildLogoDataUrlFromUpload } from "@/lib/entrepriseLogo";
 import { buildDbNameFromNomSociete, slugify } from "@/lib/slugify";
 import { seedDefaultTenantData } from "@/lib/seedTenantData";
 import { requireAuth } from "@/lib/auth";
+import { ALL_MODULE_CODES } from "@/lib/licenceModules";
 
 export async function GET(req: NextRequest) {
   const { error } = await requireAuth(req, ["adminsuper"]);
@@ -42,6 +43,13 @@ export async function POST(req: NextRequest) {
     const licencePrice = licencePriceRaw ? parseFloat(licencePriceRaw) || 0 : 0;
     const maintenanceAccepted = formData.get("maintenanceAccepted") === "true";
     const travailleAvecApporteur = formData.get("travailleAvecApporteur") === "true";
+    // Choix à la création : l'entreprise décide si ses patients peuvent
+    // utiliser le portail patient. `modules: []` signifie "tous les modules",
+    // donc pour le refuser on stocke la liste explicite sans "portail_patient".
+    const portailPatient = formData.get("portailPatient") === "true";
+    const modules = portailPatient
+      ? []
+      : ALL_MODULE_CODES.filter((code) => code !== "portail_patient");
     const requestedDbName = (formData.get("dbName") as string) || "";
     const logoFile = formData.get("logoFile") as File | null;
 
@@ -111,6 +119,7 @@ export async function POST(req: NextRequest) {
       licencePrice,
       maintenanceAccepted,
       travailleAvecApporteur,
+      modules,
       dbName,
       mongoUri,
     };

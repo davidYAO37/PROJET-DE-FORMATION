@@ -55,13 +55,17 @@ export async function PUT(req: NextRequest) {
 
     // Mettre à jour le rendez-vous
     const updatedRdv = await RendezVous.findOneAndUpdate(
-      { _id: rdvId, ...getTenantFilter(context) },
+      { _id: rdvId, ...getTenantFilter(context),
+        Statutrdvpris: existingRdv.Statutrdvpris ?? { $ne: true },
+        PatientR: existingRdv.PatientR ?? null,
+        StatutRdv: existingRdv.StatutRdv ?? null,
+      },
       updateData,
       { new: true }
     );
 
     if (!updatedRdv) {
-      return NextResponse.json({ error: "Erreur lors de la mise à jour du rendez-vous" }, { status: 500 });
+      return NextResponse.json({ error: "Ce créneau a été modifié. Rechargez le planning avant de continuer." }, { status: 409 });
     }
 
     const message = `✅ Rendez-vous validé avec succès!\n📋 Patient: ${PatientR}\n📞 Contact: ${Contact}\n🏥 Type: ${DESCRIPTION}`;

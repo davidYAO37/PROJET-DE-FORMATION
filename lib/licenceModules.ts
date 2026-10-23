@@ -12,6 +12,7 @@ export const LICENCE_MODULES = [
   { code: "hospitalisation", label: "Hospitalisation", servicePath: "/pages/examenhospitalisation" },
   { code: "operation", label: "Paramétrage opération", servicePath: "/pages/parametrageoperation" },
   { code: "impressions", label: "Impressions", servicePath: "/pages/MesImpressions" },
+  { code: "portail_patient", label: "Portail Patient", servicePath: "/portail" },
 ] as const;
 
 export type LicenceModuleCode = (typeof LICENCE_MODULES)[number]["code"];

@@ -36,6 +36,7 @@ export interface ConsultationType {
 
     Medecin: string;
     IDMEDECIN: string;
+    MedecinExterne?: boolean;
     statutPrescriptionMedecin: number;
 
     IDASSURANCE: string;

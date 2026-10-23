@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const ParamBiochimie = getTenantModel<IParamBiochimie>(context.connection, "ParamBiochimie");
 
     try {
-        const automate = await LienAutomate.findOne();
+        const automate = await LienAutomate.findOne().sort({ createdAt: -1 });
 
         if (!automate?.LienBiochimie) {
 

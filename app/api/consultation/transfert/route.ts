@@ -46,6 +46,7 @@ export async function PUT(req: NextRequest) {
                     AncienMedecin: ancienMedecin,
                     Medecin: `${nouveauMedecin.nom} ${nouveauMedecin.prenoms}`,
                     IDMEDECIN: nouveauMedecin._id,
+                    MedecinExterne: false,
                     datetransfert: new Date(),
                     TransfererPar: transfererPar
                 }

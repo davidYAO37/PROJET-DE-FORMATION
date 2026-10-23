@@ -15,6 +15,7 @@ type Props = {
 
 export default function AssuranceInfoCaisseManuelle({ formData, setFormData, currentLignes = [], onRecalculateLines }: Props) {
     const [medecins, setMedecins] = useState<{ nom: string; prenoms: string; _id: string }[]>([]);
+    const [prescripteurExterne, setPrescripteurExterne] = useState(false);
     const [assurances, setAssurances] = useState<Assurance[]>([]);
     const previousAssureStatus = useRef(formData.Assure);
     const previousAssuranceId = useRef(formData.assurance.assuranceId);
@@ -40,6 +41,14 @@ export default function AssuranceInfoCaisseManuelle({ formData, setFormData, cur
             .then((res) => res.json())
             .then((data) => setMedecins(Array.isArray(data) ? data : []));
     }, []);
+
+    // Si le prescripteur chargé n'est pas un médecin interne, l'afficher en saisie libre (externe)
+    useEffect(() => {
+        const v = (formData.medecinPrescripteur || "").trim();
+        if (v && medecins.length > 0 && !medecins.some((m) => `${m.nom} ${m.prenoms}` === v)) {
+            setPrescripteurExterne(true);
+        }
+    }, [medecins]);
 
     // Charger assurances
     useEffect(() => {
@@ -202,18 +211,35 @@ export default function AssuranceInfoCaisseManuelle({ formData, setFormData, cur
                     <Form.Group className="mt-1">
                         <Form.Label>Médecin prescripteur</Form.Label>
                         <Form.Select
-                            value={formData.medecinPrescripteur}
-                            onChange={(e) =>
-                                setFormData({ ...formData, medecinPrescripteur: e.target.value })
-                            }
+                            value={prescripteurExterne ? "__EXTERNE__" : formData.medecinPrescripteur}
+                            onChange={(e) => {
+                                if (e.target.value === "__EXTERNE__") {
+                                    setPrescripteurExterne(true);
+                                    setFormData({ ...formData, medecinPrescripteur: "" });
+                                } else {
+                                    setPrescripteurExterne(false);
+                                    setFormData({ ...formData, medecinPrescripteur: e.target.value });
+                                }
+                            }}
                         >
                             <option value="">-- Sélectionner un médecin --</option>
                             {medecins.map((m) => (
-                                <option key={m._id} value={m._id}>
+                                <option key={m._id} value={`${m.nom} ${m.prenoms}`}>
                                     {m.nom} {m.prenoms}
                                 </option>
                             ))}
+                            <option value="__EXTERNE__">— Médecin externe (saisie libre) —</option>
                         </Form.Select>
+                        {prescripteurExterne && (
+                            <Form.Control
+                                className="mt-2"
+                                placeholder="Nom du médecin prescripteur externe (ex : Dr Koffi)"
+                                value={formData.medecinPrescripteur}
+                                onChange={(e) =>
+                                    setFormData({ ...formData, medecinPrescripteur: e.target.value })
+                                }
+                            />
+                        )}
                     </Form.Group>
                     {/* Sélection Assurance */}
                     <Form.Group className="mb-1">

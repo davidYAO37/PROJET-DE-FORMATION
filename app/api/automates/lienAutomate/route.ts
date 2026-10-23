@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { nLienNFS, LienHormone, LienVS, LienBiochimie } = body;
 
-        const existing = await LienAutomate.findOne();
+        const existing = await LienAutomate.findOne().sort({ createdAt: -1 });
         if (existing) {
             existing.nLienNFS = nLienNFS;
             existing.LienHormone = LienHormone;

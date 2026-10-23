@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IConsultation } from "@/models/consultation";
@@ -23,7 +24,12 @@ export async function POST(req: NextRequest) {
         if (!data.selectedActe || data.selectedActe === "") {
             return NextResponse.json({ error: "Merci de préciser l'acte de consultation" }, { status: 400 });
         }
-        if (!data.selectedMedecin || data.selectedMedecin === "") {
+        const medecinExterne = (data.medecinExterne || "").toString().trim();
+        const hasInternalMedecin =
+            data.selectedMedecin &&
+            data.selectedMedecin !== "__EXTERNE__" &&
+            mongoose.isValidObjectId(data.selectedMedecin);
+        if (!hasInternalMedecin && !medecinExterne) {
             return NextResponse.json({ error: "Merci de préciser le médecin prescripteur" }, { status: 400 });
         }
 
@@ -41,7 +47,7 @@ export async function POST(req: NextRequest) {
         // ✅ Préparation de la consultation
         const patient = await Patient.findById(data.IdPatient);
         const assurance = data.selectedAssurance ? await Assurance.findById(data.selectedAssurance) : null;
-        const medecin = await Medecin.findById(data.selectedMedecin);
+        const medecin = hasInternalMedecin ? await Medecin.findById(data.selectedMedecin) : null;
 
         // Montants et calculs (tous en entiers)
         let montantActe = Math.round(data.montantClinique || 0);
@@ -112,8 +118,9 @@ export async function POST(req: NextRequest) {
             SOCIETE_PATIENT: patient?.SOCIETE_PATIENT || data.societePatient,
             IDSOCIETEASSURANCE: patient?.IDSOCIETEASSURANCE || data.selectedAssurance,
 
-            Medecin: medecin ? `${medecin.nom} ${medecin.prenoms}` : "",
+            Medecin: medecin ? `${medecin.nom} ${medecin.prenoms}` : medecinExterne,
             IDMEDECIN: medecin?._id,
+            MedecinExterne: !medecin && !!medecinExterne,
 
             statutPrescriptionMedecin: 2, // pour afficher l'acte dans la liste des actes prescrits
             AttenteAccueil: false, // Par défaut, le patient est en attente d'accueil

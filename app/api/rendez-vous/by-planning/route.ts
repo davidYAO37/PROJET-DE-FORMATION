@@ -1,6 +1,6 @@
 import { IRendezVous } from "@/models/RendezVous";
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { withTenant, getTenantFilter } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "infirmier", "radiologue"];
@@ -20,7 +20,7 @@ export async function GET(req: NextRequest) {
     }
 
     // Récupérer les rendez-vous pour ce planning spécifique (tenant isolé par connexion)
-    const rendezVous = await RendezVous.find({ IDPLANNING_MED: planningId })
+    const rendezVous = await RendezVous.find({ ...getTenantFilter(context), IDPLANNING_MED: planningId })
       .sort({ HeureRDV: 1 }) // Trier par heure
       .lean();
 

@@ -41,6 +41,7 @@ export interface IConsultation extends Document {
 
   Medecin?: string;
   IDMEDECIN?: mongoose.Types.ObjectId;
+  MedecinExterne?: boolean;
   MontantMedecin: number;
   Sexe?: string;
 
@@ -132,6 +133,7 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
 
     Medecin: { type: String },
     IDMEDECIN: { type: Schema.Types.ObjectId, ref: "Medecin" },
+    MedecinExterne: { type: Boolean, default: false },
     MontantMedecin: { type: Number, default: 0 },
     Sexe: { type: String },
     statutPrescriptionMedecin: { type: Number, default: 2 },

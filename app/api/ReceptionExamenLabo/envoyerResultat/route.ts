@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { withTenant, getTenantFilter } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IExamenHospitalisation } from "@/models/examenHospit";
 
@@ -36,8 +36,8 @@ export async function PUT(req: NextRequest) {
     });
 
 
-    const updated = await ExamenHospitalisation.findByIdAndUpdate(
-      idHospitalisation,
+    const updated = await ExamenHospitalisation.findOneAndUpdate(
+      { ...getTenantFilter(context), _id: idHospitalisation, dateRemiseResultat: null },
       {
         StatutLaboratoire: 3,
         Datetransferbiologiste: now.toISOString(),
@@ -52,8 +52,8 @@ export async function PUT(req: NextRequest) {
 
     if (!updated) {
       return NextResponse.json(
-        { error: "Document non trouvé", message: `Aucun examen avec l'ID ${idHospitalisation}` },
-        { status: 404 }
+        { message: "Renvoi impossible : résultat déjà remis ou examen introuvable." },
+        { status: 409 }
       );
     }
 

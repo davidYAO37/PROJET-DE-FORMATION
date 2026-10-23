@@ -130,12 +130,20 @@ export async function POST(req: NextRequest) {
             ? Number(header.StatutLaboratoire)
             : (hasSocietePartenaire ? 1 : undefined);
 
+        // Normaliser le prescripteur : accepte un objet {nom, prenoms} ou un nom simple (médecin externe)
+        const prescripteurInput = header.assuranceInfo?.medecinPrescripteur ?? header.medecinPrescripteur;
+        const prescripteurNom = (
+            typeof prescripteurInput === "string"
+                ? prescripteurInput
+                : [prescripteurInput?.nom, prescripteurInput?.prenoms].filter(Boolean).join(" ")
+        ).trim() || consultationData.Medecin || "";
+
         // Préparer les données de l'examen avec les champs supplémentaires
         const examenData = {
             ...header,
             // Utiliser le médecin du formulaire, de l'assurance ou celui de la consultation
-            NomMed: header.assuranceInfo?.medecinPrescripteur.nom || header.medecinPrescripteur.nom || consultationData.Medecin || "",
-            idMedecin: header.medecinPrescripteur ?
+            NomMed: prescripteurNom,
+            idMedecin: prescripteurNom ?
                 (consultationData.IDMEDECIN ? new mongoose.Types.ObjectId(consultationData.IDMEDECIN) : null) : null,
 
             // Utiliser les informations patient de la consultation
@@ -250,7 +258,7 @@ export async function POST(req: NextRequest) {
                         coefficientClinique: l.CoefClinique || l.Coefficient || 1,
                         taxe: toInt(l.TAXE),
                         Assurance: header.Assurance || "",
-                        medecinPrescripteur: header.assuranceInfo?.medecinPrescripteur?.nom || header.medecinPrescripteur?.nom || consultationData.Medecin || "",
+                        medecinPrescripteur: prescripteurNom,
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
                         IDSOCIETEPARTENAIRE: saved.IDSOCIETEPARTENAIRE || null,
 

@@ -45,6 +45,7 @@ interface RdvItem {
   DESCRIPTION: string;
   Contact: string;
   Statutrdvpris: boolean;
+  RendezVousPrisPar?: string;
   NouvelleDate?: string;
   MotifReport?: string;
   ServiceIndisponible?: boolean;
@@ -164,6 +165,15 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
       if (response.ok) {
         const data = await response.json();
         setRendezVous(data);
+        setEditingRdv((prev) => {
+          const next = { ...prev };
+          data.forEach((rdv: RdvItem) => {
+            if (!rdv.Statutrdvpris && rdv.PatientR) {
+              next[rdv._id] = { patient: rdv.PatientR, contact: rdv.Contact || '', typeVisite: rdv.DESCRIPTION || '' };
+            }
+          });
+          return next;
+        });
         
         // Initialiser l'état des interrupteurs avec les statuts actuels des rendez-vous
         const initialSwitchState: { [key: string]: boolean } = {};
@@ -1187,6 +1197,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
                               <div className="d-flex flex-column">
                                 {/* <span>{formatTime(rdv.HeureRDV)}</span> */}
                                 <small className="text-muted">{rdv.DateDisponinibilite}</small>
+                                {rdv.RendezVousPrisPar === 'Patient (portail)' && <span className="badge bg-info text-dark mt-1">Portail patient{!rdv.Statutrdvpris ? ' — à valider' : ''}</span>}
                                 {rdvIsPast && (
                                   <span
                                     className="mt-1"

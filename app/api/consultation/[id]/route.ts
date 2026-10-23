@@ -75,7 +75,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         // Validation minimale
         if (!data.selectedActe) return NextResponse.json({ error: "Merci de préciser l'acte de consultation" }, { status: 400 });
-        if (!data.selectedMedecin) return NextResponse.json({ error: "Merci de préciser le médecin prescripteur" }, { status: 400 });
+        const medecinExterne = (data.medecinExterne || "").toString().trim();
+        const hasInternalMedecin =
+            data.selectedMedecin &&
+            data.selectedMedecin !== "__EXTERNE__" &&
+            mongoose.isValidObjectId(data.selectedMedecin);
+        if (!hasInternalMedecin && !medecinExterne) return NextResponse.json({ error: "Merci de préciser le médecin prescripteur" }, { status: 400 });
 
         const consultation = await Consultation.findById(id);
         if (!consultation) return NextResponse.json({ error: "Consultation non trouvée" }, { status: 404 });
@@ -89,7 +94,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             typeof data.selectedAssurance === "string" ? new mongoose.Types.ObjectId(data.selectedAssurance) : data.selectedAssurance
         ) : null;
 
-        const medecin = data.selectedMedecin ? await Medecin.findById(
+        const medecin = hasInternalMedecin ? await Medecin.findById(
             typeof data.selectedMedecin === "string" ? new mongoose.Types.ObjectId(data.selectedMedecin) : data.selectedMedecin
         ) : null;
 
@@ -139,7 +144,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.Recupar = data.Recupar;
         consultation.IDACTE = data.selectedActe;
         consultation.PatientP = patient?.Nom + " " + patient?.Prenoms || "";
-        consultation.Medecin = medecin ? `${medecin.nom} ${medecin.prenoms}` : "";
+        consultation.Medecin = medecin ? `${medecin.nom} ${medecin.prenoms}` : medecinExterne;
+        consultation.MedecinExterne = !medecin && !!medecinExterne;
 
         // Ajouter le champ sexe depuis le patient
         consultation.Sexe = patient?.sexe || "";

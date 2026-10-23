@@ -2,7 +2,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Button, Container, Form, Table, Pagination } from 'react-bootstrap';
+import { Card, Row, Col, Button, Container, Form, Table, Pagination, Modal, Alert } from 'react-bootstrap';
 
 export default function ListeResultatValides() {
   const [startDate, setStartDate] = useState('');
@@ -15,6 +15,32 @@ export default function ListeResultatValides() {
   const [patientFilter, setPatientFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(25);
+  const [remiseItem, setRemiseItem] = useState<any>(null);
+  const [recuPar, setRecuPar] = useState('');
+  const [telephone, setTelephone] = useState('');
+  const [savingRemise, setSavingRemise] = useState(false);
+  const [remiseError, setRemiseError] = useState('');
+
+  const enregistrerRemise = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSavingRemise(true);
+    setRemiseError('');
+    try {
+      const response = await fetch('/api/ReceptionExamenLabo/resultatValides', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ idHospitalisation: getItemId(remiseItem), resultatRecuPar: recuPar, telephoneReceptionResultat: telephone }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || 'Enregistrement impossible');
+      setResultats((items) => items.map((item) => getItemId(item) === getItemId(remiseItem) ? { ...item, ...data.remise } : item));
+      setRemiseItem(null);
+    } catch (error) {
+      setRemiseError(error instanceof Error ? error.message : 'Enregistrement impossible');
+    } finally {
+      setSavingRemise(false);
+    }
+  };
 
   useEffect(() => {
     const today = new Date();
@@ -287,7 +313,22 @@ export default function ListeResultatValides() {
                     <td>{item.PatientP ?? ''}</td>
                     <td>{item.resultatSaisiePar ?? ''}</td>
                     <td>{item.Biologiste ?? ''}</td>
-                    <td className="d-flex gap-2 flex-wrap">
+                    <td>
+                      {item.dateRemiseResultat && (
+                        <div className="small bg-success-subtle rounded p-2 mb-2">
+                          <strong>Résultat remis par :</strong> {item.resultatRemisPar}<br />
+                          <strong>Date et heure :</strong> {new Date(item.dateRemiseResultat).toLocaleString('fr-FR')}<br />
+                          <strong>Reçu par :</strong> {item.resultatRecuPar}<br />
+                          <strong>Tél. :</strong> {item.telephoneReceptionResultat}
+                        </div>
+                      )}
+                      <div className="d-flex gap-2 flex-wrap">
+                      {!item.dateRemiseResultat && (
+                        <Button variant="outline-success" size="sm"
+                          onClick={() => { setRemiseItem(item); setRecuPar(''); setTelephone(''); setRemiseError(''); }}>
+                          Marquer la réception
+                        </Button>
+                      )}
                       <Button
                         variant="outline-primary"
                         size="sm"
@@ -304,14 +345,17 @@ export default function ListeResultatValides() {
                         <i className="bi bi-file-earmark me-1"></i>
                         Sans entête
                       </Button>
-                      <Button
-                        variant="outline-danger"
-                        size="sm"
-                        disabled={renvoiId === itemId}
-                        onClick={() => handleRenvoyerResultat(itemId)}
-                      >
-                        {renvoiId === itemId ? 'Traitement...' : 'Renvoyer le résultat'}
-                      </Button>
+                      {!item.dateRemiseResultat && (
+                        <Button
+                          variant="outline-danger"
+                          size="sm"
+                          disabled={renvoiId === itemId}
+                          onClick={() => handleRenvoyerResultat(itemId)}
+                        >
+                          {renvoiId === itemId ? 'Traitement...' : 'Renvoyer le résultat'}
+                        </Button>
+                      )}
+                      </div>
                     </td>
                   </tr>
                 );
@@ -366,6 +410,30 @@ export default function ListeResultatValides() {
         )}
       </div>
 
+      <Modal show={!!remiseItem} onHide={() => { if (!savingRemise) setRemiseItem(null); }} centered backdrop="static">
+        <Modal.Header closeButton={!savingRemise}>
+          <Modal.Title>Réception du résultat</Modal.Title>
+        </Modal.Header>
+        <Form onSubmit={enregistrerRemise}>
+          <Modal.Body>
+            <p className="mb-2"><strong>{remiseItem?.PatientP}</strong> — {remiseItem?.CodePrestation}</p>
+            <p className="small text-muted">L’utilisateur connecté et la date et l’heure de remise seront enregistrés automatiquement à la confirmation.</p>
+            {remiseError && <Alert variant="danger" role="alert">{remiseError}</Alert>}
+            <Form.Group className="mb-3" controlId="resultat-recu-par">
+              <Form.Label>Résultat reçu par *</Form.Label>
+              <Form.Control value={recuPar} onChange={(e) => setRecuPar(e.target.value)} required maxLength={150} disabled={savingRemise} placeholder="Nom et prénoms du réceptionnaire" />
+            </Form.Group>
+            <Form.Group controlId="resultat-recu-telephone">
+              <Form.Label>Téléphone du réceptionnaire *</Form.Label>
+              <Form.Control type="tel" value={telephone} onChange={(e) => setTelephone(e.target.value)} required maxLength={30} disabled={savingRemise} placeholder="Numéro de téléphone" />
+            </Form.Group>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button variant="secondary" onClick={() => setRemiseItem(null)} disabled={savingRemise}>Annuler</Button>
+            <Button variant="success" type="submit" disabled={savingRemise}>{savingRemise ? 'Enregistrement…' : 'Confirmer la remise'}</Button>
+          </Modal.Footer>
+        </Form>
+      </Modal>
     </Container>
   );
 }

@@ -10,11 +10,14 @@ function Verifconnecion({ children }: { children: React.ReactNode }) {
 
     // Public pages that don't require authentication
     const publicPages = ['/', '/connexion'];
+    // Le portail patient possède sa propre authentification (cookie dédié),
+    // indépendante de la session utilisateur EasyMedical.
+    const isPortalPage = pathname.startsWith('/portail');
 
     React.useEffect(() => {
         if (typeof window !== 'undefined') {
             // Allow public pages without authentication
-            if (publicPages.includes(pathname)) {
+            if (publicPages.includes(pathname) || isPortalPage) {
                 setElaoder(false);
                 return;
             }

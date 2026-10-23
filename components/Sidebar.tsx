@@ -353,7 +353,7 @@ export default function Sidebar() {
                   Gestion Biologiste
                 </Link>
               </li>
-              {!loading && user && user.type === "adminsuper" && (
+              {isPrivileged && (
                 <>
                   <li>
                     <button

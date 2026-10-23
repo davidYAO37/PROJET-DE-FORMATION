@@ -35,6 +35,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
     const [taux, setTaux] = useState<number | string>("");
     const [medecinPrescripteur, setMedecinPrescripteur] = useState<Medecin[]>([]);
     const [selectedMedecin, setSelectedMedecin] = useState<string>("");
+    const [medecinExterne, setMedecinExterne] = useState<string>("");
 
     const [montantClinique, setMontantClinique] = useState<number>(0);
     const [montantAssurance, setMontantAssurance] = useState<number>(0);
@@ -117,7 +118,13 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
 
             // Mettre à jour les autres états
             setSelectedActe(String(currentConsultation.IDACTE || ""));
-            setSelectedMedecin(String(currentConsultation.IDMEDECIN || ""));
+            if ((currentConsultation as any).MedecinExterne) {
+                setSelectedMedecin("__EXTERNE__");
+                setMedecinExterne(currentConsultation.Medecin || "");
+            } else {
+                setSelectedMedecin(String(currentConsultation.IDMEDECIN || ""));
+                setMedecinExterne("");
+            }
             setMontantClinique(Math.round(currentConsultation.PrixClinique || 0));
             setMontantAssurance(Math.round(currentConsultation.Prix_Assurance || 0));
 
@@ -381,6 +388,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                 body: JSON.stringify({
                     selectedActe,
                     selectedMedecin,
+                    medecinExterne,
                     assure,
                     taux,
                     matricule,
@@ -482,7 +490,17 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                             {medecinPrescripteur.map(m => (
                                 <option key={m._id} value={m._id}>{m.nom} {m.prenoms}</option>
                             ))}
+                            <option value="__EXTERNE__">— Médecin externe (saisie libre) —</option>
                         </Form.Select>
+                        {selectedMedecin === "__EXTERNE__" && (
+                            <Form.Control
+                                className="mt-2"
+                                placeholder="Nom du médecin prescripteur externe (ex : Dr Koffi)"
+                                value={medecinExterne}
+                                onChange={e => setMedecinExterne(e.target.value)}
+                                size="lg"
+                            />
+                        )}
                     </Col>
                 </Row>
             </Card>
@@ -577,8 +595,12 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                                     ...currentConsultation,
                                     designationC:
                                         actes.find(a => a._id === selectedActe)?.designationacte || "",
-                                    Medecin:
-                                        medecinPrescripteur.find(m => m._id === selectedMedecin)?.nom || "",
+                                    Medecin: selectedMedecin === "__EXTERNE__"
+                                        ? medecinExterne
+                                        : (() => {
+                                            const m = medecinPrescripteur.find(m => m._id === selectedMedecin);
+                                            return m ? `${m.nom} ${m.prenoms}` : (currentConsultation.Medecin || "");
+                                        })(),
                                     Recupar: recuPar,
                                     CodePrestation: currentConsultation.CodePrestation || "",
                                     Code_dossier: currentConsultation.Code_dossier || "",

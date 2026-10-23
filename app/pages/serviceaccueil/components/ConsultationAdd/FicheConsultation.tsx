@@ -29,6 +29,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
     const [taux, setTaux] = useState<number | string>("");
     const [medecinPrescripteur, setMedecinPrescripteur] = useState<Medecin[]>([]);
     const [selectedMedecin, setSelectedMedecin] = useState<string>("");
+    const [medecinExterne, setMedecinExterne] = useState<string>("");
 
     const [montantClinique, setMontantClinique] = useState<number>(0);
     const [montantAssurance, setMontantAssurance] = useState<number>(0);
@@ -214,6 +215,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                 body: JSON.stringify({
                     selectedActe,
                     selectedMedecin,
+                    medecinExterne,
                     assure,
                     taux,
                     matricule,
@@ -270,6 +272,8 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                 medecinPrescripteur={medecinPrescripteur}
                 selectedMedecin={selectedMedecin}
                 setSelectedMedecin={setSelectedMedecin}
+                medecinExterne={medecinExterne}
+                setMedecinExterne={setMedecinExterne}
                 assure={assure}
                 patient={patient}
             />

@@ -33,6 +33,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
     const [taux, setTaux] = useState<number | string>("");
     const [medecinPrescripteur, setMedecinPrescripteur] = useState<Medecin[]>([]);
     const [selectedMedecin, setSelectedMedecin] = useState<string>("");
+    const [medecinExterne, setMedecinExterne] = useState<string>("");
 
     const [montantClinique, setMontantClinique] = useState<number>(0);
     const [montantAssurance, setMontantAssurance] = useState<number>(0);
@@ -97,7 +98,13 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             const idMedecin = currentConsultation.IDMEDECIN ? String(currentConsultation.IDMEDECIN) : "";
 
             setSelectedActe(idActe);
-            setSelectedMedecin(idMedecin);
+            if ((currentConsultation as any).MedecinExterne) {
+                setSelectedMedecin("__EXTERNE__");
+                setMedecinExterne(currentConsultation.Medecin || "");
+            } else {
+                setSelectedMedecin(idMedecin);
+                setMedecinExterne("");
+            }
             setMontantClinique(Math.round(currentConsultation.PrixClinique || 0));
             setMontantAssurance(Math.round(currentConsultation.Prix_Assurance || 0));
 
@@ -330,6 +337,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                 body: JSON.stringify({
                     selectedActe,
                     selectedMedecin,
+                    medecinExterne,
                     assure,
                     taux,
                     matricule,
@@ -467,7 +475,17 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                                     {m.nom} {m.prenoms}
                                 </option>
                             ))}
+                            <option value="__EXTERNE__">— Médecin externe (saisie libre) —</option>
                         </Form.Select>
+                        {selectedMedecin === "__EXTERNE__" && (
+                            <Form.Control
+                                className="mt-2"
+                                placeholder="Nom du médecin prescripteur externe (ex : Dr Koffi)"
+                                value={medecinExterne}
+                                onChange={e => setMedecinExterne(e.target.value)}
+                                size="lg"
+                            />
+                        )}
                     </Col>
                 </Row>
             </Card>

@@ -124,6 +124,11 @@ export default function SaisieFacturePage() {
     };
 
     const handleMedecinChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        if (e.target.value === '__EXTERNE__') {
+            setIdMedecin('__EXTERNE__');
+            setNomMedecin('');
+            return;
+        }
         const sel = medecins.find(m => m._id === e.target.value);
         setIdMedecin(e.target.value);
         setNomMedecin(sel ? `${sel.nom} ${sel.prenoms}` : '');
@@ -182,7 +187,7 @@ export default function SaisieFacturePage() {
             };
 
             if (idAssurance) payload.IDASSURANCE = idAssurance;
-            if (idMedecin) payload.IDMEDECIN = idMedecin;
+            if (idMedecin && idMedecin !== '__EXTERNE__') payload.IDMEDECIN = idMedecin;
 
             const res = await fetch('/api/facturation', {
                 method: 'POST',
@@ -332,7 +337,17 @@ export default function SaisieFacturePage() {
                                         <Form.Select size="sm" value={idMedecin} onChange={handleMedecinChange}>
                                             <option value="">— Sélectionner —</option>
                                             {medecins.map(m => <option key={m._id} value={m._id}>{m.nom} {m.prenoms}</option>)}
+                                            <option value="__EXTERNE__">— Médecin externe (saisie libre) —</option>
                                         </Form.Select>
+                                        {idMedecin === '__EXTERNE__' && (
+                                            <Form.Control
+                                                className="mt-2"
+                                                size="sm"
+                                                placeholder="Nom du médecin prescripteur externe (ex : Dr Koffi)"
+                                                value={nomMedecin}
+                                                onChange={e => setNomMedecin(e.target.value)}
+                                            />
+                                        )}
                                     </Col>
                                 </Row>
                             </Card.Body>

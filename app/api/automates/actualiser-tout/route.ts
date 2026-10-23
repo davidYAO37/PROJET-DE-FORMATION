@@ -5,6 +5,7 @@ export async function POST(req: NextRequest) {
     try {
 
         const cookie = req.headers.get("cookie") || "";
+        const baseUrl = process.env.NEXT_PUBLIC_APP_URL || req.nextUrl.origin;
 
         const resultat = {
             nfs: null as any,
@@ -18,7 +19,7 @@ export async function POST(req: NextRequest) {
 
             const response =
                 await fetch(
-                    `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/nfs/import`,
+                    `${baseUrl}/api/automates/nfs/import`,
                     {
                         method: "POST",
                         headers: { cookie }
@@ -41,7 +42,7 @@ export async function POST(req: NextRequest) {
 
             const response =
                 await fetch(
-                    `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/hormones/import`,
+                    `${baseUrl}/api/automates/hormones/import`,
                     {
                         method: "POST",
                         headers: { cookie }
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
 
             const response =
                 await fetch(
-                    `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/vs/import`,
+                    `${baseUrl}/api/automates/vs/import`,
                     {
                         method: "POST",
                         headers: { cookie }
@@ -87,7 +88,7 @@ export async function POST(req: NextRequest) {
 
             const response =
                 await fetch(
-                    `${process.env.NEXT_PUBLIC_APP_URL}/api/automates/biochimies/import`,
+                    `${baseUrl}/api/automates/biochimies/import`,
                     {
                         method: "POST",
                         headers: { cookie }

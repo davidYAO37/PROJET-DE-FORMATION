@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
 
     try {
 
-        const automate = await LienAutomate.findOne();
+        const automate = await LienAutomate.findOne().sort({ createdAt: -1 });
 
         if (
             !automate?.nLienNFS

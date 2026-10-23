@@ -15,6 +15,8 @@ type BlocActeProps = {
     medecinPrescripteur: Medecin[];
     selectedMedecin: string;
     setSelectedMedecin: (val: string) => void;
+    medecinExterne: string;
+    setMedecinExterne: (val: string) => void;
     assure: string;
     patient: Patient | null;
 };
@@ -31,6 +33,8 @@ export default function BlocActe({
     medecinPrescripteur,
     selectedMedecin,
     setSelectedMedecin,
+    medecinExterne,
+    setMedecinExterne,
     assure,
     patient,
 }: BlocActeProps) {
@@ -162,7 +166,16 @@ export default function BlocActe({
                                 {m.nom} {m.prenoms}
                             </option>
                         ))}
+                        <option value="__EXTERNE__">— Médecin externe (saisie libre) —</option>
                     </Form.Select>
+                    {selectedMedecin === "__EXTERNE__" && (
+                        <Form.Control
+                            className="mt-2"
+                            placeholder="Nom du médecin prescripteur externe (ex : Dr Koffi)"
+                            value={medecinExterne}
+                            onChange={e => setMedecinExterne(e.target.value)}
+                        />
+                    )}
                 </Col>
             </Row>
         </Card>
