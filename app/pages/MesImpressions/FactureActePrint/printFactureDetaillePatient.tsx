@@ -59,7 +59,7 @@ const PrintFactureDetaillePatient = forwardRef<HTMLDivElement, PrintFactureDetai
         if (!consultation) return null;
 
         // Calculer les totaux généraux
-        const consultationTotal = consultation.consultation?.Prix_consultation || 0;
+        const consultationTotal = consultation.consultation?.PrixClinique || 0;
         const examensTotal = consultation.examens?.reduce((total: number, examen: any) => total + (Number(examen.PrixTotal) || 0), 0) || 0;
         const medicamentsTotal = consultation.medicaments?.reduce((total: number, medicament: any) => total + (Number(medicament.PrixTotal) || 0), 0) || 0;
 
@@ -235,7 +235,7 @@ const PrintFactureDetaillePatient = forwardRef<HTMLDivElement, PrintFactureDetai
                                                 {consultation.consultation?.designationC || 'Consultation générale'}
                                             </td>
                                             <td style={{ border: '1px solid #dee2e6', padding: '8px', textAlign: 'right', fontSize: '10px' }}>
-                                                {consultation.consultation?.Prix_consultation || '0'}
+                                                {consultation.consultation?.PrixClinique || '0'}
                                             </td>
                                             <td style={{ border: '1px solid #dee2e6', padding: '8px', textAlign: 'right', fontSize: '10px' }}>
                                                 {consultation.consultation?.tauxAssurance || '0'}%
@@ -252,7 +252,7 @@ const PrintFactureDetaillePatient = forwardRef<HTMLDivElement, PrintFactureDetai
                                         <tr style={{ backgroundColor: '#f8f9fa', fontWeight: 'bold' }}>
                                             <td colSpan={4} style={{ border: '1px solid #dee2e6', padding: '8px', textAlign: 'right', fontSize: '11px' }}>Total Patient:</td>
                                             <td style={{ border: '1px solid #dee2e6', padding: '8px', textAlign: 'right', fontSize: '11px' }}>
-                                                {consultation.consultation?.tiket_moderateur || '0'} FCFA
+                                                {consultation.consultation?.montantapayer || '0'} FCFA
                                             </td>
                                         </tr>
                                     </tfoot>

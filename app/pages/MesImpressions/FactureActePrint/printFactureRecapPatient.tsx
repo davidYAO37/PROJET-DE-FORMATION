@@ -59,7 +59,7 @@ const PrintFactureRecapPatient = forwardRef<HTMLDivElement, PrintFactureRecapPat
         if (!consultation) return null;
 
         // Calculer les totaux généraux
-        const consultationTotal = consultation.consultation?.Prix_consultation || 0;
+        const consultationTotal = consultation.consultation?.PrixClinique || 0;
         const examensTotal = consultation.examens?.reduce((total: number, examen: any) => total + (Number(examen.PrixTotal) || 0), 0) || 0;
         const medicamentsTotal = consultation.medicaments?.reduce((total: number, medicament: any) => total + (Number(medicament.PrixTotal) || 0), 0) || 0;
 
@@ -236,7 +236,7 @@ const PrintFactureRecapPatient = forwardRef<HTMLDivElement, PrintFactureRecapPat
                                                 CONSULTATION
                                             </td>
                                             <td style={{ border: '1px solid #000000', padding: '8px', textAlign: 'right', fontSize: '11px' }}>
-                                                {Number(consultation.consultation?.Prix_consultation || 0).toLocaleString('fr-FR')} FCFA
+                                                {Number(consultation.consultation?.PrixClinique || 0).toLocaleString('fr-FR')} FCFA
                                             </td>
                                             <td style={{ border: '1px solid #000000', padding: '8px', textAlign: 'right', fontSize: '11px' }}>
                                                 {Number(consultation.consultation?.PartAssurance || 0).toLocaleString('fr-FR')} FCFA

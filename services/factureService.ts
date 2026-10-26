@@ -96,7 +96,8 @@ export const getDetailExamens = async (connection: mongoose.Connection, ParamCod
         const prix = Number(ligne.prix) || 0;
         const qte = Number(ligne.qte) || 1;
         const coef = Number(ligne.coefficientActe) || 1;
-        const prixTotal = prix * qte * coef;
+        // Total clinique = tarif (prix*qte*coef) + surplus patient (reliquat + reliquat coefficient)
+        const prixTotal = prix * qte * coef + (Number(ligne.totalSurplus) || 0);
         
         // Calculer la part assurance et part assuré selon le taux
         const tauxAssurance = Number(ligne.tauxAssurance) || 0;
