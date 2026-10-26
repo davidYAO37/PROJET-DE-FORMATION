@@ -50,9 +50,10 @@ export async function GET(req: NextRequest) {
             FacturéPar: consultation.Recupar, // Utiliser Recupar au lieu de FacturéPar
             StatutC: consultation.StatutC,
             montantapayer: consultation.montantapayer,
+            Montantencaisse: consultation.Montantencaisse,
             Toutencaisse: consultation.Toutencaisse,
             DateFacturation: consultation.DateFacturation,
-            
+
             // Données patient (peuplées via populate)
             Nom: consultation.PatientP,
             Contact: (consultation.IdPatient as any)?.Contact,
@@ -114,9 +115,10 @@ export async function POST(req: NextRequest) {
             FacturéPar: consultation.Recupar, // Utiliser Recupar au lieu de FacturéPar
             StatutC: consultation.StatutC,
             montantapayer: consultation.montantapayer,
+            Montantencaisse: consultation.Montantencaisse,
             Toutencaisse: consultation.Toutencaisse,
             DateFacturation: consultation.DateFacturation,
-            
+
             // Données patient (peuplées via populate)
             Nom: consultation.PatientP,
             Contact: (consultation.IdPatient as any)?.Contact,

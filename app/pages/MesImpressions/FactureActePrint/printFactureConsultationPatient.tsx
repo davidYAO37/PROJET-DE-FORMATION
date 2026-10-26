@@ -294,7 +294,7 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                     textAlign: 'right',
                                     fontWeight: '600'
                                 }}>
-                                    {(consultation.Prix_consultation || 0).toLocaleString()} FCFA
+                                    {(consultation.PrixClinique || 0).toLocaleString()} FCFA
                                 </td>
                                 <td style={{ 
                                     border: '1px solid #333333', 
@@ -312,7 +312,7 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                     color: '#333333',
                                     fontWeight: '600'
                                 }}>
-                                    {(consultation.montantapayer || 0).toLocaleString()} FCFA
+                                    {(consultation.tiket_moderateur || 0).toLocaleString()} FCFA
                                 </td>
                             </tr>
                         </tbody>
@@ -349,7 +349,7 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                 <strong>Montant à Payer:</strong> {(consultation.montantapayer || 0).toLocaleString()} FCFA
                             </div>   
                             <div style={{ marginBottom: '6px' }}>
-                                <strong>Montant Payé:</strong> {(consultation.montantapayer || 0).toLocaleString()} FCFA
+                                <strong>Montant Payé:</strong> {(consultation.Montantencaisse || 0).toLocaleString()} FCFA
                             </div>    
                             <div style={{ marginBottom: '6px' }}>
                                 <strong>Reste à Payer:</strong> {(consultation.Restapayer || 0).toLocaleString()} FCFA

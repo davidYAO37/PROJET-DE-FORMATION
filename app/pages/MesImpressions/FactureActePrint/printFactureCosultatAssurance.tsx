@@ -294,7 +294,7 @@ const PrintFactureCosultatAssurance = forwardRef<HTMLDivElement, PrintFactureCos
                                     textAlign: 'right',
                                     fontWeight: '600'
                                 }}>
-                                    {(consultation.Prix_consultation || 0).toLocaleString()} FCFA
+                                    {(consultation.PrixClinique || 0).toLocaleString()} FCFA
                                 </td>
                                 <td style={{ 
                                     border: '1px solid #333333', 
@@ -312,7 +312,7 @@ const PrintFactureCosultatAssurance = forwardRef<HTMLDivElement, PrintFactureCos
                                     color: '#333333',
                                     fontWeight: '600'
                                 }}>
-                                    {(consultation.montantapayer || 0).toLocaleString()} FCFA
+                                    {(consultation.tiket_moderateur || 0).toLocaleString()} FCFA
                                 </td>
                             </tr>
                         </tbody>
