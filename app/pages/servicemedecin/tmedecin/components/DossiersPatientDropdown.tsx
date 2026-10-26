@@ -12,6 +12,7 @@ interface DossiersPatientDropdownProps {
   onArretTravail?: () => void;
   onCompteRenduOperatoire?: () => void;
   onRapportHospitalisation?: () => void;
+  onCertificatDeces?: () => void;
 }
 
 export default function DossiersPatientDropdown({ 
@@ -22,7 +23,8 @@ export default function DossiersPatientDropdown({
   onAvisHospitalisation,
   onArretTravail,
   onCompteRenduOperatoire,
-  onRapportHospitalisation
+  onRapportHospitalisation,
+  onCertificatDeces
 }: DossiersPatientDropdownProps) {
   const [avisCount, setAvisCount] = useState(0);
   const [arretCount, setArretCount] = useState(0);
@@ -114,6 +116,10 @@ export default function DossiersPatientDropdown({
         <FaHospitalUser className="me-2 text-success" />
         <span className="fw-bold">Rapport d'hospitalisation</span>
       </Dropdown.Item>
+      {onCertificatDeces && <Dropdown.Item onClick={onCertificatDeces} className="d-flex align-items-center">
+        <FaFileMedical className="me-2 text-secondary" />
+        <span className="fw-bold">Certificat de décès</span>
+      </Dropdown.Item>}
     </DropdownButton>
   );
 }

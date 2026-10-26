@@ -36,6 +36,24 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
         fetchOrders();
     }, [statusFilter]);
 
+    // Ouvre le PDF dans un nouvel onglet et déclenche l'impression
+    function openAndPrint(url: string) {
+        const w = window.open(url, "_blank");
+        if (!w) return;
+        const interval = setInterval(() => {
+            try {
+                if (w.document && (w.document.readyState === "complete" || w.document.body)) {
+                    clearInterval(interval);
+                    w.focus();
+                    w.print();
+                }
+            } catch {
+                clearInterval(interval);
+            }
+        }, 500);
+        setTimeout(() => clearInterval(interval), 10000);
+    }
+
     async function fetchOrders() {
         setLoading(true);
         try {
@@ -199,7 +217,8 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
                                                 <Button size="sm" variant="light" onClick={() => setSelectedOrder(o)} title="Détails"><FaEye /></Button>
                                                 {o.orderFormUrl && <Button size="sm" variant="outline-primary" onClick={() => window.open(o.orderFormUrl, '_blank')} title="Bon de commande"><FaFilePdf /></Button>}
                                                 {o.paymentReceiptUrl && <Button size="sm" variant="outline-warning" onClick={() => window.open(o.paymentReceiptUrl, '_blank')} title="Reçu"><FaFilePdf /></Button>}
-                                                {o.acquisitionContractUrl && <Button size="sm" variant="outline-secondary" onClick={() => window.open(o.acquisitionContractUrl, '_blank')} title="Contrat"><FaFilePdf /></Button>}
+                                                {o.acquisitionContractUrl && <Button size="sm" variant="outline-secondary" onClick={() => window.open(o.acquisitionContractUrl, '_blank')} title="Contrat d'acquisition"><FaFilePdf /></Button>}
+                                                {o.maintenanceContractUrl && <Button size="sm" variant="outline-info" onClick={() => window.open(o.maintenanceContractUrl, '_blank')} title="Contrat de maintenance"><FaFilePdf /></Button>}
                                                 {o.status !== 'validated' && (
                                                     <>
                                                         <Button size="sm" variant="success" disabled={actionLoading === o._id} onClick={() => validateOrder(o._id)} title="Valider"><FaCheck /></Button>
@@ -252,22 +271,22 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
                             <Tab eventKey="documents" title="Documents">
                                 <div className="mt-3">
                                     <ListGroup>
-                                        <ListGroup.Item>
-                                            <strong>Bon de commande:</strong>{' '}
-                                            {selectedOrder.orderFormUrl ? (<a href={selectedOrder.orderFormUrl} target="_blank">Ouvrir</a>) : <span className="text-muted">—</span>}
-                                        </ListGroup.Item>
-                                        <ListGroup.Item>
-                                            <strong>Contrat d'acquisition:</strong>{' '}
-                                            {selectedOrder.acquisitionContractUrl ? (<a href={selectedOrder.acquisitionContractUrl} target="_blank">Ouvrir</a>) : <span className="text-muted">—</span>}
-                                        </ListGroup.Item>
-                                        <ListGroup.Item>
-                                            <strong>Contrat maintenance:</strong>{' '}
-                                            {selectedOrder.maintenanceContractUrl ? (<a href={selectedOrder.maintenanceContractUrl} target="_blank">Ouvrir</a>) : <span className="text-muted">—</span>}
-                                        </ListGroup.Item>
-                                        <ListGroup.Item>
-                                            <strong>Reçu paiement:</strong>{' '}
-                                            {selectedOrder.paymentReceiptUrl ? (<a href={selectedOrder.paymentReceiptUrl} target="_blank">Ouvrir</a>) : <span className="text-muted">—</span>}
-                                        </ListGroup.Item>
+                                        {[
+                                            { label: "Bon de commande", url: selectedOrder.orderFormUrl },
+                                            { label: "Contrat d'acquisition", url: selectedOrder.acquisitionContractUrl },
+                                            { label: "Contrat maintenance", url: selectedOrder.maintenanceContractUrl },
+                                            { label: "Reçu paiement", url: selectedOrder.paymentReceiptUrl },
+                                        ].map((doc) => (
+                                            <ListGroup.Item key={doc.label} className="d-flex justify-content-between align-items-center">
+                                                <strong>{doc.label}</strong>
+                                                {doc.url ? (
+                                                    <span className="d-flex gap-2">
+                                                        <a href={doc.url} target="_blank">Ouvrir</a>
+                                                        <Button size="sm" variant="outline-dark" onClick={() => openAndPrint(doc.url!)} title="Imprimer"><FaPrint /></Button>
+                                                    </span>
+                                                ) : <span className="text-muted">—</span>}
+                                            </ListGroup.Item>
+                                        ))}
                                     </ListGroup>
                                 </div>
                             </Tab>

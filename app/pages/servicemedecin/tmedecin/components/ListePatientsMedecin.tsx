@@ -7,6 +7,7 @@ import DossiersPatientDropdown from './DossiersPatientDropdown';
 import DossierPatient from '@/app/servicemedecin/tmedecin/components/DossierPatient';
 import ArretTravailModal from './ArretTravailModal';
 import RapportHospitalisationModal from './RapportHospitalisationModal';
+import CertificatDecesModal from './CertificatDecesModal';
 import AvisHospitModal from './AvisHospit/AvisHospitModal';
 import CompteRenduOperatoireModal from './CompteRenduOperatoireModal';
 
@@ -36,6 +37,7 @@ export default function ListePatientMedecin() {
   const [showArretTravailModal, setShowArretTravailModal] = useState(false);
   const [showCompteRenduOperatoireModal, setShowCompteRenduOperatoireModal] = useState(false);
   const [showRapportHospitalisationModal, setShowRapportHospitalisationModal] = useState(false);
+  const [showCertificatDecesModal, setShowCertificatDecesModal] = useState(false);
   const [selectedPatientForModals, setSelectedPatientForModals] = useState<Patient | null>(null);
 
   const showNotification = (message: string, variant: 'success' | 'info' | 'danger') => {
@@ -218,6 +220,7 @@ export default function ListePatientMedecin() {
                         onArretTravail={() => handleArretTravail(patient)}
                         onCompteRenduOperatoire={() => handleCompteRenduOperatoire(patient)}
                         onRapportHospitalisation={() => handleRapportHospitalisation(patient)}
+                        onCertificatDeces={() => { setSelectedPatientForModals(patient); setShowCertificatDecesModal(true); }}
                       />
                     </td>
                   </tr>
@@ -329,6 +332,13 @@ export default function ListePatientMedecin() {
         />
       )}
 
+      {selectedPatientForModals && <CertificatDecesModal
+        show={showCertificatDecesModal}
+        onHide={() => setShowCertificatDecesModal(false)}
+        patientId={selectedPatientForModals._id?.toString() || ''}
+        patientNom={selectedPatientForModals.Nom}
+        patientPrenoms={selectedPatientForModals.Prenoms}
+      />}
     </Container>
 
   );

@@ -136,6 +136,36 @@ const SERVICES = [
       { key: "10-facturation-assurances", label: "Facturation assurances", type: "route", url: "/pages/factureassurance" },
     ],
   },
+  {
+    code: "hospitalisation",
+    base: "/pages/examenhospitalisation",
+    items: [
+      { key: "01-examen-hospitalisation", label: "Examen hospitalisation", type: "route", url: "/pages/examenhospitalisation" },
+    ],
+  },
+  {
+    code: "operation",
+    base: "/pages/parametrageoperation",
+    items: [
+      { key: "01-parametrage-operation", label: "Paramétrage opération", type: "route", url: "/pages/parametrageoperation" },
+    ],
+  },
+  {
+    code: "impressions",
+    base: "/pages/MesImpressions/impression-bordereau/consultation",
+    items: [
+      { key: "01-bordereau-consultation", label: "Bordereau consultation", type: "route", url: "/pages/MesImpressions/impression-bordereau/consultation" },
+      { key: "02-bordereau-hospitalisation", label: "Bordereau hospitalisation", type: "route", url: "/pages/MesImpressions/impression-bordereau/hospitalisation" },
+    ],
+  },
+  {
+    code: "portail_patient",
+    base: "/portail",
+    items: [
+      { key: "01-accueil-portail", label: "Accueil portail", type: "route", url: "/portail" },
+      { key: "02-tableau-de-bord", label: "Tableau de bord patient", type: "route", url: "/portail/dashboard" },
+    ],
+  },
 ];
 
 async function clickSidebarLabel(page, label) {
@@ -173,15 +203,18 @@ async function closeAnyModal(page) {
   await page.goto(`${BASE_URL}/connexion`, { waitUntil: "networkidle2" });
   await page.waitForSelector('input[type="email"], input[name="email"]', { timeout: 15000 });
   const emailSelector = (await page.$('input[type="email"]')) ? 'input[type="email"]' : 'input[name="email"]';
-  await page.type(emailSelector, "fofana@gmail.com", { delay: 20 });
+  await page.type(emailSelector, "easy@gmail.com", { delay: 20 });
   const pwSelector = (await page.$('input[type="password"]')) ? 'input[type="password"]' : 'input[name="motDePasse"]';
-  await page.type(pwSelector, "fofana@gmail.com", { delay: 20 });
+  await page.type(pwSelector, "easy@gmail.com", { delay: 20 });
   await Promise.all([
     page.click('button[type="submit"]'),
     page.waitForNavigation({ waitUntil: "networkidle2", timeout: 20000 }).catch(() => null),
   ]);
   console.log("Logged in. URL:", page.url());
-  await new Promise((r) => setTimeout(r, 1000));
+  await new Promise((r) => setTimeout(r, 3000));
+  console.log("Après redirection. URL:", page.url());
+  const profil = await page.evaluate(() => localStorage.getItem("profil"));
+  console.log("Profil localStorage:", profil ? "OK" : "ABSENT (login échoué ?)");
 
   for (const service of SERVICES) {
     const serviceDir = path.join(OUT_DIR, service.code);

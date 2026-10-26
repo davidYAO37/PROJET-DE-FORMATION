@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import { Modal, Table, Button, Spinner, Form } from "react-bootstrap";
 import { Assurance } from "@/types/assurance";
+import { FaSync } from "react-icons/fa";
 
 type TarifAssurance = {
     _id: string;
@@ -26,9 +27,10 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
     const [initialTarifs, setInitialTarifs] = useState<TarifAssurance[]>([]);
     const [saving, setSaving] = useState(false);
     const [adjustment, setAdjustment] = useState<number>(0);
-
-
-
+    const [lettreCleSel, setLettreCleSel] = useState("B");
+    const [prixMutuel, setPrixMutuel] = useState<number | "">("");
+    const [prixPref, setPrixPref] = useState<number | "">("");
+    const [actionLoading, setActionLoading] = useState<string | null>(null);
 
     useEffect(() => {
         if (!assurance || !show) return;
@@ -87,6 +89,33 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                         : t.prixpreferenciel,
             }))
         );
+    };
+
+    const handleActualiserPrix = () => {
+        if (prixMutuel === "" && prixPref === "") {
+            alert("Veuillez saisir au moins un prix à actualiser");
+            return;
+        }
+        const cible = tarifs.filter(t => t.lettreCle === lettreCleSel);
+        if (cible.length === 0) {
+            alert(`Aucun tarif avec la lettre clé ${lettreCleSel}`);
+            return;
+        }
+        if (!confirm(`Appliquer les prix saisis aux ${cible.length} acte(s) de lettre clé ${lettreCleSel} ?`)) return;
+
+        setActionLoading("actualiser");
+        setTarifs(prev =>
+            prev.map(t =>
+                t.lettreCle === lettreCleSel
+                    ? {
+                        ...t,
+                        prixmutuel: prixMutuel !== "" ? Math.round(prixMutuel) : t.prixmutuel,
+                        prixpreferenciel: prixPref !== "" ? Math.round(prixPref) : t.prixpreferenciel,
+                    }
+                    : t
+            )
+        );
+        setActionLoading(null);
     };
 
     const handleRestore = () => {
@@ -237,6 +266,27 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
                                 </Button>
                             </Form.Group>
                         </div>
+
+                        {/* ✅ Actualisation par lettre clé */}
+                        <Form className="row g-2 mb-4">
+                            <div className="col-12 col-md-2">
+                                <Form.Select value={lettreCleSel} onChange={e => setLettreCleSel(e.target.value)}>
+                                    {["B", "D", "K", "KC", "Z"].map(l => <option key={l} value={l}>{l}</option>)}
+                                </Form.Select>
+                            </div>
+                            <div className="col-12 col-sm-4 col-md-2">
+                                <Form.Control type="number" placeholder="Prix Mutuel" value={prixMutuel} onChange={e => setPrixMutuel(e.target.value ? parseFloat(e.target.value) : "")} />
+                            </div>
+                            <div className="col-12 col-sm-4 col-md-2">
+                                <Form.Control type="number" placeholder="Prix Préférentiel" value={prixPref} onChange={e => setPrixPref(e.target.value ? parseFloat(e.target.value) : "")} />
+                            </div>
+                            <div className="col-12 col-md-auto">
+                                <Button variant="primary" className="w-100 d-flex align-items-center justify-content-center gap-1" onClick={handleActualiserPrix} disabled={actionLoading === "actualiser"}>
+                                    {actionLoading === "actualiser" && <Spinner as="span" animation="border" size="sm" className="me-2" />}
+                                    <FaSync /> Actualiser
+                                </Button>
+                            </div>
+                        </Form>
 
                         {/* ✅ Table des tarifs */}
 

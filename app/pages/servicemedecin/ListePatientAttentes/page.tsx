@@ -365,16 +365,6 @@ export default function ListePatientAttentes() {
                       <td>{getStatutBadge(patient.statut)}</td>
                       <td>
                         <div className="btn-group" role="group">
-                          {patient.statut === 'en_attente' && (
-                            <Button
-                              variant="success"
-                              size="sm"
-                              onClick={() => commencerConsultation(patient)}
-                              title="Commencer la consultation"
-                            >
-                              <i className="bi bi-play-fill"></i>
-                            </Button>
-                          )}
                           <Button
                             variant="outline-primary"
                             size="sm"

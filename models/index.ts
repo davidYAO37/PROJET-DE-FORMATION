@@ -70,6 +70,7 @@ export * from './paramLabo';
 export * from './parametreNfs';
 export * from './patient';
 export * from './rapportHospitalisation';
+export * from './certificatDeces';
 export * from './resultatLignePrestation';
 export * from './tarifassurance';
 export * from './tarifsocieteassurance';

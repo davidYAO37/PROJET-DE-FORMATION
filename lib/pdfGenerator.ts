@@ -337,11 +337,11 @@ export async function generateContractPdf(order: ILicenceOrder, type: "acquisiti
     doc.fontSize(12).font("Helvetica-Bold").text("ARTICLE 1 — OBJET");
     doc.moveDown(0.2);
     if (isMaintenance) {
-        doc.fontSize(10).font("Helvetica").text("Le présent contrat a pour objet de définir les conditions de maintenance du logiciel de gestion médicale ", { continued: true }).font("Helvetica-Bold").text(provider.name).font("Helvetica").text(" installé et utilisé par le Client.");
+        doc.fontSize(10).font("Helvetica").text("Le présent contrat a pour objet de définir les conditions de maintenance du logiciel de gestion médicale ", { continued: true }).font("Helvetica-Bold").text("Easy Medical").font("Helvetica").text(" installé et utilisé par le Client.");
         doc.moveDown(0.1);
         doc.text("La maintenance a pour objectif d'assurer le bon fonctionnement du logiciel, de corriger les anomalies et d'accompagner le Client dans son utilisation.");
     } else {
-        doc.fontSize(10).font("Helvetica").text("Le présent contrat a pour objet de définir les conditions d'acquisition et d'utilisation de la licence du logiciel de gestion médicale ", { continued: true }).font("Helvetica-Bold").text(provider.name).font("Helvetica").text(" par le Client, pour les modules et la durée précisés ci-après.");
+        doc.fontSize(10).font("Helvetica").text("Le présent contrat a pour objet de définir les conditions d'acquisition et d'utilisation de la licence du logiciel de gestion médicale ", { continued: true }).font("Helvetica-Bold").text("Easy Medical").font("Helvetica").text(" par le Client, pour les modules et la durée précisés ci-après.");
         doc.moveDown(0.1);
         doc.text(`Modules souscrits : ${(order.modules && order.modules.length > 0) ? order.modules.join(", ") : "Tous les modules"}.`);
     }

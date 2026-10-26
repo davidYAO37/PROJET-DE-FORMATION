@@ -495,9 +495,14 @@ export default function LicencePage() {
                           </>
                         )}
                         {o.maintenanceContractUrl && (
-                          <Button variant="outline-info" size="sm" onClick={() => window.open(o.maintenanceContractUrl, "_blank")}>
-                            Contrat maintenance
-                          </Button>
+                          <>
+                            <Button variant="outline-info" size="sm" onClick={() => window.open(o.maintenanceContractUrl, "_blank")}>
+                              Contrat maintenance
+                            </Button>
+                            <Button variant="outline-success" size="sm" onClick={() => openAndPrint(o.maintenanceContractUrl)}>
+                              Imprimer
+                            </Button>
+                          </>
                         )}
                         {o.paymentReceiptUrl && (
                           <>
