@@ -119,7 +119,8 @@ export default function ActionsButtonsCaisseManuelle({
         Assuré: formData.Assure === "OUI",
         Payéoupas: true,
         StatutLaboratoire: 1,
-        TotalReliquatPatient: formData.surplus || 0,
+        // Pas de surplus en mode manuel (TotalReliquatPatient = 0)
+        TotalReliquatPatient: 0,
         statutPrescriptionMedecin: 3,
         StatutPaiement: "Facture Payée",
         CompteClient: formData.Modepaiement === "Caution",
@@ -227,6 +228,8 @@ export default function ActionsButtonsCaisseManuelle({
       reduction: formData.reduction || 0,
       MotifRemise: formData.MotifRemise || "",
       Restapayer: formData.resteAPayer || 0,
+      // En mode manuel, pas de surplus
+      TotalReliquatPatient: 0,
 
       //////////////////////////////////////////////////
 
@@ -287,8 +290,9 @@ export default function ActionsButtonsCaisseManuelle({
         partAssurance: ligne.PartAssurance || 0,
         partAssure: ligne.PartAssure || 0,
         tauxAssurance: 0,
-        reliquatCoefAssurance: ligne.TotalRelicatCoefAssur || 0,
-        reliquatPatient: ligne.Reliquat || 0,
+        // En mode manuel, pas de surplus/reliquat (force à 0)
+        reliquatCoefAssurance: 0,
+        reliquatPatient: 0,
         totalCoefficient: ligne.CoefClinique || undefined,
         taxe: ligne.TAXE || 0,
         exclusionActe: ligne.Exclusion || "Accepter",

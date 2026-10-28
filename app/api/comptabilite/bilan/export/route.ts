@@ -41,7 +41,10 @@ export async function GET(request: NextRequest) {
     }).lean();
 
     const facturations = await Facturation.find({
-      DateFacturation: { $gte: debutDate, $lte: finDate },
+      $or: [
+        { DateFacturation: { $gte: debutDate, $lte: finDate } },
+        { DateModif: { $gte: debutDate, $lte: finDate } },
+      ],
       ...filtreEntreprise,
     }).lean();
 
@@ -81,7 +84,7 @@ export async function GET(request: NextRequest) {
         montantTotal: f.Montanttotal || 0,
         partAssurance: f.PartAssuranceP || 0,
         partPatient: f.TotalapayerPatient || 0,
-        montantEncaisse: f.TotalPaye || 0,
+        montantEncaisse: Number(f.TotalPaye || f.MontantRecu || 0),
         remise: f.reduction || 0,
         resteAPayer: f.Restapayer || 0,
         medecin: f.NomMed || '',

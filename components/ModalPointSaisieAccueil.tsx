@@ -44,7 +44,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
     const totalPrix = donnees.reduce((sum, item) => sum + parseFloat(item.prixClinique || '0'), 0);
     const totalTicket = donnees.reduce((sum, item) => sum + parseFloat(item.ticketModerateur || '0'), 0);
     const totalAssurance = donnees.reduce((sum, item) => sum + parseFloat(item.partAssurance || '0'), 0);
-    const totalGeneral = totalPrix + totalTicket + totalAssurance;
+    const totalGeneral = totalPrix /* + totalTicket + totalAssurance */;
 
     const printContent = `
       <div class="sub-header text-center mb-4">
@@ -141,7 +141,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
     const totalPrix = donnees.reduce((sum, item) => sum + parseFloat(item.prixClinique || '0'), 0);
     const totalTicket = donnees.reduce((sum, item) => sum + parseFloat(item.ticketModerateur || '0'), 0);
     const totalAssurance = donnees.reduce((sum, item) => sum + parseFloat(item.partAssurance || '0'), 0);
-    const totalGeneral = totalPrix + totalTicket + totalAssurance;
+    const totalGeneral = totalPrix /* + totalTicket + totalAssurance */;
 
     const printContent = `
       <div class="sub-header text-center mb-4">
@@ -535,9 +535,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
                     </div>
                     <h3 className="mb-0 text-success">
                       {(
-                          donnees.reduce((sum, item) => sum + parseFloat(item.prixClinique || '0'), 0) +
-                          donnees.reduce((sum, item) => sum + parseFloat(item.ticketModerateur || '0'), 0) +
-                          donnees.reduce((sum, item) => sum + parseFloat(item.partAssurance || '0'), 0)
+                          donnees.reduce((sum, item) => sum + parseFloat(item.prixClinique || '0'), 0) 
                         ).toLocaleString('fr-FR', { maximumFractionDigits: 0 })} FCFA
                       </h3>
                     </div>

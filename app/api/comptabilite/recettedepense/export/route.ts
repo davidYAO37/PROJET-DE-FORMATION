@@ -8,6 +8,13 @@ import { IFacturation } from '@/models/Facturation';
 import { IEncaissementCaisse } from '@/models/EncaissementCaisse';
 
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
+const MODES_EXCLUS = ['cheque', 'carte de credit'];
+
+const modeExclu = (mode?: string | null) => {
+  if (!mode) return false;
+  const normalise = mode.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
+  return MODES_EXCLUS.some(m => normalise.includes(m));
+};
 
 export async function GET(request: NextRequest) {
   const { context, response: tenantErrorResponse } = await withTenant(request, ROLES);
@@ -57,8 +64,7 @@ export async function GET(request: NextRequest) {
     }).lean();
 
     for (const c of consultations) {
-      const mode = (c.Modepaiement || '').toLowerCase();
-      if (['chèque', 'carte de crédit'].some(m => mode.includes(m))) continue;
+      if (modeExclu(c.Modepaiement)) continue;
       lignes.push({
         date: c.Date_consulation,
         libelle: c.designationC || 'CONSULTATION',
@@ -66,6 +72,7 @@ export async function GET(request: NextRequest) {
         nomPrenoms: c.PatientP || '',
         recette: c.Montantencaisse || 0,
         depense: 0,
+        modePaiement: c.Modepaiement || '',
         source: 'CONSULTATION',
       });
     }
@@ -76,15 +83,17 @@ export async function GET(request: NextRequest) {
     }).lean();
 
     for (const f of facturations) {
-      const mode = (f.Modepaiement || '').toLowerCase();
-      if (['chèque', 'carte de crédit'].some(m => mode.includes(m))) continue;
+      if (modeExclu(f.Modepaiement)) continue;
+      const montantEncaisse = Number(f.TotalPaye || f.MontantRecu || 0);
+      if (montantEncaisse <= 0) continue;
       lignes.push({
         date: f.DateFacturation,
         libelle: f.Designationtypeacte || '',
         motif: 'PRESTATION',
         nomPrenoms: f.PatientP || '',
-        recette: f.MontantRecu || 0,
+        recette: montantEncaisse,
         depense: 0,
+        modePaiement: f.Modepaiement || '',
         source: 'FACTURATION',
       });
     }
@@ -95,8 +104,7 @@ export async function GET(request: NextRequest) {
     }).lean();
 
     for (const e of encaissements) {
-      const mode = (e.Modepaiement || '').toLowerCase();
-      if (['chèque', 'carte de crédit'].some(m => mode.includes(m))) continue;
+      if (modeExclu(e.Modepaiement)) continue;
       lignes.push({
         date: e.DateEncaissement,
         libelle: e.Designation || '',
@@ -104,18 +112,20 @@ export async function GET(request: NextRequest) {
         nomPrenoms: e.Patient || '',
         recette: e.Montantencaisse || 0,
         depense: 0,
+        modePaiement: e.Modepaiement || '',
         source: 'ENCAISSEMENT',
       });
     }
 
     lignes.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    const headers = ['date', 'libelle', 'motif', 'nomPrenoms', 'recette', 'depense', 'source'];
+    const headers = ['date', 'libelle', 'motif', 'nomPrenoms', 'modePaiement', 'recette', 'depense', 'source'];
     const labels: Record<string, string> = {
       date: 'Date',
       libelle: 'Libellé',
       motif: 'Motif',
       nomPrenoms: 'Nom / Prénoms',
+      modePaiement: 'Mode de paiement',
       recette: 'Recette',
       depense: 'Dépense',
       source: 'Source',
@@ -126,6 +136,7 @@ export async function GET(request: NextRequest) {
       libelle: l.libelle,
       motif: l.motif,
       nomPrenoms: l.nomPrenoms,
+      modePaiement: l.modePaiement,
       recette: formatMontant(l.recette),
       depense: formatMontant(l.depense),
       source: l.source,

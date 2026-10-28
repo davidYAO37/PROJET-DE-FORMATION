@@ -978,7 +978,8 @@ export default function TablePrestationsCaisseManuelle({ assuranceId = 1, saiTau
             s.montantAideOperatoire += Number(l.MontantAideOperatoire || 0);
         }
 
-        s.montantARegler = s.totalSurplus + s.partAssure;
+        // En mode manuel, pas de surplus : l'utilisateur saisit directement PartAssure (ticket + reliquat)
+        s.montantARegler = s.partAssure;
         // SAI_Reste_à_payer = SAI_Montant_a_régler
         setTotaux(s);
         if (onTotalsChange) onTotalsChange(s);

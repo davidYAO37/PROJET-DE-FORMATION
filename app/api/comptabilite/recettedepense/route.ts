@@ -11,7 +11,7 @@ import { Entreprise, IEntreprise } from '@/models/entreprise';
 
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
-const MODES_EXCLUS = ['chèque', 'carte de crédit'];
+const MODES_EXCLUS = ['cheque', 'carte de credit'];
 
 async function apporteurActif(entrepriseId?: string) {
   if (!entrepriseId) return true;
@@ -21,7 +21,7 @@ async function apporteurActif(entrepriseId?: string) {
 
 const modeExclu = (mode?: string | null) => {
   if (!mode) return false;
-  const normalise = mode.toLowerCase().trim();
+  const normalise = mode.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim();
   return MODES_EXCLUS.some(m => normalise.includes(m));
 };
 
@@ -95,6 +95,7 @@ export async function GET(request: NextRequest) {
         nomPrenoms: c.PatientP || '',
         recette: c.Montantencaisse || 0,
         depense: 0,
+        modePaiement: c.Modepaiement || '',
         source: 'CONSULTATION',
       });
     }
@@ -107,13 +108,16 @@ export async function GET(request: NextRequest) {
 
     for (const f of facturations) {
       if (modeExclu(f.Modepaiement)) continue;
+      const montantEncaisse = Number(f.TotalPaye || f.MontantRecu || 0);
+      if (montantEncaisse <= 0) continue;
       lignes.push({
         date: f.DateFacturation,
         libelle: f.Designationtypeacte || '',
         motif: 'PRESTATION',
         nomPrenoms: f.PatientP || '',
-        recette: f.MontantRecu || 0,
+        recette: montantEncaisse,
         depense: 0,
+        modePaiement: f.Modepaiement || '',
         source: 'FACTURATION',
       });
     }
@@ -133,6 +137,7 @@ export async function GET(request: NextRequest) {
         nomPrenoms: e.Patient || '',
         recette: e.Montantencaisse || 0,
         depense: 0,
+        modePaiement: e.Modepaiement || '',
         source: 'ENCAISSEMENT',
       });
     }
@@ -155,6 +160,7 @@ export async function GET(request: NextRequest) {
         nomPrenoms: medecin,
         recette: 0,
         depense: p.MontantPayé || 0,
+        modePaiement: p.Modepaiement || '',
         source: 'HONORAIRE MEDECIN',
       });
     }
@@ -179,6 +185,7 @@ export async function GET(request: NextRequest) {
           nomPrenoms: apporteur,
           recette: 0,
           depense: p.montant || 0,
+          modePaiement: p.modePaiement || '',
           source: 'HONORAIRE APPORTEURS',
         });
       }

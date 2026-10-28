@@ -82,18 +82,6 @@ export default function PaiementInfoCaisseManuelle({
                             />
                         </Form.Group>
                     </div>
-
-                    <div className="col-3 p-0 me-1">
-                        {/* Surplus */}
-                        <Form.Group className="mb-1">
-                            <Form.Label>Surplus</Form.Label>
-                            <Form.Control
-                                type="number"
-                                value={formData.surplus}
-                                readOnly
-                            />
-                        </Form.Group>
-                    </div>
                 </div>
                 <div className="d-flex justify-content-between align-items-center mb-2 bg-info">
                     {/* total a payer patient */}

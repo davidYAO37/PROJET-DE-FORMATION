@@ -148,14 +148,14 @@ export async function GET(request: NextRequest) {
         Taux: n(facturation.Taux),
         PartAssurance: n(facturation.PartAssuranceP),
         PartPatient: n(facturation.TotalapayerPatient),
-        Montantencaisse: n(facturation.TotalPaye),
+        Montantencaisse: n(facturation.MontantRecu), // Utiliser MontantRecu (montant encaissé réel)
         REMISE: n(facturation.reduction),
         Restapayer: n(facturation.Restapayer),
         Medecin: facturation.NomMed || '',
         Modepaiement: facturation.Modepaiement || '',
         Type: 'FACTURATION',
         Assure: facturation.Assure || 'NON',
-        Caissiere: facturation.SaisiPar || '' 
+        Caissiere: facturation.SaisiPar || ''
       });
     }
 

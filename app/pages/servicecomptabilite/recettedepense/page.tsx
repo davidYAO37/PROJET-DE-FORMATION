@@ -19,15 +19,16 @@ interface LigneRD {
   nomPrenoms: string;
   recette: number;
   depense: number;
+  modePaiement?: string;
   source: string;
 }
 
 const SOURCE_COLORS: Record<string, string> = {
-  'CAISSE ENTRÉE':  'success',
-  'CAISSE SORTIE':  'danger',
-  'CONSULTATION':   'primary',
-  'FACTURATION':    'info',
-  'ENCAISSEMENT':   'secondary',
+  'CAISSE ENTRÉE': 'success',
+  'CAISSE SORTIE': 'danger',
+  'CONSULTATION': 'primary',
+  'FACTURATION': 'info',
+  'ENCAISSEMENT': 'secondary',
   'HONORAIRE MEDECIN': 'warning',
   'HONORAIRE APPORTEURS': 'info',
 };
@@ -75,6 +76,7 @@ export default function RecetteDepensePage() {
         <td style="text-align:center;padding:5px 4px;border:1px solid #ccc">${l.date ? new Date(l.date).toLocaleDateString('fr-FR') : '-'}</td>
         <td style="text-align:left;padding:5px 8px;border:1px solid #ccc">${l.libelle || '-'}</td>
         <td style="text-align:left;padding:5px 8px;border:1px solid #ccc">${l.nomPrenoms || '-'}</td>
+        <td style="text-align:left;padding:5px 8px;border:1px solid #ccc">${l.modePaiement || '-'}</td>
         <td style="text-align:right;padding:5px 8px;border:1px solid #ccc;font-weight:bold;color:${l.recette > 0 ? '#000' : '#999'}">${l.recette > 0 ? fmt(l.recette) : '0'}</td>
         <td style="text-align:right;padding:5px 8px;border:1px solid #ccc;font-weight:bold;color:${l.depense > 0 ? '#000' : '#999'}">${l.depense > 0 ? fmt(l.depense) : '0'}</td>
       </tr>
@@ -102,6 +104,7 @@ export default function RecetteDepensePage() {
               <th style="padding:8px 4px;border:1px solid #ccc;text-align:center;width:90px">DATE</th>
               <th style="padding:8px 4px;border:1px solid #ccc;text-align:center">LIBELLE</th>
               <th style="padding:8px 4px;border:1px solid #ccc;text-align:center">NOM_PRENOMS</th>
+              <th style="padding:8px 4px;border:1px solid #ccc;text-align:center">MODE DE PAIEMENT</th>
               <th style="padding:8px 4px;border:1px solid #ccc;text-align:right;width:110px">RECETTE</th>
               <th style="padding:8px 4px;border:1px solid #ccc;text-align:right;width:110px">DEPENSE</th>
             </tr>
@@ -109,7 +112,7 @@ export default function RecetteDepensePage() {
           <tbody>
             ${rows}
             <tr style="background:#fff;font-weight:bold">
-              <td colspan="3" style="border:none;padding:6px 4px"></td>
+              <td colspan="4" style="border:none;padding:6px 4px"></td>
               <td style="border:1px dashed #333;padding:6px 8px;text-align:right;font-weight:bold">${fmt(totalRec)}</td>
               <td style="border:1px dashed #333;padding:6px 8px;text-align:right;font-weight:bold">${fmt(totalDep)}</td>
             </tr>
@@ -182,9 +185,9 @@ export default function RecetteDepensePage() {
       {filtrees.length > 0 && (
         <Row className="g-2 mb-2">
           {[
-            { label: 'Total Recette',  value: totalRec, bg: 'linear-gradient(135deg,#2e7d32,#66bb6a)', icon: 'bi-arrow-down-circle-fill' },
-            { label: 'Total Dépense',  value: totalDep, bg: 'linear-gradient(135deg,#b71c1c,#ef9a9a)', icon: 'bi-arrow-up-circle-fill' },
-            { label: 'Solde Caisse',   value: solde,    bg: solde >= 0 ? 'linear-gradient(135deg,#006064,#26c6da)' : 'linear-gradient(135deg,#880e4f,#f48fb1)', icon: 'bi-wallet2' },
+            { label: 'Total Recette', value: totalRec, bg: 'linear-gradient(135deg,#2e7d32,#66bb6a)', icon: 'bi-arrow-down-circle-fill' },
+            { label: 'Total Dépense', value: totalDep, bg: 'linear-gradient(135deg,#b71c1c,#ef9a9a)', icon: 'bi-arrow-up-circle-fill' },
+            { label: 'Solde Caisse', value: solde, bg: solde >= 0 ? 'linear-gradient(135deg,#006064,#26c6da)' : 'linear-gradient(135deg,#880e4f,#f48fb1)', icon: 'bi-wallet2' },
             { label: 'Nb Opérations', value: filtrees.length, bg: 'linear-gradient(135deg,#1565c0,#42a5f5)', icon: 'bi-list-ol', isCount: true },
           ].map((kpi, ki) => (
             <Col key={ki} xs={6} md={3}>
@@ -267,6 +270,7 @@ export default function RecetteDepensePage() {
                   <th style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', borderRight: '1px solid #b0bec5' }}>DATE</th>
                   <th style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, borderRight: '1px solid #b0bec5' }}>LIBELLÉ</th>
                   <th style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, borderRight: '1px solid #b0bec5' }}>NOM / PRÉNOMS</th>
+                  <th style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, borderRight: '1px solid #b0bec5' }}>MODE DE PAIEMENT</th>
                   <th style={{ background: '#c8e6c9', color: '#1b5e20', padding: '6px 8px', fontWeight: 700, textAlign: 'right', borderRight: '1px solid #b0bec5' }}>RECETTE</th>
                   <th style={{ background: '#ffcdd2', color: '#b71c1c', padding: '6px 8px', fontWeight: 700, textAlign: 'right', borderRight: '1px solid #b0bec5' }}>DÉPENSE</th>
                   <th style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700 }}>SOURCE</th>
@@ -274,11 +278,11 @@ export default function RecetteDepensePage() {
               </thead>
               <tbody>
                 {loading ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '40px', color: '#78909c' }}>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '40px', color: '#78909c' }}>
                     <Spinner animation="border" size="sm" className="me-2" />Chargement…
                   </td></tr>
                 ) : filtrees.length === 0 ? (
-                  <tr><td colSpan={6} style={{ textAlign: 'center', padding: '50px', color: '#90a4ae' }}>
+                  <tr><td colSpan={7} style={{ textAlign: 'center', padding: '50px', color: '#90a4ae' }}>
                     <i className="bi bi-journal-x" style={{ fontSize: '2.5rem', display: 'block', marginBottom: 8 }}></i>
                     Aucune donnée pour cette période
                   </td></tr>
@@ -291,6 +295,7 @@ export default function RecetteDepensePage() {
                       {l.libelle || '-'}
                     </td>
                     <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>{l.nomPrenoms || '-'}</td>
+                    <td style={{ padding: '3px 8px', borderRight: '1px solid #e0e0e0' }}>{l.modePaiement || '-'}</td>
                     <td style={{ padding: '3px 8px', textAlign: 'right', fontWeight: 'bold', color: l.recette > 0 ? '#2e7d32' : '#ccc', borderRight: '1px solid #e0e0e0' }}>
                       {l.recette > 0 ? fmt(l.recette) : ''}
                     </td>

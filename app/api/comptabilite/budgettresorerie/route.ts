@@ -11,7 +11,7 @@ import { Entreprise, IEntreprise } from '@/models/entreprise';
 
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
-const MOIS_LABELS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+const MOIS_LABELS = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
 const MODES_EXCLUS = ['chèque', 'carte de crédit'];
 
 async function apporteurActif(entrepriseId?: string) {
@@ -141,8 +141,8 @@ export async function GET(request: NextRequest) {
       const factDate = facturationDateFilter(debut, fin);
       const factAssuranceClause = assurance && assurance !== 'TOUTES LES ASSURANCES'
         ? (isNonAssure
-            ? { $or: [{ Assurance: 'NON ASSURE' }, { Assurance: null }, { Assurance: { $exists: false } }, { Assurance: '' }] }
-            : { Assurance: assurance })
+          ? { $or: [{ Assurance: 'NON ASSURE' }, { Assurance: null }, { Assurance: { $exists: false } }, { Assurance: '' }] }
+          : { Assurance: assurance })
         : null;
       const qFact = factAssuranceClause ? { $and: [factDate, factAssuranceClause] } as any : factDate;
       const facturations = await findFacturations(qFact).lean();
@@ -206,7 +206,7 @@ export async function GET(request: NextRequest) {
         addLigne((c.designationC as string) || 'CONSULTATION', m, montant);
       }
 
-      // 3) Facturation.TotalPaye (filtré par modePaiement si précisé)
+      // 3) Facturation.TotalPaye ou MontantRecu (filtré par modePaiement si précisé)
       const factDateC4 = facturationDateFilter(debut, fin);
       const qC4Fact: any = modePaiement && modePaiement !== 'TOUS LES PAIEMENTS'
         ? { $and: [factDateC4, { Modepaiement: modePaiement }] }
@@ -214,7 +214,7 @@ export async function GET(request: NextRequest) {
       const facturations = await findFacturations(qC4Fact as any).lean();
       for (const f of facturations) {
         const m = new Date((f.DateFacturation as Date) || (f.DatePres as Date) || (f.DateModif as Date) || new Date()).getMonth();
-        const montant = (f.TotalPaye as number) || 0;
+        const montant = Number(f.TotalPaye || f.MontantRecu || 0);
         if (montant === 0) continue;
         addLigne((f.Designationtypeacte as string) || 'PRESTATION', m, montant);
       }
@@ -285,10 +285,10 @@ export async function GET(request: NextRequest) {
     if (avecReport) {
       const anneePrecedente = annee - 1;
       const debutN1 = new Date(anneePrecedente, 0, 1);
-      const finN1   = new Date(anneePrecedente, 11, 31, 23, 59, 59, 999);
+      const finN1 = new Date(anneePrecedente, 11, 31, 23, 59, 59, 999);
 
       if (optionPart === 4) {
-        // CAS 4 : Caisse N-1 (entrées - sorties) + Consultation.Montantencaisse + Facturation.TotalPaye + EncaissementCaisse
+        // CAS 4 : Caisse N-1 (entrées - sorties) + Consultation.Montantencaisse + Facturation encaissée + EncaissementCaisse
         const caisseN1 = await findCaisse({ dAteC: { $gte: debutN1, $lte: finN1 } }).lean();
         for (const c of caisseN1) {
           if ((c.typeC as string) === 'Entrée de caisse') soldeOuvertureBase += (c.MOntantC as number) || 0;
@@ -303,7 +303,7 @@ export async function GET(request: NextRequest) {
           ? { $and: [factDateN1, { Modepaiement: modePaiement }] }
           : factDateN1;
         const factN1 = await findFacturations(qN1F as any).lean();
-        for (const f of factN1) soldeOuvertureBase += (f.TotalPaye as number) || 0;
+        for (const f of factN1) soldeOuvertureBase += Number(f.TotalPaye || f.MontantRecu || 0);
         const qN1E: any = { DateEncaissement: { $gte: debutN1, $lte: finN1 } };
         if (modePaiement && modePaiement !== 'TOUS LES PAIEMENTS') qN1E['Modepaiement'] = modePaiement;
         const encaissN1 = await findEncaissements(qN1E).lean();
@@ -349,14 +349,14 @@ export async function GET(request: NextRequest) {
     if (avecReport) {
       // SOLDE D'OUVERTURE mois par mois : ouverture[0] = soldeN-1, ouverture[i] = clôture[i-1]
       const ouvertureMois = new Array(12).fill(0);
-      const clotureMois   = new Array(12).fill(0);
+      const clotureMois = new Array(12).fill(0);
 
       ouvertureMois[0] = soldeOuvertureBase;
       // CAS 4 : clôture tient compte des décaissements ; CAS 1/3 : décaissements = 0
       clotureMois[0] = ouvertureMois[0] + totalEncaiss[0] - totalDecaiss[0];
       for (let i = 1; i < 12; i++) {
         ouvertureMois[i] = clotureMois[i - 1];
-        clotureMois[i]   = ouvertureMois[i] + totalEncaiss[i] - totalDecaiss[i];
+        clotureMois[i] = ouvertureMois[i] + totalEncaiss[i] - totalDecaiss[i];
       }
 
       lignes.push({

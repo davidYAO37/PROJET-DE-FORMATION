@@ -264,6 +264,7 @@ const PageListeApayer = () => {
                     medecin: d.medecin ?? d.Medecin ?? "",
                     assure: d.assure ?? d.Assure ?? "",
                     type: "CONSULTATION",
+                    dateEntree: d.Date_consulation ?? null,
                     raw: d,
                 }))
                 : [];
@@ -306,7 +307,7 @@ const PageListeApayer = () => {
                     assure: d.assure ?? d.Assurance ?? "",
                     type: "PRESCRIPTION",
                     // Ajout des champs pour cohérence avec les prestations
-                    dateEntree: undefined,
+                    dateEntree: d.DatePrescription ?? null,
                     dateSortie: undefined,
                     nombreDeJours: 1,
                     Rclinique: d.Rclinique ?? "",
@@ -346,6 +347,7 @@ const PageListeApayer = () => {
                         medecin: d.medecin ?? d.Medecin ?? "",
                         assure: d.assure ?? d.Assure ?? "",
                         type: "CONSULTATION",
+                        dateEntree: d.Date_consulation ?? null,
                         raw: d,
                     }))
                     : [];
@@ -375,6 +377,10 @@ const PageListeApayer = () => {
                         medecin: d.medecin ?? d.NomMed ?? "",
                         assure: d.assure ?? d.Assure ?? "",
                         type: "PRESTATION",
+                        dateEntree: d.Entrele ?? null,
+                        dateSortie: d.SortieLe ?? null,
+                        nombreDeJours: d.nombreDeJours ?? 1,
+                        Rclinique: d.Rclinique ?? "",
                         raw: d,
                     }))
                     : [];
@@ -405,7 +411,7 @@ const PageListeApayer = () => {
                         assure: d.assure ?? d.Assurance ?? "",
                         type: "PRESCRIPTION",
                         // Ajout des champs pour cohérence
-                        dateEntree: undefined,
+                        dateEntree: d.DatePrescription ?? null,
                         dateSortie: undefined,
                         nombreDeJours: 1,
                         Rclinique: d.Rclinique ?? "",
@@ -488,6 +494,7 @@ const PageListeApayer = () => {
                         <th>N° Prestation</th>
                         <th>Patient</th>
                         <th>Désignation</th>
+                        <th>Date de saisie</th>
                         <th className="text-end">Montant (FCFA)</th>
                         <th>Médecin</th>
                         <th>Assuré</th>
@@ -497,12 +504,20 @@ const PageListeApayer = () => {
                 <tbody>
                     {rows.length === 0 ? (
                         <tr>
-                            <td colSpan={8} className="text-center py-4">
+                            <td colSpan={9} className="text-center py-4">
                                 Aucun enregistrement.
                             </td>
                         </tr>
                     ) : (
-                        rows.map((r) => (
+                        rows.map((r) => {
+                            // Formater la date de saisie (date formaté par l'API pour tous les types)
+                            const dateSaisie = r.raw?.date
+                                ? r.raw.date // Déjà formaté par l'API (toLocaleDateString)
+                                : r.type === "PRESTATION" && r.dateEntree
+                                ? new Date(r.dateEntree).toLocaleDateString('fr-FR')
+                                : "-";
+
+                            return (
                             <tr key={`${r.type}-${r.id}`} className="align-middle text-center">
                                 <td>
                                     <Badge bg={r.type === "CONSULTATION" ? "info" : r.type === "PRESTATION" ? "primary" : "secondary"}>
@@ -512,6 +527,7 @@ const PageListeApayer = () => {
                                 <td>{r.code}</td>
                                 <td className="text-start">{r.patient}</td>
                                 <td className="text-start">{r.designation}</td>
+                                <td>{dateSaisie}</td>
                                 <td className="text-end fw-bold">{Number.isFinite(r.montant) ? r.montant.toLocaleString() : "0"}</td>
                                 <td>{r.medecin ?? "-"}</td>
                                 <td>{r.assure ?? "-"}</td>
@@ -546,7 +562,8 @@ const PageListeApayer = () => {
                                     </div>
                                 </td>
                             </tr>
-                        ))
+                            );
+                        })
                     )}
                 </tbody>
             </Table>
