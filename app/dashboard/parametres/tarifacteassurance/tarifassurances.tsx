@@ -207,7 +207,7 @@ export default function TarifAssuranceModal({ show, onHide, assurance }: Props) 
     };
 
     return (
-        <Modal show={show} onHide={handleHide} size="lg" centered>
+        <Modal show={show} onHide={handleHide} size="lg" centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Tarif Assurance – {assurance?.designationassurance}</Modal.Title>
             </Modal.Header>

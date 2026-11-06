@@ -100,7 +100,7 @@ export default function ActeSelectModal({
   const pageActes = filteredActes.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" scrollable>
+    <Modal show={show} onHide={onHide} size="xl" scrollable backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white py-2">
         <Modal.Title className="fs-6 fw-bold">
           <i className="bi bi-clipboard-check me-2"></i>

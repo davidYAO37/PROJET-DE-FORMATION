@@ -275,7 +275,7 @@ export default function ConstantesVitalesModal({
   const title = observationId ? 'Modifier la fiche' : 'Nouvelle fiche';
 
   return (
-    <Modal show={show} onHide={onHide} centered size="xl">
+    <Modal show={show} onHide={onHide} centered size="xl" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title>
           <FaHeartbeat className="me-2" />

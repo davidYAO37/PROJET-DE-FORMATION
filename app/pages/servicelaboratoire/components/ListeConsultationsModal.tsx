@@ -112,7 +112,7 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
 
     return (
         <>
-            <Modal show={show} onHide={onHide} size="lg" centered scrollable>
+            <Modal show={show} onHide={onHide} size="lg" centered scrollable backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Consultations/Visites du patient</Modal.Title>
                 </Modal.Header>
@@ -214,7 +214,7 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
             </Modal>
 
             {/* Modal reçu imprimable */}
-            <Modal show={showRecu} onHide={() => setShowRecu(false)} size="lg" centered scrollable>
+            <Modal show={showRecu} onHide={() => setShowRecu(false)} size="lg" centered scrollable backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Reçu consultation</Modal.Title>
                 </Modal.Header>
@@ -239,7 +239,7 @@ export default function ListeConsultationsModal({ show, onHide, patientId }: Lis
             </Modal>
 
             {/* Modal de modification de consultation */}
-            <Modal show={showUpdate} onHide={handleCloseUpdate} size="xl" centered scrollable>
+            <Modal show={showUpdate} onHide={handleCloseUpdate} size="xl" centered scrollable backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>
                         📝 Modifier la consultation - {selectedConsult?.CodePrestation}

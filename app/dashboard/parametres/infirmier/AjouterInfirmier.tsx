@@ -82,7 +82,7 @@ export default function AjouterInfirmier({ show, onHide, onAdd }: AjouterInfirmi
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg">
+    <Modal show={show} onHide={onHide} centered size="lg" backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Ajouter un Infirmier</Modal.Title>
       </Modal.Header>

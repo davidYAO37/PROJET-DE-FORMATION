@@ -414,7 +414,7 @@ export default function Entreprises() {
           entreprise={entrepriseForUsers}
         />
         
-        <Modal show={showUpdateModal} onHide={() => !updateLoading && setShowUpdateModal(false)} centered backdrop="static">
+        <Modal show={showUpdateModal} onHide={() => !updateLoading && setShowUpdateModal(false)} centered backdrop="static" keyboard={false}>
           <Modal.Header closeButton={!updateLoading}>
             <Modal.Title>Mise à jour des données WinDev</Modal.Title>
           </Modal.Header>
@@ -492,15 +492,12 @@ export default function Entreprises() {
 
         {/* Modal de confirmation de suppression */}
         <Modal 
-          show={showDeleteModal} 
-          onHide={() => {
-            setShowDeleteModal(false);
-            setEntrepriseToDelete(null);
-          }}
-          centered
-          backdrop="static"
-          keyboard={false}
-        >
+ show={showDeleteModal} 
+ onHide={() => {
+ setShowDeleteModal(false);
+ setEntrepriseToDelete(null);
+ }}
+ centered backdrop="static" keyboard={false}>
           <Modal.Header closeButton className="border-0">
             <Modal.Title className="text-danger">
               <i className="bi bi-exclamation-triangle me-2"></i>

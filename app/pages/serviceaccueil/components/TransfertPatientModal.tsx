@@ -118,7 +118,7 @@ export default function TransfertPatientModal({ show, onHide }: TransfertPatient
     };
 
     return (
-        <Modal show={show} onHide={handleClose} size="lg" centered>
+        <Modal show={show} onHide={handleClose} size="lg" centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>Transférer un patient</Modal.Title>
             </Modal.Header>

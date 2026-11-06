@@ -819,7 +819,7 @@ export default function Sidebar() {
       </aside>
 
       {/* Modal Liens Automates */}
-      <Modal show={showLienAutomateModal} onHide={() => setShowLienAutomateModal(false)} centered size="lg" scrollable>
+      <Modal show={showLienAutomateModal} onHide={() => setShowLienAutomateModal(false)} centered size="lg" scrollable backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title><i className="bi bi-link-45deg me-2"></i>Liens Automates</Modal.Title>
         </Modal.Header>
@@ -832,7 +832,7 @@ export default function Sidebar() {
       </Modal>
 
       {/* Modal Paramètres NFS */}
-      <Modal show={showParametreNfsModal} onHide={() => setShowParametreNfsModal(false)} centered size="xl" scrollable>
+      <Modal show={showParametreNfsModal} onHide={() => setShowParametreNfsModal(false)} centered size="xl" scrollable backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title><i className="bi bi-droplet-fill me-2"></i>Paramètres NFS</Modal.Title>
         </Modal.Header>

@@ -575,7 +575,7 @@ export default function StatistiquesRendezvousPage() {
           </Card>
         </Col>
       </Row>
-      <Modal show={showDetail} onHide={() => setShowDetail(false)} size="xl" fullscreen="lg-down">
+      <Modal show={showDetail} onHide={() => setShowDetail(false)} size="xl" fullscreen="lg-down" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-list-check me-2"></i>

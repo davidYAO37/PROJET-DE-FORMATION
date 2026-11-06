@@ -872,13 +872,10 @@ export default function DisponibilitePrescriptuerModal({ show, onHide }: Disponi
 
   return (
     <Modal 
-      show={show} 
-      onHide={onHide} 
-      size="xl" 
-      className={styles.disponibiliteModal}
-      backdrop="static"
-      keyboard={false}
-    >
+ show={show} 
+ onHide={onHide} 
+ size="xl" 
+ className={styles.disponibiliteModal} backdrop="static" keyboard={false}>
       <Modal.Header closeButton className={styles.modalHeader}>
         <Modal.Title className={styles.modalTitle}>
           <i className="bi bi-calendar2-check-fill me-2"></i>

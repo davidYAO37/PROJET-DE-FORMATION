@@ -431,7 +431,7 @@ export default function GestionCommandesFournisseurs() {
                 onPrintWithoutHeader={imprimerSansEntete}
             />
 
-            <Modal show={showCancel} onHide={() => setShowCancel(false)} centered>
+            <Modal show={showCancel} onHide={() => setShowCancel(false)} centered backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Annuler la commande</Modal.Title>
                 </Modal.Header>
@@ -607,7 +607,7 @@ function CommandeFormModal({
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl">
+        <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>{commande ? "Modifier la commande" : "Nouvelle commande"}</Modal.Title>
             </Modal.Header>
@@ -1030,7 +1030,7 @@ function ReceptionModal({
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl">
+        <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Réception — {commande?.NumeroCommande}</Modal.Title>
             </Modal.Header>
@@ -1145,7 +1145,7 @@ function DetailModal({
 }) {
     if (!commande) return null;
     return (
-        <Modal show={show} onHide={onHide} size="lg">
+        <Modal show={show} onHide={onHide} size="lg" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Détail — {commande.NumeroCommande}</Modal.Title>
             </Modal.Header>

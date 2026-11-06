@@ -65,13 +65,10 @@ export default function ExamenHospitalisationModalCaisseManuelle({
     return (
         <>
         <Modal
-            show={show}
-            onHide={onHide}
-            fullscreen
-            scrollable
-            backdrop="static"
-            keyboard={false}
-        >
+ show={show}
+ onHide={onHide}
+ fullscreen
+ scrollable backdrop="static" keyboard={false}>
             <Modal.Header
                 closeButton
                 className="bg-primary text-white"
@@ -117,15 +114,14 @@ export default function ExamenHospitalisationModalCaisseManuelle({
 
         {/* Modal pour l'aperçu du reçu d'examen */}
         <Modal
-            show={showRecu}
-            onHide={() => {
-                setShowRecu(false);
-                closeAndNotify();
-            }}
-            size="xl"
-            centered
-            fullscreen="lg-down"
-        >
+ show={showRecu}
+ onHide={() => {
+ setShowRecu(false);
+ closeAndNotify();
+ }}
+ size="xl"
+ centered
+ fullscreen="lg-down" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Reçu d'examen</Modal.Title>
             </Modal.Header>

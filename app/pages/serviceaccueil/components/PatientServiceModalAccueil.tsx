@@ -176,7 +176,7 @@ export default function PatientServiceModalAccueil({ show, onHide, patientId }: 
 
     return (
         <>
-        <Modal show={show} onHide={onHide} size="xl" centered scrollable>
+        <Modal show={show} onHide={onHide} size="xl" centered scrollable backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>Service Patient : {patientName || 'Chargement...'}</Modal.Title>
             </Modal.Header>
@@ -353,7 +353,7 @@ export default function PatientServiceModalAccueil({ show, onHide, patientId }: 
         </Modal>
 
         {/* Modal de modification de consultation */}
-        <Modal show={showUpdateConsultation} onHide={handleCloseUpdateConsultation} size="xl" centered scrollable>
+        <Modal show={showUpdateConsultation} onHide={handleCloseUpdateConsultation} size="xl" centered scrollable backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>
                     Modifier la consultation - {selectedConsult?.CodePrestation}

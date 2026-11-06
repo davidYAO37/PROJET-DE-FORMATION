@@ -302,7 +302,7 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
       </div>
 
       {/* Modal des lignes de prestations du patient sélectionné */}
-      <Modal show={showPrestationsModal} onHide={handleClosePrestationsModal} size="lg" centered>
+      <Modal show={showPrestationsModal} onHide={handleClosePrestationsModal} size="lg" centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             <FaCalendarAlt className="me-2" />
@@ -377,7 +377,7 @@ const ListePatientRadio: React.FC<Props> = ({ onPatientSelect }) => {
       </Modal>
 
       {/* Modal d'impression du compte rendu */}
-      <Modal show={printModalOpen} onHide={() => setPrintModalOpen(false)} size="xl" centered>
+      <Modal show={printModalOpen} onHide={() => setPrintModalOpen(false)} size="xl" centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>Impression du compte rendu</Modal.Title>
         </Modal.Header>

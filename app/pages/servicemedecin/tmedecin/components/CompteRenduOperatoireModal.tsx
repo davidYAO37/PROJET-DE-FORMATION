@@ -453,7 +453,7 @@ export default function CompteRenduOperatoireModal({
 
   return (
     <>
-      <Modal show={show} onHide={onHide} size="xl">
+      <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-info text-dark">
           <Modal.Title className="d-flex align-items-center">
             <FaStethoscope className="me-2" />
@@ -620,7 +620,7 @@ export default function CompteRenduOperatoireModal({
       </Modal>
 
       {/* Modal Ajout/Modification */}
-      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} size="lg">
+      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} size="lg" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             {editingCR ? "Modifier le Compte Rendu Opératoire" : "Nouveau Compte Rendu Opératoire"}

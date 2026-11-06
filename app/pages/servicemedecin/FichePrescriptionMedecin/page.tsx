@@ -1867,9 +1867,8 @@ export default function FichePrescriptionMedecin() {
 
           {/* Modal Antécédent */}
           <Modal
-            show={showAntecedentModal}
-            onHide={() => setShowAntecedentModal(false)}
-          >
+ show={showAntecedentModal}
+ onHide={() => setShowAntecedentModal(false)} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>Ajouter un Antécédent</Modal.Title>
             </Modal.Header>
@@ -1950,9 +1949,8 @@ export default function FichePrescriptionMedecin() {
 
           {/* Modal Prescription */}
           <Modal
-            show={showPrescriptionModal}
-            onHide={() => setShowPrescriptionModal(false)}
-          >
+ show={showPrescriptionModal}
+ onHide={() => setShowPrescriptionModal(false)} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 {prescriptionType === "medicament"
@@ -2061,10 +2059,9 @@ export default function FichePrescriptionMedecin() {
 
           {/* Modal CIM-10 */}
           <Modal
-            show={showCIM10Modal}
-            onHide={() => setShowCIM10Modal(false)}
-            size="lg"
-          >
+ show={showCIM10Modal}
+ onHide={() => setShowCIM10Modal(false)}
+ size="lg" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-search me-2"></i>
@@ -2280,16 +2277,15 @@ export default function FichePrescriptionMedecin() {
 
           {/* Modal Examen Hospitalisation */}
           <Modal
-            show={showExamenModal}
-            onHide={() => {
-              setShowExamenModal(false);
-              // Recharger les examens paracliniques après ajout d'acte
-              if (consultation?.codePrestation) {
-                chargerExamensParacliniques(consultation.codePrestation);
-              }
-            }}
-            size="xl"
-          >
+ show={showExamenModal}
+ onHide={() => {
+ setShowExamenModal(false);
+ // Recharger les examens paracliniques après ajout d'acte
+ if (consultation?.codePrestation) {
+ chargerExamensParacliniques(consultation.codePrestation);
+ }
+ }}
+ size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-clipboard2-pulse me-2"></i>
@@ -2321,10 +2317,9 @@ export default function FichePrescriptionMedecin() {
 
           {/* Modal Impression */}
             <Modal
-              show={showPrintModal}
-              onHide={() => setShowPrintModal(false)}
-              size="xl"
-            >
+ show={showPrintModal}
+ onHide={() => setShowPrintModal(false)}
+ size="xl" backdrop="static" keyboard={false}>
               <Modal.Header closeButton>
                 <Modal.Title>
                   <i className="bi bi-printer me-2"></i>
@@ -2343,10 +2338,9 @@ export default function FichePrescriptionMedecin() {
 
           {/* Modal État Métier */}
           <Modal
-            show={showEtatMetierModal}
-            onHide={() => setShowEtatMetierModal(false)}
-            size="xl"
-          >
+ show={showEtatMetierModal}
+ onHide={() => setShowEtatMetierModal(false)}
+ size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-file-earmark-medical me-2"></i>

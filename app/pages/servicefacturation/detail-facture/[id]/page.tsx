@@ -469,7 +469,7 @@ export default function DetailFacturePage() {
             </Row>
 
             {/* Modal annulation */}
-            <Modal show={showAnnulModal} onHide={() => setShowAnnulModal(false)} centered>
+            <Modal show={showAnnulModal} onHide={() => setShowAnnulModal(false)} centered backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title className="fs-6">Annuler la facture</Modal.Title>
                 </Modal.Header>

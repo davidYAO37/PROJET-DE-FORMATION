@@ -132,7 +132,7 @@ export default function ModifierChambre({ show, onHide, chambre, onSave, chambre
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier la chambre</Modal.Title>
             </Modal.Header>

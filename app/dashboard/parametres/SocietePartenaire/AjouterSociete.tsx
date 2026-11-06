@@ -23,7 +23,7 @@ export default function AjouterSociete({ onSave }: Props) {
         <>
             <Button variant="primary" onClick={() => setShow(true)}>+ Ajouter</Button>
 
-            <Modal show={show} onHide={() => setShow(false)}>
+            <Modal show={show} onHide={() => setShow(false)} backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Nouvelle Société Partenaire</Modal.Title>
                 </Modal.Header>

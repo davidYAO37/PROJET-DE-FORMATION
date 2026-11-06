@@ -163,7 +163,7 @@ export default function TemoignagesAdmin() {
         )}
       </Container>
 
-      <Modal show={showModal} onHide={() => { setShowModal(false); resetForm(); }} centered size="lg">
+      <Modal show={showModal} onHide={() => { setShowModal(false); resetForm(); }} centered size="lg" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>{editing ? 'Modifier le témoignage' : 'Ajouter un témoignage'}</Modal.Title>
         </Modal.Header>

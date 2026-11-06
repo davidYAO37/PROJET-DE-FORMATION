@@ -31,6 +31,9 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
     const [selectedOrder, setSelectedOrder] = useState<OrderLight | null>(null);
     const [orderHistory, setOrderHistory] = useState<any[]>([]);
     const [actionLoading, setActionLoading] = useState<string | null>(null);
+    const [validatingOrder, setValidatingOrder] = useState<OrderLight | null>(null);
+    const [paymentMethod, setPaymentMethod] = useState<string>("especes");
+    const [montantPaye, setMontantPaye] = useState<number>(0);
 
     useEffect(() => {
         fetchOrders();
@@ -101,20 +104,36 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
 
     const paginated = filtered.slice((page - 1) * pageSize, page * pageSize);
 
-    async function validateOrder(id: string) {
+    function openValidateModal(order: OrderLight) {
+        setValidatingOrder(order);
+        setPaymentMethod("especes");
+        setMontantPaye(order.amount || 0);
+    }
+
+    async function confirmValidateOrder() {
+        if (!validatingOrder) return;
+        const id = validatingOrder._id;
         setActionLoading(id);
         try {
             const res = await fetch(`/api/licence/orders/${id}/validate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({}),
+                body: JSON.stringify({ paymentMethod, montantPaye }),
             });
             if (res.ok) {
+                setValidatingOrder(null);
                 await fetchOrders();
                 onUpdated?.();
             }
         } catch (e) { }
         setActionLoading(null);
+    }
+
+    async function validateOrder(id: string) {
+        const order = orders.find((o) => o._id === id) || selectedOrder;
+        if (order) {
+            openValidateModal(order);
+        }
     }
 
     async function cancelOrder(id: string) {
@@ -243,7 +262,7 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
                 </Card.Body>
             </Card>
 
-            <Modal show={!!selectedOrder} onHide={() => setSelectedOrder(null)} size="lg" centered>
+            <Modal show={!!selectedOrder} onHide={() => setSelectedOrder(null)} size="lg" centered backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Commande {selectedOrder?.reference}</Modal.Title>
                 </Modal.Header>
@@ -328,6 +347,51 @@ export default function OrdersManager({ onUpdated }: { onUpdated?: () => void })
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" onClick={() => setSelectedOrder(null)}>Fermer</Button>
+                </Modal.Footer>
+            </Modal>
+
+            {/* Modal validation : mode de paiement + montant encaissé */}
+            <Modal show={!!validatingOrder} onHide={() => setValidatingOrder(null)} centered backdrop="static" keyboard={false}>
+                <Modal.Header closeButton className="bg-success text-white">
+                    <Modal.Title>Valider la commande {validatingOrder?.reference}</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Mode de paiement</Form.Label>
+                        <Form.Select value={paymentMethod} onChange={(e) => setPaymentMethod(e.target.value)}>
+                            <option value="especes">Espèces</option>
+                            <option value="cheque">Chèque</option>
+                            <option value="bank_transfer">Virement bancaire</option>
+                            <option value="wave">Mobile Money (Wave)</option>
+                            <option value="mobile_money">Mobile Money (autre)</option>
+                            <option value="carte">Carte bancaire</option>
+                            <option value="manual">Manuel / Autre</option>
+                        </Form.Select>
+                    </Form.Group>
+                    <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold">Montant encaissé (XOF)</Form.Label>
+                        <Form.Control
+                            type="number"
+                            min={0}
+                            value={montantPaye}
+                            onChange={(e) => setMontantPaye(Number(e.target.value))}
+                        />
+                        <Form.Text className="text-muted">
+                            Montant de la commande : {(validatingOrder?.amount || 0).toLocaleString("fr-FR")} XOF.
+                            Saisissez un montant inférieur pour enregistrer un acompte (le reste à payer apparaîtra sur le reçu).
+                        </Form.Text>
+                    </Form.Group>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" onClick={() => setValidatingOrder(null)}>Annuler</Button>
+                    <Button
+                        variant="success"
+                        disabled={actionLoading === validatingOrder?._id}
+                        onClick={confirmValidateOrder}
+                    >
+                        {actionLoading === validatingOrder?._id ? <Spinner size="sm" animation="border" /> : <FaCheck className="me-1" />}
+                        Valider et générer les documents
+                    </Button>
                 </Modal.Footer>
             </Modal>
         </div>

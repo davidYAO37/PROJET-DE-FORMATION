@@ -1810,7 +1810,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           </Row>
 
           {/* Modal Antécédent */}
-          <Modal show={showAntecedentModal} onHide={() => setShowAntecedentModal(false)}>
+          <Modal show={showAntecedentModal} onHide={() => setShowAntecedentModal(false)} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>Ajouter un Antécédent</Modal.Title>
             </Modal.Header>
@@ -1869,7 +1869,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           </Modal>
 
           {/* Modal Prescription */}
-          <Modal show={showPrescriptionModal} onHide={() => setShowPrescriptionModal(false)}>
+          <Modal show={showPrescriptionModal} onHide={() => setShowPrescriptionModal(false)} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 {prescriptionType === 'medicament' ? 'Prescrire un Médicament' : 'Prescrire un Examen'}
@@ -1939,7 +1939,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           </Modal>
 
           {/* Modal CIM-10 */}
-          <Modal show={showCIM10Modal} onHide={() => setShowCIM10Modal(false)} size="lg">
+          <Modal show={showCIM10Modal} onHide={() => setShowCIM10Modal(false)} size="lg" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-search me-2"></i>
@@ -2110,12 +2110,12 @@ export default function FichePrescriptionMedecinAsaisie() {
 
           {/* Modal Examen Hospitalisation */}
           <Modal show={showExamenModal} onHide={() => {
-            setShowExamenModal(false);
-            // Recharger les examens paracliniques après ajout d'acte
-            if (consultation?.codePrestation) {
-              chargerExamensParacliniques(consultation.codePrestation);
-            }
-          }} size="xl">
+ setShowExamenModal(false);
+ // Recharger les examens paracliniques après ajout d'acte
+ if (consultation?.codePrestation) {
+ chargerExamensParacliniques(consultation.codePrestation);
+ }
+ }} size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-clipboard2-pulse me-2"></i>
@@ -2149,7 +2149,7 @@ export default function FichePrescriptionMedecinAsaisie() {
           />
 
           {/* Modal Impression */}
-          <Modal show={showPrintModal} onHide={() => setShowPrintModal(false)} size="xl">
+          <Modal show={showPrintModal} onHide={() => setShowPrintModal(false)} size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-printer me-2"></i>

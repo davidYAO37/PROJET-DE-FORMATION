@@ -220,7 +220,7 @@ export default function MedicamentSelectModal({
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" scrollable>
+    <Modal show={show} onHide={onHide} size="xl" scrollable backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white py-2">
         <Modal.Title className="fs-6 fw-bold">
           <i className="bi bi-capsule me-2"></i>

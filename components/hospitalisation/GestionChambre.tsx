@@ -78,7 +78,7 @@ export default function GestionChambre({ show, onHide }: Props) {
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl" fullscreen="lg-down">
+        <Modal show={show} onHide={onHide} size="xl" fullscreen="lg-down" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Gestion des Chambres</Modal.Title>
             </Modal.Header>

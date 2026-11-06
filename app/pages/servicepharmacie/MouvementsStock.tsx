@@ -345,7 +345,7 @@ export default function MouvementsStock() {
             )}
 
             {/* Modal saisie */}
-            <Modal show={showForm} onHide={() => setShowForm(false)} centered size="lg">
+            <Modal show={showForm} onHide={() => setShowForm(false)} centered size="lg" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton className={form.type === "SORTIE" ? "bg-danger text-white" : "bg-success text-white"}>
                     <Modal.Title>
                         {form.type === "SORTIE"

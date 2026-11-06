@@ -123,7 +123,7 @@ export default function AjouterActe({ show, onHide, onAdd, apporteurActif = true
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Ajouter un acte clinique</Modal.Title>
             </Modal.Header>

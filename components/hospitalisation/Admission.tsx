@@ -319,7 +319,7 @@ export default function Admission({ avis, show, onHide, onSuccess }: AdmissionPr
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg" contentClassName="border-0 shadow-lg overflow-hidden" dialogClassName="modal-dialog-scrollable">
+    <Modal show={show} onHide={onHide} centered size="lg" contentClassName="border-0 shadow-lg overflow-hidden" dialogClassName="modal-dialog-scrollable" backdrop="static" keyboard={false}>
       <Form onSubmit={submitAdmission} className="d-flex flex-column overflow-hidden">
         <Modal.Header closeButton className="border-0 text-white" style={{ background: 'linear-gradient(135deg, #0f766e 0%, #0f4c5c 100%)' }}>
           <Modal.Title className="d-flex align-items-center gap-3">

@@ -56,7 +56,7 @@ export default function ModifierParamActeBiochimie({ show, onHide, param, onSave
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="lg">
+        <Modal show={show} onHide={onHide} size="lg" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier un Paramètre d'Acte Biochimie</Modal.Title>
             </Modal.Header>

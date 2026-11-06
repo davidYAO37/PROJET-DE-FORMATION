@@ -25,7 +25,7 @@ export default function ModifierModePaiement({ show, onHide, data, onSave }: Pro
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier  Mode de paiement</Modal.Title>
             </Modal.Header>

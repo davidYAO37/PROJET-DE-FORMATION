@@ -62,7 +62,7 @@ export default function AjouterAffection({ show, onHide, onAdd }: Props) {
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Ajouter une affection</Modal.Title>
             </Modal.Header>

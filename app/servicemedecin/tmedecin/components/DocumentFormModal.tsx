@@ -298,7 +298,7 @@ export default function DocumentFormModal({
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered scrollable backdrop="static">
+    <Modal show={show} onHide={onHide} size="lg" centered scrollable backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-light">
         <Modal.Title className="d-flex align-items-center gap-2 text-primary">
           <FaFileAlt size={22} />

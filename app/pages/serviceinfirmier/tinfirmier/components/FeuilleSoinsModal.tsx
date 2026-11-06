@@ -110,7 +110,7 @@ export default function FeuilleSoinsModal({
     d ? new Date(d).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }) : '—';
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg">
+    <Modal show={show} onHide={onHide} centered size="lg" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-warning">
         <Modal.Title>
           <FaNotesMedical className="me-2" />

@@ -997,7 +997,7 @@ export default function HonorairesPage() {
       )}
 
       {/* MODAL MODIFIER PAIEMENT */}
-      <Modal show={showModalModifierPaiement} onHide={fermerModifierPaiement} centered size="lg">
+      <Modal show={showModalModifierPaiement} onHide={fermerModifierPaiement} centered size="lg" backdrop="static" keyboard={false}>
         <Modal.Header closeButton style={{ background: 'linear-gradient(90deg,#1565c0,#42a5f5)', color: '#fff' }}>
           <Modal.Title style={{ fontSize: '0.95rem' }}><i className="bi bi-pencil me-2"></i>Modifier le paiement</Modal.Title>
         </Modal.Header>
@@ -1060,7 +1060,7 @@ export default function HonorairesPage() {
       </Modal>
 
       {/* MODAL DE PAIEMENT */}
-      <Modal show={showModalPaiement} onHide={fermerPaiement} centered size="lg">
+      <Modal show={showModalPaiement} onHide={fermerPaiement} centered size="lg" backdrop="static" keyboard={false}>
         <Modal.Header closeButton style={{ background: 'linear-gradient(90deg,#2e7d32,#66bb6a)', color: '#fff' }}>
           <Modal.Title style={{ fontSize: '0.95rem' }}><i className="bi bi-cash-coin me-2"></i>Recouvrement médecin</Modal.Title>
         </Modal.Header>

@@ -91,7 +91,7 @@ export default function ListeAutreActeModal({ show, onClose, onSelect }: Props) 
     };
 
     return (
-        <Modal show={show} onHide={onClose} size="lg">
+        <Modal show={show} onHide={onClose} size="lg" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Liste des actes cliniques</Modal.Title>
             </Modal.Header>

@@ -115,7 +115,7 @@ export default function DossierPatientInfirmier({
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered size="xl">
+    <Modal show={show} onHide={onHide} centered size="xl" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-secondary text-white">
         <Modal.Title>
           <FaUserInjured className="me-2" />

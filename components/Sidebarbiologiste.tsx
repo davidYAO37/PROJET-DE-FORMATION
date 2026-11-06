@@ -197,7 +197,7 @@ export default function SidebarBiologiste() {
             </aside>
 
             {/* Modal Paramètres Examens */}
-            <Modal show={showParametreExamenModal} onHide={() => setShowParametreExamenModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
+            <Modal show={showParametreExamenModal} onHide={() => setShowParametreExamenModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Paramètres Examens</Modal.Title>
                 </Modal.Header>
@@ -210,7 +210,7 @@ export default function SidebarBiologiste() {
             </Modal>
 
             {/* Modal Paramètres Biochimie */}
-            <Modal show={showParametreBiochimieModal} onHide={() => setShowParametreBiochimieModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
+            <Modal show={showParametreBiochimieModal} onHide={() => setShowParametreBiochimieModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Paramètres Biochimie</Modal.Title>
                 </Modal.Header>
@@ -223,7 +223,7 @@ export default function SidebarBiologiste() {
             </Modal>
 
             {/* Modal Résultats Validés */}
-            <Modal show={showResultatsValidésModal} onHide={() => setShowResultatsValidésModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
+            <Modal show={showResultatsValidésModal} onHide={() => setShowResultatsValidésModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Résultats Validés</Modal.Title>
                 </Modal.Header>
@@ -236,7 +236,7 @@ export default function SidebarBiologiste() {
             </Modal>
 
             {/* Modal Liste Examens Validés */}
-            <Modal show={showExamensValidésModal} onHide={() => setShowExamensValidésModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
+            <Modal show={showExamensValidésModal} onHide={() => setShowExamensValidésModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Liste Examens Validés</Modal.Title>
                 </Modal.Header>
@@ -249,7 +249,7 @@ export default function SidebarBiologiste() {
             </Modal>
 
             {/* Modal Automate */}
-            <Modal show={showAutomateModal} onHide={() => setShowAutomateModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern">
+            <Modal show={showAutomateModal} onHide={() => setShowAutomateModal(false)} centered size="xl" dialogClassName="modal-xxl" scrollable contentClassName="border-0 shadow-lg rounded-4" className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Gestion des automates</Modal.Title>
                 </Modal.Header>

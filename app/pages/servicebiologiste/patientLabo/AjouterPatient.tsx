@@ -235,7 +235,7 @@ export default function AjouterPatient({ show, onHide, onAdd, nextId }: Props) {
 
   return (
     <>
-      <Modal show={show} onHide={onHide} backdrop="static" size="lg" centered>
+      <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-primary text-white">
           <Modal.Title>➕ Ajouter un Patient</Modal.Title>
         </Modal.Header>

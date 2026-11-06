@@ -338,7 +338,7 @@ export default function ModalPointSaisieAccueil({ show, onHide, user }: ModalPoi
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" backdrop="static">
+    <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Point de Saisie - Recherche</Modal.Title>
       </Modal.Header>

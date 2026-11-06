@@ -570,11 +570,10 @@ const ResultatActe: React.FC<Props> = ({ show, acte, onClose, onSave }) => {
     return (
         <>
             <Modal 
-                show={show} 
-                onHide={handleClose}
-                size="xl"
-                centered
-            >
+ show={show} 
+ onHide={handleClose}
+ size="xl"
+ centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>
                     Résultat de l'acte : {acte?.designationacte}
@@ -855,11 +854,10 @@ const ResultatActe: React.FC<Props> = ({ show, acte, onClose, onSave }) => {
 
         {/* Modal d'aperçu d'impression */}
         <Modal 
-            show={showPrintPreview} 
-            onHide={() => setShowPrintPreview(false)}
-            size="lg"
-            centered
-        >
+ show={showPrintPreview} 
+ onHide={() => setShowPrintPreview(false)}
+ size="lg"
+ centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>
                     <FaEye className="me-2" />

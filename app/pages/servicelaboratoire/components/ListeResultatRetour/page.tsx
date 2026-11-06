@@ -290,14 +290,13 @@ export default function ListeResultatRetour() {
 
       {/* Modal pour Saisie des Résultats */}
       <Modal
-        show={showSaisieResultatModal}
-        onHide={() => setShowSaisieResultatModal(false)}
-        size="xl"
-        centered
-        backdrop="static"
-        keyboard={false}
-        dialogClassName="modal-90w"
-      >
+ show={showSaisieResultatModal}
+ onHide={() => setShowSaisieResultatModal(false)}
+ size="xl"
+ centered
+ 
+ 
+ dialogClassName="modal-90w" backdrop="static" keyboard={false}>
         <Modal.Header
           closeButton
           style={{

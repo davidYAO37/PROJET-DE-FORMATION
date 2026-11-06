@@ -87,7 +87,7 @@ export default function ModifierInfirmier({ show, onHide, infirmier, onSave }: M
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg">
+    <Modal show={show} onHide={onHide} centered size="lg" backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Modifier Infirmier</Modal.Title>
       </Modal.Header>

@@ -113,7 +113,7 @@ export default function ModifierMedicament({ show, onHide, Medicament, onSave }:
     const prixVenteUnite = form.PrixVenteUnite || (qteParCond > 0 ? form.PrixVenteConditionnement / qteParCond : 0);
 
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered>
+        <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title className="fw-semibold fs-5">Modifier le medicament</Modal.Title>
             </Modal.Header>

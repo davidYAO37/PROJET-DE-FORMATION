@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     await db();
     const { searchParams } = new URL(req.url);
     const statusParam = searchParams.get("status");
+    const entrepriseIdParam = searchParams.get("entrepriseId");
 
     const filter: Record<string, unknown> = {};
     if (statusParam) {
@@ -32,6 +33,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: "Aucune entreprise associée" }, { status: 403 });
       }
       filter.entrepriseId = user.entrepriseId;
+    } else if (entrepriseIdParam) {
+      // Super-admin can filter by entrepriseId if provided
+      filter.entrepriseId = entrepriseIdParam;
     }
 
     const rawOrders = await LicenceOrder.find(filter)
@@ -144,6 +148,21 @@ export async function POST(req: NextRequest) {
       paymentMethod: finalPaymentMethod,
       notes,
     });
+
+    // Générer le contrat d'acquisition immédiatement pour les commandes d'achat
+    if (action === "purchase" && order._id) {
+      try {
+        const pdfGen = await import("@/lib/pdfGenerator");
+        // Générer uniquement le contrat d'acquisition (pas de maintenance ni reçu)
+        await pdfGen.generateContractPdf(order, "acquisition");
+        // Mettre à jour l'URL du contrat dans la commande
+        const contractUrl = `/uploads/licence-docs/order-${order._id.toString()}-acquisition-contract.pdf`;
+        await LicenceOrder.findByIdAndUpdate(order._id, { acquisitionContractUrl: contractUrl });
+        order.acquisitionContractUrl = contractUrl;
+      } catch (err) {
+        console.warn("Échec génération contrat d'acquisition à la création:", err);
+      }
+    }
 
     return NextResponse.json({ order, paymentUrl }, { status: 201 });
   } catch (err) {

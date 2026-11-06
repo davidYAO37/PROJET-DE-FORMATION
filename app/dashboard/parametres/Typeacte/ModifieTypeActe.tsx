@@ -27,7 +27,7 @@ export default function ModifieTypeActe({ show, onHide, data, onSave }: Props) {
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier Type d’acte</Modal.Title>
             </Modal.Header>

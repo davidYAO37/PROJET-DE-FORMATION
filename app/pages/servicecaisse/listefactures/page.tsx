@@ -626,11 +626,9 @@ const PageListeApayer = () => {
             {/* Modal pour les consultations */}
             {selectedItem?.type === "CONSULTATION" && (
                 <Modal
-                    show={showModal}
-                    onHide={handleCloseModal}
-                    size="xl"
-                    backdrop="static"
-                >
+ show={showModal}
+ onHide={handleCloseModal}
+ size="xl" backdrop="static" keyboard={false}>
                     <Modal.Body className="p-0">
                         <FicheConsultationUpdateCaisse
                             patient={selectedItem.raw?.patient || null}

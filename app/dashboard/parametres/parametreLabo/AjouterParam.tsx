@@ -207,7 +207,7 @@ export default function AjouterParam({ show, onHide, onAdd }: Props) {
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl">
+        <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Ajouter un Paramètre Laboratoire</Modal.Title>
             </Modal.Header>

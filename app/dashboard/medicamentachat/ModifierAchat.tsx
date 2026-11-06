@@ -602,7 +602,7 @@ export default function ModifierAchat({
   }, [show]);
 
   return (
-    <Modal show={show} onHide={onHide} size="xl">
+    <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Modification de l'approvisionnement</Modal.Title>
       </Modal.Header>

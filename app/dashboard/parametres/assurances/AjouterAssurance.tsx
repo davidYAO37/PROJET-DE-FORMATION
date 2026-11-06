@@ -67,7 +67,7 @@ export default function AjouterAssurance({ show, onHide, onAdd }: Props) {
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Ajouter une assurance</Modal.Title>
             </Modal.Header>

@@ -136,7 +136,7 @@ export default function SocieteAssuranceModal({ show, onHide, assurance }: Props
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered>
+        <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>
                     <i className="bi bi-building me-2" />

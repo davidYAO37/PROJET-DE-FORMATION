@@ -421,12 +421,11 @@ export default function PageLabo() {
 
 
       <Modal
-        show={showConsultationModal}
-        onHide={() => setShowConsultationModal(false)}
-        size="xl"
-        centered
-        scrollable
-      >
+ show={showConsultationModal}
+ onHide={() => setShowConsultationModal(false)}
+ size="xl"
+ centered
+ scrollable backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             Nouvelle Consultation - {selectedPatient?.Nom} {selectedPatient?.Prenoms} - Age : {selectedPatient?.Age_partient} ans

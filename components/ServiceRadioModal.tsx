@@ -16,18 +16,17 @@ export default function ServiceRadioModal({ show, onHide }: ServiceRadioModalPro
 
   return (
     <Modal 
-      show={show} 
-      onHide={onHide}
-      size="xl"
-      centered
-      className="service-radio-modal"
-      style={{
-        borderRadius: '15px',
-        overflow: 'hidden',
-        border: 'none',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
-      }}
-    >
+ show={show} 
+ onHide={onHide}
+ size="xl"
+ centered
+ className="service-radio-modal"
+ style={{
+ borderRadius: '15px',
+ overflow: 'hidden',
+ border: 'none',
+ boxShadow: '0 20px 60px rgba(0,0,0,0.15)'
+ }} backdrop="static" keyboard={false}>
       <Modal.Header 
         style={{
           background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',

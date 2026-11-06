@@ -38,12 +38,11 @@ export default function ExamenHospitModalInfirmier({
 
     return (
         <Modal show={show} onHide={onHide} size="xl" centered scrollable
-            dialogClassName="modal-xxl"
-            backdrop="static"
-            keyboard={false}
-            style={{ maxWidth: '98vw', width: '98vw', margin: 'auto', height: '95vh' }}
-            contentClassName="h-100"
-        >
+ dialogClassName="modal-xxl"
+ 
+ 
+ style={{ maxWidth: '98vw', width: '98vw', margin: 'auto', height: '95vh' }}
+ contentClassName="h-100" backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>
                     {CodePrestation

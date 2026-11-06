@@ -122,7 +122,7 @@ export default function ListeFacturesAnnuleesModal({ show, onHide }: ListeFactur
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl" centered scrollable>
+        <Modal show={show} onHide={onHide} size="xl" centered scrollable backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="border-0 pb-0">
                 <div>
                     <Modal.Title className="fs-4 fw-bold">Liste des factures annulées</Modal.Title>

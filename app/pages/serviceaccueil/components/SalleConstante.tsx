@@ -348,7 +348,7 @@ const SalleConstante: React.FC<SalleConstanteModalProps> = ({ show, onHide, user
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="lg" centered>
+        <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Prise de constantes</Modal.Title>
             </Modal.Header>

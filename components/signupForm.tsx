@@ -467,11 +467,10 @@ const SignupForm = () => {
 
       {/* Modal Nouveau compte */}
       <Modal
-        show={showNewUserModal}
-        onHide={() => setShowNewUserModal(false)}
-        centered
-        size="lg"
-      >
+ show={showNewUserModal}
+ onHide={() => setShowNewUserModal(false)}
+ centered
+ size="lg" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-person-plus me-2"></i>
@@ -852,10 +851,9 @@ const SignupForm = () => {
 
           {/* Modal de suppression */}
           <Modal
-            show={showDeleteModal}
-            onHide={handleCancelDelete}
-            centered
-          >
+ show={showDeleteModal}
+ onHide={handleCancelDelete}
+ centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-exclamation-triangle text-danger me-2"></i>
@@ -925,11 +923,10 @@ const SignupForm = () => {
 
           {/* Modal de modification du rôle */}
           <Modal
-            show={showEditModal}
-            onHide={handleCancelEdit}
-            centered
-            size="lg"
-          >
+ show={showEditModal}
+ onHide={handleCancelEdit}
+ centered
+ size="lg" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-pencil-square me-2"></i>
@@ -1025,10 +1022,9 @@ const SignupForm = () => {
 
           {/* Modal de blocage */}
           <Modal
-            show={showBlockModal}
-            onHide={handleCancelBlock}
-            centered
-          >
+ show={showBlockModal}
+ onHide={handleCancelBlock}
+ centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-lock-fill text-warning me-2"></i>
@@ -1089,10 +1085,9 @@ const SignupForm = () => {
 
           {/* Modal de déblocage */}
           <Modal
-            show={showUnlockModal}
-            onHide={handleCancelUnlock}
-            centered
-          >
+ show={showUnlockModal}
+ onHide={handleCancelUnlock}
+ centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
               <Modal.Title>
                 <i className="bi bi-unlock text-success me-2"></i>

@@ -114,13 +114,10 @@ export default function ModifierEntreprise({
 
   return (
     <Modal
-      show={show}
-      onHide={onHide}
-      centered
-      size="lg"
-      backdrop="static"
-      keyboard={false}
-    >
+ show={show}
+ onHide={onHide}
+ centered
+ size="lg" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white border-0">
         <Modal.Title className="d-flex align-items-center">
           <i className="bi bi-building-add me-2"></i>

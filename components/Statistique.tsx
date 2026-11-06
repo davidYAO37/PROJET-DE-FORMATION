@@ -1008,7 +1008,7 @@ export default function Statistique() {
 
 
       {/* Modal état imprimable répartition par médecin */}
-      <Modal show={showRepartitionModal} onHide={() => setShowRepartitionModal(false)} size="xl" centered scrollable>
+      <Modal show={showRepartitionModal} onHide={() => setShowRepartitionModal(false)} size="xl" centered scrollable backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="d-print-none">
           <Modal.Title><FaChartPie className="me-2" />Répartition des actes par médecin</Modal.Title>
         </Modal.Header>
@@ -1093,7 +1093,7 @@ export default function Statistique() {
       </Modal>
 
       {/* ── Modal état imprimable : Montants par assurance ── */}
-      <Modal show={showAssuranceModal} onHide={() => setShowAssuranceModal(false)} size="lg" centered scrollable>
+      <Modal show={showAssuranceModal} onHide={() => setShowAssuranceModal(false)} size="lg" centered scrollable backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title><FaFileInvoice className="me-2" />Montants par assurance</Modal.Title>
         </Modal.Header>
@@ -1165,7 +1165,7 @@ export default function Statistique() {
       </Modal>
 
       {/* ── Modal état imprimable : Consultations par sexe ── */}
-      <Modal show={showSexeModal} onHide={() => setShowSexeModal(false)} size="lg" centered scrollable>
+      <Modal show={showSexeModal} onHide={() => setShowSexeModal(false)} size="lg" centered scrollable backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title><FaUsers className="me-2" />Consultations par sexe</Modal.Title>
         </Modal.Header>
@@ -1267,7 +1267,7 @@ export default function Statistique() {
       </Modal>
 
       {/* ── Modal état imprimable : Examens biologiques par sexe ── */}
-      <Modal show={showBioSexeModal} onHide={() => setShowBioSexeModal(false)} size="xl" centered scrollable>
+      <Modal show={showBioSexeModal} onHide={() => setShowBioSexeModal(false)} size="xl" centered scrollable backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title><FaChartBar className="me-2" />Examens biologiques par sexe</Modal.Title>
         </Modal.Header>
@@ -1335,7 +1335,7 @@ export default function Statistique() {
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showDetailModal} onHide={fermerDetails} size="xl" centered scrollable>
+      <Modal show={showDetailModal} onHide={fermerDetails} size="xl" centered scrollable backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>Détails : {detailTitle}</Modal.Title>
         </Modal.Header>

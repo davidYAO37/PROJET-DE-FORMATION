@@ -287,7 +287,7 @@ const ListeParamBiochimie: React.FC<Props> = ({ ParamBiochimies, onEdit, onDelet
             </div>
 
             {/* Modal d'importation */}
-            <Modal show={showImportModal} onHide={() => setShowImportModal(false)}>
+            <Modal show={showImportModal} onHide={() => setShowImportModal(false)} backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Importer des Paramètres Biochimie</Modal.Title>
                 </Modal.Header>
@@ -331,10 +331,9 @@ const ListeParamBiochimie: React.FC<Props> = ({ ParamBiochimies, onEdit, onDelet
 
             {/* Modal de validation */}
             <Modal
-                show={showValidationModal}
-                onHide={() => setShowValidationModal(false)}
-                size="lg"
-            >
+ show={showValidationModal}
+ onHide={() => setShowValidationModal(false)}
+ size="lg" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Valider l'importation</Modal.Title>
                 </Modal.Header>

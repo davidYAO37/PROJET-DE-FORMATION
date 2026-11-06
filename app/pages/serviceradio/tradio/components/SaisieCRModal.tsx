@@ -567,13 +567,12 @@ const SaisieCRModal: React.FC<Props> = ({
 
   return (
     <Modal
-      show={show}
-      onHide={onHide}
-      size="xl"
-      backdrop="static"
-      centered
-      className="saisie-cr-modal"
-    >
+ show={show}
+ onHide={onHide}
+ size="xl"
+ 
+ centered
+ className="saisie-cr-modal" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title className="w-100">
           <div className="d-flex align-items-center justify-content-between">

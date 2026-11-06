@@ -59,7 +59,7 @@ export default function ModifierAssurance({ show, onHide, assurance, onSave }: P
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier l'assurance</Modal.Title>
             </Modal.Header>

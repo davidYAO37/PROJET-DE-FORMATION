@@ -57,7 +57,7 @@ export default function ListePlanningModal({ show, onHide }: ListePlanningModalP
 
   return (
     <>
-      <Modal show={show} onHide={onHide} size="xl" className={styles.listePlanningModal}>
+      <Modal show={show} onHide={onHide} size="xl" className={styles.listePlanningModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <Modal.Title className={styles.modalTitle}>
             <i className="bi bi-calendar-week me-2"></i>

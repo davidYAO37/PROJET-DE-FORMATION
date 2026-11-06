@@ -160,7 +160,7 @@ export default function ModifierPatient({ show, handleClose, patient, onUpdate }
   };
 
   return (
-    <Modal show={show} onHide={handleClose}>
+    <Modal show={show} onHide={handleClose} backdrop="static" keyboard={false}>
       <Form onSubmit={handleSubmit}>
         <Modal.Header closeButton>
           <Modal.Title>Modifier Patient</Modal.Title>

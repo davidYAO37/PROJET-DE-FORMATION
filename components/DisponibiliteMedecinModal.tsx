@@ -989,13 +989,10 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
 
   return (
     <Modal 
-      show={show} 
-      onHide={onHide} 
-      size="xl" 
-      className={styles.disponibiliteModal}
-      backdrop="static"
-      keyboard={false}
-    >
+ show={show} 
+ onHide={onHide} 
+ size="xl" 
+ className={styles.disponibiliteModal} backdrop="static" keyboard={false}>
       <Modal.Header closeButton className={styles.modalHeader}>
         <Modal.Title className={styles.modalTitle}>
           <i className="bi bi-calendar2-check-fill me-2"></i>
@@ -1426,7 +1423,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
       </Modal.Footer>
 
       {/* Modal de report de rendez-vous */}
-      <Modal show={showReportModal} onHide={handleCloseReport} centered>
+      <Modal show={showReportModal} onHide={handleCloseReport} centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-clock-history me-2"></i>
@@ -1464,7 +1461,7 @@ export default function DisponibiliteMedecinModal({ show, onHide }: Disponibilit
       </Modal>
 
       {/* Modal de statistiques rendez-vous */}
-      <Modal show={showStats} onHide={() => setShowStats(false)} size="xl" centered>
+      <Modal show={showStats} onHide={() => setShowStats(false)} size="xl" centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             <i className="bi bi-bar-chart-line me-2"></i>

@@ -445,7 +445,7 @@ export default function ListeChambre({ chambres, onEdit, onDelete }: Props) {
             )}
 
             {/* Modal Ajouter Lit */}
-            <Modal show={showAddLit} onHide={() => setShowAddLit(false)}>
+            <Modal show={showAddLit} onHide={() => setShowAddLit(false)} backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Ajouter un lit — Chambre {selectedChambre?.numero}</Modal.Title>
                 </Modal.Header>
@@ -480,7 +480,7 @@ export default function ListeChambre({ chambres, onEdit, onDelete }: Props) {
             </Modal>
 
             {/* Modal Détail Lit */}
-            <Modal show={showDetailLit} onHide={() => setShowDetailLit(false)} size="lg">
+            <Modal show={showDetailLit} onHide={() => setShowDetailLit(false)} size="lg" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>
                         Historique du lit {detailLit?.numero} — Chambre {selectedChambre?.numero}
@@ -530,7 +530,7 @@ export default function ListeChambre({ chambres, onEdit, onDelete }: Props) {
             </Modal>
 
             {/* Modal Modifier Lit */}
-            <Modal show={showEditLit} onHide={() => setShowEditLit(false)}>
+            <Modal show={showEditLit} onHide={() => setShowEditLit(false)} backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Modifier le lit</Modal.Title>
                 </Modal.Header>

@@ -25,7 +25,7 @@ export default function ModifierFamilleActe({ show, onHide, data, onSave }: Prop
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier Famille Acte</Modal.Title>
             </Modal.Header>

@@ -35,7 +35,7 @@ export default function ExamenHospitalisationModal({
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl" centered scrollable>
+        <Modal show={show} onHide={onHide} size="xl" centered scrollable backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>
                     {examenHospitId ? 'Modifier la prestation' : 'Nouvelle prestation'}

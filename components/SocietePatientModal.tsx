@@ -77,7 +77,7 @@ export default function SocietePatientModal({
     };
 
     return (
-        <Modal show={show} onHide={onHide} centered size="lg">
+        <Modal show={show} onHide={onHide} centered size="lg" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Choisir ou créer une société d'assurance</Modal.Title>
             </Modal.Header>

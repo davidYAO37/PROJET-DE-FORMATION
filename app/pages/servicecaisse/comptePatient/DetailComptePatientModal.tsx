@@ -113,7 +113,7 @@ export default function DetailComptePatientModal({ show, onHide, patient }: Deta
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" centered scrollable>
+    <Modal show={show} onHide={onHide} size="xl" centered scrollable backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title className="d-flex align-items-center gap-2">
           <FaArrowDown />

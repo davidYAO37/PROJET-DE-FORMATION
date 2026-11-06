@@ -526,12 +526,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
   return (
     <>
       <Modal
-        show={show}
-        onHide={onHide}
-        size="lg"
-        centered
-        className={styles.professionalModal}
-      >
+ show={show}
+ onHide={onHide}
+ size="lg"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -844,12 +843,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
 
       {/* Modal pour l'impression de FactureCosultatAssurance */}
       <Modal
-        show={showPrintAssuranceModal}
-        onHide={() => setShowPrintAssuranceModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintAssuranceModal}
+ onHide={() => setShowPrintAssuranceModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -882,12 +880,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
 
       {/* Modal pour l'impression de FactureConsultationPatient */}
       <Modal
-        show={showPrintPatientModal}
-        onHide={() => setShowPrintPatientModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintPatientModal}
+ onHide={() => setShowPrintPatientModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -919,12 +916,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       </Modal>
           {/* Modal pour l'impression de FactureExamenPatient */}
            <Modal
-        show={showPrintExamenPatientModal}
-        onHide={() => setShowPrintExamenPatientModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintExamenPatientModal}
+ onHide={() => setShowPrintExamenPatientModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -956,12 +952,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       </Modal>
       {/* Modal pour l'impression de FactureExamenAssurance */}
       <Modal
-        show={showPrintExamenAssuranceModal}
-        onHide={() => setShowPrintExamenAssuranceModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintExamenAssuranceModal}
+ onHide={() => setShowPrintExamenAssuranceModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -994,12 +989,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       
       {/* Modal pour l'impression de FacturePharmacieAssurance */}
       <Modal
-        show={showPrintPharmacieAssuranceModal}
-        onHide={() => setShowPrintPharmacieAssuranceModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintPharmacieAssuranceModal}
+ onHide={() => setShowPrintPharmacieAssuranceModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -1032,12 +1026,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
 
       {/* Modal pour l'impression de FactureDetailleAssurance */}
       <Modal
-        show={showPrintDetailleAssuranceModal}
-        onHide={() => setShowPrintDetailleAssuranceModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintDetailleAssuranceModal}
+ onHide={() => setShowPrintDetailleAssuranceModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -1070,12 +1063,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
 
            {/* Modal pour l'impression de FactureDetaillePatient */}
       <Modal
-        show={showPrintDetaillePatientModal}
-        onHide={() => setShowPrintDetaillePatientModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintDetaillePatientModal}
+ onHide={() => setShowPrintDetaillePatientModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -1108,12 +1100,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
 
       {/* Modal pour l'impression de FacturePharmaciePatient */}
       <Modal
-        show={showPrintPharmaciePatientModal}
-        onHide={() => setShowPrintPharmaciePatientModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintPharmaciePatientModal}
+ onHide={() => setShowPrintPharmaciePatientModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -1145,12 +1136,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       </Modal>
       {/* Modal pour l'impression de printFactureRecapAssurance */}
       <Modal
-        show={showPrintRecapAssuranceModal}
-        onHide={() => setShowPrintRecapAssuranceModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintRecapAssuranceModal}
+ onHide={() => setShowPrintRecapAssuranceModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i
@@ -1183,12 +1173,11 @@ const MenuImpressionFactureModal: React.FC<MenuImpressionFactureModalProps> = ({
       
       {/* Modal pour l'impression de printFactureRecapPatient */}
       <Modal
-        show={showPrintRecapPatientModal}
-        onHide={() => setShowPrintRecapPatientModal(false)}
-        size="xl"
-        centered
-        className={styles.professionalModal}
-      >
+ show={showPrintRecapPatientModal}
+ onHide={() => setShowPrintRecapPatientModal(false)}
+ size="xl"
+ centered
+ className={styles.professionalModal} backdrop="static" keyboard={false}>
         <Modal.Header closeButton className={styles.modalHeader}>
           <div className={styles.headerContent}>
             <i

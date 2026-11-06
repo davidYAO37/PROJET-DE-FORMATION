@@ -114,7 +114,7 @@ export default function ModifierMedecin({ show, onHide, medecin, onSave }: Modif
   };
 
   return (
-    <Modal show={show} onHide={onHide} centered size="lg">
+    <Modal show={show} onHide={onHide} centered size="lg" backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Modifier Médecin</Modal.Title>
       </Modal.Header>

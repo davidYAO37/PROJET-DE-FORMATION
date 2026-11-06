@@ -629,7 +629,7 @@ export default function DossierPatient({
 
   if (loading) {
     return (
-      <Modal show={show} onHide={onHide} size="xl">
+      <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>Dossier Patient</Modal.Title>
         </Modal.Header>
@@ -647,7 +647,7 @@ export default function DossierPatient({
 
   if (error) {
     return (
-      <Modal show={show} onHide={onHide} size="xl">
+      <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>Dossier Patient</Modal.Title>
         </Modal.Header>
@@ -663,7 +663,7 @@ export default function DossierPatient({
 
   return (
     <>
-    <Modal show={show} onHide={onHide} size="xl" className="dossier-patient-modal">
+    <Modal show={show} onHide={onHide} size="xl" className="dossier-patient-modal" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title className="d-flex align-items-center">
           <FaUserInjured className="me-2" />
@@ -1562,11 +1562,10 @@ export default function DossierPatient({
     </Modal>
 
     <Modal
-      show={!!printConsultationId}
-      onHide={() => setPrintConsultationId(null)}
-      size="lg"
-      fullscreen
-    >
+ show={!!printConsultationId}
+ onHide={() => setPrintConsultationId(null)}
+ size="lg"
+ fullscreen backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Fiche de prescription</Modal.Title>
       </Modal.Header>
@@ -1588,11 +1587,10 @@ export default function DossierPatient({
     </Modal>
 
     <Modal
-      show={showRadioModal}
-      onHide={() => setShowRadioModal(false)}
-      size="lg"
-      fullscreen
-    >
+ show={showRadioModal}
+ onHide={() => setShowRadioModal(false)}
+ size="lg"
+ fullscreen backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Compte rendu radiologique</Modal.Title>
       </Modal.Header>
@@ -1616,10 +1614,9 @@ export default function DossierPatient({
     </Modal>
 
     <Modal
-      show={showAvisModal}
-      onHide={() => setShowAvisModal(false)}
-      size="lg"
-    >
+ show={showAvisModal}
+ onHide={() => setShowAvisModal(false)}
+ size="lg" backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title><FaHospital className="me-2" />Observation hospitalisation</Modal.Title>
       </Modal.Header>

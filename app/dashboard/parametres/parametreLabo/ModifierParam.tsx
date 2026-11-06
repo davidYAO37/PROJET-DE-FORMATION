@@ -252,7 +252,7 @@ export default function ModifierParam({ show, onHide, ParamLabo, onSave }: Props
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl">
+        <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier le Paramètre Laboratoire</Modal.Title>
             </Modal.Header>

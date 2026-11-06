@@ -959,13 +959,10 @@ export default function PharmacieCaisseModal({
   return (
     <>
       <Modal 
-        show={show} 
-        onHide={handleHide} 
-        fullscreen={true}
-        centered 
-        backdrop="static" 
-        keyboard={false}
-      >
+ show={show} 
+ onHide={handleHide} 
+ fullscreen={true}
+ centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-primary text-white">
           <Modal.Title className="fs-4 fw-bold">
             <i className="bi bi-cash-stack me-2"></i>
@@ -1067,16 +1064,15 @@ export default function PharmacieCaisseModal({
 
       {/* Modal pour afficher le reçu pharmacie */}
       <Modal
-        show={showRecuModal}
-        onHide={() => {
-          setShowRecuModal(false);
-          setRecuFacturation(null);
-          setRecuLignes([]);
-        }}
-        size="xl"
-        centered
-        fullscreen="lg-down"
-      >
+ show={showRecuModal}
+ onHide={() => {
+ setShowRecuModal(false);
+ setRecuFacturation(null);
+ setRecuLignes([]);
+ }}
+ size="xl"
+ centered
+ fullscreen="lg-down" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>Reçu de pharmacie</Modal.Title>
         </Modal.Header>

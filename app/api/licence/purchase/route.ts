@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Types } from "mongoose";
 import { db } from "@/db/mongoConnect";
 import { requireAuth } from "@/lib/auth";
 import { purchaseLicence } from "@/lib/licenceService";
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
   try {
     await db();
     const body = await req.json();
-    const { entrepriseId, modules, price, currency, notes } = body;
+    const { entrepriseId, modules, price, currency, notes, paymentMethod } = body;
 
     if (!entrepriseId) {
       return NextResponse.json(
@@ -35,6 +36,37 @@ export async function POST(req: NextRequest) {
       createdBy: user?._id,
       notes,
     });
+
+    // Créer une commande validée et générer les documents (bon de commande + contrat d'acquisition)
+    try {
+      const { LicenceOrder } = await import("@/models/licenceOrder");
+      const year = new Date().getFullYear();
+      const orderCount = await LicenceOrder.countDocuments({
+        createdAt: { $gte: new Date(year, 0, 1) },
+      });
+      const order = await LicenceOrder.create({
+        reference: `CMD-${year}-${String(orderCount + 1).padStart(4, "0")}`,
+        entrepriseId: new Types.ObjectId(entrepriseId),
+        initiatedBy: new Types.ObjectId(user?._id),
+        action: "purchase",
+        modules: selectedModules,
+        amount: price || 0,
+        currency: currency || "XOF",
+        status: "validated",
+        paymentMethod: ["wave", "manual", "especes", "cheque", "bank_transfer", "carte", "mobile_money"].includes(paymentMethod)
+          ? paymentMethod
+          : "manual",
+        notes: notes || "Achat direct via gestion des licences",
+        validatedBy: user?._id ? new Types.ObjectId(user._id) : undefined,
+        validatedAt: new Date(),
+        paidAt: new Date(),
+      });
+
+      const pdfGen = await import("@/lib/pdfGenerator");
+      await pdfGen.generateAllForOrder(order._id.toString());
+    } catch (err) {
+      console.warn("Échec génération des documents d'acquisition:", err);
+    }
 
     return NextResponse.json(updated);
   } catch (err) {

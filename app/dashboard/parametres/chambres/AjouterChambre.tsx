@@ -103,7 +103,7 @@ export default function AjouterChambre({ show, onHide, onAdd, chambres }: Props)
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Ajouter une chambre</Modal.Title>
             </Modal.Header>

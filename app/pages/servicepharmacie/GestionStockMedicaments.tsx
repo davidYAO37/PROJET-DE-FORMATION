@@ -269,7 +269,7 @@ export default function GestionStockMedicaments() {
             )}
 
             {/* ===== MODAL SEUILS ===== */}
-            <Modal show={modalSeuil.show} onHide={() => setModalSeuil({ show: false, item: null })} centered size="sm">
+            <Modal show={modalSeuil.show} onHide={() => setModalSeuil({ show: false, item: null })} centered size="sm" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title className="fs-6">Seuils — {modalSeuil.item?.Medicament}</Modal.Title>
                 </Modal.Header>

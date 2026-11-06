@@ -321,7 +321,7 @@ export default function RapportHospitalisationModal({
 
   return (
     <>
-      <Modal show={show} onHide={onHide} size="xl">
+      <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-success text-white">
           <Modal.Title className="d-flex align-items-center">
             <FaHospitalUser className="me-2" />
@@ -399,7 +399,7 @@ export default function RapportHospitalisationModal({
         </Modal.Footer>
       </Modal>
 
-      <Modal show={showFormModal} onHide={() => setShowFormModal(false)} size="xl">
+      <Modal show={showFormModal} onHide={() => setShowFormModal(false)} size="xl" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             {editingRapport ? 'Modifier le rapport d\'hospitalisation' : 'Nouveau rapport d\'hospitalisation'}

@@ -173,7 +173,7 @@ export default function GererUtilisateursEntreprise({
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered>
+    <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>
           Utilisateurs de {entreprise?.NomSociete || 'l\'entreprise'}

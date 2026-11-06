@@ -22,7 +22,7 @@ export default function AjouteFamilleActe({ onSave }: Props) {
         <>
             <Button variant="primary" onClick={() => setShow(true)}>+ Ajouter</Button>
 
-            <Modal show={show} onHide={() => setShow(false)}>
+            <Modal show={show} onHide={() => setShow(false)} backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Nouvelle Famille Acte Biologique</Modal.Title>
                 </Modal.Header>

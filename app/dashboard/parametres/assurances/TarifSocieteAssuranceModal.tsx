@@ -189,7 +189,7 @@ export default function TarifSocieteAssuranceModal({ show, onHide, societe, assu
     };
 
     return (
-        <Modal show={show} onHide={handleHide} size="xl" centered scrollable>
+        <Modal show={show} onHide={handleHide} size="xl" centered scrollable backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-info text-white">
                 <Modal.Title>Tarifs de la société – {societe?.societe}</Modal.Title>
             </Modal.Header>

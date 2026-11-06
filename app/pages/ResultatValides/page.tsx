@@ -410,7 +410,7 @@ export default function ListeResultatValides() {
         )}
       </div>
 
-      <Modal show={!!remiseItem} onHide={() => { if (!savingRemise) setRemiseItem(null); }} centered backdrop="static">
+      <Modal show={!!remiseItem} onHide={() => { if (!savingRemise) setRemiseItem(null); }} centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton={!savingRemise}>
           <Modal.Title>Réception du résultat</Modal.Title>
         </Modal.Header>

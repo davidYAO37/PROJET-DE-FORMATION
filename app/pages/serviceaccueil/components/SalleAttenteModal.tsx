@@ -87,7 +87,7 @@ export default function SalleAttenteModal({ show, onHide }: SalleAttenteModalPro
 
     return (
         <>
-            <Modal show={show} onHide={onHide} size="lg" centered>
+            <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>👥 Salle d’attente du jour</Modal.Title>
                 </Modal.Header>

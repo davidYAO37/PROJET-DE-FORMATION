@@ -263,7 +263,7 @@ export default function ModifierParamActe({ show, onHide, ActeParamLabo, onSave 
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl">
+        <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>
                     <i className="bi bi-gear-fill me-2"></i>

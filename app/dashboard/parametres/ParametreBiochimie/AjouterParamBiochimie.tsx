@@ -59,7 +59,7 @@ export default function AjouterParamBiochimie({ show, onHide, onAdd }: Props) {
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="lg">
+        <Modal show={show} onHide={onHide} size="lg" backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Ajouter un Paramètre Biochimie</Modal.Title>
             </Modal.Header>

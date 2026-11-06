@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import {Button,Table,Container,Form,InputGroup,Row, Col,Pagination,Toast,ToastContainer,Spinner,Modal,  Badge,  Card,  Alert,} from "react-bootstrap";
+import {Button,Table,Container,Form,InputGroup,Row, Col,Pagination,Toast,ToastContainer,Spinner,Modal,  Badge,  Card,  Alert, Dropdown,} from "react-bootstrap";
 import {  FaEdit,  FaHistory,  FaPlus,  FaCheck,  FaPause,  FaTrash,  FaEye,} from "react-icons/fa";
 import { Entreprise } from "@/types/entreprise";
 import LicenceStatusBadge from "@/components/licence/LicenceStatusBadge";
@@ -62,6 +62,8 @@ export default function LicencesPage() {
 
   const [trialDays, setTrialDays] = useState(14);
   const [purchasePrice, setPurchasePrice] = useState(100000);
+  const [purchasePaymentMethod, setPurchasePaymentMethod] = useState<string>("especes");
+  const [maintenancePaymentMethod, setMaintenancePaymentMethod] = useState<string>("especes");
   const [computedPurchaseAmount, setComputedPurchaseAmount] = useState<number | null>(null);
   const [computedMaintenanceAmount, setComputedMaintenanceAmount] = useState<number | null>(null);
   const [selectedModules, setSelectedModules] = useState<LicenceModuleCode[]>(
@@ -70,6 +72,8 @@ export default function LicencesPage() {
   const [pendingOrders, setPendingOrders] = useState<LicenceOrderLight[]>([]);
   const [editedAmounts, setEditedAmounts] = useState<Record<string, number>>({});
   const [history, setHistory] = useState<LicenceHistoryEntry[]>([]);
+  const [historyOrders, setHistoryOrders] = useState<any[]>([]);
+  const [regenerating, setRegenerating] = useState(false);
 
   useEffect(() => {
     fetchEntreprises();
@@ -178,12 +182,20 @@ export default function LicencesPage() {
   const openHistoryModal = async (entreprise: Entreprise) => {
     setSelectedEntreprise(entreprise);
     setHistory([]);
+    setHistoryOrders([]);
     setShowHistoryModal(true);
     try {
-      const res = await fetch(`/api/licence/history/${entreprise._id}`);
-      if (res.ok) {
-        const data = await res.json();
+      const [historyRes, ordersRes] = await Promise.all([
+        fetch(`/api/licence/history/${entreprise._id}`),
+        fetch(`/api/licence/orders?entrepriseId=${entreprise._id}`)
+      ]);
+      if (historyRes.ok) {
+        const data = await historyRes.json();
         setHistory(data);
+      }
+      if (ordersRes.ok) {
+        const data = await ordersRes.json();
+        setHistoryOrders(data);
       }
     } catch {
       showNotification("Erreur chargement historique", "danger");
@@ -235,6 +247,27 @@ export default function LicencesPage() {
     setSelectedModules([]);
   };
 
+  const regenerateAllContracts = async () => {
+    if (!confirm("Voulez-vous vraiment régénérer tous les contrats pour toutes les entreprises ?")) return;
+    setRegenerating(true);
+    try {
+      const res = await fetch("/api/licence/regenerate-contracts", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        showNotification(
+          `${data.regenerated} contrat(s) régénéré(s), ${data.errors} erreur(s) sur ${data.total} entreprises`,
+          data.errors > 0 ? "info" : "success"
+        );
+      } else {
+        showNotification(data.error || "Erreur", "danger");
+      }
+    } catch {
+      showNotification("Erreur réseau", "danger");
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   const ModuleSelector = () => (
     <Form.Group>
       <div className="d-flex justify-content-between align-items-center mb-2">
@@ -281,6 +314,31 @@ export default function LicencesPage() {
     return new Date(date).toLocaleDateString("fr-FR");
   };
 
+  // open a pdf url in new window and try to trigger print
+  const openAndPrint = (url: string) => {
+    try {
+      const w = window.open(url, "_blank");
+      if (!w) return;
+      const interval = setInterval(() => {
+        try {
+          if (w.document && (w.document.readyState === "complete" || w.document.body)) {
+            clearInterval(interval as any);
+            try {
+              w.focus();
+              w.print();
+            } catch (e) {
+              // ignore
+            }
+          }
+        } catch (e) {
+          clearInterval(interval as any);
+        }
+      }, 500);
+    } catch (e) {
+      // ignore
+    }
+  };
+
   return (
     <div className="flex-grow-1 bg-light">
       <Container className="py-4">
@@ -294,19 +352,30 @@ export default function LicencesPage() {
                 Activez des essais, gérez les achats, les renouvellements et la maintenance.
               </p>
             </div>
-            <Button
-              variant="light"
-              className="fw-semibold shadow-sm"
-              onClick={openOrdersModal}
-            >
-              <FaCheck className="me-2 text-warning" />
-              Commandes à valider
-              {pendingOrders.length > 0 && (
-                <Badge bg="danger" className="ms-2">
-                  {pendingOrders.length}
-                </Badge>
-              )}
-            </Button>
+            <div className="d-flex gap-2">
+              <Button
+                variant="warning"
+                className="fw-semibold shadow-sm"
+                onClick={regenerateAllContracts}
+                disabled={regenerating}
+              >
+                {regenerating ? <Spinner animation="border" size="sm" /> : <i className="bi bi-arrow-clockwise me-2"></i>}
+                Régénérer les contrats
+              </Button>
+              <Button
+                variant="light"
+                className="fw-semibold shadow-sm"
+                onClick={openOrdersModal}
+              >
+                <FaCheck className="me-2 text-warning" />
+                Commandes à valider
+                {pendingOrders.length > 0 && (
+                  <Badge bg="danger" className="ms-2">
+                    {pendingOrders.length}
+                  </Badge>
+                )}
+              </Button>
+            </div>
           </Card.Body>
         </Card>
 
@@ -554,7 +623,7 @@ export default function LicencesPage() {
         )}
 
         {/* Modal Essai */}
-        <Modal show={showTrialModal} onHide={() => setShowTrialModal(false)} centered size="lg">
+        <Modal show={showTrialModal} onHide={() => setShowTrialModal(false)} centered size="lg" backdrop="static" keyboard={false}>
           <Modal.Header closeButton className="bg-info text-white">
             <Modal.Title>
               <i className="bi bi-rocket-takeoff me-2"></i>
@@ -608,11 +677,10 @@ export default function LicencesPage() {
 
         {/* Modal Achat de licence (perpétuelle) */}
         <Modal
-          show={showPurchaseModal}
-          onHide={() => setShowPurchaseModal(false)}
-          centered
-          size="lg"
-        >
+ show={showPurchaseModal}
+ onHide={() => setShowPurchaseModal(false)}
+ centered
+ size="lg" backdrop="static" keyboard={false}>
           <Modal.Header closeButton className="bg-success text-white">
             <Modal.Title>
               <i className="bi bi-credit-card me-2"></i>
@@ -644,6 +712,25 @@ export default function LicencesPage() {
                       )}
                     </Form.Group>
                   </Col>
+                  <Col md={12}>
+                    <Form.Group>
+                      <Form.Label className="fw-semibold">Mode de paiement</Form.Label>
+                      <Form.Select
+                        value={purchasePaymentMethod}
+                        onChange={(e) => setPurchasePaymentMethod(e.target.value)}
+                      >
+                        <option value="especes">Espèces</option>
+                        <option value="cheque">Chèque</option>
+                        <option value="bank_transfer">Virement bancaire</option>
+                        <option value="wave">Mobile Money (Wave)</option>
+                        <option value="mobile_money">Mobile Money (autre)</option>
+                        <option value="carte">Carte bancaire</option>
+                      </Form.Select>
+                      <Form.Text className="text-muted">
+                        Ce mode apparaîtra dans les « Détails du règlement » du reçu de paiement.
+                      </Form.Text>
+                    </Form.Group>
+                  </Col>
                 </Row>
                 <ModuleSelector />
               </Card.Body>
@@ -665,6 +752,7 @@ export default function LicencesPage() {
                       price: purchasePrice,
                       currency: "XOF",
                       modules: selectedModules,
+                      paymentMethod: purchasePaymentMethod,
                     },
                     "Licence perpétuelle activée",
                     () => setShowPurchaseModal(false)
@@ -679,11 +767,10 @@ export default function LicencesPage() {
 
         {/* Modal Modification des modules (licence déjà achetée) */}
         <Modal
-          show={showModulesModal}
-          onHide={() => setShowModulesModal(false)}
-          centered
-          size="lg"
-        >
+ show={showModulesModal}
+ onHide={() => setShowModulesModal(false)}
+ centered
+ size="lg" backdrop="static" keyboard={false}>
           <Modal.Header closeButton className="bg-warning">
             <Modal.Title>
               <i className="bi bi-grid-3x3-gap me-2"></i>
@@ -728,10 +815,9 @@ export default function LicencesPage() {
 
         {/* Modal Maintenance */}
         <Modal
-          show={showMaintenanceModal}
-          onHide={() => setShowMaintenanceModal(false)}
-          centered
-        >
+ show={showMaintenanceModal}
+ onHide={() => setShowMaintenanceModal(false)}
+ centered backdrop="static" keyboard={false}>
           <Modal.Header closeButton className="bg-primary text-white">
             <Modal.Title>
               <i className="bi bi-tools me-2"></i>
@@ -750,6 +836,20 @@ export default function LicencesPage() {
                     Montant : {computedMaintenanceAmount.toLocaleString("fr-FR")} XOF
                   </Form.Text>
                 )}
+                <Form.Group className="mt-3">
+                  <Form.Label className="fw-semibold">Mode de paiement</Form.Label>
+                  <Form.Select
+                    value={maintenancePaymentMethod}
+                    onChange={(e) => setMaintenancePaymentMethod(e.target.value)}
+                  >
+                    <option value="especes">Espèces</option>
+                    <option value="cheque">Chèque</option>
+                    <option value="bank_transfer">Virement bancaire</option>
+                    <option value="wave">Mobile Money (Wave)</option>
+                    <option value="mobile_money">Mobile Money (autre)</option>
+                    <option value="carte">Carte bancaire</option>
+                  </Form.Select>
+                </Form.Group>
               </Card.Body>
             </Card>
           </Modal.Body>
@@ -766,6 +866,7 @@ export default function LicencesPage() {
                     {
                       entrepriseId: selectedEntreprise._id,
                       price: computedMaintenanceAmount ?? undefined,
+                      paymentMethod: maintenancePaymentMethod,
                     },
                     "Maintenance enregistrée",
                     () => setShowMaintenanceModal(false)
@@ -780,16 +881,16 @@ export default function LicencesPage() {
 
         {/* Modal Historique */}
         <Modal
-          show={showHistoryModal}
-          onHide={() => setShowHistoryModal(false)}
-          centered
-          size="lg"
-        >
+ show={showHistoryModal}
+ onHide={() => setShowHistoryModal(false)}
+ centered
+ size="xl" backdrop="static" keyboard={false}>
           <Modal.Header closeButton>
             <Modal.Title>Historique licence - {selectedEntreprise?.NomSociete}</Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            <Table striped bordered hover size="sm">
+            <h6 className="fw-bold mb-3">Journal des événements</h6>
+            <Table striped bordered hover size="sm" className="mb-4">
               <thead>
                 <tr>
                   <th>Date</th>
@@ -819,11 +920,98 @@ export default function LicencesPage() {
                 )}
               </tbody>
             </Table>
+
+            <h6 className="fw-bold mb-3">Commandes et contrats</h6>
+            <Table striped bordered hover size="sm">
+              <thead>
+                <tr>
+                  <th>Référence</th>
+                  <th>Action</th>
+                  <th>Statut</th>
+                  <th>Montant</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {historyOrders.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} className="text-center">
+                      Aucune commande.
+                    </td>
+                  </tr>
+                ) : (
+                  historyOrders.map((o) => (
+                    <tr key={o._id}>
+                      <td><strong>{o.reference || `CMD-${new Date(o.createdAt).getFullYear()}-${String(o._id).slice(-6).toUpperCase()}`}</strong></td>
+                      <td>
+                        <Badge bg={o.action === "purchase" ? "primary" : "info"}>
+                          {o.action === "purchase" ? "Achat licence" : "Maintenance"}
+                        </Badge>
+                      </td>
+                      <td>
+                        <Badge bg={
+                          o.status === "validated" ? "success" :
+                          o.status === "paid_awaiting_validation" ? "warning" :
+                          o.status === "pending" ? "secondary" : "danger"
+                        }>
+                          {o.status}
+                        </Badge>
+                      </td>
+                      <td>{o.amount?.toLocaleString?.("fr-FR") || o.amount} {o.currency}</td>
+                      <td>
+                        <Dropdown drop="start">
+                          <Dropdown.Toggle variant="outline-secondary" size="sm">
+                            Imprimer
+                          </Dropdown.Toggle>
+                          <Dropdown.Menu>
+                            {o.orderFormUrl && (
+                              <Dropdown.Item onClick={() => window.open(o.orderFormUrl, "_blank")}>
+                                Voir bon de commande
+                              </Dropdown.Item>
+                            )}
+                            {o.acquisitionContractUrl && (
+                              <>
+                                <Dropdown.Item onClick={() => window.open(o.acquisitionContractUrl, "_blank")}>
+                                  Voir contrat d'acquisition
+                                </Dropdown.Item>
+                                <Dropdown.Item onClick={() => openAndPrint(o.acquisitionContractUrl)}>
+                                  Imprimer contrat d'acquisition
+                                </Dropdown.Item>
+                              </>
+                            )}
+                            {o.maintenanceContractUrl && (
+                              <>
+                                <Dropdown.Item onClick={() => window.open(o.maintenanceContractUrl, "_blank")}>
+                                  Voir contrat de maintenance
+                                </Dropdown.Item>
+                                <Dropdown.Item onClick={() => openAndPrint(o.maintenanceContractUrl)}>
+                                  Imprimer contrat de maintenance
+                                </Dropdown.Item>
+                              </>
+                            )}
+                            {o.paymentReceiptUrl && (
+                              <>
+                                <Dropdown.Item onClick={() => window.open(o.paymentReceiptUrl, "_blank")}>
+                                  Voir reçu de paiement
+                                </Dropdown.Item>
+                                <Dropdown.Item onClick={() => openAndPrint(o.paymentReceiptUrl)}>
+                                  Imprimer reçu de paiement
+                                </Dropdown.Item>
+                              </>
+                            )}
+                          </Dropdown.Menu>
+                        </Dropdown>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </Table>
           </Modal.Body>
         </Modal>
 
         {/* Modal Commandes à valider */}
-        <Modal show={showOrdersModal} onHide={() => setShowOrdersModal(false)} centered size="xl">
+        <Modal show={showOrdersModal} onHide={() => setShowOrdersModal(false)} centered size="xl" backdrop="static" keyboard={false}>
           <Modal.Header closeButton className="bg-warning">
             <Modal.Title>
               <i className="bi bi-basket me-2"></i>
@@ -854,10 +1042,9 @@ export default function LicencesPage() {
         </ToastContainer>
         {/* Confirmation modal for super-admin actions */}
         <Modal
-          show={showConfirmModal}
-          onHide={() => setShowConfirmModal(false)}
-          centered
-        >
+ show={showConfirmModal}
+ onHide={() => setShowConfirmModal(false)}
+ centered backdrop="static" keyboard={false}>
           <Modal.Header closeButton>
             <Modal.Title>{confirmPayload?.title || "Confirmer l'action"}</Modal.Title>
           </Modal.Header>

@@ -192,13 +192,12 @@ export default function ListeFactureModal({
 
     return (
         <Modal
-            show={show}
-            onHide={onHide}
-            size="xl"
-            centered
-            dialogClassName="modal-fullscreen-lg-down"
-            style={{ maxWidth: '95vw', margin: 'auto' }}
-        >
+ show={show}
+ onHide={onHide}
+ size="xl"
+ centered
+ dialogClassName="modal-fullscreen-lg-down"
+ style={{ maxWidth: '95vw', margin: 'auto' }} backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title>Liste des factures</Modal.Title>
             </Modal.Header>
@@ -322,12 +321,11 @@ export default function ListeFactureModal({
 
             {/* Modal pour l'aperçu du reçu */}
             <Modal
-                show={showRecuModal}
-                onHide={handleCloseRecuModal}
-                size="xl"
-                centered
-                fullscreen="lg-down"
-            >
+ show={showRecuModal}
+ onHide={handleCloseRecuModal}
+ size="xl"
+ centered
+ fullscreen="lg-down" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Reçu de pharmacie</Modal.Title>
                 </Modal.Header>

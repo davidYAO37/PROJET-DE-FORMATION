@@ -189,9 +189,9 @@ export default function Home() {
 
   const stats = [
     { value: '10+', label: 'Services intégrés' },
-    { value: '63+', label: 'Modules de données' },
-    { value: '100%', label: 'Sécurisé' },
-    { value: '24/7', label: 'Disponibilité' },
+    { value: '30+', label: 'Modules de données' },
+    { value: '99,99%', label: 'Sécurisé' },
+    { value: '24/24', label: 'Disponibilité' },
   ];
 
   const howItWorks = [
@@ -292,7 +292,7 @@ export default function Home() {
                       <HeartPulse size={22} color="#198754" />
                     </div>
                     <div>
-                      <p className="mb-0 fw-bold text-dark">+150</p>
+                      <p className="mb-0 fw-bold text-dark">+1500</p>
                       <p className="mb-0 small text-muted">Patients suivis</p>
                     </div>
                   </div>

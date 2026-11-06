@@ -555,11 +555,9 @@ const PointCaisseModal: React.FC<PointCaisseModalProps> = ({ show, onHide }) => 
 
   return (
     <Modal
-      show={show}
-      onHide={onHide}
-      size="xl"
-      backdrop="static"
-    >
+ show={show}
+ onHide={onHide}
+ size="xl" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title className="d-flex align-items-center">
           <FaCalendarAlt className="me-2" />

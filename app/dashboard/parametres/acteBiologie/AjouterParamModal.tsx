@@ -179,7 +179,7 @@ export default function AjouterParamModal({ show, onHide, acteSelectionne, onSav
   return (
     <>
       {/* Modal principal pour ajouter des paramètres à un acte */}
-      <Modal show={show} onHide={onHide} size="xl">
+      <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-primary text-white">
           <Modal.Title>
             <FaPlus className="me-2" />

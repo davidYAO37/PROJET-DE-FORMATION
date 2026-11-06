@@ -27,7 +27,7 @@ export default function ModifierSociete({ show, onHide, data, onSave }: Props) {
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier Société Partenaire</Modal.Title>
             </Modal.Header>

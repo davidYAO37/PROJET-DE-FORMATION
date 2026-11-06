@@ -115,7 +115,7 @@ export default function AjouterParamBiochimieModal({ show, onHide, onSave, onAdd
 
   return (
     <>
-      <Modal show={show} onHide={onHide} size="xl">
+      <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>Ajouter des Paramètres Biochimie</Modal.Title>
         </Modal.Header>

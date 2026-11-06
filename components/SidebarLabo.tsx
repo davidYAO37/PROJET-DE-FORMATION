@@ -228,15 +228,14 @@ export default function SidebarLabo() {
             </aside>
             {/* Modal pour les paramètres examens et biochimie */}
             <Modal
-                show={showParametreExamenModal}
-                onHide={() => setShowParametreExamenModal(false)}
-                centered
-                size="xl"
-                dialogClassName="modal-xxl"
-                scrollable
-                contentClassName="border-0 shadow-lg rounded-4"
-                className="modal-modern"
-            >
+ show={showParametreExamenModal}
+ onHide={() => setShowParametreExamenModal(false)}
+ centered
+ size="xl"
+ dialogClassName="modal-xxl"
+ scrollable
+ contentClassName="border-0 shadow-lg rounded-4"
+ className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Paramètres Examens</Modal.Title>
                 </Modal.Header>
@@ -248,15 +247,14 @@ export default function SidebarLabo() {
                 </Modal.Footer>
             </Modal>
             <Modal
-                show={showParametreBiochimieModal}
-                onHide={() => setShowParametreBiochimieModal(false)}
-                centered
-                size="xl"
-                dialogClassName="modal-xxl"
-                scrollable
-                contentClassName="border-0 shadow-lg rounded-4"
-                className="modal-modern"
-            >
+ show={showParametreBiochimieModal}
+ onHide={() => setShowParametreBiochimieModal(false)}
+ centered
+ size="xl"
+ dialogClassName="modal-xxl"
+ scrollable
+ contentClassName="border-0 shadow-lg rounded-4"
+ className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Paramètres Biochimie</Modal.Title>
                 </Modal.Header>
@@ -276,15 +274,14 @@ export default function SidebarLabo() {
             />
             {/* Modal des résultats validés */}
             <Modal
-                show={showResultatsValidésModal}
-                onHide={() => setShowResultatsValidésModal(false)}
-                centered
-                size="xl"
-                dialogClassName="modal-xxl"
-                scrollable
-                contentClassName="border-0 shadow-lg rounded-4"
-                className="modal-modern"
-            >
+ show={showResultatsValidésModal}
+ onHide={() => setShowResultatsValidésModal(false)}
+ centered
+ size="xl"
+ dialogClassName="modal-xxl"
+ scrollable
+ contentClassName="border-0 shadow-lg rounded-4"
+ className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Résultats Validés</Modal.Title>
                 </Modal.Header>
@@ -298,15 +295,14 @@ export default function SidebarLabo() {
 
             {/* Modal automate */}
             <Modal
-                show={showAutomateModal}
-                onHide={() => setShowAutomateModal(false)}
-                centered
-                size="xl"
-                dialogClassName="modal-xxl"
-                scrollable
-                contentClassName="border-0 shadow-lg rounded-4"
-                className="modal-modern"
-            >
+ show={showAutomateModal}
+ onHide={() => setShowAutomateModal(false)}
+ centered
+ size="xl"
+ dialogClassName="modal-xxl"
+ scrollable
+ contentClassName="border-0 shadow-lg rounded-4"
+ className="modal-modern" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Automate</Modal.Title>
                 </Modal.Header>

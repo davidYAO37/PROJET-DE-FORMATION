@@ -315,13 +315,12 @@ export default function FacturesNonSoldesModal({ show, onHide, onPaiementSuccess
 
   return (
     <Modal
-      show={show}
-      onHide={onHide}
-      size="xl"
-      centered
-      backdrop="static"
-      dialogClassName="modal-90w"
-    >
+ show={show}
+ onHide={onHide}
+ size="xl"
+ centered
+ 
+ dialogClassName="modal-90w" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title className="d-flex align-items-center gap-2">
           <FaMoneyBillWave size={24} />
@@ -516,12 +515,10 @@ export default function FacturesNonSoldesModal({ show, onHide, onPaiementSuccess
 
       {/* Modal de paiement */}
       <Modal
-        show={showPaiementModal}
-        onHide={() => setShowPaiementModal(false)}
-        size="lg"
-        centered
-        backdrop="static"
-      >
+ show={showPaiementModal}
+ onHide={() => setShowPaiementModal(false)}
+ size="lg"
+ centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-success text-white">
           <Modal.Title>
             <FaMoneyBillWave className="me-2" />

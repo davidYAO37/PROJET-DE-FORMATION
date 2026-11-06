@@ -149,7 +149,7 @@ export default function FicheComptePatient({ show, onHide, patient, onSaved }: F
       };
 
   return (
-    <Modal show={show} onHide={onHide} size="lg" centered backdrop="static">
+    <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" keyboard={false}>
       <Modal.Header closeButton className={isPaiement ? 'bg-success text-white' : 'bg-danger text-white'}>
         <Modal.Title className="d-flex align-items-center gap-2">
           <FaWallet />

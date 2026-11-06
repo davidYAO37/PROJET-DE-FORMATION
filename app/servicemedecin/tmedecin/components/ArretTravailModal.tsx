@@ -405,7 +405,7 @@ export default function ArretTravailModal({
 
   return (
     <>
-      <Modal show={show} onHide={onHide} size="xl">
+      <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-warning text-dark">
           <Modal.Title className="d-flex align-items-center">
             <FaBriefcaseMedical className="me-2" />
@@ -524,7 +524,7 @@ export default function ArretTravailModal({
       </Modal>
 
       {/* Modal Ajout/Modification */}
-      <Modal show={showAddModal} onHide={() => setShowAddModal(false)}>
+      <Modal show={showAddModal} onHide={() => setShowAddModal(false)} backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             {editingArret ? 'Modifier l\'Arrêt de Travail' : 'Nouvel Arrêt de Travail'}

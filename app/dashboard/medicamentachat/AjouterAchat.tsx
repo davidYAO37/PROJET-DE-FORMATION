@@ -522,7 +522,7 @@ export default function AjouterAchat({
   }, [show]);
 
   return (
-    <Modal show={show} onHide={onHide} size="xl">
+    <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
       <Modal.Header closeButton>
         <Modal.Title>Nouvel approvisionnement</Modal.Title>
       </Modal.Header>

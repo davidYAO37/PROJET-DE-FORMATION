@@ -390,7 +390,7 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl" centered scrollable>
+        <Modal show={show} onHide={onHide} size="xl" centered scrollable backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="bg-primary text-white">
                 <Modal.Title className="d-flex align-items-center gap-2">
                     <FaUser />
@@ -761,7 +761,7 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
             </Modal.Footer>
 
             {/* Modal pour voir le reçu de consultation - VRAI COMPOSANT */}
-            <Modal show={showRecuModal} onHide={() => setShowRecuModal(false)} size="lg" centered>
+            <Modal show={showRecuModal} onHide={() => setShowRecuModal(false)} size="lg" centered backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Reçu de consultation</Modal.Title>
                 </Modal.Header>
@@ -779,11 +779,9 @@ export default function PatientServicesModal({ show, onHide, patientId }: Patien
 
             {/* Modal pour facturer la consultation - VRAI COMPOSANT (comme dans listefactures) */}
             <Modal
-                show={showUpdateModal}
-                onHide={handleCloseUpdateModal}
-                size="xl"
-                backdrop="static"
-            >
+ show={showUpdateModal}
+ onHide={handleCloseUpdateModal}
+ size="xl" backdrop="static" keyboard={false}>
                 <Modal.Body className="p-0">
                     <FicheConsultationUpdateCaisse
                         patient={selectedPatient || null}

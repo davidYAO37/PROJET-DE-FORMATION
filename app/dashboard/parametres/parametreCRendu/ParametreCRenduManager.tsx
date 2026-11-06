@@ -238,7 +238,7 @@ const ParametreCRenduManager: React.FC<ParametreCRenduManagerProps> = ({ onParam
       </Card>
 
       {/* Modal pour ajouter/modifier */}
-      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+      <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>
             {editingParametre ? (

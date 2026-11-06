@@ -120,7 +120,7 @@ export default function ListeExamenHospitModalAccueil({
 
     return (
         <>
-            <Modal show={show} onHide={onHide} size="lg" centered scrollable>
+            <Modal show={show} onHide={onHide} size="lg" centered scrollable backdrop="static" keyboard={false}>
                 <Modal.Header closeButton className="bg-primary text-white">
                     <Modal.Title>
                         Examens d'hospitalisation du patient : {selectedPatient ? `${selectedPatient.Nom} ${selectedPatient.Prenoms}` : patientId}

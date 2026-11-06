@@ -580,12 +580,11 @@ export default function AutomatExamen() {
 
             {/* Modal Historique des téléchargements */}
             <Modal
-                show={showHistorique}
-                onHide={() => setShowHistorique(false)}
-                centered
-                size="xl"
-                scrollable
-            >
+ show={showHistorique}
+ onHide={() => setShowHistorique(false)}
+ centered
+ size="xl"
+ scrollable backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>
                         <ClockHistory className="me-2" />

@@ -429,7 +429,7 @@ export default function TableauDeBordFacturation() {
       </div>
 
       {/* ===== MODAL ANNULER ===== */}
-      <Modal show={!!modalAnnuler} onHide={() => setModalAnnuler(null)} centered size="sm">
+      <Modal show={!!modalAnnuler} onHide={() => setModalAnnuler(null)} centered size="sm" backdrop="static" keyboard={false}>
         <Modal.Header closeButton style={{ background: '#ffebee', borderBottom: '2px solid #ef9a9a' }}>
           <Modal.Title style={{ fontSize: '0.85rem', fontWeight: 800, color: '#b71c1c' }}>
             <i className="bi bi-exclamation-triangle-fill me-2"></i>Annuler le bordereau
@@ -453,7 +453,7 @@ export default function TableauDeBordFacturation() {
       </Modal>
 
       {/* ===== MODAL DÉPOSER ===== */}
-      <Modal show={!!modalDeposer} onHide={() => setModalDeposer(null)} centered size="sm">
+      <Modal show={!!modalDeposer} onHide={() => setModalDeposer(null)} centered size="sm" backdrop="static" keyboard={false}>
         <Modal.Header closeButton style={{ background: '#e3f2fd', borderBottom: '2px solid #90caf9' }}>
           <Modal.Title style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1565c0' }}>
             <i className="bi bi-send-fill me-2"></i>Déposer le bordereau
@@ -477,7 +477,7 @@ export default function TableauDeBordFacturation() {
       </Modal>
 
       {/* ===== MODAL RECOUVRER ===== */}
-      <Modal show={!!modalRecouvrer} onHide={() => setModalRecouvrer(null)} centered>
+      <Modal show={!!modalRecouvrer} onHide={() => setModalRecouvrer(null)} centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton style={{ background: '#e8f5e9', borderBottom: '2px solid #a5d6a7' }}>
           <Modal.Title style={{ fontSize: '0.85rem', fontWeight: 800, color: '#2e7d32' }}>
             <i className="bi bi-cash-stack me-2"></i>Recouvrer le bordereau

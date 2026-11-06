@@ -334,7 +334,7 @@ export default function PatientsHospitalises() {
 
       {/* Modal Prescriptions à exécuter */}
       {selectedHospit && (
-        <Modal show={showPrescriptions} onHide={() => setShowPrescriptions(false)} size="xl" centered>
+        <Modal show={showPrescriptions} onHide={() => setShowPrescriptions(false)} size="xl" centered backdrop="static" keyboard={false}>
           <Modal.Header closeButton className="bg-success text-white">
             <Modal.Title>
               <FaPrescription className="me-2" />
@@ -347,7 +347,7 @@ export default function PatientsHospitalises() {
         </Modal>
       )}
       {/* Modal de confirmation de sortie */}
-      <Modal show={showSortieModal} onHide={() => setShowSortieModal(false)} centered>
+      <Modal show={showSortieModal} onHide={() => setShowSortieModal(false)} centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-danger text-white">
           <Modal.Title>
             <FaSignOutAlt className="me-2" />

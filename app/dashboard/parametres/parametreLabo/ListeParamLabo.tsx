@@ -293,7 +293,7 @@ const ListeParamLabo: React.FC<Props> = ({ ParamLabos, onEdit, onDelete, onAdd }
             )}
 
             {/* Import Confirmation Modal */}
-            <Modal show={showImportModal} onHide={() => setShowImportModal(false)}>
+            <Modal show={showImportModal} onHide={() => setShowImportModal(false)} backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Confirmation d'importation</Modal.Title>
                 </Modal.Header>
@@ -311,7 +311,7 @@ const ListeParamLabo: React.FC<Props> = ({ ParamLabos, onEdit, onDelete, onAdd }
             </Modal>
 
             {/* Import Validation Modal */}
-            <Modal show={showValidationModal} onHide={() => setShowValidationModal(false)} size="lg">
+            <Modal show={showValidationModal} onHide={() => setShowValidationModal(false)} size="lg" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Validation de l'importation</Modal.Title>
                 </Modal.Header>

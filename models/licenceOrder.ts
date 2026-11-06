@@ -7,7 +7,14 @@ export type LicenceOrderStatus =
   | "validated"
   | "failed"
   | "cancelled";
-export type LicencePaymentMethod = "wave" | "manual" | "bank_transfer";
+export type LicencePaymentMethod =
+  | "wave"
+  | "manual"
+  | "especes"
+  | "cheque"
+  | "bank_transfer"
+  | "carte"
+  | "mobile_money";
 
 export interface ILicenceOrder extends Document {
   reference?: string;
@@ -32,6 +39,7 @@ export interface ILicenceOrder extends Document {
   wavePaymentUrl?: string;
   waveTransactionId?: string;
   paidAt?: Date;
+  montantPaye?: number;
   validatedBy?: Types.ObjectId;
   validatedAt?: Date;
   cancelledBy?: Types.ObjectId;
@@ -90,13 +98,15 @@ const LicenceOrderSchema = new Schema<ILicenceOrder>(
     },
     paymentMethod: {
       type: String,
-      enum: ["wave", "manual", "bank_transfer"],
+      enum: ["wave", "manual", "especes", "cheque", "bank_transfer", "carte", "mobile_money"],
       required: true,
     },
     waveCheckoutId: { type: String },
     wavePaymentUrl: { type: String },
     waveTransactionId: { type: String },
     paidAt: { type: Date },
+    // Montant réellement encaissé à la validation (peut être inférieur à amount en cas d'acompte).
+    montantPaye: { type: Number, min: 0 },
     validatedBy: { type: Schema.Types.ObjectId, ref: "User" },
     validatedAt: { type: Date },
     cancelledBy: { type: Schema.Types.ObjectId, ref: "User" },

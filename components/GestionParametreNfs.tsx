@@ -184,7 +184,7 @@ export default function GestionParametreNfs() {
                 </Card.Body>
             </Card>
 
-            <Modal show={showModal} onHide={() => setShowModal(false)} centered>
+            <Modal show={showModal} onHide={() => setShowModal(false)} centered backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>{editItem ? 'Modifier' : 'Nouveau'} Paramètre NFS</Modal.Title>
                 </Modal.Header>

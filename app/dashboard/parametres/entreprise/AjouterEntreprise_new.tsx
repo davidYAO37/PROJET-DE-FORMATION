@@ -79,13 +79,10 @@ export default function AjouterEntreprise({
 
   return (
     <Modal 
-      show={show} 
-      onHide={onHide} 
-      centered
-      size="lg"
-      backdrop="static"
-      keyboard={false}
-    >
+ show={show} 
+ onHide={onHide} 
+ centered
+ size="lg" backdrop="static" keyboard={false}>
       <Modal.Header 
         closeButton 
         className="bg-primary text-white border-0"

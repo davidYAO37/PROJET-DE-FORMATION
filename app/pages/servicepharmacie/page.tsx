@@ -258,7 +258,7 @@ function PageContent() {
             />
 
             {/* Modal détail lignes approvisionnement */}
-            <Modal show={!!detailAppro} onHide={() => setDetailAppro(null)} size="xl">
+            <Modal show={!!detailAppro} onHide={() => setDetailAppro(null)} size="xl" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>
                         Lignes — {detailAppro && formatDate(detailAppro.DateAppro)}

@@ -12,6 +12,8 @@ import {
   Form,
   Badge,
   ListGroup,
+  Table,
+  Dropdown,
 } from "react-bootstrap";
 import { LICENCE_MODULES, LicenceModuleCode } from "@/lib/licenceModules";
 import { useAuthUser } from '@/hooks/useAuthUser';
@@ -471,53 +473,85 @@ export default function LicencePage() {
               {orders.length === 0 ? (
                 <div>Aucune commande</div>
               ) : (
-                <ListGroup>
-                  {orders.map((o) => (
-                    <ListGroup.Item key={o._id} className="d-flex justify-content-between align-items-center">
-                      <div>
-                        <div><strong>{o.reference}</strong> — {o.entrepriseName || "—"} — {o.action} — {o.status}</div>
-                        <div className="small text-muted">Montant: {o.amount?.toLocaleString?.("fr-FR") || o.amount} {o.currency}</div>
-                      </div>
-                      <div className="d-flex gap-2">
-                        {o.orderFormUrl && (
-                          <Button variant="outline-primary" size="sm" onClick={() => window.open(o.orderFormUrl, "_blank")}>
-                            Voir bon de commande
-                          </Button>
-                        )}
-                        {o.acquisitionContractUrl && (
-                          <>
-                            <Button variant="outline-secondary" size="sm" onClick={() => window.open(o.acquisitionContractUrl, "_blank")}>
-                              Voir contrat
-                            </Button>
-                            <Button variant="outline-success" size="sm" onClick={() => openAndPrint(o.acquisitionContractUrl)}>
+                <Table bordered hover responsive size="sm">
+                  <thead className="table-light">
+                    <tr>
+                      <th>Référence</th>
+                      <th>Entreprise</th>
+                      <th>Action</th>
+                      <th>Statut</th>
+                      <th>Montant</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {orders.map((o) => (
+                      <tr key={o._id}>
+                        <td><strong>{o.reference}</strong></td>
+                        <td>{o.entrepriseName || "—"}</td>
+                        <td>
+                          <Badge bg={o.action === "purchase" ? "primary" : "info"}>
+                            {o.action === "purchase" ? "Achat licence" : "Maintenance"}
+                          </Badge>
+                        </td>
+                        <td>
+                          <Badge bg={
+                            o.status === "validated" ? "success" :
+                            o.status === "paid_awaiting_validation" ? "warning" :
+                            o.status === "pending" ? "secondary" : "danger"
+                          }>
+                            {o.status}
+                          </Badge>
+                        </td>
+                        <td>{o.amount?.toLocaleString?.("fr-FR") || o.amount} {o.currency}</td>
+                        <td>
+                          <Dropdown drop="start">
+                            <Dropdown.Toggle variant="outline-secondary" size="sm">
                               Imprimer
-                            </Button>
-                          </>
-                        )}
-                        {o.maintenanceContractUrl && (
-                          <>
-                            <Button variant="outline-info" size="sm" onClick={() => window.open(o.maintenanceContractUrl, "_blank")}>
-                              Contrat maintenance
-                            </Button>
-                            <Button variant="outline-success" size="sm" onClick={() => openAndPrint(o.maintenanceContractUrl)}>
-                              Imprimer
-                            </Button>
-                          </>
-                        )}
-                        {o.paymentReceiptUrl && (
-                          <>
-                            <Button variant="outline-warning" size="sm" onClick={() => window.open(o.paymentReceiptUrl, "_blank")}>
-                              Voir reçu
-                            </Button>
-                            <Button variant="outline-dark" size="sm" onClick={() => openAndPrint(o.paymentReceiptUrl)}>
-                              Imprimer reçu
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </ListGroup.Item>
-                  ))}
-                </ListGroup>
+                            </Dropdown.Toggle>
+                            <Dropdown.Menu>
+                              {o.orderFormUrl && (
+                                <Dropdown.Item onClick={() => window.open(o.orderFormUrl, "_blank")}>
+                                  Voir bon de commande
+                                </Dropdown.Item>
+                              )}
+                              {o.acquisitionContractUrl && (
+                                <>
+                                  <Dropdown.Item onClick={() => window.open(o.acquisitionContractUrl, "_blank")}>
+                                    Voir contrat d'acquisition
+                                  </Dropdown.Item>
+                                  <Dropdown.Item onClick={() => openAndPrint(o.acquisitionContractUrl)}>
+                                    Imprimer contrat d'acquisition
+                                  </Dropdown.Item>
+                                </>
+                              )}
+                              {o.maintenanceContractUrl && (
+                                <>
+                                  <Dropdown.Item onClick={() => window.open(o.maintenanceContractUrl, "_blank")}>
+                                    Voir contrat de maintenance
+                                  </Dropdown.Item>
+                                  <Dropdown.Item onClick={() => openAndPrint(o.maintenanceContractUrl)}>
+                                    Imprimer contrat de maintenance
+                                  </Dropdown.Item>
+                                </>
+                              )}
+                              {o.paymentReceiptUrl && (
+                                <>
+                                  <Dropdown.Item onClick={() => window.open(o.paymentReceiptUrl, "_blank")}>
+                                    Voir reçu de paiement
+                                  </Dropdown.Item>
+                                  <Dropdown.Item onClick={() => openAndPrint(o.paymentReceiptUrl)}>
+                                    Imprimer reçu de paiement
+                                  </Dropdown.Item>
+                                </>
+                              )}
+                            </Dropdown.Menu>
+                          </Dropdown>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </Table>
               )}
             </Card.Body>
           </Card>

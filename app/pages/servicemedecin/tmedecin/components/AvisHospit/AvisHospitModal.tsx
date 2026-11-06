@@ -399,7 +399,7 @@ export default function AvisHospitModal({
 
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" backdrop="static">
+    <Modal show={show} onHide={onHide} size="xl" backdrop="static" keyboard={false}>
       <Modal.Header closeButton className="bg-primary text-white">
         <Modal.Title className="d-flex align-items-center">
           <FaHospital className="me-2" />

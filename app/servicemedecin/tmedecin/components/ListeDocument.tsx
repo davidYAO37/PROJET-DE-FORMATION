@@ -136,7 +136,7 @@ export default function ListeDocument({ patientId, refreshKey, onAdd, onEdit, on
         </div>
       )}
 
-      <Modal show={!!previewDoc} onHide={() => setPreviewDoc(null)} size="lg" centered>
+      <Modal show={!!previewDoc} onHide={() => setPreviewDoc(null)} size="lg" centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton>
           <Modal.Title>Aperçu du document</Modal.Title>
         </Modal.Header>

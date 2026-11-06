@@ -577,11 +577,10 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
 
             {/* Modal d'impression du reçu */}
             <Modal
-                show={showPrintModal}
-                onHide={() => setShowPrintModal(false)}
-                size="lg"
-                centered
-            >
+ show={showPrintModal}
+ onHide={() => setShowPrintModal(false)}
+ size="lg"
+ centered backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>Reçu de consultation</Modal.Title>
                 </Modal.Header>

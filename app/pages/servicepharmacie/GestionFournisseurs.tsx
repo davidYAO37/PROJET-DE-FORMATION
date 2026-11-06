@@ -548,7 +548,7 @@ export default function GestionFournisseurs() {
             </Offcanvas>
 
             {/* Modal Ajout / Edition */}
-            <Modal show={showModal} onHide={() => setShowModal(false)} size="lg">
+            <Modal show={showModal} onHide={() => setShowModal(false)} size="lg" backdrop="static" keyboard={false}>
                 <Modal.Header closeButton>
                     <Modal.Title>
                         {editing ? "Modifier le fournisseur" : "Nouveau fournisseur"}

@@ -327,7 +327,7 @@ export default function PlanningModal({ show, onHide }: PlanningModalProps) {
   };
 
   return (
-    <Modal show={show} onHide={onHide} size="xl" className={styles.planningModal}>
+    <Modal show={show} onHide={onHide} size="xl" className={styles.planningModal} backdrop="static" keyboard={false}>
       <Modal.Header closeButton className={styles.modalHeader}>
         <Modal.Title className={styles.modalTitle}>
           <i className="bi bi-calendar-week me-2"></i>

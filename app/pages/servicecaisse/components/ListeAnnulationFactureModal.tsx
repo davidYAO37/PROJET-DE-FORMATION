@@ -258,7 +258,7 @@ export default function ListeAnnulationFactureModal({ show, onHide }: ListeAnnul
     };
 
     return (
-        <Modal show={show} onHide={onHide} size="xl" centered dialogClassName="modal-dialog-centered modal-xl">
+        <Modal show={show} onHide={onHide} size="xl" centered dialogClassName="modal-dialog-centered modal-xl" backdrop="static" keyboard={false}>
             <Modal.Header closeButton className="border-0 pb-0">
                 <div>
                     <Modal.Title className="fs-4 fw-bold">Demandes d'annulation</Modal.Title>

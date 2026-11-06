@@ -80,7 +80,7 @@ export default function CertificatDecesModal({ show, onHide, patientId, patientN
     else createPrintWindowWithoutHeader('Certificat de décès', content);
   }
 
-  return <Modal show={show} onHide={onHide} size="lg" centered>
+  return <Modal show={show} onHide={onHide} size="lg" centered backdrop="static" keyboard={false}>
     <Modal.Header closeButton><Modal.Title>Certificats de décès — {patientNom} {patientPrenoms}</Modal.Title></Modal.Header>
     <Modal.Body>
       {error && <Alert variant="danger">{error}</Alert>}

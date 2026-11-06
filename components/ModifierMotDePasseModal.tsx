@@ -194,7 +194,7 @@ export default function ModifierMotDePasseModal({ show, onHide }: ModifierMotDeP
     };
 
     return (
-        <Modal show={show} onHide={handleHide} centered>
+        <Modal show={show} onHide={handleHide} centered backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier le mot de passe</Modal.Title>
             </Modal.Header>

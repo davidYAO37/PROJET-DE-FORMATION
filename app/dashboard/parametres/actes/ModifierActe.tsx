@@ -148,7 +148,7 @@ export default function ModifierActe({ show, onHide, acte, onSave, apporteurActi
     };
 
     return (
-        <Modal show={show} onHide={onHide}>
+        <Modal show={show} onHide={onHide} backdrop="static" keyboard={false}>
             <Modal.Header closeButton>
                 <Modal.Title>Modifier l'acte clinique</Modal.Title>
             </Modal.Header>
