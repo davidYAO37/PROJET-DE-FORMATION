@@ -28,7 +28,8 @@ export async function GET(req: NextRequest) {
             const max = s.QteMaximum ?? 0;
             const prixAchat = derniere?.PrixAchat ?? 0;
             const prixVente = derniere?.PrixVente ?? 0;
-            const valeurStock = qte * prixAchat;
+            // Un stock négatif (quantité due aux patients) ne vaut rien en rayon : valeur bornée à 0
+            const valeurStock = Math.max(0, qte) * prixAchat;
 
             let statut = "OK";
             if (qte <= 0) statut = "RUPTURE";

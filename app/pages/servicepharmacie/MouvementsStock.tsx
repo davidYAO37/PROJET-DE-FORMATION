@@ -11,6 +11,8 @@ import {
     FaArrowDown, FaArrowUp, FaPlus, FaTrash, FaSearch, FaSync,
 } from "react-icons/fa";
 import { Pharmacie } from "@/types/pharmacie";
+import MedicamentSearchSelect from "@/components/MedicamentSearchSelect";
+import { matchesSearch } from "@/lib/searchText";
 
 // ===== Types =====
 type TypeMvt = "ENTREE" | "SORTIE";
@@ -82,7 +84,7 @@ const formDefaut: FormData = {
 };
 
 export default function MouvementsStock() {
-    const [medicaments, setMedicaments] = useState<Pharmacie[]>([]);
+    const [medSelectionne, setMedSelectionne] = useState<Pharmacie | null>(null);
     const [mouvements, setMouvements] = useState<Mouvement[]>([]);
     const [loading, setLoading] = useState(false);
     const [showForm, setShowForm] = useState(false);
@@ -90,7 +92,6 @@ export default function MouvementsStock() {
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
     const [success, setSuccess] = useState("");
-    const [searchMed, setSearchMed] = useState("");
     const [filtreType, setFiltreType] = useState<"TOUS" | TypeMvt>("TOUS");
     const [stockInfo, setStockInfo] = useState<StockInfo | null>(null);
     // Filtres tableau
@@ -100,10 +101,6 @@ export default function MouvementsStock() {
     const [pageSize, setPageSize]       = useState(15);
 
     useEffect(() => {
-        fetch("/api/medicaments")
-            .then(r => r.json())
-            .then(d => setMedicaments(Array.isArray(d) ? d : []))
-            .catch(console.error);
         charger();
     }, []);
 
@@ -124,7 +121,9 @@ export default function MouvementsStock() {
         }
     }, []);
 
-    const handleMedSelect = async (id: string) => {
+    const handleMedSelect = async (med: Pharmacie | null) => {
+        const id = med?._id || "";
+        setMedSelectionne(med);
         setForm(f => ({ ...f, IDMEDICAMENT: id }));
         if (!id) { setStockInfo(null); return; }
         try {
@@ -142,7 +141,7 @@ export default function MouvementsStock() {
         if (!form.motif) { setError("Sélectionnez un motif."); return; }
         if (form.quantite <= 0) { setError("La quantité doit être > 0."); return; }
 
-        const med = medicaments.find(m => m._id === form.IDMEDICAMENT);
+        const med = medSelectionne;
         const qteParCond = med?.QteParConditionnement || 1;
         const qteEnUnites = form.modeVente === "BOITE" ? form.quantite * qteParCond : form.quantite;
 
@@ -156,8 +155,9 @@ export default function MouvementsStock() {
         const now = new Date().toISOString();
 
         try {
+            let res: Response;
             if (form.type === "SORTIE") {
-                await fetch("/api/gestionstock/sortiestock", {
+                res = await fetch("/api/gestionstock/sortiestock", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -177,7 +177,7 @@ export default function MouvementsStock() {
                     }),
                 });
             } else {
-                await fetch("/api/gestionstock/entrestock/manuelle", {
+                res = await fetch("/api/gestionstock/entrestock/manuelle", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -200,13 +200,18 @@ export default function MouvementsStock() {
                     }),
                 });
             }
+            if (!res.ok) {
+                const detail = await res.json().catch(() => null);
+                throw new Error(detail?.error || detail?.message || "Erreur lors de l'enregistrement.");
+            }
             setSuccess(`${form.type === "SORTIE" ? "Sortie" : "Entrée"} enregistrée avec succès.`);
             setShowForm(false);
             setForm(formDefaut);
+            setMedSelectionne(null);
             setStockInfo(null);
             charger();
         } catch (err: any) {
-            setError("Erreur lors de l'enregistrement.");
+            setError(err?.message || "Erreur lors de l'enregistrement.");
         } finally {
             setSubmitting(false);
         }
@@ -215,17 +220,16 @@ export default function MouvementsStock() {
     const handleDelete = async (m: Mouvement) => {
         if (!confirm(`Supprimer ce mouvement (${m.medicament}, ${m.type === "SORTIE" ? "-" : "+"}${m.quantite}) ?`)) return;
         try {
-            if (m.type === "SORTIE") {
-                await fetch(`/api/gestionstock/sortiestock/${m._id}`, { method: "DELETE" });
+            const url = m.type === "SORTIE" ? `/api/gestionstock/sortiestock/${m._id}` : `/api/gestionstock/entrestock/${m._id}`;
+            const res = await fetch(url, { method: "DELETE" });
+            if (!res.ok) {
+                const detail = await res.json().catch(() => null);
+                throw new Error(detail?.error || detail?.message || "Erreur lors de la suppression.");
             }
             charger();
-        } catch { alert("Erreur lors de la suppression."); }
+        } catch (err: any) { alert(err?.message || "Erreur lors de la suppression."); }
     };
 
-    const medicamentsFiltres = medicaments.filter(m =>
-        m.Designation?.toLowerCase().includes(searchMed.toLowerCase()) ||
-        m.Reference?.toLowerCase().includes(searchMed.toLowerCase())
-    );
 
     const mouvementsFiltres = useMemo(() => {
         const debut = dateDebut ? new Date(dateDebut).getTime() : 0;
@@ -234,9 +238,7 @@ export default function MouvementsStock() {
             const typeOk = filtreType === "TOUS" || m.type === filtreType;
             const d = m.date ? new Date(m.date).getTime() : 0;
             const dateOk = d >= debut && d <= fin;
-            const txt = (m.medicament || "").toLowerCase().includes(searchTable.toLowerCase()) ||
-                        (m.motif || "").toLowerCase().includes(searchTable.toLowerCase()) ||
-                        (m.reference || "").toLowerCase().includes(searchTable.toLowerCase());
+            const txt = matchesSearch(searchTable, m.medicament, m.motif, m.reference);
             return typeOk && dateOk && txt;
         });
     }, [mouvements, filtreType, dateDebut, dateFin, searchTable]);
@@ -278,10 +280,10 @@ export default function MouvementsStock() {
                 </div>
                 <div className="d-flex gap-2">
                     <Button size="sm" variant="outline-secondary" onClick={charger}><FaSync /></Button>
-                    <Button size="sm" variant="success" onClick={() => { setForm({ ...formDefaut, type: "ENTREE" }); setShowForm(true); }}>
+                    <Button size="sm" variant="success" onClick={() => { setForm({ ...formDefaut, type: "ENTREE" }); setMedSelectionne(null); setStockInfo(null); setShowForm(true); }}>
                         <FaArrowDown className="me-1" /> Entrée
                     </Button>
-                    <Button size="sm" variant="danger" onClick={() => { setForm({ ...formDefaut, type: "SORTIE" }); setShowForm(true); }}>
+                    <Button size="sm" variant="danger" onClick={() => { setForm({ ...formDefaut, type: "SORTIE" }); setMedSelectionne(null); setStockInfo(null); setShowForm(true); }}>
                         <FaArrowUp className="me-1" /> Sortie
                     </Button>
                 </div>
@@ -328,7 +330,7 @@ export default function MouvementsStock() {
                                     <td className="text-start" style={{ maxWidth: 180, fontSize: 12 }}>{m.observations || "—"}</td>
                                     <td>{m.saisiPar || "—"}</td>
                                     <td>
-                                        {m.type === "SORTIE" && (
+                                        {(m.type === "SORTIE" || m.motif !== "Approvisionnement") && (
                                             <Button size="sm" variant="outline-danger" onClick={() => handleDelete(m)} title="Supprimer">
                                                 <FaTrash />
                                             </Button>
@@ -381,30 +383,7 @@ export default function MouvementsStock() {
                             {/* Médicament */}
                             <Col md={12}>
                                 <Form.Label className="fw-semibold">Médicament *</Form.Label>
-                                <InputGroup size="sm">
-                                    <InputGroup.Text><FaSearch /></InputGroup.Text>
-                                    <Form.Control
-                                        type="text"
-                                        placeholder="Filtrer..."
-                                        value={searchMed}
-                                        onChange={e => setSearchMed(e.target.value)}
-                                        style={{ maxWidth: 200 }}
-                                    />
-                                </InputGroup>
-                                <Form.Select
-                                    size="sm"
-                                    className="mt-1"
-                                    value={form.IDMEDICAMENT}
-                                    onChange={e => handleMedSelect(e.target.value)}
-                                    required
-                                >
-                                    <option value="">-- Sélectionner --</option>
-                                    {medicamentsFiltres.map(m => (
-                                        <option key={m._id} value={m._id}>
-                                            {m.Reference ? `[${m.Reference}] ` : ""}{m.Designation}
-                                        </option>
-                                    ))}
-                                </Form.Select>
+                                <MedicamentSearchSelect value={medSelectionne} onSelect={handleMedSelect} required />
                                 {stockInfo && (
                                     <div className="mt-1 d-flex gap-3 small">
                                         <span>Stock actuel : <Badge bg={stockInfo.QteEnStock <= 0 ? "danger" : stockInfo.QteEnStock <= stockInfo.QteMinimum ? "warning" : "success"}>{stockInfo.QteEnStock}</Badge></span>
@@ -452,7 +431,7 @@ export default function MouvementsStock() {
                                     required
                                 />
                                 {(() => {
-                                    const med = medicaments.find(m => m._id === form.IDMEDICAMENT);
+                                    const med = medSelectionne;
                                     if (med?.QteParConditionnement && med.QteParConditionnement > 1) {
                                         return (
                                             <Form.Text className="text-muted" style={{ fontSize: 11 }}>

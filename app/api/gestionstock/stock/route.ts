@@ -20,6 +20,13 @@ export async function POST(req: NextRequest) {
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
     const body = await req.json();
     try {
+        // Une seule ligne de stock par médicament
+        if (body.IDMEDICAMENT) {
+            const existant = await Stock.findOne({ IDMEDICAMENT: body.IDMEDICAMENT }).lean();
+            if (existant) {
+                return NextResponse.json({ error: "Un stock existe déjà pour ce médicament", existingStock: existant }, { status: 409 });
+            }
+        }
         const Stocks = await Stock.create(body);
         return NextResponse.json(Stocks);
     } catch (e: any) {

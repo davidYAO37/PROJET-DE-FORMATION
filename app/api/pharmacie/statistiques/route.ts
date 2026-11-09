@@ -112,7 +112,8 @@ export async function GET(req: NextRequest) {
     for (const s of stocks as any[]) {
       const qte = Number(s.QteEnStock || 0);
       const prix = getPrixVente(s);
-      const val = qte * prix;
+      // Un stock négatif (quantité due aux patients) ne compte pas dans la valeur du stock
+      const val = Math.max(0, qte) * prix;
       valeurStock += val;
 
       const categorie = getCategorie(s);

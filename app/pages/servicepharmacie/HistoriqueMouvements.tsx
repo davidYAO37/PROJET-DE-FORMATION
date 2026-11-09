@@ -6,6 +6,8 @@ import { FaArrowDown, FaArrowUp, FaSearch, FaSync, FaList, FaCapsules } from "re
 import { usePagination } from "@/components/usePagination";
 import Pagination from "@/components/Pagination";
 import { Pharmacie } from "@/types/pharmacie";
+import MedicamentSearchSelect from "@/components/MedicamentSearchSelect";
+import { matchesSearch } from "@/lib/searchText";
 
 interface Mouvement {
     _id: string;
@@ -101,11 +103,11 @@ function TableMouvements({ mouvements, loading, emptyMsg, pageSize = 15 }: {
 }
 
 // ===== Onglet : Par médicament =====
-function ParMedicament({ medicaments }: { medicaments: Pharmacie[] }) {
-    const [selectedMedicament, setSelectedMedicament] = useState("");
+function ParMedicament() {
+    const [medSelectionne, setMedSelectionne] = useState<Pharmacie | null>(null);
+    const selectedMedicament = medSelectionne?._id || "";
     const [mouvements, setMouvements] = useState<Mouvement[]>([]);
     const [loading, setLoading] = useState(false);
-    const [search, setSearch] = useState("");
     const [filtreType, setFiltreType] = useState<"TOUS" | "ENTREE" | "SORTIE">("TOUS");
     const [stockActuel, setStockActuel] = useState<any>(null);
 
@@ -113,8 +115,7 @@ function ParMedicament({ medicaments }: { medicaments: Pharmacie[] }) {
         if (!selectedMedicament) return;
         setLoading(true);
         try {
-            const med = medicaments.find(m => m._id === selectedMedicament);
-            const ref = med?.Reference || "";
+            const ref = medSelectionne?.Reference || "";
             const [mvtRes, stockRes] = await Promise.all([
                 fetch(`/api/mouvementsstock?IDMEDICAMENT=${selectedMedicament}${ref ? `&reference=${encodeURIComponent(ref)}` : ""}`),
                 fetch(`/api/stock?IDMEDICAMENT=${selectedMedicament}`),
@@ -127,14 +128,10 @@ function ParMedicament({ medicaments }: { medicaments: Pharmacie[] }) {
         } finally {
             setLoading(false);
         }
-    }, [selectedMedicament, medicaments]);
+    }, [selectedMedicament, medSelectionne]);
 
     useEffect(() => { chargerMouvements(); }, [chargerMouvements]);
 
-    const medicamentsFiltres = medicaments.filter(m =>
-        m.Designation?.toLowerCase().includes(search.toLowerCase()) ||
-        m.Reference?.toLowerCase().includes(search.toLowerCase())
-    );
 
     const mouvementsFiltres = useMemo(() => mouvements.filter(m =>
         (filtreType === "TOUS" || m.type === filtreType)
@@ -145,28 +142,9 @@ function ParMedicament({ medicaments }: { medicaments: Pharmacie[] }) {
     return (
         <div>
             <div className="row g-2 mb-3 align-items-end">
-                <div className="col-md-5">
-                    <Form.Label className="fw-semibold small">Rechercher un médicament</Form.Label>
-                    <InputGroup size="sm">
-                        <InputGroup.Text><FaSearch /></InputGroup.Text>
-                        <Form.Control
-                            type="text"
-                            placeholder="Filtrer par désignation ou référence..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                        />
-                    </InputGroup>
-                </div>
-                <div className="col-md-5">
-                    <Form.Label className="fw-semibold small">Médicament</Form.Label>
-                    <Form.Select size="sm" value={selectedMedicament} onChange={e => setSelectedMedicament(e.target.value)}>
-                        <option value="">-- Sélectionner un médicament --</option>
-                        {medicamentsFiltres.map(m => (
-                            <option key={m._id} value={m._id}>
-                                {m.Reference ? `[${m.Reference}] ` : ""}{m.Designation}
-                            </option>
-                        ))}
-                    </Form.Select>
+                <div className="col-md-10">
+                    <Form.Label className="fw-semibold small">Médicament (désignation ou référence, sans accents obligatoires)</Form.Label>
+                    <MedicamentSearchSelect value={medSelectionne} onSelect={setMedSelectionne} placeholder="Rechercher un médicament..." />
                 </div>
                 <div className="col-md-2">
                     <Button size="sm" variant="outline-primary" onClick={chargerMouvements} disabled={!selectedMedicament}>
@@ -236,11 +214,7 @@ function TousLesMouvements() {
             const matchType = filtreType === "TOUS" || m.type === filtreType;
             const d = m.date ? new Date(m.date).getTime() : 0;
             const matchDate = d >= debut && d <= fin;
-            const matchSearch = search.trim() === "" ? true :
-                (m.medicament || "").toLowerCase().includes(search.toLowerCase()) ||
-                (m.reference || "").toLowerCase().includes(search.toLowerCase()) ||
-                (m.motif || "").toLowerCase().includes(search.toLowerCase()) ||
-                (m.saisiPar || "").toLowerCase().includes(search.toLowerCase());
+            const matchSearch = matchesSearch(search, m.medicament, m.reference, m.motif, m.saisiPar);
             return matchType && matchDate && matchSearch;
         });
     }, [mouvements, filtreType, search, dateDebut, dateFin]);
@@ -291,15 +265,7 @@ function TousLesMouvements() {
 
 // ===== Composant principal =====
 export default function HistoriqueMouvements() {
-    const [medicaments, setMedicaments] = useState<Pharmacie[]>([]);
     const [onglet, setOnglet] = useState("par-medicament");
-
-    useEffect(() => {
-        fetch("/api/medicaments")
-            .then(r => r.json())
-            .then(d => setMedicaments(Array.isArray(d) ? d : []))
-            .catch(console.error);
-    }, []);
 
     return (
         <div>
@@ -316,7 +282,7 @@ export default function HistoriqueMouvements() {
                 </Nav.Item>
             </Nav>
 
-            {onglet === "par-medicament" && <ParMedicament medicaments={medicaments} />}
+            {onglet === "par-medicament" && <ParMedicament />}
             {onglet === "tous" && <TousLesMouvements />}
         </div>
     );

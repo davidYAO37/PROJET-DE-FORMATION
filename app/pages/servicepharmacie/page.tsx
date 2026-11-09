@@ -19,7 +19,6 @@ import AjouterAchat from "@/app/dashboard/medicamentachat/AjouterAchat";
 import ModifierAchat from "@/app/dashboard/medicamentachat/ModifierAchat";
 import { usePagination } from "@/components/usePagination";
 import Pagination from "@/components/Pagination";
-import { Pharmacie } from "@/types/pharmacie";
 import { Approvisionnement } from "@/types/Approvisionnement";
 import Inventaire from "./Inventaire";
 import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
@@ -40,7 +39,6 @@ function PageContent() {
     const searchParams = useSearchParams();
     const vue = searchParams.get("vue") || "dashboard";
 
-    const [medicaments, setMedicaments]           = useState<Pharmacie[]>([]);
     const [approvisionnements, setApprovisionnements] = useState<Approvisionnement[]>([]);
     const [loadingAppro, setLoadingAppro]         = useState(false);
     const [showAjouter, setShowAjouter]           = useState(false);
@@ -62,13 +60,6 @@ function PageContent() {
     const [detailAppro, setDetailAppro]       = useState<Approvisionnement | null>(null);
     const [lignesDetail, setLignesDetail]     = useState<any[]>([]);
     const [loadingDetail, setLoadingDetail]   = useState(false);
-
-    useEffect(() => {
-        fetch("/api/medicaments")
-            .then(r => r.json())
-            .then(d => setMedicaments(Array.isArray(d) ? d : []))
-            .catch(console.error);
-    }, []);
 
     useEffect(() => {
         if (vue === "approvisionnement") chargerApprovisionnements();
@@ -247,14 +238,12 @@ function PageContent() {
                 show={showAjouter}
                 onHide={() => setShowAjouter(false)}
                 onAdd={handleAdd}
-                medicaments={medicaments}
             />
             <ModifierAchat
                 show={showModifier}
                 onHide={() => setShowModifier(false)}
                 Approvisionnement={selectedAppro}
                 onSave={handleEdit}
-                medicaments={medicaments}
             />
 
             {/* Modal détail lignes approvisionnement */}

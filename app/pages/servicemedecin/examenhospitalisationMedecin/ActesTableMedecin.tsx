@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert } from "react-bootstrap";
 import ActeSelectModal from "./ActeSelectModal";
+import { matchesSearch } from "@/lib/searchText";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
@@ -93,8 +94,7 @@ function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
     // Filtrer les actes selon la recherche
     const filteredActes = searchTerm
         ? actes.filter(a =>
-            a.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.LettreCle?.toLowerCase().includes(searchTerm.toLowerCase())
+            matchesSearch(searchTerm, a.Designation, a.LettreCle)
         )
         : actes;
 

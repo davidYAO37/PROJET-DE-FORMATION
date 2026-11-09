@@ -75,8 +75,16 @@ export default function Inventaire() {
 
     const lignesModifiees = data.filter(l => l.qteComptee !== "" && Number(l.qteComptee) !== l.QteEnStock);
 
+    // Stock négatif = quantités vendues mais pas encore remises aux patients
+    const lignesDues = data.filter(l => (l.QteEnStock ?? 0) < 0);
+
     const validerInventaire = async () => {
         if (lignesModifiees.length === 0) { setMsg({ type: "danger", text: "Aucune quantité saisie." }); return; }
+        const duesAjustees = lignesModifiees.filter(l => (l.QteEnStock ?? 0) < 0);
+        if (duesAjustees.length > 0 && !confirm(
+            `Attention : ${duesAjustees.map(l => `${l.Medicament} (${-l.QteEnStock} dû)`).join(", ")} ont des quantités dues aux patients.\n` +
+            `Ajuster ces lignes efface la dette : ne le faites qu'après avoir remis les médicaments dus.\n\nContinuer ?`
+        )) return;
         if (!confirm(`Valider l'inventaire ? ${lignesModifiees.length} ligne(s) seront ajustées.`)) return;
 
         setSaving(true);
@@ -253,6 +261,14 @@ export default function Inventaire() {
                 </Col>
             </Row>
 
+            {lignesDues.length > 0 && (
+                <Alert variant="warning" className="py-2 mb-3">
+                    <strong>{lignesDues.length} médicament(s) en stock négatif</strong> — quantités vendues mais pas encore remises aux patients
+                    ({lignesDues.map(l => `${l.Medicament} : ${-l.QteEnStock}`).join(", ")}).
+                    N'ajustez pas ces lignes à l'inventaire avant d'avoir remis les médicaments dus.
+                </Alert>
+            )}
+
             {modeSaisie && (
                 <Alert variant="info" className="py-2 mb-3">
                     <strong>Mode saisie inventaire</strong> — Entrez la quantité physiquement comptée dans la colonne <em>"Qte comptée"</em>.
@@ -317,7 +333,11 @@ export default function Inventaire() {
                                             )}
                                         </td>
                                         <td className="text-center">{l.Reference || "—"}</td>
-                                        <td className="text-center fw-bold">{l.QteEnStock}</td>
+                                        <td className="text-center fw-bold">
+                                            {l.QteEnStock < 0
+                                                ? <span className="text-danger" title="Quantité vendue mais pas encore remise aux patients">{l.QteEnStock} <small>(dû aux patients)</small></span>
+                                                : l.QteEnStock}
+                                        </td>
                                         {modeSaisie && (
                                             <td className="text-center p-1">
                                                 <Form.Control

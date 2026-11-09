@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Card } from "react-bootstrap";
 import MedicamentSelectModal from "./MedicamentSelectModal";
+import { matchesSearch } from "@/lib/searchText";
 
 // Type pour un médicament
 export interface IMedicament {
@@ -52,9 +53,7 @@ function MedicamentSelect({ medicaments, selectedId, onSelect, disabled = false 
   // Filtrer les médicaments selon la recherche (limiter à 50 résultats pour la performance INP)
   const filteredMedicaments = (searchTerm
     ? medicaments.filter(m =>
-        m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
+        matchesSearch(searchTerm, m.Designation, m.Reference, m.CodeBarre)
       )
     : medicaments).slice(0, 50);
 
@@ -219,7 +218,7 @@ function emptyLigne(medicament?: IMedicament): ILigneMedicament {
 }
 
 type Props = {
-  medicaments: IMedicament[];
+  medicaments?: IMedicament[];
   onLignesChange?: (lignes: ILigneMedicament[]) => void;
   tauxAssurance?: number;
   onTotauxChange?: (totaux: {
@@ -235,11 +234,10 @@ type Props = {
   onRcliniqueChange?: (Rclinique: string) => void; // Callback pour la mise à jour
 };
 
-export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0, prescriptionData, onRcliniqueChange }: Props) {
+export default function TableMedicamentsPharmAccueilMedecin({ onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0, prescriptionData, onRcliniqueChange }: Props) {
   const [lignes, setLignes] = useState<ILigneMedicament[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentUser] = useState("Utilisateur"); // Simuler gsUtilisateur
-  const [medicamentsEnStock, setMedicamentsEnStock] = useState<IMedicament[]>([]);
   const [showMedicamentModal, setShowMedicamentModal] = useState(false);
   const [currentLigneId, setCurrentLigneId] = useState<string | null>(null);
   const [rclinique, setRclinique] = useState(prescriptionData?.Rclinique || "");
@@ -276,37 +274,7 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
     }
   }, [presetLines, externalResetKey]);
 
-  // Charger les médicaments en stock au montage du composant
-  useEffect(() => {
-    const chargerMedicamentsEnStock = async () => {
-      try {
-        const response = await fetch('/api/stock?inStock=true');
-        const stocks = await response.json();
 
-        // Filtrer les médicaments qui ont une quantité en stock > 0
-        const medicamentsDisponibles = stocks
-          .filter((stock: any) => stock.QteEnStock > 0 && stock.IDMEDICAMENT)
-          .map((stock: any) => {
-            // Trouver le médicament correspondant dans la liste des médicaments
-            const medicament = medicaments.find(m => m._id === stock.IDMEDICAMENT.toString());
-            if (medicament) {
-              return {
-                ...medicament,
-                StockDisponible: stock.QteEnStock
-              };
-            }
-            return null;
-          })
-          .filter(Boolean); // Supprimer les valeurs null
-
-        setMedicamentsEnStock(medicamentsDisponibles);
-      } catch (error) {
-        console.error("Erreur lors du chargement des médicaments en stock:", error);
-      }
-    };
-
-    chargerMedicamentsEnStock();
-  }, [medicaments]);
 
   // PROCÉDURE Facture_Pharmacie()
   // SAI_MontantRendu=""
@@ -683,7 +651,6 @@ export default function TableMedicamentsPharmAccueilMedecin({ medicaments, onLig
           setShowMedicamentModal(false);
           setCurrentLigneId(null);
         }}
-        medicaments={medicamentsEnStock.length > 0 ? medicamentsEnStock : medicaments}
         onMedicamentsSelect={handleMedicamentsSelect}
         selectedMedicamentIds={[]}
       />

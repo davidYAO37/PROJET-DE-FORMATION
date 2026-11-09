@@ -5,7 +5,6 @@ import axios from "axios";
 import { Approvisionnement } from "@/types/Approvisionnement";
 import ListeApprovisionnement from "./ListeApprovisionnement";
 import AjouterAchat from "./AjouterAchat";
-import { Pharmacie } from "@/types/pharmacie";
 import ModifierAchat from "./ModifierAchat";
 
 export default function ActesPage() {
@@ -13,7 +12,6 @@ export default function ActesPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [showAjouterAchat, setShowAjouterAchat] = useState(false);
-    const [medicaments,setMedicaments] = useState<Pharmacie[]>([]);
     const [showEdit, setShowEdit] = useState(false);
     const [selected, setSelected] = useState<Approvisionnement | null>(null);
 
@@ -35,20 +33,6 @@ export default function ActesPage() {
         setAchat((prev) => [...prev, a]);
         setShowAjouterAchat(false);
     };
-    // Charger les médicaments
-useEffect(() => {
-  const chargerMedicaments = async () => {
-    try {
-      const res = await fetch("/api/medicaments");
-      const data = await res.json();
-      setMedicaments(data);
-    } catch (err) {
-      console.error("Erreur lors du chargement des médicaments", err);
-    }
-  };
-  chargerMedicaments();
-}, []);
-
     const handleEdit = (a: Approvisionnement) => {
         setAchat((prev) => prev.map((x) => (x._id === a._id ? a : x)));
         setShowEdit(false);
@@ -65,7 +49,7 @@ useEffect(() => {
             await axios.delete(`/api/approvisionnement/${id}`);
             setAchat((prev) => prev.filter((Approvisionnements) => Approvisionnements._id !== id));
         } catch (err: any) {
-            alert("Erreur lors de la suppression : " + (err.response?.data?.error || err.message));
+            alert("Suppression impossible : " + (err.response?.data?.error || err.message));
         }
     };
 
@@ -94,8 +78,8 @@ useEffect(() => {
             )}
 
             {/* Modales */}
-            <AjouterAchat  show={showAjouterAchat} onHide={() => setShowAjouterAchat(false)} onAdd={handleAdd} medicaments={medicaments}/>
-            <ModifierAchat show={showEdit} onHide={() => setShowEdit(false)} Approvisionnement={selected} onSave={handleEdit} medicaments={medicaments} />
+            <AjouterAchat  show={showAjouterAchat} onHide={() => setShowAjouterAchat(false)} onAdd={handleAdd}/>
+            <ModifierAchat show={showEdit} onHide={() => setShowEdit(false)} Approvisionnement={selected} onSave={handleEdit} />
         </div>
     );
 }

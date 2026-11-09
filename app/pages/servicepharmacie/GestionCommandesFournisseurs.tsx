@@ -11,6 +11,7 @@ import { usePagination } from "@/components/usePagination";
 import Pagination from "@/components/Pagination";
 import { CommandeFournisseur, LigneCommande, StatutCommande } from "@/types/CommandeFournisseur";
 import { Pharmacie } from "@/types/pharmacie";
+import MedicamentSearchSelect, { fetchMedicamentsByIds } from "@/components/MedicamentSearchSelect";
 import { useEntreprise } from "@/hooks/useEntreprise";
 import {
     generatePrintHeader,
@@ -130,7 +131,6 @@ const buildBonCommandeHTML = (commande: CommandeFournisseur): string => {
 export default function GestionCommandesFournisseurs() {
     const [commandes, setCommandes] = useState<CommandeFournisseur[]>([]);
     const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
-    const [medicaments, setMedicaments] = useState<Pharmacie[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
     const { entreprise } = useEntreprise();
@@ -161,17 +161,14 @@ export default function GestionCommandesFournisseurs() {
         setLoading(true);
         setError("");
         try {
-            const [cmdRes, fourRes, medRes] = await Promise.all([
+            const [cmdRes, fourRes] = await Promise.all([
                 fetch("/api/commande-fournisseur"),
                 fetch("/api/fournisseur?actif=true"),
-                fetch("/api/medicaments"),
             ]);
             const commandesData = cmdRes.ok ? await cmdRes.json() : [];
             const fournisseursData = fourRes.ok ? await fourRes.json() : [];
-            const medicamentsData = medRes.ok ? await medRes.json() : [];
             setCommandes(Array.isArray(commandesData) ? commandesData : []);
             setFournisseurs(Array.isArray(fournisseursData) ? fournisseursData : []);
-            setMedicaments(Array.isArray(medicamentsData) ? medicamentsData : []);
         } catch (err: any) {
             setError(err.message || "Erreur de chargement");
         } finally {
@@ -409,7 +406,6 @@ export default function GestionCommandesFournisseurs() {
                 onHide={() => setShowForm(false)}
                 commande={editing}
                 fournisseurs={fournisseurs}
-                medicaments={medicaments}
                 onSaved={loadData}
                 setError={setError}
             />
@@ -418,7 +414,6 @@ export default function GestionCommandesFournisseurs() {
                 show={showReception}
                 onHide={() => { setShowReception(false); setReceptionCommande(null); }}
                 commande={receptionCommande}
-                medicaments={medicaments}
                 onSaved={loadData}
                 setError={setError}
             />
@@ -456,7 +451,6 @@ function CommandeFormModal({
     onHide,
     commande,
     fournisseurs,
-    medicaments,
     onSaved,
     setError,
 }: {
@@ -464,7 +458,6 @@ function CommandeFormModal({
     onHide: () => void;
     commande: CommandeFournisseur | null;
     fournisseurs: Fournisseur[];
-    medicaments: Pharmacie[];
     onSaved: () => void;
     setError: (msg: string) => void;
 }) {
@@ -671,7 +664,6 @@ function CommandeFormModal({
                                 <LigneFormRow
                                     key={ligne.key}
                                     ligne={ligne}
-                                    medicaments={medicaments}
                                     onChange={(updates) => updateLigne(ligne.key, updates)}
                                     onRemove={() => removeLigne(ligne.key)}
                                 />
@@ -703,152 +695,21 @@ function CommandeFormModal({
     );
 }
 
-interface SearchableMedicamentSelectProps {
-    medicaments: Pharmacie[];
-    selectedId: string;
-    onSelect: (medicamentId: string) => void;
-}
-
-function SearchableMedicamentSelect({ medicaments, selectedId, onSelect }: SearchableMedicamentSelectProps) {
-    const [searchTerm, setSearchTerm] = useState("");
-    const [showDropdown, setShowDropdown] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLInputElement>(null);
-    const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
-
-    const selectedMedicament = medicaments.find((m) => m._id === selectedId);
-    const displayValue = selectedMedicament ? selectedMedicament.Designation || "" : "";
-
-    const allFilteredMedicaments = searchTerm
-        ? medicaments.filter(
-              (m) =>
-                  (m.Designation || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-                  (m.Reference || "").toLowerCase().includes(searchTerm.toLowerCase()),
-          )
-        : medicaments;
-
-    const filteredMedicaments = allFilteredMedicaments.slice(0, 50);
-
-    useEffect(() => {
-        if (showDropdown && inputRef.current) {
-            const rect = inputRef.current.getBoundingClientRect();
-            setDropdownPosition({
-                top: rect.bottom + 5,
-                left: rect.left,
-                width: rect.width,
-            });
-        }
-    }, [showDropdown]);
-
-    useEffect(() => {
-        const handleClickOutside = (event: MouseEvent) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(event.target as Node) &&
-                inputRef.current &&
-                !inputRef.current.contains(event.target as Node)
-            ) {
-                setShowDropdown(false);
-                setSearchTerm("");
-            }
-        };
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    const handleSelect = (medicamentId: string) => {
-        onSelect(medicamentId);
-        setSearchTerm("");
-        setShowDropdown(false);
-    };
-
-    return (
-        <div style={{ position: "relative" }}>
-            <Form.Control
-                ref={inputRef}
-                type="text"
-                size="sm"
-                placeholder="Rechercher un médicament..."
-                value={showDropdown ? searchTerm : displayValue}
-                onChange={(e) => { setSearchTerm(e.target.value); setShowDropdown(true); }}
-                onFocus={() => setShowDropdown(true)}
-                style={{ fontSize: "13px" }}
-            />
-            {showDropdown && (
-                <div
-                    ref={dropdownRef}
-                    style={{
-                        position: "fixed",
-                        top: `${dropdownPosition.top}px`,
-                        left: `${dropdownPosition.left}px`,
-                        width: `${dropdownPosition.width}px`,
-                        maxHeight: "200px",
-                        overflow: "auto",
-                        backgroundColor: "white",
-                        border: "1px solid #dee2e6",
-                        borderRadius: "0.375rem",
-                        boxShadow: "0 0.5rem 1rem rgba(0, 0, 0, 0.15)",
-                        zIndex: 1000,
-                    }}
-                >
-                    {searchTerm && (
-                        <div style={{ padding: "4px 8px", fontSize: "11px", color: "#6c757d", borderBottom: "1px solid #f8f9fa", backgroundColor: "#f8f9fa" }}>
-                            {allFilteredMedicaments.length} résultat{allFilteredMedicaments.length > 1 ? "s" : ""} trouvé{allFilteredMedicaments.length > 1 ? "s" : ""}
-                        </div>
-                    )}
-                    {filteredMedicaments.length === 0 ? (
-                        <div style={{ padding: "8px", color: "#6c757d", fontSize: "13px", textAlign: "center" }}>
-                            Aucun médicament trouvé
-                        </div>
-                    ) : (
-                        <div style={{ display: "flex", flexDirection: "column" }}>
-                            {filteredMedicaments.map((medicament) => (
-                                <div
-                                    key={medicament._id || `medicament-${medicament.Reference}`}
-                                    onClick={() => handleSelect(medicament._id || "")}
-                                    style={{
-                                        padding: "8px",
-                                        cursor: "pointer",
-                                        fontSize: "13px",
-                                        borderBottom: "1px solid #f8f9fa",
-                                        backgroundColor: medicament._id === selectedId ? "#e3f2fd" : "white",
-                                    }}
-                                    onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = "#f8f9fa"; }}
-                                    onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = medicament._id === selectedId ? "#e3f2fd" : "white"; }}
-                                >
-                                    <div style={{ fontWeight: "bold", marginBottom: "2px" }}>{medicament.Designation}</div>
-                                    <div style={{ display: "flex", flexWrap: "wrap", gap: "8px", fontSize: "11px", alignItems: "center" }}>
-                                        {medicament.Reference && <span style={{ color: "#6c757d" }}> {medicament.Reference}</span>}
-                                        {medicament.PrixAchat && <span style={{ color: "#0d6efd" }}>💰 Achat: {medicament.PrixAchat} FCFA</span>}
-                                        {medicament.PrixVente && <span style={{ color: "#198754" }}>🏥 Vente: {medicament.PrixVente} FCFA</span>}
-                                        <Badge bg={medicament.TypeArticle === "LABORATOIRE" ? "warning" : "info"} className="text-uppercase" style={{ fontSize: "9px" }}>
-                                            {medicament.TypeArticle || "PHARMACIE"}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    );
-}
-
 function LigneFormRow({
     ligne,
-    medicaments,
     onChange,
     onRemove,
 }: {
     ligne: LigneForm;
-    medicaments: Pharmacie[];
     onChange: (updates: Partial<LigneForm>) => void;
     onRemove: () => void;
 }) {
-    const handleSelectMedicament = (medicamentId: string) => {
-        const m = medicaments.find((med) => med._id === medicamentId);
-        if (!m) return;
+    const valeur: Pharmacie | null = ligne.IDMEDICAMENT
+        ? { _id: String(ligne.IDMEDICAMENT), Designation: ligne.Medicament || "", Reference: ligne.Reference }
+        : null;
+
+    const handleSelectMedicament = (m: Pharmacie | null) => {
+        if (!m?._id) return;
         onChange({
             IDMEDICAMENT: m._id,
             Medicament: m.Designation,
@@ -862,11 +723,7 @@ function LigneFormRow({
     return (
         <tr>
             <td>
-                <SearchableMedicamentSelect
-                    medicaments={medicaments}
-                    selectedId={ligne.IDMEDICAMENT || ""}
-                    onSelect={handleSelectMedicament}
-                />
+                <MedicamentSearchSelect value={valeur} onSelect={handleSelectMedicament} />
             </td>
             <td className="text-center">
                 <Badge bg={ligne.TypeArticle === "LABORATOIRE" ? "warning" : "info"} className="text-uppercase small">
@@ -901,14 +758,12 @@ function ReceptionModal({
     show,
     onHide,
     commande,
-    medicaments,
     onSaved,
     setError,
 }: {
     show: boolean;
     onHide: () => void;
     commande: CommandeFournisseur | null;
-    medicaments: Pharmacie[];
     onSaved: () => void;
     setError: (msg: string) => void;
 }) {
@@ -918,7 +773,13 @@ function ReceptionModal({
     const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (show && commande) {
+        if (!show || !commande) return;
+        let annule = false;
+        (async () => {
+            const medicaments = await fetchMedicamentsByIds(
+                (commande.lignes || []).map((l) => String((l.IDMEDICAMENT as any) || ""))
+            );
+            if (annule) return;
             setNumeroFacture("");
             setObservations(commande.Observations || "");
             setLignes(
@@ -946,8 +807,9 @@ function ReceptionModal({
                     };
                 })
             );
-        }
-    }, [show, commande, medicaments]);
+        })();
+        return () => { annule = true; };
+    }, [show, commande]);
 
     const updateLigne = (ligneId: string, updates: Partial<ReceptionLigneForm>) => {
         setLignes((prev) =>

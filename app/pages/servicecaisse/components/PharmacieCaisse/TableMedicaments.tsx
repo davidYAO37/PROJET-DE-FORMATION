@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert } from "react-bootstrap";
+import { matchesSearch } from "@/lib/searchText";
+import { fetchMedicamentsEnStock } from "@/components/MedicamentSearchSelect";
 
 // Type pour un médicament
 export interface IMedicament {
@@ -41,6 +43,8 @@ export interface ILigneMedicament {
   DATE?: string; // Ajout du champ DATE
   reference?: string; // Ajout du champ reference
   modeVente?: "DETAIL" | "BOITE";
+  /** Ligne intégrée malgré un stock insuffisant : le stock deviendra négatif à l'encaissement. */
+  stockInsuffisant?: boolean;
 }
 
 // Fonction pour déterminer le statut du stock
@@ -69,10 +73,11 @@ function getStockStatus(medicament: IMedicament): {
 interface MedicamentSelectProps {
   medicaments: IMedicament[];
   selectedId: string;
+  selectedLabel?: string;
   onSelect: (medicament: IMedicament) => void;
 }
 
-function MedicamentSelect({ medicaments, selectedId, onSelect }: MedicamentSelectProps) {
+function MedicamentSelect({ medicaments, selectedId, selectedLabel = "", onSelect }: MedicamentSelectProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -82,9 +87,7 @@ function MedicamentSelect({ medicaments, selectedId, onSelect }: MedicamentSelec
   // Filtrer les médicaments selon la recherche (limiter à 50 résultats pour la performance INP)
   const filteredMedicaments = (searchTerm
     ? medicaments.filter(m =>
-      m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
+      matchesSearch(searchTerm, m.Designation, m.Reference, m.CodeBarre)
     )
     : medicaments).slice(0, 50);
 
@@ -132,7 +135,7 @@ function MedicamentSelect({ medicaments, selectedId, onSelect }: MedicamentSelec
         type="text"
         size="sm"
         placeholder="Rechercher un médicament..."
-        value={searchTerm || (selectedMedicament?.Designation || "")}
+        value={searchTerm || (selectedMedicament?.Designation || (selectedId ? selectedLabel : ""))}
         onChange={handleInputChange}
         onFocus={() => setShowDropdown(true)}
         style={{ fontSize: '13px' }}
@@ -243,7 +246,7 @@ function emptyLigne(medicament?: IMedicament): ILigneMedicament {
 }
 
 type Props = {
-  medicaments: IMedicament[];
+  medicaments?: IMedicament[];
   onLignesChange?: (lignes: ILigneMedicament[]) => void;
   tauxAssurance?: number;
   onTotauxChange?: (totaux: {
@@ -258,7 +261,7 @@ type Props = {
   remise?: number;
 };
 
-export default function TableMedicaments({ medicaments, onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0 }: Props) {
+export default function TableMedicaments({ onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0 }: Props) {
   const [lignes, setLignes] = useState<ILigneMedicament[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentUser] = useState(""); // dans le localStorage
@@ -277,37 +280,12 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
     }
   }, [presetLines, externalResetKey]);
 
-  // Charger les médicaments en stock au montage du composant
+  // Charger les médicaments en stock au montage du composant (uniquement ceux qui ont du stock)
   useEffect(() => {
-    const chargerMedicamentsEnStock = async () => {
-      try {
-        const response = await fetch('/api/stock?inStock=true');
-        const stocks = await response.json();
-
-        // Filtrer les médicaments qui ont une quantité en stock > 0
-        const medicamentsDisponibles = stocks
-          .filter((stock: any) => stock.QteEnStock > 0 && stock.IDMEDICAMENT)
-          .map((stock: any) => {
-            // Trouver le médicament correspondant dans la liste des médicaments
-            const medicament = medicaments.find(m => m._id === stock.IDMEDICAMENT.toString());
-            if (medicament) {
-              return {
-                ...medicament,
-                StockDisponible: stock.QteEnStock
-              };
-            }
-            return null;
-          })
-          .filter(Boolean); // Supprimer les valeurs null
-
-        setMedicamentsEnStock(medicamentsDisponibles);
-      } catch (error) {
-        console.error("Erreur lors du chargement des médicaments en stock:", error);
-      }
-    };
-
-    chargerMedicamentsEnStock();
-  }, [medicaments]);
+    fetchMedicamentsEnStock<IMedicament>()
+      .then(setMedicamentsEnStock)
+      .catch((error) => console.error("Erreur lors du chargement des médicaments en stock:", error));
+  }, []);
 
   // Fonction de calcul des totaux selon la logique WLangage
   const calculerTotaux = useCallback(() => {
@@ -432,6 +410,8 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
       total: toInt(total),
       reference: medicament.Reference || medicament.CodeBarre || "", // Utiliser la référence du médicament (ex: RIV-3)
       modeVente: mode,
+      // Médicament choisi dans la liste « en stock » : la ligne n'est plus marquée stock insuffisant
+      stockInsuffisant: false,
       // Calculer les parts assurance/patient selon le taux
       partAssurance: toInt((total * tauxAssurance) / 100),
       partAssure: toInt(total - ((total * tauxAssurance) / 100))
@@ -445,6 +425,18 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
   const handleQuantiteChange = (id: string, quantite: number) => {
     const ligne = lignes.find(l => l.id === id);
     if (ligne) {
+      // Plafond au stock disponible (hors lignes déjà payées, dont la quantité est déjà sortie du stock)
+      const medicament = medicamentsEnStock.find(m => m._id === ligne.medicamentId);
+      if (medicament && !ligne.payeLe && !ligne.stockInsuffisant) {
+        const qteParCond = ligne.modeVente === "BOITE" ? (medicament.QteParConditionnement || 1) : 1;
+        const maxSaisissable = Math.floor((medicament.StockDisponible || 0) / qteParCond);
+        if (quantite > maxSaisissable) {
+          setErrorMsg(`Stock insuffisant pour ${medicament.Designation} : ${maxSaisissable} ${ligne.modeVente === "BOITE" ? "boîte(s)" : "unité(s)"} disponible(s).`);
+          quantite = Math.max(1, maxSaisissable);
+        } else {
+          setErrorMsg(null);
+        }
+      }
       const newTotal = toInt(quantite * ligne.prixUnitaire);
       updateLigne(id, {
         quantite,
@@ -480,6 +472,53 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
       setTimeout(() => calculerTotaux(), 0);
     }
   };
+
+  // Lignes dont le prix a été modifié à la main (le catalogue n'est mis à jour que pour celles-ci)
+  const [prixModifies, setPrixModifies] = useState<Set<string>>(new Set());
+
+  // Saisie du prix unitaire : chiffres uniquement, total et parts recalculés comme pour la quantité
+  const handlePrixChange = (id: string, valeur: string) => {
+    const ligne = lignes.find(l => l.id === id);
+    if (!ligne) return;
+    const prixUnitaire = toInt(Number(valeur.replace(/\D/g, "")) || 0);
+    const newTotal = toInt(ligne.quantite * prixUnitaire);
+    updateLigne(id, {
+      prixUnitaire,
+      total: newTotal,
+      partAssurance: !ligne.refuse ? toInt((newTotal * tauxAssurance) / 100) : 0,
+      partAssure: !ligne.refuse ? toInt(newTotal - ((newTotal * tauxAssurance) / 100)) : newTotal
+    });
+    setPrixModifies(prev => new Set(prev).add(id));
+    setTimeout(() => calculerTotaux(), 0);
+  };
+
+  // En quittant le champ : le prix modifié (> 0) devient le prix de vente du catalogue.
+  // Uniquement en mode Détail : en mode Boîte le prix saisi est un prix de conditionnement.
+  const handlePrixBlur = async (id: string) => {
+    if (!prixModifies.has(id)) return;
+    setPrixModifies(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    const ligne = lignes.find(l => l.id === id);
+    if (!ligne?.medicamentId || !(ligne.prixUnitaire > 0) || ligne.modeVente === "BOITE") return;
+    try {
+      const res = await fetch(`/api/medicaments/${ligne.medicamentId}/prix-vente`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ PrixVente: toInt(ligne.prixUnitaire) }),
+      });
+      if (!res.ok) throw new Error();
+      // Le prix connu localement suit le catalogue (utile si on rebascule en mode Détail)
+      setMedicamentsEnStock(prev => prev.map(m => m._id === ligne.medicamentId ? { ...m, PrixVente: toInt(ligne.prixUnitaire) } : m));
+    } catch {
+      setErrorMsg(`Le prix de « ${ligne.designation} » n'a pas pu être enregistré dans le catalogue. Il reste appliqué à cette vente.`);
+    }
+  };
+
+  // Lignes avec un médicament mais sans prix (hors lignes refusées)
+  const lignesSansPrix = lignes.filter(l => l.medicamentId && !l.refuse && !(l.prixUnitaire > 0));
 
   // Mettre à jour la date
   const handleDateChange = (id: string, date: string) => {
@@ -580,6 +619,15 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
 
       {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
 
+      {lignesSansPrix.length > 0 && (
+        <Alert variant="warning" className="mb-2 py-2">
+          <small>
+            <i className="bi bi-exclamation-triangle me-2"></i>
+            Prix unitaire à 0 pour : {lignesSansPrix.map(l => l.designation).join(", ")}. Ces lignes seront encaissées 0 FCFA si le prix n'est pas saisi.
+          </small>
+        </Alert>
+      )}
+
       <div className="table-responsive" style={{ maxHeight: "60vh", overflow: "auto" }}>
         <Table bordered hover size="sm" className="mb-0">
           <thead className="table-light" style={{ position: "sticky", top: 0, zIndex: 2 }}>
@@ -624,8 +672,17 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
                   <MedicamentSelect
                     medicaments={medicamentsEnStock}
                     selectedId={ligne.medicamentId}
+                    selectedLabel={ligne.designation}
                     onSelect={(medicament: IMedicament) => handleSelectMedicament(ligne.id, medicament)}
                   />
+                  {ligne.stockInsuffisant && (
+                    <span
+                      className="badge bg-warning text-dark mt-1"
+                      title="Intégrée malgré un stock insuffisant : la quantité manquante sera due au patient"
+                    >
+                      Stock insuffisant
+                    </span>
+                  )}
                 </td>
                 <td>
                   <Form.Select
@@ -647,7 +704,21 @@ export default function TableMedicaments({ medicaments, onLignesChange, tauxAssu
                     size="sm"
                   />
                 </td>
-                <td className="text-end">{toInt(ligne.prixUnitaire).toLocaleString()}</td>
+                <td>
+                  <Form.Control
+                    type="text"
+                    inputMode="numeric"
+                    value={ligne.prixUnitaire ? String(toInt(ligne.prixUnitaire)) : ""}
+                    onChange={(e) => handlePrixChange(ligne.id, e.target.value)}
+                    onBlur={() => handlePrixBlur(ligne.id)}
+                    placeholder="0"
+                    size="sm"
+                    className={`text-end ${ligne.medicamentId && !ligne.refuse && !(ligne.prixUnitaire > 0) ? 'border-warning' : ''}`}
+                    disabled={!ligne.medicamentId}
+                    title={!ligne.medicamentId ? "Sélectionnez d'abord un médicament" : ligne.modeVente === "BOITE" ? "Prix de la boîte (FCFA) — appliqué à cette vente uniquement" : "Prix de vente unitaire (FCFA)"}
+                    aria-label={`Prix unitaire de ${ligne.designation || "la ligne"}`}
+                  />
+                </td>
                 <td className="text-end fw-bold">{toInt(ligne.total).toLocaleString()}</td>
                 <td className="text-center">
                   <Form.Check

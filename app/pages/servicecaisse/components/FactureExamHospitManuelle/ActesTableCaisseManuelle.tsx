@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
+import { matchesSearch } from "@/lib/searchText";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
@@ -103,8 +104,7 @@ function ActeSelect({ actes, selectedId, onSelect }: ActeSelectProps) {
     // Filtrer les actes selon la recherche (limiter à 50 résultats pour la performance INP)
     const filteredActes = (searchTerm
         ? actes.filter(a =>
-            a.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            a.LettreCle?.toLowerCase().includes(searchTerm.toLowerCase())
+            matchesSearch(searchTerm, a.Designation, a.LettreCle)
         )
         : actes).slice(0, 50);
 

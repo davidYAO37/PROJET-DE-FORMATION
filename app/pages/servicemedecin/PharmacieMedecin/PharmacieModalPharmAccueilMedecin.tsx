@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Form, Alert, Spinner, Row, Col, Card } from 'react-bootstrap';
 import { PrescriptionForm } from "@/types/Prescription";
-import TableMedicamentsPharmAccueilMedecin, { ILigneMedicament, IMedicament } from "./TableMedicamentsPharmAccueilMedecin";
+import TableMedicamentsPharmAccueilMedecin, { ILigneMedicament } from "./TableMedicamentsPharmAccueilMedecin";
 import ModePaiementPharmAccueilMedecin from "./ModePaiementPharmAccueilMedecin";
 import InfoPatientPharmAccueilMedecin from "./InfoPatientPharmAccueilMedecin";
 import ValidationPaiementPharmAccueilMedecin from "./ValidationPaiementPharmAccueilMedecin";
@@ -88,7 +88,6 @@ export default function PharmacieModalPharmAccueilMedecin({
   onHide,
   codePrestation: initialCodePrestation,
 }: Props) {
-  const [medicaments, setMedicaments] = useState<IMedicament[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [codePrestation, setCodePrestation] = useState<string>(
@@ -306,13 +305,6 @@ useEffect(() => {
     }
   }, [currentUser, prescription, prescriptionId, formData, codePrestation, consultation, lignesMedicaments, modifiePrescription]);
 
-  // Charger les médicaments au montage du modal
-  useEffect(() => {
-    if (show) {
-      loadMedicaments();
-    }
-  }, [show]);
-
   // Fonction utilitaire pour normaliser les dates au format YYYY-MM-DD
 const normalizeDate = (dateInput: any): string => {
   if (!dateInput) return new Date().toISOString().split('T')[0];
@@ -494,21 +486,6 @@ const isGeneratedId = (id: string): boolean => {
     });
   }, [totaux]);
 
-  const loadMedicaments = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/medicaments");
-      if (res.ok) {
-        const data = await res.json();
-        setMedicaments(Array.isArray(data) ? data : []);
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des médicaments:", error);
-      setErrorMessage("Impossible de charger les médicaments");
-    } finally {
-      setLoading(false);
-    }
-  };
 
 
   const handleCodePrestationChange = useCallback((code: string) => {
@@ -875,7 +852,6 @@ const isGeneratedId = (id: string): boolean => {
                 </Card.Header>
                 <Card.Body>
                   <TableMedicamentsPharmAccueilMedecin
-                    medicaments={medicaments}
                     onLignesChange={handleLignesChange}
                     tauxAssurance={consultation.tauxAssurance || 0}
                     onTotauxChange={handleTotauxChange}

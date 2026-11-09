@@ -2,8 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { ISortieStock } from "@/models/SortieStock";
-import { IStock } from "@/models/Stock";
-import { IPharmacie } from "@/models/Pharmacie";
+import { enregistrerSortie, stockErrorResponse, ROLES_MOUVEMENT_PHARMACIE } from "@/lib/stockService";
 
 const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien"];
 
@@ -25,46 +24,15 @@ export async function GET(req: NextRequest) {
     }
 }
 
+// Sortie manuelle (pharmacie) : refusée si le stock est insuffisant
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response } = await withTenant(req, ROLES_MOUVEMENT_PHARMACIE);
     if (!context) return response;
-    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
-    const Stock = getTenantModel<IStock>(context.connection, "Stock");
-    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     try {
         const body = await req.json();
-
-        // Récupérer le conditionnement du médicament
-        const med = body.IDMEDICAMENT ? await Pharmacie.findById(body.IDMEDICAMENT).lean() : null;
-        const qteParCond = med?.QteParConditionnement || 1;
-        const mode = body.ModeVente === "BOITE" ? "BOITE" : "DETAIL";
-        const qteCond = Number(body.Quantite) || 0;
-        const qteUnites = mode === "BOITE" ? qteCond * qteParCond : qteCond;
-
-        const sortieData = {
-            ...body,
-            Quantite: qteUnites,
-            QteConditionnement: mode === "BOITE" ? qteCond : undefined,
-            ModeVente: mode,
-        };
-
-        const sortie = await SortieStock.create(sortieData);
-
-        // Mise à jour du stock physique
-        if (body.IDMEDICAMENT && qteUnites) {
-            const stock = await Stock.findOne({ IDMEDICAMENT: body.IDMEDICAMENT });
-            if (stock) {
-                const nouvelleQte = Math.max(0, (stock.QteEnStock ?? 0) - qteUnites);
-                await Stock.findByIdAndUpdate(stock._id, {
-                    QteEnStock: nouvelleQte,
-                    AuteurModif: body.SaisiPar,
-                    DateModif: new Date(),
-                });
-            }
-        }
-
+        const sortie = await enregistrerSortie(context, body);
         return NextResponse.json(sortie, { status: 201 });
     } catch (err: any) {
-        return NextResponse.json({ error: err.message }, { status: 400 });
+        return stockErrorResponse(err);
     }
 }

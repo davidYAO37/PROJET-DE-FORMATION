@@ -5,6 +5,7 @@ import axios from "axios";
 import { Button, Table, Pagination, Dropdown, Form, Spinner } from "react-bootstrap";
 import { FaEdit, FaSync, FaTrash, FaSort, FaSortUp, FaSortDown } from "react-icons/fa";
 import { Pharmacie } from "@/types/pharmacie";
+import { matchesSearch } from "@/lib/searchText";
 
 type Props = {
     Medicaments: Pharmacie[];
@@ -36,7 +37,7 @@ const ListeMedicament: React.FC<Props> = ({ Medicaments, onEdit, onDelete }) => 
 
     // Filtrage
     let filteredActes = Medicaments.filter(a =>
-        a.Designation?.toLowerCase().includes(search.toLowerCase())
+        matchesSearch(search, a.Designation)
     );
 
     // Tri

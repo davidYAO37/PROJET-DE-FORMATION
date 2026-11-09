@@ -5,6 +5,7 @@ import { FaPlus, FaEdit, FaTrash, FaCheck, FaArrowUp, FaArrowDown } from "react-
 import { ParamLabo } from "@/types/ParamLabo";
 import AjouterParamModal from "./AjouterParamModal";
 import ModifierParamActe from "./ModifierParamActe";
+import { matchesSearch } from "@/lib/searchText";
 
 interface ActeClinique {
   _id: string;
@@ -603,7 +604,7 @@ export default function ActeBiologie() {
 
   // Filtrer les actes selon le terme de recherche
   const actesFiltres = actesCliniques.filter(acte =>
-    acte.Designation.toLowerCase().includes(searchTerm.toLowerCase())
+    matchesSearch(searchTerm, acte.Designation)
   );
 
   return (

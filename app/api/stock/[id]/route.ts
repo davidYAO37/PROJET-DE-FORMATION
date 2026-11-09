@@ -27,6 +27,20 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
             updateData.QteStockVirtuel = Number(body.QteStockVirtuel);
         }
         
+        // Seuils de réapprovisionnement (auparavant ignorés : l'écran affichait un succès sans rien enregistrer)
+        for (const champ of ["QteMinimum", "QteMaximum"] as const) {
+            if (body[champ] !== undefined) {
+                const valeur = Number(body[champ]);
+                if (!Number.isFinite(valeur) || valeur < 0) {
+                    return NextResponse.json({ error: `${champ} doit être un nombre positif` }, { status: 400 });
+                }
+                updateData[champ] = valeur;
+            }
+        }
+        if (updateData.QteMaximum > 0 && updateData.QteMinimum > updateData.QteMaximum) {
+            return NextResponse.json({ error: "Le seuil minimum ne peut pas dépasser le seuil maximum" }, { status: 400 });
+        }
+        
         if (body.Reference !== undefined) {
             updateData.Reference = body.Reference;
         }

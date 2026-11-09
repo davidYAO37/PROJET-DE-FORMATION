@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
+import { matchesSearch } from "@/lib/searchText";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
@@ -34,7 +35,13 @@ export interface ITarifAssurance {
     PrixAssure?: number;
     CoefficientActe?: number;
     Prix?: number;
+    acteId?: string; // rattachement par identifiant (plus fiable que la désignation)
     // ... autres champs si besoin
+}
+
+// Un tarif correspond à l'acte par son identifiant, sinon (anciens tarifs) par sa désignation
+function correspondTarif(t: ITarifAssurance, acte: { _id: string; Designation?: string }) {
+    return t.acteId ? t.acteId === acte._id : t.Designation === (acte.Designation || "");
 }
 
 export interface ILignePrestation {
@@ -70,6 +77,11 @@ export interface ILignePrestation {
     Statutprescription: number;
     CoefClinique: number;
     forfaitclinique: number;
+    // Source du prix unitaire (pour enregistrer le prix saisi au bon endroit)
+    SourcePrix?: "acte" | "tarif" | "tarifAbsent";
+    SourceChamp?: "clinique" | "mutualiste" | "preferentiel";
+    SourceTarifId?: string;
+    PrixModifie?: boolean;
     ordonnancementAffichage?: number;
     Action?: string;
 }
@@ -91,10 +103,8 @@ const ActeSelect = memo(function ActeSelect({ actes, selectedId, onSelect }: Act
 
     const filteredActes = useMemo(() => {
         if (!searchTerm) return actes;
-        const lower = searchTerm.toLowerCase();
         return actes.filter(a =>
-            a.Designation?.toLowerCase().includes(lower) ||
-            a.LettreCle?.toLowerCase().includes(lower)
+            matchesSearch(searchTerm, a.Designation, a.LettreCle)
         );
     }, [searchTerm, actes]);
 
@@ -336,6 +346,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                 const mapped: ITarifAssurance[] = (Array.isArray(list) ? list : []).map((t: any) => ({
                     _id: String(t._id),
                     Designation: t.acte,
+                    acteId: t.acteId ? String(t.acteId) : undefined,
                     IDASSURANCE: 0, // non utilisé car déjà filtré par assurance
                     PrixMutualiste: t.prixmutuel,
                     PrixAssure: t.prixpreferenciel,
@@ -362,6 +373,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                 const mapped: ITarifAssurance[] = (Array.isArray(list) ? list : []).map((t: any) => ({
                     _id: String(t._id),
                     Designation: t.acte,
+                    acteId: t.acteId ? String(t.acteId) : undefined,
                     IDASSURANCE: 0,
                     PrixMutualiste: t.prixmutuel,
                     PrixAssure: t.prixpreferenciel,
@@ -395,6 +407,143 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
     // ---------- Helpers pour rechercher objets -------------
     const findActeById = useCallback((id: string) => actes.find((a) => a._id === id), [actes]);
 
+    // ---------- Prix unitaire saisi ----------
+    // Tarif applicable à l'acte : celui de la société d'abord, sinon celui de l'assurance
+    function trouverTarifActe(acte: IActeClinique): ITarifAssurance | undefined {
+        const societe = societeAssuranceId ? tarifsSocieteAssurance.find((t) => correspondTarif(t, acte)) : undefined;
+        return societe || tarifsAssurance.find((t) => correspondTarif(t, acte));
+    }
+
+    // Déduit d'où vient le prix unitaire affiché, selon la sélection et la logique de facturation
+    function determinerSource(ligne: ILignePrestation, acte: IActeClinique) {
+        ligne.SourceTarifId = undefined;
+        if (assuranceId === 1 || ligne.Exclusion === "Refuser") {
+            ligne.SourcePrix = "acte";
+            ligne.SourceChamp = "clinique";
+            return;
+        }
+        const champ = assuranceId === 2 ? "mutualiste" : "preferentiel";
+        ligne.SourceChamp = champ;
+        const tarif = trouverTarifActe(acte);
+        if (!tarif) {
+            ligne.SourcePrix = "tarifAbsent";
+            return;
+        }
+        const prixTarif = Number((champ === "mutualiste" ? tarif.PrixMutualiste : tarif.PrixAssure) ?? 0);
+        const prixDeLActe = Number((champ === "mutualiste" ? acte.PrixMutualiste : acte.PrixAssure) ?? 0);
+        // Avec surplus, si la clinique est plus chère que le tarif, c'est le prix de l'acte qui est facturé
+        if (accepteSurplus !== false && prixDeLActe !== prixTarif && Number(ligne.Prixunitaire) === prixDeLActe) {
+            ligne.SourcePrix = "acte";
+            return;
+        }
+        ligne.SourcePrix = "tarif";
+        ligne.SourceTarifId = tarif._id;
+    }
+
+    const [acteARecalculer, setActeARecalculer] = useState<string | null>(null);
+
+    // Pendant la saisie : seule la ligne change (pas de recalcul, pour ne pas écraser la frappe)
+    const onPrixChange = useCallback((lineId: string, valeur: string) => {
+        setErrorMsg(null);
+        const prix = Math.round(Number(String(valeur).replace(/\D/g, "")) || 0);
+        setLignes((prev) =>
+            prev.map((l) => {
+                if (l.IDLignePrestation !== lineId) return l;
+                if (!l.IDACTE) return { ...l, Prixunitaire: prix, Accepter: prix, PrixTotal: prix * (l.Coefficient || 1) * (l.QteP || 1) };
+                return { ...l, Prixunitaire: prix, PrixModifie: true };
+            })
+        );
+    }, []);
+
+    // En quittant le champ : le prix devient celui de la source (acte, tarif assurance ou société),
+    // il est enregistré en base, puis les lignes de cet acte sont recalculées
+    const onPrixBlur = useCallback(async (lineId: string) => {
+        const ligne = lignes.find((l) => l.IDLignePrestation === lineId);
+        if (!ligne?.PrixModifie) return;
+        const acte = findActeById(ligne.IDACTE);
+        if (!acte) return;
+        const prix = Math.round(Number(ligne.Prixunitaire) || 0);
+        if (prix <= 0) {
+            // Prix vide ou nul : on revient au prix calculé
+            setActeARecalculer(acte._id);
+            return;
+        }
+        const champ = ligne.SourceChamp || "clinique";
+        const cleTarif = champ === "mutualiste" ? "PrixMutualiste" : "PrixAssure";
+        const idProvisoire = `nouveau-${acte._id}`;
+        let corps: Record<string, any>;
+
+        if (ligne.SourcePrix === "tarif" && ligne.SourceTarifId) {
+            const appliquer = (liste: ITarifAssurance[]) =>
+                liste.map((t) => (t._id === ligne.SourceTarifId ? { ...t, [cleTarif]: prix } : t));
+            setTarifsSocieteAssurance(appliquer);
+            setTarifsAssurance(appliquer);
+            corps = { cible: "tarif", tarifId: ligne.SourceTarifId, champ, prix };
+        } else if (ligne.SourcePrix === "tarifAbsent") {
+            // Tarif provisoire en mémoire, créé en base ci-dessous
+            const provisoire: ITarifAssurance = {
+                _id: idProvisoire,
+                Designation: acte.Designation || "",
+                acteId: acte._id,
+                IDASSURANCE: 0,
+                CoefficientActe: acte.CoefficientActe,
+                PrixMutualiste: champ === "mutualiste" ? prix : (acte.PrixMutualiste ?? 0),
+                PrixAssure: champ === "preferentiel" ? prix : (acte.PrixAssure ?? 0),
+            };
+            const ajouter = (liste: ITarifAssurance[]) => [...liste.filter((t) => t._id !== idProvisoire), provisoire];
+            if (societeAssuranceId) setTarifsSocieteAssurance(ajouter);
+            else setTarifsAssurance(ajouter);
+            corps = { cible: "tarif", acteId: acte._id, assuranceId: assuranceDbId, societeAssuranceId: societeAssuranceId || undefined, champ, prix };
+        } else {
+            const cleActe = champ === "clinique" ? "Prix" : champ === "mutualiste" ? "PrixMutualiste" : "PrixAssure";
+            setActes((prev) => prev.map((a) => (a._id === acte._id ? { ...a, [cleActe]: prix } : a)));
+            corps = { cible: "acte", acteId: acte._id, champ, prix };
+        }
+        setActeARecalculer(acte._id);
+
+        try {
+            const res = await fetch("/api/actesclinique/prix", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(corps),
+            });
+            const data = await res.json().catch(() => null);
+            if (!res.ok) throw new Error(data?.error || "Erreur");
+            // Tarif créé : on remplace l'identifiant provisoire par le vrai
+            if (data?.cree && data?.tarif?._id) {
+                const vraiId = String(data.tarif._id);
+                const remplacer = (liste: ITarifAssurance[]) => liste.map((t) => (t._id === idProvisoire ? { ...t, _id: vraiId } : t));
+                setTarifsSocieteAssurance(remplacer);
+                setTarifsAssurance(remplacer);
+                setActeARecalculer(acte._id);
+            }
+        } catch (e: any) {
+            setErrorMsg(`Le prix de « ${acte.Designation} » n'a pas pu être enregistré (${e?.message || "erreur"}). Il reste appliqué à cette ligne.`);
+        }
+    }, [lignes, findActeById, societeAssuranceId, assuranceDbId]);
+
+    // Recalcul des lignes de l'acte dont le prix vient de changer (avec les prix à jour)
+    useEffect(() => {
+        if (!acteARecalculer) return;
+        setLignes((prev) =>
+            prev.map((l) => {
+                if (l.IDACTE !== acteARecalculer || (l.Statutprescription ?? 2) >= 3) return l;
+                const acte = findActeById(l.IDACTE);
+                if (!acte) return l;
+                const copy = { ...l, PrixModifie: false, Refuser: acte.Prix || 0 };
+                if (assuranceId === 1) {
+                    tarifActeClinique(copy, acte, 1);
+                } else {
+                    tarifActeAssurance(copy, acte, assuranceId);
+                }
+                prixActe(copy, acte);
+                determinerSource(copy, acte);
+                return copy;
+            })
+        );
+        setActeARecalculer(null);
+    }, [acteARecalculer, actes, tarifsAssurance, tarifsSocieteAssurance]);
+
     // ---------- Traduction des procédures WLangage ----------
     function tarifActeClinique(ligne: ILignePrestation, acte: IActeClinique, selAssure: number) {
         // SI ACTE.CoefficientActe=0 ALORS => coefficient = 1 sinon acte.CoefficientActe
@@ -403,8 +552,8 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
         // Mode sans surplus : utiliser le tarif négocié (assurance/société) comme montant clinique affiché
         if (accepteSurplus === false && assuranceId !== 1) {
             const designation = acte.Designation || "";
-            const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => t.Designation === designation) : [];
-            const assuranceMatches = tarifsAssurance.filter((t) => t.Designation === designation);
+            const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => correspondTarif(t, acte)) : [];
+            const assuranceMatches = tarifsAssurance.filter((t) => correspondTarif(t, acte));
             const tarifMatchedList = societeMatches.length > 0 ? societeMatches : assuranceMatches;
             
             if (tarifMatchedList.length > 0) {
@@ -444,16 +593,16 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
     function tarifActeAssurance(ligne: ILignePrestation, acte: IActeClinique, selAssure: number) {
         // Tarif effectif : société d'abord si fourni et tarif existant pour cet acte, sinon assurance
         const designation = acte.Designation || "";
-        const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => t.Designation === designation) : [];
-        const assuranceMatches = tarifsAssurance.filter((t) => t.Designation === designation);
+        const societeMatches = societeAssuranceId ? tarifsSocieteAssurance.filter((t) => correspondTarif(t, acte)) : [];
+        const assuranceMatches = tarifsAssurance.filter((t) => correspondTarif(t, acte));
         const tarifMatchedList = societeMatches.length > 0 ? societeMatches : assuranceMatches;
         if (tarifMatchedList.length === 0) {
             // équivalent Erreur(...) et suppression tableau => on déclenche une erreur visible
             setErrorMsg(
-                `Merci d'ajouter cet acte (${acte.Designation}) à la liste des actes de l'assurance avant cette opération.`
+                `Tarif absent pour « ${acte.Designation} » chez cette assurance : saisissez le prix unitaire pour créer le tarif.`
             );
-            // on vide les lignes (comme TableSupprime)
-            setLignes([]);
+            // Facturation provisoire au prix de l'acte (le tableau n'est plus vidé)
+            tarifActeClinique(ligne, acte, selAssure);
             return;
         }
         // sinon on parcourt les tarifs correspondants (tous pour cette assurance)
@@ -1005,6 +1154,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                 }
 
                 prixActe(copy, acte);
+                determinerSource(copy, acte);
 
                 if (acte.MontantAuMed === 1 || acte.MontantAuMed === "1") {
                     copy.Montant_MedExecutant = copy.PrixTotal;
@@ -1030,6 +1180,7 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                         tarifActeAssurance(copy, acte, assuranceId);
                     }
                     prixActe(copy, acte);
+                    determinerSource(copy, acte);
                 } else {
                     copy.PrixTotal = (copy.Prixunitaire || 0) * (copy.Coefficient || 1) * (copy.QteP || 1);
                 }
@@ -1142,9 +1293,8 @@ export default function TablePrestations({ assuranceId = 1, saiTaux = 0, assuran
                                                 type="number"
                                                 step="1"
                                                 value={l.Prixunitaire}
-                                                onChange={(e) =>
-                                                    onFieldChangeAndRecalc(l.IDLignePrestation, "Prixunitaire", parseInt(e.target.value) || 0)
-                                                }
+                                                onChange={(e) => onPrixChange(l.IDLignePrestation, e.target.value)}
+                                                onBlur={() => onPrixBlur(l.IDLignePrestation)}
                                                 style={{ fontSize: '13px', textAlign: 'right' }}
                                                 disabled={!isEditable}
                                                 title={!isEditable ? "Acte déjà facturé - modification impossible" : ""}

@@ -235,6 +235,11 @@ export default function GestionStockMedicaments() {
                                             <strong className={(item.QteEnStock ?? 0) <= 0 ? "text-danger" : ""}>
                                                 {item.QteEnStock ?? 0}
                                             </strong>
+                                            {(item.QteEnStock ?? 0) < 0 && (
+                                                <div className="small text-danger" title="Quantité vendue mais pas encore remise aux patients">
+                                                    dû aux patients
+                                                </div>
+                                            )}
                                         </td>
                                         <td>{item.QteStockVirtuel ?? 0}</td>
                                         <td>

@@ -6,12 +6,12 @@ import { IHistoriqueInventaire } from "@/models/HistoriqueInventaire";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 
-const WRITE_ROLES = ["admin", "pharmacien"];
+import { ROLES_MOUVEMENT_PHARMACIE } from "@/lib/stockService";
 
 // POST /api/gestionstock/inventaire/ajuster
 // Body: { lignes: [{ stockId, IDMEDICAMENT, Medicament, Reference, qteTheorique, qtePhysique, saisiPar }] }
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response } = await withTenant(req, ROLES_MOUVEMENT_PHARMACIE);
     if (!context) return response;
     const Stock = getTenantModel<IStock>(context.connection, "Stock");
     const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
@@ -22,16 +22,25 @@ export async function POST(req: NextRequest) {
         const now = new Date();
         const resultats = [];
 
-        for (const ligne of lignes) {
-            const ecart = ligne.qtePhysique - ligne.qteTheorique;
-            if (ecart === 0) continue;
+        const invalide = (lignes || []).find((l: any) => !Number.isFinite(Number(l.qtePhysique)) || Number(l.qtePhysique) < 0);
+        if (invalide) {
+            return NextResponse.json({ error: `Quantité comptée invalide pour « ${invalide.Medicament || invalide.Reference} »` }, { status: 400 });
+        }
 
-            // Mettre à jour le stock
-            await Stock.findByIdAndUpdate(ligne.stockId, {
-                QteEnStock: ligne.qtePhysique,
-                AuteurModif: saisiPar,
-                DateModif: now,
-            });
+        for (const ligne of lignes) {
+            const qtePhysique = Number(ligne.qtePhysique);
+
+            // Mettre à jour le stock de manière atomique ; l'écart est calculé sur la quantité
+            // réellement en base (une vente a pu avoir lieu depuis le chargement de l'écran)
+            const avant = await Stock.findOneAndUpdate(
+                { _id: ligne.stockId },
+                { $set: { QteEnStock: qtePhysique, AuteurModif: saisiPar, DateModif: now } },
+                { new: false }
+            ).lean<any>();
+            if (!avant) continue;
+            ligne.qteTheorique = Number(avant.QteEnStock) || 0;
+            const ecart = qtePhysique - ligne.qteTheorique;
+            if (ecart === 0) continue;
 
             // Tracer le mouvement
             if (ecart > 0) {

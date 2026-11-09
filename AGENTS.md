@@ -11,6 +11,15 @@ $env:NODE_OPTIONS="--max-old-space-size=8192"
 node ./node_modules/next/dist/bin/next build
 ```
 
+## Stock pharmacie
+
+- Tout mouvement de stock passe par `lib/stockService.ts` côté serveur (`enregistrerEntree`, `annulerEntree`, `enregistrerSortie`, `modifierSortie`, `supprimerSortie`, `ajusterStock`). Ne jamais lire puis réécrire `QteEnStock` depuis le client.
+- Le stock est en **unités** ; les saisies en boîte (`ModeVente: "BOITE"`) sont converties via `QteParConditionnement`.
+- Une sortie supérieure au stock est refusée (HTTP 409, `code: "STOCK_INSUFFISANT"`). Une entrée crée la ligne de stock si elle n'existe pas.
+- Une seule ligne de stock par médicament (index unique sur `Stock.IDMEDICAMENT`) ; recherche par `IDMEDICAMENT`, la référence ne sert que de repli pour les anciennes données.
+- Permissions : ventes = `ROLES_VENTE` (admin, pharmacien, caisse) ; entrées/sorties manuelles, achats, inventaire = `ROLES_MOUVEMENT_PHARMACIE` (admin, pharmacien). `parametrage_pharmacie` reste requis pour produits, seuils et suppression de stock.
+- Recherche de médicaments : `GET /api/medicaments?q=&limit=&skip=` ou `?ids=` (total dans l'en-tête `X-Total-Count`), composant `components/MedicamentSearchSelect.tsx`. Recherche sans accents : `lib/searchText.ts`.
+
 ## Licence / modules
 
 - Les modules activables par licence sont définis dans `lib/licenceModules.ts`.

@@ -1,8 +1,10 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Modal, Button, Form, Row, Col, Table, Alert } from "react-bootstrap";
 import { Pharmacie } from "@/types/pharmacie";
+import MedicamentSearchSelect from "@/components/MedicamentSearchSelect";
+import ImporterMedicamentsModal, { MedicamentImporte } from "./ImporterMedicamentsModal";
 
 interface Fournisseur {
   _id?: string;
@@ -34,187 +36,16 @@ interface LigneAchat {
   numeroLot: string;
 }
 
-// Composant de recherche de médicament avec autocomplétion (même style que SearchableActeSelect)
-interface SearchableMedicamentSelectProps {
-  medicaments: Pharmacie[];
-  selectedId: string;
-  onSelect: (medicamentId: string) => void;
-}
-
-function SearchableMedicamentSelect({
-  medicaments,
-  selectedId,
-  onSelect,
-}: SearchableMedicamentSelectProps) {
-  const [searchTerm, setSearchTerm] = useState("");
-  const [showDropdown, setShowDropdown] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const [dropdownPosition, setDropdownPosition] = useState({
-    top: 0,
-    left: 0,
-    width: 0,
-  });
-
-  // Trouver le médicament sélectionné
-  const selectedMedicament = medicaments.find((m) => m._id === selectedId);
-  const displayValue = selectedMedicament
-    ? selectedMedicament.Designation || ""
-    : "";
-
-  // Filtrer les médicaments selon la recherche - Si pas de recherche, afficher tous les médicaments
-  const allFilteredMedicaments = searchTerm
-    ? medicaments.filter(
-        (m) =>
-          m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()),
-      )
-    : medicaments; // Afficher tous les médicaments si pas de recherche
-
-  const filteredMedicaments = allFilteredMedicaments.slice(0, 50);
-
-  // Calculer la position du dropdown
-  useEffect(() => {
-    if (showDropdown && inputRef.current) {
-      const rect = inputRef.current.getBoundingClientRect();
-      setDropdownPosition({
-        top: rect.bottom + 5, // Position en dessous de l'input
-        left: rect.left,
-        width: rect.width,
-      });
-    }
-  }, [showDropdown]);
-
-  // Fermer le dropdown si on clique à l'extérieur
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node) &&
-        inputRef.current &&
-        !inputRef.current.contains(event.target as Node)
-      ) {
-        setShowDropdown(false);
-        setSearchTerm("");
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
-  const handleSelect = (medicamentId: string) => {
-    onSelect(medicamentId);
-    setSearchTerm("");
-    setShowDropdown(false);
-  };
-
-  return (
-    <div style={{ position: 'relative' }}>
-      <Form.Control
-        ref={inputRef}
-        type="text"
-        size="sm"
-        placeholder="Rechercher un médicament..."
-        value={showDropdown ? searchTerm : displayValue}
-        onChange={(e) => {
-          setSearchTerm(e.target.value);
-          setShowDropdown(true);
-        }}
-        onFocus={() => setShowDropdown(true)}
-        style={{
-          fontSize: "13px",
-        }}
-      />
-      {showDropdown && (
-        <div
-          ref={dropdownRef}
-          style={{
-            position: 'fixed',
-            top: `${dropdownPosition.top}px`,
-            left: `${dropdownPosition.left}px`,
-            width: `${dropdownPosition.width}px`,
-            maxHeight: '200px',
-            overflow: 'auto',
-            backgroundColor: 'white',
-            border: '1px solid #dee2e6',
-            borderRadius: '0.375rem',
-            boxShadow: '0 0.5rem 1rem rgba(0, 0, 0, 0.15)',
-            zIndex: 1000
-          }}
-        >
-          {searchTerm && (
-            <div style={{ padding: '4px 8px', fontSize: '11px', color: '#6c757d', borderBottom: '1px solid #f8f9fa', backgroundColor: '#f8f9fa' }}>
-              {allFilteredMedicaments.length} résultat
-              {allFilteredMedicaments.length > 1 ? "s" : ""} trouvé
-              {allFilteredMedicaments.length > 1 ? "s" : ""}
-            </div>
-          )}
-          {filteredMedicaments.length === 0 ? (
-            <div style={{ padding: '8px', color: '#6c757d', fontSize: '13px', textAlign: 'center' }}>
-              Aucun médicament trouvé
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column' }}>
-              {filteredMedicaments.map((medicament) => (
-                <div
-                  key={medicament._id || `medicament-${medicament.Reference}`}
-                  onClick={() => handleSelect(medicament._id || "")}
-                  style={{
-                    padding: '8px',
-                    cursor: 'pointer',
-                    fontSize: '13px',
-                    borderBottom: '1px solid #f8f9fa',
-                    backgroundColor: medicament._id === selectedId ? '#e3f2fd' : 'white'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.backgroundColor = '#f8f9fa';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.backgroundColor = medicament._id === selectedId ? '#e3f2fd' : 'white';
-                  }}
-                >
-                  <div style={{ fontWeight: 'bold', marginBottom: '2px' }}>
-                    {medicament.Designation}
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', fontSize: '11px' }}>
-                    {medicament.Reference && (
-                      <span style={{ color: '#6c757d' }}>
-                        � {medicament.Reference}
-                      </span>
-                    )}
-                    {medicament.PrixAchat && (
-                      <span style={{ color: '#0d6efd' }}>
-                        💰 Achat: {medicament.PrixAchat} FCFA
-                      </span>
-                    )}
-                    {medicament.PrixVente && (
-                      <span style={{ color: '#198754' }}>
-                        🏥 Vente: {medicament.PrixVente} FCFA
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-    </div>
-  );
-}
-
 type Props = {
   show: boolean;
   onHide: () => void;
   onAdd: (achat: any) => void;
-  medicaments: Pharmacie[]; // Liste des médicaments disponibles
 };
 
 export default function AjouterAchat({
   show,
   onHide,
   onAdd,
-  medicaments,
 }: Props) {
   const [lignes, setLignes] = useState<LigneAchat[]>([]);
   const [error, setError] = useState("");
@@ -223,6 +54,7 @@ export default function AjouterAchat({
   const [fournisseurs, setFournisseurs] = useState<Fournisseur[]>([]);
   const [selectedFournisseur, setSelectedFournisseur] = useState("");
   const [numeroFacture, setNumeroFacture] = useState("");
+  const [showImport, setShowImport] = useState(false);
   
   // États pour les totaux (selon la logique WinDev)
   const [totalHT, setTotalHT] = useState(0);
@@ -248,6 +80,39 @@ export default function AjouterAchat({
         numeroLot: "",
       },
     ]);
+  };
+
+  // Ajoute en une fois les médicaments importés du catalogue, avec leur stock actuel
+  const importerMedicaments = (items: MedicamentImporte[]) => {
+    setLignes((prev) => {
+      const presents = new Set(prev.map((l) => l.medicament?._id).filter(Boolean));
+      const base = Date.now();
+      const nouvelles: LigneAchat[] = items
+        .filter(({ medicament }) => !presents.has(medicament._id))
+        .map(({ medicament, stock, quantiteProposee }, i) => ({
+          id: `${base}-${i}`,
+          medicament,
+          quantite: quantiteProposee,
+          prixAchat: medicament.PrixAchat || 0,
+          taxe: 0,
+          reference: medicament.Reference || "",
+          prixVente: medicament.PrixVente || 0,
+          stockInfo: stock
+            ? {
+                QteEnStock: stock.QteEnStock ?? 0,
+                QteMinimum: stock.QteMinimum ?? 0,
+                QteMaximum: stock.QteMaximum ?? 0,
+                QteStockVirtuel: stock.QteStockVirtuel ?? 0,
+              }
+            : null,
+          qteMinimum: stock?.QteMinimum ?? 0,
+          qteMaximum: stock?.QteMaximum ?? 0,
+          datePeremption: "",
+          numeroLot: "",
+        }));
+      // Retire les lignes vides restantes avant d'ajouter l'import
+      return [...prev.filter((l) => l.medicament), ...nouvelles];
+    });
   };
 
   // Fonction pour supprimer une ligne
@@ -301,42 +166,45 @@ export default function AjouterAchat({
   const totalGeneral = montantTTC;
 
   // Gestion de la sélection d'un médicament
-  const handleSelectMedicament = async (ligneId: string, medicamentId: string) => {
-    const medicament = medicaments.find((m) => m._id === medicamentId);
-    if (medicament) {
-      updateLigne(ligneId, {
-        medicament,
-        reference: medicament.Reference || "",
-        prixAchat: medicament.PrixAchat || 0,
-        prixVente: medicament.PrixVente || 0,
-        stockInfo: null,
-        qteMinimum: 0,
-        qteMaximum: 0,
-        datePeremption: "",
-        numeroLot: "",
-      });
-      // Charger le stock actuel du médicament
-      try {
-        const res = await fetch(`/api/stock?IDMEDICAMENT=${medicamentId}`);
-        if (res.ok) {
-          const data = await res.json();
-          const stock = Array.isArray(data) && data.length > 0 ? data[0] : null;
-          updateLigne(ligneId, {
-            stockInfo: stock
-              ? {
-                  QteEnStock: stock.QteEnStock ?? 0,
-                  QteMinimum: stock.QteMinimum ?? 0,
-                  QteMaximum: stock.QteMaximum ?? 0,
-                  QteStockVirtuel: stock.QteStockVirtuel ?? 0,
-                }
-              : null,
-            qteMinimum: stock?.QteMinimum ?? 0,
-            qteMaximum: stock?.QteMaximum ?? 0,
-          });
-        }
-      } catch (err) {
-        console.error("Erreur chargement stock médicament:", err);
+  const handleSelectMedicament = async (ligneId: string, medicament: Pharmacie | null) => {
+    if (!medicament?._id) return;
+    if (lignes.some((l) => l.id !== ligneId && l.medicament?._id === medicament._id)) {
+      setError(`« ${medicament.Designation} » est déjà dans cet achat : modifiez plutôt la quantité de la ligne existante.`);
+      return;
+    }
+    setError("");
+    updateLigne(ligneId, {
+      medicament,
+      reference: medicament.Reference || "",
+      prixAchat: medicament.PrixAchat || 0,
+      prixVente: medicament.PrixVente || 0,
+      stockInfo: null,
+      qteMinimum: 0,
+      qteMaximum: 0,
+      datePeremption: "",
+      numeroLot: "",
+    });
+    // Charger le stock actuel du médicament
+    try {
+      const res = await fetch(`/api/stock?IDMEDICAMENT=${medicament._id}`);
+      if (res.ok) {
+        const data = await res.json();
+        const stock = Array.isArray(data) && data.length > 0 ? data[0] : null;
+        updateLigne(ligneId, {
+          stockInfo: stock
+            ? {
+                QteEnStock: stock.QteEnStock ?? 0,
+                QteMinimum: stock.QteMinimum ?? 0,
+                QteMaximum: stock.QteMaximum ?? 0,
+                QteStockVirtuel: stock.QteStockVirtuel ?? 0,
+              }
+            : null,
+          qteMinimum: stock?.QteMinimum ?? 0,
+          qteMaximum: stock?.QteMaximum ?? 0,
+        });
       }
+    } catch (err) {
+      console.error("Erreur chargement stock médicament:", err);
     }
   };
 
@@ -385,103 +253,40 @@ export default function AjouterAchat({
       const approvisionnementCree = await resAppro.json();
       const idAppro = approvisionnementCree._id;
 
-      // 2. AJOUTE LES LIGNES DE L'ENTRÉE EN STOCK
-      for (const ligne of lignesValides) {
-        const entreeStock = {
-          DateAppro: dateDuJour,
-          IDAppro: idAppro,
-          Reference: ligne.reference,
-          IDMEDICAMENT: ligne.medicament?._id,
-          Medicament: ligne.medicament?.Designation,
-          Quantite: ligne.quantite,
-          PrixAchat: ligne.prixAchat,
-          PrixVente: ligne.prixVente,
-          PRIXTHT: ligne.quantite * ligne.prixAchat,
-          TVAEntree: ligne.taxe,
-          MontantTTCE: calculerTotalLigne(ligne),
-          QteMinimum: ligne.qteMinimum,
-          QteMaximum: ligne.qteMaximum,
-          DatePeremption: ligne.datePeremption || null,
-          NumeroLot: ligne.numeroLot || "",
-          Observations: observation,
-          SaisiLe: dateDuJour,
+      // 2. AJOUTE LES LIGNES : le serveur crée les entrées, incrémente le stock
+      //    (création de la ligne de stock si besoin) et met à jour les prix du médicament
+      const resLignes = await fetch(`/api/approvisionnement/${idAppro}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
           SaisiPar: utilisateur,
-        };
-
-        // Ajouter l'entrée en stock
-        const resEntree = await fetch("/api/gestionstock/entrestock", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(entreeStock),
-        });
-
-        if (!resEntree.ok) throw new Error("Erreur lors de l'ajout de l'entrée en stock");
-
-        // 3. MODIFICATION DE L'ARTICLE DE CRÉATION (PHARMACIE)
-        if (ligne.medicament?._id) {
-          const resUpdatePharmacie = await fetch(`/api/medicaments/${ligne.medicament._id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              PrixAchat: ligne.prixAchat,
-              PrixVente: ligne.prixVente,
-            }),
-          });
-
-          if (!resUpdatePharmacie.ok) {
-            console.warn("Erreur lors de la mise à jour du médicament:", ligne.medicament.Designation);
-          }
-        }
-
-        // 4. MODIFICATION DE L'ARTICLE EN STOCK OU AJOUT AU STOCK
-        // Vérifier si le médicament existe déjà en stock
-        const resStock = await fetch(`/api/gestionstock/stock/reference?reference=${encodeURIComponent(ligne.reference)}`);
-        let stockExistant = null;
-        
-        if (resStock.ok) {
-          stockExistant = await resStock.json();
-        }
-
-        if (stockExistant && stockExistant._id) {
-          // XX produit en plus en stock
-          const resUpdateStock = await fetch(`/api/gestionstock/stock/${stockExistant._id}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              QteEnStock: (stockExistant.QteEnStock || 0) + ligne.quantite,
-              QteMinimum: ligne.qteMinimum,
-              QteMaximum: ligne.qteMaximum,
-              AuteurModif: utilisateur,
-              DateModif: dateDuJour,
-            }),
-          });
-
-          if (!resUpdateStock.ok) {
-            console.warn("Erreur lors de la mise à jour du stock:", ligne.reference);
-          }
-        } else {
-          // Ajoute immédiat de l'article en stock
-          const nouveauStock = {
-            AuteurModif: utilisateur,
-            DateModif: dateDuJour,
-            QteEnStock: ligne.quantite,
+          lignes: lignesValides.map((ligne) => ({
+            DateAppro: dateDuJour,
+            Reference: ligne.reference,
+            IDMEDICAMENT: ligne.medicament?._id,
+            Medicament: ligne.medicament?.Designation,
+            Quantite: ligne.quantite,
+            PrixAchat: ligne.prixAchat,
+            PrixVente: ligne.prixVente,
+            PRIXTHT: ligne.quantite * ligne.prixAchat,
+            TVAEntree: ligne.taxe,
+            MontantTTCE: calculerTotalLigne(ligne),
             QteMinimum: ligne.qteMinimum,
             QteMaximum: ligne.qteMaximum,
-            Reference: ligne.reference,
-            Medicament: ligne.medicament?.Designation,
-            IDMEDICAMENT:ligne.medicament?._id,
-          };
+            DatePeremption: ligne.datePeremption || null,
+            NumeroLot: ligne.numeroLot || "",
+            Observations: observation,
+            SaisiLe: dateDuJour,
+            SaisiPar: utilisateur,
+          })),
+        }),
+      });
 
-          const resAddStock = await fetch("/api/gestionstock/stock", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(nouveauStock),
-          });
-
-          if (!resAddStock.ok) {
-            console.warn("Erreur lors de l'ajout au stock:", ligne.reference);
-          }
-        }
+      if (!resLignes.ok) {
+        const detail = await resLignes.json().catch(() => null);
+        // Rien n'a été ajouté au stock : on supprime l'en-tête créé
+        await fetch(`/api/approvisionnement/${idAppro}`, { method: "DELETE" }).catch(() => {});
+        throw new Error(detail?.error || "Erreur lors de l'ajout des lignes en stock");
       }
 
       // Succès
@@ -556,7 +361,15 @@ export default function AjouterAchat({
                 />
               </Form.Group>
             </Col>
-            <Col className="text-end">
+            <Col className="text-end d-flex justify-content-end gap-2">
+              <Button
+                variant="outline-primary"
+                onClick={() => setShowImport(true)}
+                disabled={loading}
+                title="Importer des médicaments existants du catalogue"
+              >
+                Importer des médicaments
+              </Button>
               <Button
                 variant="primary"
                 onClick={ajouterLigne}
@@ -595,11 +408,10 @@ export default function AjouterAchat({
                 {lignes.map((ligne) => (
                   <tr key={ligne.id}>
                     <td>
-                      <SearchableMedicamentSelect
-                        medicaments={medicaments}
-                        selectedId={ligne.medicament?._id || ""}
-                        onSelect={(medicamentId) =>
-                          handleSelectMedicament(ligne.id, medicamentId)
+                      <MedicamentSearchSelect
+                        value={ligne.medicament}
+                        onSelect={(medicament) =>
+                          handleSelectMedicament(ligne.id, medicament)
                         }
                       />
                     </td>
@@ -834,6 +646,12 @@ export default function AjouterAchat({
           </Button>
         </Modal.Footer>
       </Form>
+      <ImporterMedicamentsModal
+        show={showImport}
+        onHide={() => setShowImport(false)}
+        dejaAjoutes={lignes.map((l) => l.medicament?._id).filter((id): id is string => !!id)}
+        onImport={importerMedicaments}
+      />
     </Modal>
   );
 }

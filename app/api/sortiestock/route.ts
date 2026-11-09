@@ -1,14 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { ISortieStock } from "@/models/SortieStock";
-import { IStock } from "@/models/Stock";
-import { IPharmacie } from "@/models/Pharmacie";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
+import { convertirEnUnites, enregistrerSortie, idValide, nettoyerSortieCaisse, stockErrorResponse, ROLES_VENTE } from "@/lib/stockService";
 
 const READ_ROLES = ["admin", "pharmacien", "accueil", "caisse", "comptable"];
-const WRITE_ROLES = ["admin", "pharmacien", "caisse"];
 
-// GET /api/sortiestock?reference=xxx&IDPRESCRIPTION=xxx
+// GET /api/sortiestock?reference=xxx&IDPRESCRIPTION=xxx&Patient=xxx&IDMEDICAMENT=xxx
 export async function GET(request: NextRequest) {
     const { context, response } = await withTenant(request, READ_ROLES);
     if (!context) return response;
@@ -19,12 +17,14 @@ export async function GET(request: NextRequest) {
         const reference = searchParams.get("reference");
         const IDPRESCRIPTION = searchParams.get("IDPRESCRIPTION");
         const Patient = searchParams.get("Patient");
+        const IDMEDICAMENT = searchParams.get("IDMEDICAMENT");
         
         let query: any = {};
         
         if (reference && reference.trim() !== "") query.Reference = reference;
-        if (IDPRESCRIPTION && IDPRESCRIPTION.trim() !== "" && IDPRESCRIPTION !== "undefined") query.Prescription = IDPRESCRIPTION;
-        if (Patient && Patient.trim() !== "" && Patient !== "undefined") query.Patient = Patient;
+        if (idValide(IDPRESCRIPTION)) query.Prescription = IDPRESCRIPTION;
+        if (idValide(Patient)) query.Patient = Patient;
+        if (idValide(IDMEDICAMENT)) query.IDMEDICAMENT = IDMEDICAMENT;
         
         const sortiesStock = await SortieStock.find(query).lean();
         
@@ -38,88 +38,26 @@ export async function GET(request: NextRequest) {
     }
 }
 
-// POST /api/sortiestock - Créer une nouvelle sortie de stock
+// POST /api/sortiestock - Vente caisse : décrémente le stock côté serveur (refus si insuffisant)
 export async function POST(request: NextRequest) {
-    const { context, response } = await withTenant(request, WRITE_ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response } = await withTenant(request, ROLES_VENTE);
     if (!context) return response;
-    const SortieStock = getTenantModel<ISortieStock>(context.connection, "SortieStock");
-    const Stock = getTenantModel<IStock>(context.connection, "Stock");
-    const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
 
     try {
         const body = await request.json();
-        
-        // Mapper les champs et gérer les ObjectId
-        const sortieStockData: any = {
-            ...body
-        };
-        
-        // Gérer les champs ObjectId - ne les inclure que s'ils sont valides
-        if (body.Prescription && body.Prescription.trim() !== "" && body.Prescription !== "undefined") {
-            sortieStockData.Prescription = body.Prescription;
-        } else {
-            delete sortieStockData.Prescription;
-        }
-        
-        if (body.Patient && body.Patient.trim() !== "" && body.Patient !== "undefined") {
-            sortieStockData.Patient = body.Patient;
-        } else {
-            delete sortieStockData.Patient;
-        }
+        // Ligne « intégrée » malgré un stock insuffisant : le stock peut devenir négatif (quantité due)
+        const autoriserNegatif = body?.StockNegatifAutorise === true;
+        const data = nettoyerSortieCaisse(body);
 
-        // Gestion vente au détail ou en conditionnement (boîte)
-        const idMed = sortieStockData.IDMEDICAMENT;
-        const mode = sortieStockData.ModeVente || "DETAIL";
-        const qteInput = Number(sortieStockData.Quantite) || 0;
-        let qteUnite = qteInput;
-        let qteCond = null as number | null;
-        let prixUnitaire = 0;
+        // Prix selon le mode de vente (boîte / détail)
+        const { med, mode, qteUnites, qteConditionnement } = await convertirEnUnites(context, data.IDMEDICAMENT, data.Quantite, data.ModeVente);
+        const prixUnitaire = mode === "BOITE"
+            ? Number(data.PrixVenteConditionnement) || Number(data.Prix_unitaire) || med?.PrixVenteConditionnement || med?.PrixVente || 0
+            : Number(data.Prix_unitaire) || med?.PrixVenteUnite || med?.PrixVente || 0;
+        data.Prix_unitaire = prixUnitaire;
+        data.Prix_TotalS = (qteConditionnement ?? qteUnites) * prixUnitaire;
 
-        if (idMed) {
-            const med = await Pharmacie.findById(idMed).lean();
-            const qteParCond = med?.QteParConditionnement || 1;
-
-            if (mode === "BOITE" && qteParCond > 1) {
-                qteCond = qteInput;
-                qteUnite = qteInput * qteParCond;
-                prixUnitaire = Number(sortieStockData.PrixVenteConditionnement)
-                    || Number(sortieStockData.Prix_unitaire)
-                    || med?.PrixVenteConditionnement
-                    || med?.PrixVente
-                    || 0;
-            } else {
-                prixUnitaire = Number(sortieStockData.Prix_unitaire)
-                    || med?.PrixVenteUnite
-                    || med?.PrixVente
-                    || 0;
-            }
-        } else {
-            prixUnitaire = Number(sortieStockData.Prix_unitaire) || 0;
-        }
-
-        sortieStockData.Quantite = qteUnite;
-        sortieStockData.QteConditionnement = qteCond;
-        sortieStockData.Prix_unitaire = prixUnitaire;
-        sortieStockData.Prix_TotalS = qteCond !== null ? (qteCond * prixUnitaire) : (qteUnite * prixUnitaire);
-        sortieStockData.ModeVente = mode;
-        
-        // Créer une nouvelle sortie de stock
-        const newSortieStock = await SortieStock.create(sortieStockData);
-
-        // Mise à jour du stock physique uniquement si IDMEDICAMENT est fourni
-        // (les ventes caisse gèrent leur propre décrément via /api/stock/:id)
-        if (idMed && qteUnite > 0) {
-            const stock = await Stock.findOne({ IDMEDICAMENT: idMed });
-            if (stock) {
-                await Stock.findByIdAndUpdate(stock._id, {
-                    QteEnStock: Math.max(0, (stock.QteEnStock ?? 0) - qteUnite),
-                    AuteurModif: sortieStockData.SaisiPar || "Système",
-                    DateModif: new Date(),
-                });
-            }
-        }
-        // Note: si pas d'IDMEDICAMENT (ex: vente caisse via référence), le décrément est
-        // géré directement par le client via PUT /api/stock/:id
+        const newSortieStock = await enregistrerSortie(context, data, { stockVirtuel: true, autoriserNegatif });
 
         return NextResponse.json({
             success: true,
@@ -128,10 +66,7 @@ export async function POST(request: NextRequest) {
         }, { status: 201 });
     } catch (error: any) {
         console.error("Erreur POST /api/sortiestock:", error);
-        return NextResponse.json({
-            error: "Erreur lors de la création de la sortie de stock",
-            details: error.message 
-        }, { status: 500 });
+        return stockErrorResponse(error);
     }
 }
 

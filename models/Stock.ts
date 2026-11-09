@@ -29,4 +29,7 @@ const StockSchema = new Schema<IStock>({
     IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
     entrepriseId: { type: String },
 }, { timestamps: true });
+// Une seule ligne de stock par médicament
+StockSchema.index({ IDMEDICAMENT: 1 }, { unique: true, partialFilterExpression: { IDMEDICAMENT: { $type: "objectId" } } });
+StockSchema.index({ Reference: 1 });
 export const Stock: Model<IStock> = mongoose.models.Stock || mongoose.model<IStock>("Stock", StockSchema);  

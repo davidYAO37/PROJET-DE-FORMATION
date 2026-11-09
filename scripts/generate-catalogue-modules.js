@@ -67,7 +67,9 @@ const MODULES = [
     description:
       "Gestion des demandes d'imagerie (radiologie, échographie, scanner), " +
       "saisie des comptes rendus, archivage des résultats et envoi aux " +
-      "médecins prescripteurs.",
+      "médecins prescripteurs. Les coordonnées des patients (téléphone, " +
+      "adresse) sont masquées dans ce service : le radiologue n'accède " +
+      "qu'aux informations strictement nécessaires à l'examen.",
   },
   {
     code: "pharmacie",

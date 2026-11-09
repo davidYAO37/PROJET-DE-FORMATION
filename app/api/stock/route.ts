@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
         if (reference) {
             query.Reference = reference;
             const stock = await Stock.findOne(query).lean();
-            return NextResponse.json([stock]); // Retourner un tableau pour la cohérence
+            return NextResponse.json(stock ? [stock] : []); // Retourner un tableau pour la cohérence
         }
         
         if (IDMEDICAMENT) {
@@ -80,6 +80,8 @@ export async function POST(request: NextRequest) {
             IDMEDICAMENT: body.IDMEDICAMENT,
             QteEnStock: Number(body.QteEnStock) || 0,
             QteStockVirtuel: Number(body.QteStockVirtuel) || 0,
+            QteMinimum: Number(body.QteMinimum) || 0,
+            QteMaximum: Number(body.QteMaximum) || 0,
             Reference: body.Reference || "",
             Medicament: body.Medicament || "",
             AuteurModif: body.AuteurModif || "System",

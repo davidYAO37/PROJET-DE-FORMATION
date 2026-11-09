@@ -3,7 +3,8 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { Modal, Button, Form, Alert, Spinner, Row, Col, Card } from 'react-bootstrap';
 import InfoPatient from "./InfoPatient";
-import TableMedicaments, { IMedicament, ILigneMedicament } from "./TableMedicaments";
+import TableMedicaments, { ILigneMedicament } from "./TableMedicaments";
+import { fetchMedicamentsByIds } from "@/components/MedicamentSearchSelect";
 import ModePaiement from "./ModePaiement";
 import ValidationPaiement from "./ValidationPaiement";
 import { PrescriptionForm } from "@/types/Prescription";
@@ -83,10 +84,11 @@ export default function PharmacieCaisseModal({
   codePrestation: initialCodePrestation,
   onPaiementSuccess,
 }: Props) {
-  const [medicaments, setMedicaments] = useState<IMedicament[]>([]);
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [infoMessage, setInfoMessage] = useState<string | null>(null);
+  // Lignes de prescription écartées pour stock insuffisant (bouton « Intégrer au paiement »)
+  const [lignesEcartees, setLignesEcartees] = useState<ILigneMedicament[]>([]);
 
   // États pour les données patient/consultation
   const [patient, setPatient] = useState<Patient>({});
@@ -225,13 +227,6 @@ export default function PharmacieCaisseModal({
     };
   }, [lignesMedicaments, totaux, formData.MotifRemise, modePaiement, montantEncaisse, consultation, patient]);
 
-  // Charger les médicaments au montage du modal
-  useEffect(() => {
-    if (show) {
-      loadMedicaments();
-    }
-  }, [show]);
-
   // Initialiser le code prestation si fourni
   useEffect(() => {
     if (show && initialCodePrestation) {
@@ -251,36 +246,79 @@ export default function PharmacieCaisseModal({
     }));
   }, [totaux]);
 
-  const loadMedicaments = async () => {
-    try {
-      setLoading(true);
-      const res = await fetch("/api/medicaments");
-      if (res.ok) {
-        const data = await res.json();
-        setMedicaments(Array.isArray(data) ? data : []);
-      }
-    } catch (error) {
-      console.error("Erreur lors du chargement des médicaments:", error);
-      setErrorMessage("Impossible de charger les médicaments");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   // Handler pour les changements de code prestation
-  const verifierStockMedicament = async (medicamentId: string, quantiteRequise: number): Promise<boolean> => {
+  const stockDisponible = async (medicamentId: string): Promise<number> => {
     try {
       const response = await fetch(`/api/stock?IDMEDICAMENT=${encodeURIComponent(medicamentId)}`);
       if (response.ok) {
         const stocks = await response.json();
-        const stock = stocks.find((s: any) => s.IDMEDICAMENT === medicamentId);
-        return stock && stock.QteEnStock >= quantiteRequise;
+        const stock = Array.isArray(stocks) ? stocks.find((s: any) => String(s.IDMEDICAMENT) === medicamentId) : null;
+        return Number(stock?.QteEnStock) || 0;
       }
-      return false;
+      return 0;
     } catch (error) {
       console.error("Erreur vérification stock:", error);
-      return false;
+      return 0;
     }
+  };
+
+  // Garde les lignes de prescription payables : statut < 3 et stock suffisant.
+  // Les lignes déjà payées sont toujours gardées (leur quantité est déjà sortie du stock).
+  const filtrerPrescriptionsEligibles = async (patientPrescriptions: any[]) => {
+    const ruptures: string[] = [];
+    // Lignes écartées uniquement pour stock insuffisant : elles peuvent être intégrées au paiement
+    const ecartees: any[] = [];
+    const eligibles = (await Promise.all(
+      patientPrescriptions.map(async (pp: any) => {
+        if (pp.StatutPrescriptionMedecin >= 3) return null;
+        const medicamentId = pp.medicament?.toString() || pp.IDMEDICAMENT || "";
+        if (!medicamentId) return null;
+        if (pp.actePayeCaisse === "Payé") return pp;
+        const quantiteRequise = Number(pp.QteP) || 1;
+        const dispo = await stockDisponible(medicamentId);
+        if (dispo < quantiteRequise) {
+          ruptures.push(`${pp.nomMedicament || "médicament"} (demandé ${quantiteRequise}, disponible ${dispo})`);
+          ecartees.push(pp);
+          return null;
+        }
+        return pp;
+      })
+    )).filter(Boolean);
+    return { eligibles, ruptures, ecartees, ignores: patientPrescriptions.length - eligibles.length };
+  };
+
+  const messageNonEligibles = (ruptures: string[], ignores: number) => {
+    if (ruptures.length) return `Stock insuffisant, non ajouté au paiement : ${ruptures.join(" ; ")}`;
+    return ignores > 0 ? `${ignores} médicament(s) non éligible(s) pour le paiement (déjà délivré ou sans médicament lié)` : null;
+  };
+
+  // Ligne écartée pour stock insuffisant, prête à être intégrée au paiement (stock négatif autorisé)
+  const convertirLigneEcartee = (pp: any): ILigneMedicament => ({
+    id: pp._id || Math.random().toString(36).substr(2, 9),
+    medicamentId: pp.medicament?.toString() || pp.IDMEDICAMENT || "",
+    designation: pp.nomMedicament || "",
+    quantite: Number(pp.QteP) || 1,
+    prixUnitaire: Math.round(Number(pp.prixUnitaire) || 0),
+    total: Math.round(Number(pp.prixTotal) || 0),
+    paye: false,
+    refuse: pp.exclusionActe === "Refuser" || pp.ExclusionActae === "Refuser",
+    partAssurance: Math.round(Number(pp.partAssurance) || 0),
+    partAssure: Math.round(Number(pp.partAssure) || 0),
+    DATE: new Date().toISOString().split('T')[0],
+    reference: pp.reference || "",
+    stockInsuffisant: true,
+  });
+
+  // Ajoute au tableau les lignes écartées pour stock insuffisant
+  const integrerLignesEcartees = () => {
+    const presentes = new Set((lignesMedicaments || []).map((l) => l.id));
+    const aAjouter = lignesEcartees.filter((l) => !presentes.has(l.id));
+    setPresetLines([...(lignesMedicaments || []), ...aAjouter]);
+    setLignesEcartees([]);
+    setInfoMessage(
+      `${aAjouter.length} médicament(s) intégré(s) malgré le stock insuffisant. ` +
+      `À l'encaissement, le stock deviendra négatif : la quantité manquante sera due au patient.`
+    );
   };
 
   // Fonction pour charger les patientprescription liées à la prescription
@@ -300,53 +338,20 @@ export default function PharmacieCaisseModal({
         console.log("✅ Patientprescription reçues:", patientPrescriptions);
 
         if (Array.isArray(patientPrescriptions) && patientPrescriptions.length > 0) {
-          // Filtrer les patientprescriptions selon les critères
-          const prescriptionsFiltrees = await Promise.all(
-            patientPrescriptions.map(async (pp: any) => {
-              // Critère 1: StatutPrescriptionMedecin < 3
-              if (pp.StatutPrescriptionMedecin >= 3) {
-                console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - StatutPrescriptionMedecin >= 3 (${pp.StatutPrescriptionMedecin})`);
-                return null;
-              }
+          // Filtrer les patientprescriptions selon les critères (statut < 3, stock suffisant)
+          const { eligibles: lignesValidées, ruptures, ecartees, ignores } = await filtrerPrescriptionsEligibles(patientPrescriptions);
+    setLignesEcartees(ecartees.map(convertirLigneEcartee));
 
-              // Critère 2: médicament en stock avec quantité suffisante
-              const medicamentId = pp.medicament?.toString() || pp.IDMEDICAMENT || "";
-              if (!medicamentId) {
-                console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - aucun IDMEDICAMENT`);
-                return null;
-              }
-
-              const quantiteRequise = Number(pp.QteP) || 1;
-              const estEnStock = await verifierStockMedicament(medicamentId, quantiteRequise);
-
-              if (!estEnStock) {
-                console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - quantité insuffisante en stock (${quantiteRequise} requise)`);
-                return null;
-              }
-
-              console.log(`✅ Medicament ${pp.nomMedicament} validé - en stock et statut < 3`);
-              return pp;
-            })
-          );
-
-          // Filtrer les null et convertir en ILigneMedicament
-          const lignesValidées = prescriptionsFiltrees.filter(Boolean);
-
-          // Afficher un message si des médicaments ont été filtrés
-          const nombreTotal = patientPrescriptions.length;
-          const nombreValidés = lignesValidées.length;
-          const nombreFiltrés = nombreTotal - nombreValidés;
-
-          if (nombreFiltrés > 0) {
-            console.log(`ℹ️ ${nombreFiltrés} médicament(s) filtré(s) sur ${nombreTotal} total - ${nombreValidés} éligible(s) pour le paiement`);
-            setInfoMessage(`${nombreFiltrés} médicament(s) non éligible(s) pour le paiement (stock insuffisant ou déjà payé)`);
-            // Effacer le message après 5 secondes
-            setTimeout(() => setInfoMessage(null), 5000);
+          // Afficher quels médicaments ont été écartés (le message reste affiché si stock insuffisant)
+          const message = messageNonEligibles(ruptures, ignores);
+          if (message) {
+            setInfoMessage(message);
+            if (!ruptures.length) setTimeout(() => setInfoMessage(null), 5000);
           }
 
           if (lignesValidées.length === 0) {
             console.log("ℹ️ Aucun médicament valide trouvé pour le paiement à la caisse");
-            setInfoMessage("Aucun médicament éligible pour le paiement (stock insuffisant ou déjà payé)");
+            if (!ruptures.length) setInfoMessage("Aucun médicament éligible pour le paiement (déjà payé ou sans médicament lié)");
             setPresetLines([]);
             setResetKey(prev => prev + 1);
             return;
@@ -395,6 +400,7 @@ export default function PharmacieCaisseModal({
     // À la saisie du code, on remet tout à zéro côté pharmacie
     // et on attend qu'une prescription valide soit trouvée
     setLignesMedicaments([]);
+    setLignesEcartees([]);
     setPresetLines(undefined);
     setMontantEncaisse(0);
     setModePaiement("");
@@ -456,53 +462,20 @@ export default function PharmacieCaisseModal({
       return;
     }
 
-    // Filtrer les patientprescriptions selon les critères
-    const prescriptionsFiltrees = await Promise.all(
-      patientPrescriptions.map(async (pp: any) => {
-        // Critère 1: StatutPrescriptionMedecin < 3
-        if (pp.StatutPrescriptionMedecin >= 3) {
-          console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - StatutPrescriptionMedecin >= 3 (${pp.StatutPrescriptionMedecin})`);
-          return null;
-        }
+    // Filtrer les patientprescriptions selon les critères (statut < 3, stock suffisant)
+    const { eligibles: lignesValidées, ruptures, ecartees, ignores } = await filtrerPrescriptionsEligibles(patientPrescriptions);
+    setLignesEcartees(ecartees.map(convertirLigneEcartee));
 
-        // Critère 2: médicament en stock avec quantité suffisante
-        const medicamentId = pp.medicament?.toString() || pp.IDMEDICAMENT || "";
-        if (!medicamentId) {
-          console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - aucun IDMEDICAMENT`);
-          return null;
-        }
-
-        const quantiteRequise = Number(pp.QteP) || 1;
-        const estEnStock = await verifierStockMedicament(medicamentId, quantiteRequise);
-
-        if (!estEnStock) {
-          console.log(`⚠️ Medicament ${pp.nomMedicament} ignoré - quantité insuffisante en stock (${quantiteRequise} requise)`);
-          return null;
-        }
-
-        console.log(`✅ Medicament ${pp.nomMedicament} validé - en stock et statut < 3`);
-        return pp;
-      })
-    );
-
-    // Filtrer les null et convertir en ILigneMedicament
-    const lignesValidées = prescriptionsFiltrees.filter(Boolean);
-
-    // Afficher un message si des médicaments ont été filtrés
-    const nombreTotal = patientPrescriptions.length;
-    const nombreValidés = lignesValidées.length;
-    const nombreFiltrés = nombreTotal - nombreValidés;
-
-    if (nombreFiltrés > 0) {
-      console.log(`ℹ️ ${nombreFiltrés} médicament(s) filtré(s) sur ${nombreTotal} total - ${nombreValidés} éligible(s) pour le paiement`);
-      setInfoMessage(`${nombreFiltrés} médicament(s) non éligible(s) pour le paiement (stock insuffisant ou déjà payé)`);
-      // Effacer le message après 5 secondes
-      setTimeout(() => setInfoMessage(null), 5000);
+    // Afficher quels médicaments ont été écartés (le message reste affiché si stock insuffisant)
+    const message = messageNonEligibles(ruptures, ignores);
+    if (message) {
+      setInfoMessage(message);
+      if (!ruptures.length) setTimeout(() => setInfoMessage(null), 5000);
     }
 
     if (lignesValidées.length === 0) {
       console.log("ℹ️ Aucun médicament valide trouvé pour le paiement à la caisse");
-      setInfoMessage("Aucun médicament éligible pour le paiement (stock insuffisant ou déjà payé)");
+      if (!ruptures.length) setInfoMessage("Aucun médicament éligible pour le paiement (déjà payé ou sans médicament lié)");
       setPresetLines([]);
       setResetKey(prev => prev + 1);
       return;
@@ -530,7 +503,7 @@ export default function PharmacieCaisseModal({
     console.log("📋 Lignes converties:", lignesConverties);
     setPresetLines(lignesConverties);
     setResetKey(prev => prev + 1);
-  }, [setInfoMessage, verifierStockMedicament]);
+  }, [setInfoMessage]);
 
   const handleTotauxChange = useCallback((newTotaux: {
     montantTotal: number;
@@ -586,6 +559,51 @@ export default function PharmacieCaisseModal({
     };
 
     const isModification = Boolean(prescription?._id);
+    const patientId = patient._id || "";
+
+    const medicamentsDesLignes = await fetchMedicamentsByIds((lignesMedicaments || []).map((l) => l.medicamentId));
+    const enUnites = (ligne: ILigneMedicament) => {
+      const qteParCond = medicamentsDesLignes.find((m) => m._id === ligne.medicamentId)?.QteParConditionnement || 1;
+      return ligne.modeVente === "BOITE" ? Number(ligne.quantite) * qteParCond : Number(ligne.quantite);
+    };
+
+    // Sortie déjà enregistrée pour cette ligne (même prescription, même patient, même médicament)
+    const getSortiesForLine = async (ligne: ILigneMedicament, idPrescription: string) => {
+      if (!idPrescription) return [];
+      const chercher = async (critere: "IDMEDICAMENT" | "reference", valeur: string) => {
+        const qs = new URLSearchParams();
+        qs.set("IDPRESCRIPTION", idPrescription);
+        if (patientId) qs.set("Patient", patientId);
+        qs.set(critere, valeur);
+        return await fetchJson<any[]>(`/api/sortiestock?${qs.toString()}`);
+      };
+      const reference = (ligne.reference || "").trim();
+      const parId = ligne.medicamentId ? await chercher("IDMEDICAMENT", ligne.medicamentId) : [];
+      if (parId?.length) return parId;
+      // Ventes enregistrées avant la correction : sans IDMEDICAMENT, retrouvées par référence
+      const parRef = reference ? await chercher("reference", reference) : [];
+      return (parRef || []).filter((s: any) => !s.IDMEDICAMENT);
+    };
+
+    // 0) Contrôle du stock AVANT toute écriture : sinon la facture serait créée sans sortie de stock
+    const besoinParMed = new Map<string, { designation: string; besoin: number }>();
+    // Les lignes « intégrées » malgré un stock insuffisant ne sont pas contrôlées (stock négatif autorisé)
+    for (const ligne of (lignesMedicaments || []).filter((l) => l.paye && l.medicamentId && !l.stockInsuffisant)) {
+      const sorties = await getSortiesForLine(ligne, prescription?._id || "");
+      const dejaSorti = Number(sorties?.[0]?.Quantite) || 0;
+      const cur = besoinParMed.get(ligne.medicamentId) || { designation: ligne.designation, besoin: 0 };
+      cur.besoin += enUnites(ligne) - dejaSorti;
+      besoinParMed.set(ligne.medicamentId, cur);
+    }
+    const manquants: string[] = [];
+    for (const [idMed, { designation, besoin }] of besoinParMed) {
+      if (besoin <= 0) continue;
+      const dispo = await stockDisponible(idMed);
+      if (dispo < besoin) manquants.push(`${designation} (disponible ${dispo}, demandé ${besoin})`);
+    }
+    if (manquants.length) {
+      throw new Error(`Stock insuffisant : ${manquants.join(" ; ")}. Aucun paiement n'a été enregistré.`);
+    }
 
     // 1) Ajouter ou modifier la prescription (selon nMonid = 0 ou non)
     // Calculer TotalapayerPatient et Restapayer selon la logique WLangage
@@ -807,47 +825,17 @@ export default function PharmacieCaisseModal({
       }
     }
 
-    // 5) Stock: appliquer aux lignes payées + restaurer si une ligne passe en Non Payé
-    const patientId = patient._id || "";
-
-    const getSortiesForLine = async (reference: string) => {
-      const qs = new URLSearchParams();
-      qs.set("reference", reference);
-      qs.set("IDPRESCRIPTION", prescriptionId);
-      if (patientId) qs.set("Patient", patientId);
-      return await fetchJson<any[]>(`/api/sortiestock?${qs.toString()}`);
-    };
-
-    const updateStockForReference = async (reference: string, applyDelta: (s: any) => { QteEnStock: number; QteStockVirtuel: number }) => {
-      const stocks = await fetchJson<any[]>(`/api/stock?reference=${encodeURIComponent(reference)}`);
-      const stockActuel = stocks?.[0];
-      if (!stockActuel?._id) return;
-
-      const { QteEnStock, QteStockVirtuel } = applyDelta(stockActuel);
-      await fetchJson(`/api/stock/${stockActuel._id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          QteEnStock,
-          QteStockVirtuel,
-          AuteurModif: gsUtilisateur,
-          DateModif: now,
-        }),
-      });
-    };
-
-    // 5.a) Lignes Payé => upsert sortie + ajuster stock (avec restauration ancienne quantité)
-    const lignesPayees = lignesValides.filter((l) => l.paye && (l.reference || "").trim() !== "");
+    // 5) Stock : le serveur convertit boîte/détail en unités, décrémente le stock de façon
+    //    atomique (refus si insuffisant) et remet la quantité en stock quand on annule.
+    // 5.a) Lignes Payé => création ou mise à jour de la sortie (le serveur applique l'écart)
+    const lignesPayees = lignesValides.filter((l) => l.paye);
     for (const ligne of lignesPayees) {
-      const reference = (ligne.reference || "").trim();
-      const qteParCond = medicaments.find((m) => m._id === ligne.medicamentId)?.QteParConditionnement || 1;
-      const qteEnUnites = ligne.modeVente === "BOITE" ? (Number(ligne.quantite) * qteParCond) : Number(ligne.quantite);
-      const sortiesExistantes = await getSortiesForLine(reference);
-      const ancienneQuantite = sortiesExistantes?.[0]?.Quantite ? Number(sortiesExistantes[0].Quantite) : 0;
+      const sortiesExistantes = await getSortiesForLine(ligne, prescriptionId);
 
       const sortieStockData: any = {
         DateSortie: now,
-        Reference: reference,
+        Reference: (ligne.reference || "").trim(),
+        IDMEDICAMENT: ligne.medicamentId,
         Quantite: Number(ligne.quantite) || 0,
         ModeVente: ligne.modeVente || "DETAIL",
         Prix_unitaire: Math.round(Number(ligne.prixUnitaire) || 0),
@@ -859,6 +847,8 @@ export default function PharmacieCaisseModal({
         ArticleS: ligne.designation,
         Prescription: prescriptionId,
         Patient: patientId || null,
+        // Ligne intégrée malgré un stock insuffisant : le serveur autorise le stock négatif
+        StockNegatifAutorise: ligne.stockInsuffisant === true,
       };
 
       if (sortiesExistantes && sortiesExistantes.length > 0) {
@@ -874,34 +864,14 @@ export default function PharmacieCaisseModal({
           body: JSON.stringify(sortieStockData),
         });
       }
-
-      await updateStockForReference(reference, (stockActuel) => {
-        const qteStock = Number(stockActuel.QteEnStock || 0);
-        const qteVirtuel = Number(stockActuel.QteStockVirtuel || 0);
-        const nouvelleQteEnStock = qteStock - qteEnUnites + ancienneQuantite;
-        const nouveauQteStockVirtuel = qteVirtuel + qteEnUnites - ancienneQuantite;
-        return { QteEnStock: nouvelleQteEnStock, QteStockVirtuel: nouveauQteStockVirtuel };
-      });
     }
 
-    // 5.b) Lignes Non Payé => si une sortie existe, restaurer stock puis supprimer sortie
-    const lignesNonPayees = lignesValides.filter((l) => !l.paye && (l.reference || "").trim() !== "");
+    // 5.b) Lignes Non Payé => si une sortie existe, la supprimer (le serveur remet la quantité en stock)
+    const lignesNonPayees = lignesValides.filter((l) => !l.paye);
     for (const ligne of lignesNonPayees) {
-      const reference = (ligne.reference || "").trim();
-      const sortiesExistantes = await getSortiesForLine(reference);
+      const sortiesExistantes = await getSortiesForLine(ligne, prescriptionId);
       if (!sortiesExistantes || sortiesExistantes.length === 0) continue;
-
-      const sortie = sortiesExistantes[0];
-      const ancienneQuantite = Number(sortie?.Quantite || 0);
-      if (ancienneQuantite <= 0) continue;
-
-      await updateStockForReference(reference, (stockActuel) => {
-        const qteStock = Number(stockActuel.QteEnStock || 0);
-        const qteVirtuel = Number(stockActuel.QteStockVirtuel || 0);
-        return { QteEnStock: qteStock + ancienneQuantite, QteStockVirtuel: Math.max(0, qteVirtuel - ancienneQuantite) };
-      });
-
-      await fetchJson(`/api/sortiestock/${sortie._id}`, { method: "DELETE" });
+      await fetchJson(`/api/sortiestock/${sortiesExistantes[0]._id}`, { method: "DELETE" });
     }
 
     return { facturationId, prescriptionId };
@@ -938,6 +908,7 @@ export default function PharmacieCaisseModal({
   const handleHide = useCallback(() => {
     // Réinitialiser les états à la fermeture
     setCodePrestation("");
+    setLignesEcartees([]);
     setPatient({});
     setConsultation({});
     setPrescription({});
@@ -989,7 +960,20 @@ export default function PharmacieCaisseModal({
               dismissible
               className="m-3"
             >
-              {infoMessage}
+              <div className="d-flex flex-wrap align-items-center gap-2">
+                <span className="flex-grow-1">{infoMessage}</span>
+                {lignesEcartees.length > 0 && (
+                  <Button
+                    size="sm"
+                    variant="warning"
+                    onClick={integrerLignesEcartees}
+                    title="Ajouter ces médicaments au tableau à facturer ; le stock deviendra négatif à l'encaissement"
+                  >
+                    <i className="bi bi-plus-circle me-1"></i>
+                    Intégrer au paiement ({lignesEcartees.length})
+                  </Button>
+                )}
+              </div>
             </Alert>
           )}
 
@@ -1022,7 +1006,6 @@ export default function PharmacieCaisseModal({
                   <Card.Body className="p-3">
                     <div style={{ maxHeight: "calc(100vh - 400px)", overflow: "auto" }}>
                       <TableMedicaments
-                        medicaments={medicaments}
                         onLignesChange={handleLignesChange}
                         tauxAssurance={consultation.tauxAssurance || 0}
                         onTotauxChange={handleTotauxChange}

@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert } from "react-bootstrap";
 
+import { fetchMedicamentsEnStock, searchMedicaments } from "@/components/MedicamentSearchSelect";
 // Type pour un médicament
 export interface IMedicament {
   _id: string;
@@ -35,27 +36,40 @@ export interface ILigneMedicament {
 
 // Composant de sélection de médicament avec recherche
 interface MedicamentSelectProps {
-  medicaments: IMedicament[];
   selectedId: string;
+  selectedLabel?: string; // Désignation de la ligne (le catalogue n'est plus chargé en entier)
+  stockParId: Map<string, number>;
   onSelect: (medicament: IMedicament) => void;
   disabled?: boolean; // Ajout de la propriété disabled
 }
 
-function MedicamentSelect({ medicaments, selectedId, onSelect, disabled = false }: MedicamentSelectProps) {
+function MedicamentSelect({ selectedId, selectedLabel = "", stockParId, onSelect, disabled = false }: MedicamentSelectProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [showDropdown, setShowDropdown] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const [dropdownPosition, setDropdownPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [filteredMedicaments, setFilteredMedicaments] = useState<IMedicament[]>([]);
 
-  // Filtrer les médicaments selon la recherche (limiter à 50 résultats pour la performance INP)
-  const filteredMedicaments = (searchTerm
-    ? medicaments.filter(m =>
-        m.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.Reference?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        m.CodeBarre?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    : medicaments).slice(0, 50);
+  // Recherche serveur (50 résultats, insensible aux accents) avec anti-rebond
+  useEffect(() => {
+    if (!showDropdown) return;
+    let annule = false;
+    const timer = setTimeout(async () => {
+      try {
+        const { items } = await searchMedicaments(searchTerm, 50);
+        if (!annule) {
+          setFilteredMedicaments(items.map((m) => ({
+            ...(m as unknown as IMedicament),
+            StockDisponible: stockParId.get(String(m._id)),
+          })));
+        }
+      } catch {
+        if (!annule) setFilteredMedicaments([]);
+      }
+    }, 250);
+    return () => { annule = true; clearTimeout(timer); };
+  }, [searchTerm, showDropdown, stockParId]);
 
   // Calculer la position du dropdown
   useEffect(() => {
@@ -92,7 +106,7 @@ function MedicamentSelect({ medicaments, selectedId, onSelect, disabled = false 
     setShowDropdown(true);
   };
 
-  const selectedMedicament = medicaments.find(m => m._id === selectedId);
+  const selectedMedicament = selectedId ? { Designation: selectedLabel } : undefined;
 
   // Si le composant est désactivé, afficher simplement le médicament sélectionné en lecture seule
   if (disabled) {
@@ -218,7 +232,7 @@ function emptyLigne(medicament?: IMedicament): ILigneMedicament {
 }
 
 type Props = {
-  medicaments: IMedicament[];
+  medicaments?: IMedicament[];
   onLignesChange?: (lignes: ILigneMedicament[]) => void;
   tauxAssurance?: number;
   onTotauxChange?: (totaux: {
@@ -232,11 +246,15 @@ type Props = {
   externalResetKey?: number; // Clé pour réinitialiser les lignes
 };
 
-export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0 }: Props) {
+export default function TableMedicamentsPharmAccueil({ onLignesChange, tauxAssurance = 0, onTotauxChange, remise = 0, presetLines, externalResetKey = 0 }: Props) {
   const [lignes, setLignes] = useState<ILigneMedicament[]>([]);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [currentUser] = useState("Utilisateur"); // Simuler gsUtilisateur
   const [medicamentsEnStock, setMedicamentsEnStock] = useState<IMedicament[]>([]);
+  const stockParId = React.useMemo(
+    () => new Map(medicamentsEnStock.map((m) => [String(m._id), m.StockDisponible || 0])),
+    [medicamentsEnStock]
+  );
 
   // Charger les lignes pré-remplies quand elles changent
   useEffect(() => {
@@ -255,37 +273,12 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
     }
   }, [presetLines, externalResetKey]);
 
-  // Charger les médicaments en stock au montage du composant
+  // Charger les médicaments en stock au montage du composant (uniquement ceux qui ont du stock)
   useEffect(() => {
-    const chargerMedicamentsEnStock = async () => {
-      try {
-        const response = await fetch('/api/stock?inStock=true');
-        const stocks = await response.json();
-
-        // Filtrer les médicaments qui ont une quantité en stock > 0
-        const medicamentsDisponibles = stocks
-          .filter((stock: any) => stock.QteEnStock > 0 && stock.IDMEDICAMENT)
-          .map((stock: any) => {
-            // Trouver le médicament correspondant dans la liste des médicaments
-            const medicament = medicaments.find(m => m._id === stock.IDMEDICAMENT.toString());
-            if (medicament) {
-              return {
-                ...medicament,
-                StockDisponible: stock.QteEnStock
-              };
-            }
-            return null;
-          })
-          .filter(Boolean); // Supprimer les valeurs null
-
-        setMedicamentsEnStock(medicamentsDisponibles);
-      } catch (error) {
-        console.error("Erreur lors du chargement des médicaments en stock:", error);
-      }
-    };
-
-    chargerMedicamentsEnStock();
-  }, [medicaments]);
+    fetchMedicamentsEnStock<IMedicament>()
+      .then(setMedicamentsEnStock)
+      .catch((error) => console.error("Erreur lors du chargement des médicaments en stock:", error));
+  }, []);
 
   // PROCÉDURE Facture_Pharmacie()
   // SAI_MontantRendu=""
@@ -446,6 +439,50 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
     }
   };
 
+  // Lignes dont le prix a été modifié à la main (le catalogue n'est mis à jour que pour celles-ci)
+  const [prixModifies, setPrixModifies] = useState<Set<string>>(new Set());
+
+  // Saisie du prix unitaire : chiffres uniquement, total et parts recalculés comme pour la quantité
+  const handlePrixChange = (id: string, valeur: string) => {
+    const ligne = lignes.find(l => l.id === id);
+    if (!ligne) return;
+    const prixUnitaire = toInt(Number(valeur.replace(/\D/g, "")) || 0);
+    const newTotal = toInt(ligne.quantite * prixUnitaire);
+    updateLigne(id, {
+      prixUnitaire,
+      total: newTotal,
+      partAssurance: !ligne.refuse ? toInt((newTotal * tauxAssurance) / 100) : 0,
+      partAssure: !ligne.refuse ? toInt(newTotal - ((newTotal * tauxAssurance) / 100)) : newTotal
+    });
+    setPrixModifies(prev => new Set(prev).add(id));
+    calculerTotaux();
+  };
+
+  // En quittant le champ : le prix modifié (> 0) devient le prix de vente du catalogue
+  const handlePrixBlur = async (id: string) => {
+    if (!prixModifies.has(id)) return;
+    setPrixModifies(prev => {
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    const ligne = lignes.find(l => l.id === id);
+    if (!ligne?.medicamentId || !(ligne.prixUnitaire > 0)) return;
+    try {
+      const res = await fetch(`/api/medicaments/${ligne.medicamentId}/prix-vente`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ PrixVente: toInt(ligne.prixUnitaire) }),
+      });
+      if (!res.ok) throw new Error();
+    } catch {
+      setErrorMsg(`Le prix de « ${ligne.designation} » n'a pas pu être enregistré dans le catalogue. Il reste appliqué à cette prescription.`);
+    }
+  };
+
+  // Lignes avec un médicament mais sans prix
+  const lignesSansPrix = lignes.filter(l => l.medicamentId && !(l.prixUnitaire > 0));
+
   // Mettre à jour la date
   const handleDateChange = (id: string, date: string) => {
     // Vérifier si la ligne a un DatePres (mode modification) ou DATE (mode création)
@@ -503,6 +540,15 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
 
       {errorMsg && <Alert variant="danger">{errorMsg}</Alert>}
 
+      {lignesSansPrix.length > 0 && (
+        <Alert variant="warning" className="mb-2 py-2">
+          <small>
+            <i className="bi bi-exclamation-triangle me-2"></i>
+            Prix unitaire à 0 pour : {lignesSansPrix.map(l => l.designation).join(", ")}. Ces lignes seront facturées 0 FCFA si le prix n'est pas saisi.
+          </small>
+        </Alert>
+      )}
+
       {/* Message informatif pour les lignes verrouillées */}
       {lignes.some(ligne => ligne.StatuPrescriptionMedecin === 3) && (
         <Alert variant="warning" className="mb-2">
@@ -549,8 +595,9 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
                   </td>
                   <td>
                     <MedicamentSelect
-                      medicaments={medicaments}
+                      stockParId={stockParId}
                       selectedId={ligne.medicamentId || ""}
+                      selectedLabel={ligne.designation}
                       onSelect={(medicament: IMedicament) => handleSelectMedicament(ligne.id, medicament)}
                       disabled={isLigneLocked}
                     />
@@ -566,7 +613,21 @@ export default function TableMedicamentsPharmAccueil({ medicaments, onLignesChan
                       title={isLigneLocked ? "Ligne verrouillée - statut prescription = 3" : ""}
                     />
                   </td>
-                  <td className="text-end">{toInt(ligne.prixUnitaire).toLocaleString()}</td>
+                  <td>
+                    <Form.Control
+                      type="text"
+                      inputMode="numeric"
+                      value={ligne.prixUnitaire ? String(toInt(ligne.prixUnitaire)) : ""}
+                      onChange={(e) => handlePrixChange(ligne.id, e.target.value)}
+                      onBlur={() => handlePrixBlur(ligne.id)}
+                      placeholder="0"
+                      size="sm"
+                      className={`text-end ${ligne.medicamentId && !(ligne.prixUnitaire > 0) ? 'border-warning' : ''}`}
+                      disabled={isLigneLocked || !ligne.medicamentId}
+                      title={isLigneLocked ? "Ligne verrouillée - statut prescription = 3" : !ligne.medicamentId ? "Sélectionnez d'abord un médicament" : "Prix de vente unitaire (FCFA)"}
+                      aria-label={`Prix unitaire de ${ligne.designation || "la ligne"}`}
+                    />
+                  </td>
                   <td>
                     <Form.Control
                       type="text"

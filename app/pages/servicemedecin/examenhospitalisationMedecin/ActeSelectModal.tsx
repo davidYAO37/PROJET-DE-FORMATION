@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { Modal, Form, Button, Col, Row, Badge, Alert } from "react-bootstrap";
 import { IActeClinique } from "./ActesTableMedecin";
+import { matchesSearch } from "@/lib/searchText";
 
 interface ActeSelectModalProps {
   show: boolean;
@@ -48,9 +49,7 @@ export default function ActeSelectModal({
   useEffect(() => {
     const filtered = searchTerm
       ? actes.filter(a =>
-          a.Designation?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          a.LettreCle?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          a.IDTYPE_ACTE?.toLowerCase().includes(searchTerm.toLowerCase())
+          matchesSearch(searchTerm, a.Designation, a.LettreCle, a.IDTYPE_ACTE)
         )
       : actes;
     setFilteredActes(filtered);

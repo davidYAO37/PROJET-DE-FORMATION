@@ -5,6 +5,7 @@ import { FaPlus, FaEdit, FaTrash, FaCheck, FaArrowUp, FaArrowDown } from "react-
 import { ParamBiochimie } from "@/types/ParamBiochimie";
 import AjouterParamBiochimieModal from "./AjouterParamBiochimieModal";
 import ModifierParamActeBiochimie from "./ModifierParamActeBiochimie";
+import { matchesSearch } from "@/lib/searchText";
 
 
 interface ActeClinique {
@@ -333,7 +334,7 @@ export default function ActeBiochimie() {
   };
 
   const actesFiltres = actesCliniques.filter(acte =>
-    acte.Designation.toLowerCase().includes(searchTerm.toLowerCase())
+    matchesSearch(searchTerm, acte.Designation)
   );
 
   return (

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import mongoose from "mongoose";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IEntreeStock } from "@/models/EntreeStock";
@@ -23,12 +24,13 @@ export async function GET(request: NextRequest) {
         const entreeQuery: any = {};
         const sortieQuery: any = {};
 
-        if (IDMEDICAMENT) {
-            entreeQuery.IDMEDICAMENT = IDMEDICAMENT;
-        }
-        if (reference) {
-            entreeQuery.Reference = reference;
-            sortieQuery.Reference = reference;
+        // Un mouvement appartient au médicament s'il porte son ID OU (anciens mouvements) sa référence
+        const criteres: any[] = [];
+        if (IDMEDICAMENT && mongoose.Types.ObjectId.isValid(IDMEDICAMENT)) criteres.push({ IDMEDICAMENT });
+        if (reference) criteres.push({ Reference: reference });
+        if (criteres.length) {
+            entreeQuery.$or = criteres;
+            sortieQuery.$or = criteres;
         }
         if (entrepriseId) {
             entreeQuery.entrepriseId = entrepriseId;
@@ -51,7 +53,7 @@ export async function GET(request: NextRequest) {
                 quantite: e.Quantite,
                 prixUnitaire: e.PrixAchat,
                 montantTotal: e.MontantTTCE,
-                motif: "Approvisionnement",
+                motif: e.Motif || (e.IDAppro || e.IDAPPRO_LEGACY ? "Approvisionnement" : "Entrée manuelle"),
                 saisiPar: e.SaisiPar,
                 numLot: e.NumeroLot || "",
                 datePeremption: e.DatePeremption || null,
@@ -63,7 +65,9 @@ export async function GET(request: NextRequest) {
                 date: s.DateSortie || s.createdAt,
                 reference: s.Reference,
                 medicament: s.ArticleS,
-                IDMEDICAMENT: null,
+                IDMEDICAMENT: s.IDMEDICAMENT || null,
+                modeVente: s.ModeVente || "DETAIL",
+                qteConditionnement: s.QteConditionnement ?? null,
                 quantite: s.Quantite,
                 prixUnitaire: s.Prix_unitaire,
                 montantTotal: s.Prix_TotalS,

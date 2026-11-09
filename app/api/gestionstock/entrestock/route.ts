@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IEntreeStock } from "@/models/EntreeStock";
+import { enregistrerEntree, stockErrorResponse, ROLES_MOUVEMENT_PHARMACIE } from "@/lib/stockService";
 
 const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien"];
 
@@ -25,30 +26,15 @@ export async function GET(req: NextRequest) {
     }
 }
 
+// Ligne d'achat : crée l'entrée, incrémente le stock (création si besoin) et met à jour les prix du médicament
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response } = await withTenant(req, ROLES_MOUVEMENT_PHARMACIE);
     if (!context) return response;
-    const EntreeStock = getTenantModel<IEntreeStock>(context.connection, "EntreeStock");
-    const body = await req.json();
-    
-    // Logs de débogage
-    console.log("Données reçues dans POST /api/gestionstock/entrestock:", JSON.stringify(body, null, 2));
-    
     try {
-        const entreestocks = await EntreeStock.create(body);
-        console.log("Entrée en stock créée avec succès:", JSON.stringify(entreestocks, null, 2));
-        return NextResponse.json(entreestocks);
+        const body = await req.json();
+        const entree = await enregistrerEntree(context, body, { majPrix: true });
+        return NextResponse.json(entree);
     } catch (e: any) {
-        console.error("Erreur détaillée lors de la création de l'entrée en stock:", {
-            message: e.message,
-            name: e.name,
-            errors: e.errors,
-            stack: e.stack
-        });
-        return NextResponse.json({ 
-            error: e.message,
-            details: e.errors,
-            name: e.name
-        }, { status: 400 });
+        return stockErrorResponse(e);
     }
 }

@@ -12,6 +12,8 @@ export interface ISortieStock extends Omit<Document, '_id'> {
     Prix_TotalS?: number;
     Motif?: string;
     TypeMouvement?: string;
+    /** Quantité vendue (en unités) qui n'était pas en stock : due au patient. */
+    QteManquante?: number;
     ModeVente?: ModeVente;
     Observations?: string;
     SaisiPar?: string;
@@ -39,6 +41,7 @@ const SortieStockSchema = new Schema<ISortieStock>({
     SaisiLe: { type: Date },
     ArticleS: { type: String, maxlength: 60 },
     TypeMouvement: { type: String, maxlength: 60 },
+    QteManquante: { type: Number, default: 0 },
     ModeVente: { type: String, enum: ["DETAIL", "BOITE"] },
     IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
     Prescription: { type: Schema.Types.ObjectId, ref: 'Prescription', required: false },

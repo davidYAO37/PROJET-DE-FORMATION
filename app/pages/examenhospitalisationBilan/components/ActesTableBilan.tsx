@@ -3,6 +3,7 @@
 
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
+import { matchesSearch } from "@/lib/searchText";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
@@ -101,10 +102,8 @@ const ActeSelect = memo(function ActeSelect({ actes, selectedId, onSelect }: Act
 
     const filteredActes = useMemo(() => {
         if (!searchTerm) return actes;
-        const lower = searchTerm.toLowerCase();
         return actes.filter(a =>
-            a.Designation?.toLowerCase().includes(lower) ||
-            a.LettreCle?.toLowerCase().includes(lower)
+            matchesSearch(searchTerm, a.Designation, a.LettreCle)
         );
     }, [searchTerm, actes]);
 

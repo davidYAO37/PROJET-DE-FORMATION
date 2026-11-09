@@ -241,7 +241,9 @@ export default function TableauBordStock() {
                                                 </td>
                                                 <td>{item.QteMinimum ?? 0}</td>
                                                 <td>
-                                                    {(item.QteEnStock ?? 0) <= 0
+                                                    {(item.QteEnStock ?? 0) < 0
+                                                        ? <Badge bg="danger" title="Quantité vendue mais pas encore remise aux patients">RUPTURE — {-(item.QteEnStock ?? 0)} dû aux patients</Badge>
+                                                        : (item.QteEnStock ?? 0) === 0
                                                         ? <Badge bg="danger">RUPTURE</Badge>
                                                         : <Badge bg="warning" text="dark">CRITIQUE</Badge>}
                                                 </td>

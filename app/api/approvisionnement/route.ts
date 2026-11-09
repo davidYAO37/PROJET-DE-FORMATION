@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IApprovisionnement } from "@/models/Approvisionnement";
+import { ROLES_MOUVEMENT_PHARMACIE } from "@/lib/stockService";
 
 const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien"];
 
@@ -27,7 +28,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response } = await withTenant(req, ROLES_MOUVEMENT_PHARMACIE);
     if (!context) return response;
     const Approvisionnement = getTenantModel<IApprovisionnement>(context.connection, "Approvisionnement");
     const body = await req.json();

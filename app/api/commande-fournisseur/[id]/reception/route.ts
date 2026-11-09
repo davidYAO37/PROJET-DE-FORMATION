@@ -3,11 +3,8 @@ import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { ICommandeFournisseur } from "@/models/CommandeFournisseur";
 import { IApprovisionnement } from "@/models/Approvisionnement";
-import { IEntreeStock } from "@/models/EntreeStock";
-import { IStock } from "@/models/Stock";
 import { IPharmacie } from "@/models/Pharmacie";
-
-const ROLES = ["admin","medecin","accueil","infirmier","pharmacien"];
+import { enregistrerEntree, stockErrorResponse, ROLES_MOUVEMENT_PHARMACIE } from "@/lib/stockService";
 
 /**
  * POST /api/commande-fournisseur/[id]/reception
@@ -23,13 +20,11 @@ const ROLES = ["admin","medecin","accueil","infirmier","pharmacien"];
  * - Met à jour le statut : RECEPTION_PARTIELLE ou SOLDEE (tout reçu)
  */
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response: tenantErrorResponse } = await withTenant(req, ROLES_MOUVEMENT_PHARMACIE);
     if (!context) return tenantErrorResponse;
     const { connection } = context;
     const CommandeFournisseur = getTenantModel<ICommandeFournisseur>(connection, "CommandeFournisseur");
     const Approvisionnement = getTenantModel<IApprovisionnement>(connection, "Approvisionnement");
-    const EntreeStock = getTenantModel<IEntreeStock>(connection, "EntreeStock");
-    const Stock = getTenantModel<IStock>(connection, "Stock");
     const Pharmacie = getTenantModel<IPharmacie>(connection, "Pharmacie");
 
     const { id } = await params;
@@ -65,8 +60,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     // 2. Traiter chaque ligne reçue
     let totalHT = 0, totalTVA = 0, totalTTC = 0;
+    // En cas d'erreur sur une ligne, on enregistre quand même les lignes déjà traitées
+    let erreur: any = null;
 
     for (const lr of (lignesRecues || [])) {
+      try {
         if (!lr.QteRecue || lr.QteRecue <= 0) continue;
 
         const ligne = commande.lignes?.find((l: any) => l._id?.toString() === lr.ligneId);
@@ -89,8 +87,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         const tva = lr.TVA ?? ligne.TVA ?? 0;
         const ttc = ht + tva;
 
-        // Créer l'entrée en stock
-        await EntreeStock.create({
+        // Créer l'entrée en stock et incrémenter le stock (création de la ligne de stock si besoin)
+        await enregistrerEntree(context, {
             DateAppro:      now,
             IDAppro:        approId,
             Reference:      ligne.Reference,
@@ -113,41 +111,15 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
             SaisiLe:        now,
         });
 
-        // Mise à jour ou création du stock physique
-        try {
-            const medId = ligne.IDMEDICAMENT ? ligne.IDMEDICAMENT.toString() : null;
-            let stock = null;
-            if (medId) {
-                stock = await Stock.findOne({ IDMEDICAMENT: medId }).lean();
-            }
-            if (!stock && ligne.Reference) {
-                stock = await Stock.findOne({ Reference: ligne.Reference }).lean();
-            }
-            if (stock?._id) {
-                await Stock.findByIdAndUpdate(stock._id, {
-                    QteEnStock: (stock.QteEnStock || 0) + qteRecueUnite,
-                    AuteurModif: SaisiPar || "",
-                    DateModif: now,
-                });
-            } else if (medId) {
-                await Stock.create({
-                    IDMEDICAMENT: medId,
-                    Reference: ligne.Reference || "",
-                    Medicament: ligne.Medicament || "",
-                    QteEnStock: qteRecueUnite,
-                    QteMinimum: lr.QteMinimum ?? 0,
-                    QteMaximum: lr.QteMaximum ?? 0,
-                    AuteurModif: SaisiPar || "",
-                    DateModif: now,
-                });
-            }
-        } catch { /* non bloquant */ }
-
         // Mettre à jour QteRecue sur la ligne de commande
         ligne.QteRecue = (ligne.QteRecue || 0) + qteRecueUnite;
         totalHT  += ht;
         totalTVA += tva;
         totalTTC += ttc;
+      } catch (e) {
+        erreur = e;
+        break;
+      }
     }
 
     // 3. Mettre à jour les totaux de l'approvisionnement
@@ -163,5 +135,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     commande.markModified("lignes");
     await commande.save();
 
+    if (erreur) return stockErrorResponse(erreur);
     return NextResponse.json({ ok: true, statut: commande.Statut, IDApprovisionnement: approId });
 }

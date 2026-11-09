@@ -21,6 +21,7 @@ export interface IEntreeStock extends Omit<Document, '_id'> {
     IDMEDICAMENT?: Types.ObjectId;
     DatePeremption?: Date;
     NumeroLot?: string;
+    Motif?: string;
     QteMinimum?: number;
     QteMaximum?: number;
     createdAt?: Date;
@@ -48,6 +49,7 @@ const EntreeStockSchema = new Schema<IEntreeStock>({
     IDMEDICAMENT: { type: Schema.Types.ObjectId, ref: 'Pharmacie' },
     DatePeremption: { type: Date },
     NumeroLot: { type: String, maxlength: 60 },
+    Motif: { type: String, maxlength: 100 },
     QteMinimum: { type: Number },
     QteMaximum: { type: Number },
     entrepriseId: { type: String },
