@@ -325,7 +325,7 @@ export default function HospitalisationPageMedecin() {
                                                         },
                                                         // Médecin executant
                                                         medecinId: data.NummedecinExécutant || prev.medecinId,
-                                                        medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
+                                                        medecinPrescripteur: data.NomMed || data.Medecin || prev.medecinPrescripteur,
                                                         // Renseignement clinique
                                                         Rclinique: data.Rclinique || prev.Rclinique,
                                                         // Société patient
@@ -382,6 +382,9 @@ export default function HospitalisationPageMedecin() {
                                                             forfaitclinique: 0,
                                                             ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
                                                             Action: "",
+                                                            // Lit déjà attribué au séjour (pour restaurer la sélection)
+                                                            litId: data.litId ? String(data.litId) : undefined,
+                                                            chambreId: data.IDCHAMBRE ? String(data.IDCHAMBRE) : undefined,
                                                         }));
 
                                                         setPresetLines(mappedLines);

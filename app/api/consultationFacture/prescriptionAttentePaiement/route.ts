@@ -66,7 +66,9 @@ export async function GET(req: NextRequest) {
                     medecin: p.NomMed || (p.IDMEDECIN ? p.IDMEDECIN?.nom : ""),
                     assure: p.Assurance || "Non assuré",
                     statut: p.StatuPrescriptionMedecin || 0,
-                    date: p.DatePres ? new Date(p.DatePres).toLocaleDateString() : "Date inconnue",
+                    date: p.DatePres && Number.isFinite(new Date(p.DatePres).getTime())
+                        ? new Date(p.DatePres).toLocaleDateString('fr-FR')
+                        : "Date inconnue",
                     type: "PRESCRIPTION",
                     // Ajout des champs supplémentaires pour cohérence
                     Payéoupas: p.Payéoupas || false,

@@ -5,6 +5,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert } from "react-bootstrap";
 import ActeSelectModal from "./ActeSelectModal";
 import { matchesSearch } from "@/lib/searchText";
+import LitSelector, { LitSelection } from "@/components/LitSelector";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
@@ -74,6 +75,11 @@ export interface ILignePrestation {
     forfaitclinique: number;
     ordonnancementAffichage?: number;
     Action?: string;
+    // Affectation de lit quand l'acte correspond à une chambre
+    litId?: string;
+    chambreId?: string;
+    litNumero?: string;
+    chambreNumero?: string;
 }
 // utilise Assurance et le taux de assurance info
 
@@ -986,6 +992,10 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                 copy.Statutprescription = 2;
                 copy.Refuser = acte.Prix || 0;
                 copy.ordonnancementAffichage = acte.ORdonnacementAffichage || 0;
+                copy.litId = undefined;
+                copy.chambreId = undefined;
+                copy.litNumero = undefined;
+                copy.chambreNumero = undefined;
 
                 // Selon COMBO_Assurance (prop assuranceId)
                 if (assuranceId === 1) {
@@ -1106,6 +1116,22 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
         setShowActeModal(true);
     };
 
+    function onLitChange(lineId: string, sel: LitSelection | null) {
+        setLignes((prev) =>
+            prev.map((l) =>
+                l.IDLignePrestation === lineId
+                    ? {
+                        ...l,
+                        litId: sel?.litId,
+                        chambreId: sel?.chambreId,
+                        litNumero: sel?.litNumero,
+                        chambreNumero: sel?.chambreNumero,
+                    }
+                    : l
+            )
+        );
+    }
+
     // Quand un champ clé change et nécessité recalcul
     function onFieldChangeAndRecalc(lineId: string, field: keyof ILignePrestation, value: any) {
         setErrorMsg(null);
@@ -1200,6 +1226,14 @@ export default function TablePrestationsMedecin({ assuranceId = 1, saiTaux = 0, 
                                         <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }}>
                                             Acte non sélectionné
                                         </div>
+                                    )}
+                                    {isEditable && (
+                                        <LitSelector
+                                            acteId={l.IDACTE || undefined}
+                                            litId={l.litId}
+                                            includeLitId={l.litId}
+                                            onChange={(sel: LitSelection | null) => onLitChange(l.IDLignePrestation, sel)}
+                                        />
                                     )}
                                 </td>
 

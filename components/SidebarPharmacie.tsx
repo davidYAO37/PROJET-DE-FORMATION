@@ -10,6 +10,7 @@ import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 const MENU = [
     { key: 'dashboard',         label: 'Tableau de bord',          icon: 'bi bi-speedometer2',      color: 'text-primary' },
     { key: 'stock',             label: 'Gestion du stock',          icon: 'bi bi-capsule',            color: 'text-success' },
+    { key: 'medicaments',       label: 'Médicaments',               icon: 'bi bi-capsule-pill',       color: 'text-primary' },
     { key: 'approvisionnement', label: 'Approvisionnement',         icon: 'bi bi-cart-plus',          color: 'text-warning' },
     { key: 'commandes',         label: 'Commandes en cours',        icon: 'bi bi-box-seam',            color: 'text-primary' },
     { key: 'fournisseurs',      label: 'Fournisseurs',              icon: 'bi bi-truck',              color: 'text-warning' },

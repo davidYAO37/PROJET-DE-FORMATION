@@ -17,7 +17,7 @@ function ensurePopulateModels(connection: Parameters<typeof getTenantModel>[0]) 
 }
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { context, response } = await withTenant(req, ['admin', 'medecin', 'accueil', 'infirmier']);
+  const { context, response } = await withTenant(req, ['admin', 'medecin', 'accueil', 'infirmier', 'caisse']);
   if (!context) return response;
   const { connection } = context;
 

@@ -513,9 +513,7 @@ const PageListeApayer = () => {
                             // Formater la date de saisie (date formaté par l'API pour tous les types)
                             const dateSaisie = r.raw?.date
                                 ? r.raw.date // Déjà formaté par l'API (toLocaleDateString)
-                                : r.type === "PRESTATION" && r.dateEntree
-                                ? new Date(r.dateEntree).toLocaleDateString('fr-FR')
-                                : "-";
+                                : "Date inconnue";
 
                             return (
                             <tr key={`${r.type}-${r.id}`} className="align-middle text-center">

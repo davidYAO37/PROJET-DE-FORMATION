@@ -139,3 +139,11 @@ Le super-admin peut valider la commande
 5. Retourne dans **Gestion licences → Commandes à valider** et valide la commande.
 
 Le simulateur ne nécessite aucune clé Wave et permet de tester le flux complet.
+
+## Admissions hospitalières : vérification serveur
+
+- `POST /api/hospitalisations` utilise une transaction MongoDB : Atlas ou replica set requis, sans repli non transactionnel. Les admissions des tenants sur la connexion partagée sont refusées, car chambres/lits ne portent pas de champ tenant.
+- Le code `HOSP-<ObjectId du séjour>` est autonome ; la consultation d’origine reste liée par `consultationId`.
+- `Patient.admissionVersion` sert à sérialiser les admissions concurrentes du même patient. Toutes les écritures essentielles utilisent la même session.
+- Tests : démarrer un MongoDB local dédié avec `mongod --dbpath <répertoire de test vide> --port 27129 --bind_ip 127.0.0.1 --replSet admissionTest`, puis `node scripts/test-admission.cjs`.
+- Le script initialise le replica set local si nécessaire et utilise uniquement des bases aléatoires `admission_test_*`, sans charger les secrets ni toucher aux données applicatives. Il ne supprime pas ces bases. Il teste les vrais modèles et transactions ; seul le contexte d’authentification est simulé.

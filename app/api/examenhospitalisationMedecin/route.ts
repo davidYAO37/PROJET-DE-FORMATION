@@ -6,6 +6,7 @@ import { ILignePrestation } from "@/models/lignePrestation";
 import { IAssurance } from "@/models/assurance";
 import { IConsultation } from "@/models/consultation";
 import { Entreprise, IEntreprise } from "@/models/entreprise";
+import { affecterLitDepuisLignes, LitServiceError } from "@/lib/litService";
 import mongoose from "mongoose";
 
 const ROLES = ["admin", "medecin", "accueil", "infirmier"];
@@ -190,6 +191,22 @@ export async function POST(req: NextRequest) {
             if (consultation) {
                 patientId = consultation.IdPatient || consultation.IdPatient;
             }
+        }
+
+        // Une ligne dont l'acte est lié à une chambre transforme l'enregistrement
+        // en véritable admission : le lit est requis et réservé sur le séjour.
+        try {
+            await affecterLitDepuisLignes(connection, {
+                lignes,
+                hospitalisationId: String(hospId),
+                chambreId: header.chambreId,
+                auteurId: context.userObjectId,
+            });
+        } catch (e) {
+            if (e instanceof LitServiceError) {
+                return NextResponse.json({ error: "Lit", message: e.message }, { status: e.status });
+            }
+            throw e;
         }
 
         // Mise à jour ou insertion des lignes de prestation

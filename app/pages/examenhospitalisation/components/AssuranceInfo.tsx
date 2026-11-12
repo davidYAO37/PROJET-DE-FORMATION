@@ -42,13 +42,28 @@ export default function AssuranceInfo({ formData, setFormData, currentLignes = [
             .then((data) => setMedecins(Array.isArray(data) ? data : []));
     }, []);
 
-    // Si le prescripteur chargé n'est pas un médecin interne, l'afficher en saisie libre (externe)
+    // Normalise le prescripteur rechargé : les anciennes données peuvent stocker
+    // l'ObjectId du médecin ou un objet {nom, prenoms} au lieu de "nom prenoms".
     useEffect(() => {
-        const v = (formData.medecinPrescripteur || "").trim();
-        if (v && medecins.length > 0 && !medecins.some((m) => `${m.nom} ${m.prenoms}` === v)) {
+        if (medecins.length === 0) return;
+        const raw: any = formData.medecinPrescripteur;
+        if (!raw) return;
+        let v =
+            typeof raw === "string"
+                ? raw.trim()
+                : [raw?.nom, raw?.prenoms].filter(Boolean).join(" ").trim();
+        if (/^[0-9a-fA-F]{24}$/.test(v)) {
+            const m = medecins.find((x) => x._id === v);
+            if (m) v = `${m.nom} ${m.prenoms}`;
+        }
+        if (v !== raw) {
+            setFormData((prev) => ({ ...prev, medecinPrescripteur: v }));
+        }
+        // Si le prescripteur chargé n'est pas un médecin interne, l'afficher en saisie libre (externe)
+        if (v && !medecins.some((m) => `${m.nom} ${m.prenoms}` === v)) {
             setPrescripteurExterne(true);
         }
-    }, [medecins]);
+    }, [medecins, formData.medecinPrescripteur, setFormData]);
 
     // Charger assurances
     useEffect(() => {

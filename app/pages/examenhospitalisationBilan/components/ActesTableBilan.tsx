@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useRef, useMemo, useCallback, memo } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
 import { matchesSearch } from "@/lib/searchText";
+import LitSelector, { LitSelection } from "@/components/LitSelector";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
@@ -83,6 +84,11 @@ export interface ILignePrestation {
     forfaitclinique: number;
     ordonnancementAffichage?: number;
     Action?: string;
+    // Affectation de lit quand l'acte correspond à une chambre
+    litId?: string;
+    chambreId?: string;
+    litNumero?: string;
+    chambreNumero?: string;
 }
 // utilise Assurance et le taux de assurance info
 
@@ -1041,6 +1047,10 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
                     copy.StatutMedecinAnesthesiste = "NON";
                     copy.StatutMedecinAideOperatoire = "NON";
                     copy.Montant_MedExecutant = 0;
+                    copy.litId = undefined;
+                    copy.chambreId = undefined;
+                    copy.litNumero = undefined;
+                    copy.chambreNumero = undefined;
 
                     return copy;
                 })
@@ -1108,6 +1118,22 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
     }, [assuranceId, findActeById, isSocietePartenaireMode, findActeSocietePartenaireById, actes, accepteSurplus, societeAssuranceId, tarifsSocieteAssurance, tarifsAssurance]);
 
     // Quand un champ clé change et nécessité recalcul
+    const onLitChange = useCallback((lineId: string, sel: LitSelection | null) => {
+        setLignes((prev) =>
+            prev.map((l) =>
+                l.IDLignePrestation === lineId
+                    ? {
+                        ...l,
+                        litId: sel?.litId,
+                        chambreId: sel?.chambreId,
+                        litNumero: sel?.litNumero,
+                        chambreNumero: sel?.chambreNumero,
+                    }
+                    : l
+            )
+        );
+    }, []);
+
     const onFieldChangeAndRecalc = useCallback((lineId: string, field: keyof ILignePrestation, value: any) => {
         setErrorMsg(null);
         setLignes((prev) =>
@@ -1193,11 +1219,19 @@ export default function TablePrestationsBilan({ assuranceId = 1, saiTaux = 0, as
                                     {/* Acte */}
                                     <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
                                         {isEditable ? (
-                                            <ActeSelect
-                                                actes={actesPourSelection}
-                                                selectedId={l.IDACTE || ""}
-                                                onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
-                                            />
+                                            <>
+                                                <ActeSelect
+                                                    actes={actesPourSelection}
+                                                    selectedId={l.IDACTE || ""}
+                                                    onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
+                                                />
+                                                <LitSelector
+                                                    acteId={l.IDACTE || undefined}
+                                                    litId={l.litId}
+                                                    includeLitId={l.litId}
+                                                    onChange={(sel: LitSelection | null) => onLitChange(l.IDLignePrestation, sel)}
+                                                />
+                                            </>
                                         ) : (
                                             <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">
                                                 {l.Acte}

@@ -5,7 +5,9 @@ import { IExamenHospitalisation } from "@/models/examenHospit";
 import { ILignePrestation } from "@/models/lignePrestation";
 import { IAssurance } from "@/models/assurance";
 import { IConsultation } from "@/models/consultation";
+import { IChambre } from "@/models/chambre";
 import { Entreprise, IEntreprise } from "@/models/entreprise";
+import { affecterLitDepuisLignes, LitServiceError } from "@/lib/litService";
 import mongoose from "mongoose";
 
 const ROLES = ["admin", "medecin", "accueil"];
@@ -65,6 +67,7 @@ export async function POST(req: NextRequest) {
         const LignePrestation = getTenantModel<ILignePrestation>(connection, "LignePrestation");
         const Assurance = getTenantModel<IAssurance>(connection, "Assurance");
         const Consultation = getTenantModel<IConsultation>(connection, "Consultation");
+        const Chambre = getTenantModel<IChambre>(connection, "Chambre"); // enregistre le modèle pour les populations
 
         // Vérifier si l'entreprise travaille avec des apporteurs
         let apporteurActif = true;
@@ -150,6 +153,7 @@ export async function POST(req: NextRequest) {
             IdPatient: consultationData.IdPatient ?
                 new mongoose.Types.ObjectId(consultationData.IdPatient) : null,
             PatientP: consultationData.PatientP || header.PatientP || "",
+            Code_dossier: consultationData.Code_dossier || header.Code_dossier || undefined,
 
             // Ajouter le champ sexe depuis la consultation
             sexe: consultationData.Sexe || header.sexe || "",
@@ -213,6 +217,30 @@ export async function POST(req: NextRequest) {
             }
         }
 
+        // Une ligne dont l'acte est lié à une chambre transforme l'enregistrement
+        // en véritable admission : le lit est requis et réservé sur le séjour.
+        try {
+            await affecterLitDepuisLignes(connection, {
+                lignes,
+                hospitalisationId: String(hospId),
+                chambreId: header.chambreId,
+                auteurId: context.userObjectId,
+            });
+        } catch (e) {
+            if (e instanceof LitServiceError) {
+                return NextResponse.json({ error: "Lit", message: e.message }, { status: e.status });
+            }
+            throw e;
+        }
+
+        // Code dossier de référence pour les lignes : toujours celui du patient
+        let codeDossier = consultationData.Code_dossier || header.Code_dossier || "";
+        if (!codeDossier && patientId) {
+            const Patient = getTenantModel<any>(connection, "Patient");
+            const patientDoc = await Patient.findById(patientId).lean();
+            codeDossier = patientDoc?.Code_dossier || "";
+        }
+
         // Mise à jour ou insertion des lignes de prestation
         const results = await Promise.allSettled(
             lignes.map(async (l: any, index: number) => {
@@ -259,6 +287,7 @@ export async function POST(req: NextRequest) {
                         taxe: toInt(l.TAXE),
                         Assurance: header.Assurance || "",
                         medecinPrescripteur: prescripteurNom,
+                        Code_dossier: codeDossier,
                         SOCIETE_PATIENT: header.assuranceInfo?.societePatient || header.SOCIETE_PATIENT || "",
                         IDSOCIETEPARTENAIRE: saved.IDSOCIETEPARTENAIRE || null,
 

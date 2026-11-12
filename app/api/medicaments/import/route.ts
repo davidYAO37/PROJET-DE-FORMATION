@@ -1,10 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { accesCatalogueMedicaments } from "@/lib/medicamentsAccess";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IPharmacie } from "@/models/Pharmacie";
 
-const WRITE_ROLES = ["admin"];
-const WRITE_OPTIONS = { actions: ["parametrage_pharmacie"] };
+const WRITE_ROLES = ["admin", "pharmacien"];
 
 // Fonction utilitaire de nettoyage
 function cleanNumber(value: any): number {
@@ -27,7 +26,7 @@ function cleanNumber(value: any): number {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, WRITE_ROLES, WRITE_OPTIONS);
+    const { context, response } = await accesCatalogueMedicaments(req, WRITE_ROLES);
     if (!context) return response;
     const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
 

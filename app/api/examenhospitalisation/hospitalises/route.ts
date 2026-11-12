@@ -13,6 +13,8 @@ export async function GET(req: NextRequest) {
     if (!context) return response;
     const ExamenHospitalisation = getTenantModel<IExamenHospitalisation>(context.connection, "ExamenHospitalisation");
     const TypeActe = getTenantModel<ITypeActe>(context.connection, "TypeActe");
+    getTenantModel(context.connection, "Lit");
+    getTenantModel(context.connection, "Chambre");
 
     // Récupérer d'abord les types d'actes avec Hospitalisation=true
     const actesHospitalisation = await TypeActe.find({ 
@@ -33,6 +35,8 @@ export async function GET(req: NextRequest) {
     })
     .populate('IdPatient', 'Nom Prenoms Code_dossier')
     .populate('idMedecin', 'nom')
+    .populate('litId', 'numero')
+    .populate('IDCHAMBRE', 'numero type')
     .sort({ Entrele: -1 })
     .lean();
     

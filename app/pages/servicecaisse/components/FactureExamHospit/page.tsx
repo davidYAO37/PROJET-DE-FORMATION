@@ -185,9 +185,26 @@ export default function HospitalisationPageCaisse({
 
             // Si des lignes existent, on est en mode modification
             setModeModification(rawLines.length > 0);
+            // Récupérer le lit déjà attribué au séjour pour restaurer la sélection
+            let sejourLit: { litId?: string; chambreId?: string } = {};
+            if (idHospitalisation) {
+                try {
+                    const resSejour = await fetch(`/api/hospitalisations/${idHospitalisation}`);
+                    if (resSejour.ok) {
+                        const s = await resSejour.json();
+                        sejourLit = {
+                            litId: s.litId ? String(s.litId?._id ?? s.litId) : undefined,
+                            chambreId: s.IDCHAMBRE ? String(s.IDCHAMBRE?._id ?? s.IDCHAMBRE) : undefined,
+                        };
+                    }
+                } catch { }
+            }
 
             // Mapper les données de l'API vers le format attendu par ActesTable
+            // (le lit du séjour est injecté plus bas dans chaque ligne)
             const mappedLines = rawLines.map((l: any) => ({
+                litId: sejourLit.litId,
+                chambreId: sejourLit.chambreId,
                 DATE: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString().split("T")[0] : new Date().toISOString().split("T")[0],
                 Acte: l.prestation || "",
                 Lettre_Cle: l.lettreCle || "",
@@ -454,7 +471,7 @@ export default function HospitalisationPageCaisse({
                 adherent: data.Souscripteur || "",
             },
             medecinId: data.NummedecinExécutant || data.medecinId || prev.medecinId,
-            medecinPrescripteur: data.Medecin || data.medecinPrescripteur || prev.medecinPrescripteur,
+            medecinPrescripteur: data.NomMed || data.Medecin || data.medecinPrescripteur || prev.medecinPrescripteur,
             // en mode modif on reflète strictement la base; si vide, on laisse vide
             Rclinique: data.Rclinique ?? "",
             societePatient: data.SOCIETE_PATIENT ?? prev.societePatient,
@@ -521,6 +538,9 @@ export default function HospitalisationPageCaisse({
                 heurePaiement: l.heurePaiement || '',
                 payePar: l.payePar || '',
                 Action: "",
+                // Lit déjà attribué au séjour (pour restaurer la sélection)
+                litId: data.litId ? String(data.litId) : undefined,
+                chambreId: data.IDCHAMBRE ? String(data.IDCHAMBRE) : undefined,
             }));
 
             // S'assurer que les statuts sont correctement initialisés avant d'envoyer

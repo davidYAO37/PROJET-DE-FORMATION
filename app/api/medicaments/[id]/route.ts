@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { accesCatalogueMedicaments } from "@/lib/medicamentsAccess";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IPharmacie } from "@/models/Pharmacie";
 
-const ROLES = ["admin", "medecin", "accueil", "infirmier"];
+const ROLES = ["admin", "medecin", "accueil", "infirmier", "pharmacien", "caisse"];
 
 // -------------------- MODIFICATION D'UN Medicament --------------------
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response } = await accesCatalogueMedicaments(req, ROLES);
     if (!context) return response;
     const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     try {
@@ -28,7 +28,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 // -------------------- SUPPRESSION D'UN MEDICAMENT  --------------------
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response } = await accesCatalogueMedicaments(req, ROLES);
     if (!context) return response;
     const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     try {

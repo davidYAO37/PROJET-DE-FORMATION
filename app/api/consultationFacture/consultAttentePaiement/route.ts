@@ -61,7 +61,9 @@ export async function GET(req: NextRequest) {
             assure: c.Assure|| "Non assuré",
             statut: c.StatutPaiement || "En attente",
             statutPrescription: c.statutPrescriptionMedecin || 0,
-            date: c.Date_consulation ? new Date(c.Date_consulation).toLocaleDateString() : "Date inconnue"
+            date: c.Date_consulation && Number.isFinite(new Date(c.Date_consulation).getTime())
+                ? new Date(c.Date_consulation).toLocaleDateString('fr-FR')
+                : "Date inconnue"
         }));
 
         return NextResponse.json(result);

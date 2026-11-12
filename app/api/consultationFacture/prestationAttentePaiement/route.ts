@@ -50,7 +50,9 @@ export async function GET(req: NextRequest) {
     medecin: p.NomMed || (p.idMedecin ? p.idMedecin.nom : ""),
     assure: p.Assure || "Non assuré",
     statut: p.statutPrescriptionMedecin || 0,
-    date: p.DatePres ? new Date(p.DatePres).toLocaleDateString() : "Date inconnue",
+    date: p.DatePres && Number.isFinite(new Date(p.DatePres).getTime())
+        ? new Date(p.DatePres).toLocaleDateString('fr-FR')
+        : "Date inconnue",
     // Ajout des champs manquants
     Entrele: p.Entrele ? new Date(p.Entrele).toISOString() : null,
     SortieLe: p.SortieLe ? new Date(p.SortieLe).toISOString() : null,

@@ -4,6 +4,7 @@
 import React, { useEffect, useState, useRef, useCallback } from "react";
 import { Table, Form, Button, InputGroup, Row, Col, Alert, Dropdown } from "react-bootstrap";
 import { matchesSearch } from "@/lib/searchText";
+import LitSelector, { LitSelection } from "@/components/LitSelector";
 
 type AssuranceId = number; // 1: Non assuré, 2: Mutualiste, 3: Préférentiel
 
@@ -95,6 +96,11 @@ export interface ILignePrestation {
     datePaiementCaisse?: string;
     heurePaiement?: string;
     payePar?: string;
+    // Affectation de lit quand l'acte correspond à une chambre
+    litId?: string;
+    chambreId?: string;
+    litNumero?: string;
+    chambreNumero?: string;
 }
 // utilise Assurance et le taux de assurance info
 
@@ -1251,6 +1257,10 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                 copy.Statutprescription = 2;
                 copy.Refuser = acte.Prix || 0;
                 copy.ordonnancementAffichage = acte.ORdonnacementAffichage || 0;
+                copy.litId = undefined;
+                copy.chambreId = undefined;
+                copy.litNumero = undefined;
+                copy.chambreNumero = undefined;
                 // Initialiser les champs de paiement
                 copy.datePaiementCaisse = '';
                 copy.heurePaiement = '';
@@ -1321,6 +1331,22 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
     }
 
     // Quand un champ clé change et nécessité recalcul
+    function onLitChange(lineId: string, sel: LitSelection | null) {
+        setLignes((prev) =>
+            prev.map((l) =>
+                l.IDLignePrestation === lineId
+                    ? {
+                        ...l,
+                        litId: sel?.litId,
+                        chambreId: sel?.chambreId,
+                        litNumero: sel?.litNumero,
+                        chambreNumero: sel?.chambreNumero,
+                    }
+                    : l
+            )
+        );
+    }
+
     function onFieldChangeAndRecalc(lineId: string, field: keyof ILignePrestation, value: any) {
         setErrorMsg(null);
         setLignes((prev) =>
@@ -1506,11 +1532,19 @@ export default function TablePrestationsCaisse({ assuranceId = 1, saiTaux = 0, a
                                     {/* Acte */}
                                     <td style={{ minWidth: 220, padding: '4px', whiteSpace: 'normal', wordWrap: 'break-word' }}>
                                         {isEditable ? (
-                                            <ActeSelect
-                                                actes={actes}
-                                                selectedId={l.IDACTE || ""}
-                                                onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
-                                            />
+                                            <>
+                                                <ActeSelect
+                                                    actes={actes}
+                                                    selectedId={l.IDACTE || ""}
+                                                    onSelect={(acte: IActeClinique) => onSelectActe(l.IDLignePrestation, acte._id)}
+                                                />
+                                                <LitSelector
+                                                    acteId={l.IDACTE || undefined}
+                                                    litId={l.litId}
+                                                    includeLitId={l.litId}
+                                                    onChange={(sel: LitSelection | null) => onLitChange(l.IDLignePrestation, sel)}
+                                                />
+                                            </>
                                         ) : (
                                             <div style={{ fontSize: '13px', padding: '6px', color: '#6c757d' }} title="Acte déjà facturé - modification impossible">
                                                 {l.Acte}

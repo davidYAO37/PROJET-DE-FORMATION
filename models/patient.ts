@@ -31,6 +31,7 @@ export interface IPatient extends Omit<Document, '_id'> {
   MotDePassePortail?: string;
   portailFailedAttempts?: number;
   portailLockedUntil?: Date;
+  admissionVersion?: number;
 }
 
 const PatientSchema = new Schema<IPatient>(
@@ -64,6 +65,7 @@ const PatientSchema = new Schema<IPatient>(
     MotDePassePortail: { type: String, required: false },
     portailFailedAttempts: { type: Number, required: false, default: 0 },
     portailLockedUntil: { type: Date, required: false },
+    admissionVersion: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

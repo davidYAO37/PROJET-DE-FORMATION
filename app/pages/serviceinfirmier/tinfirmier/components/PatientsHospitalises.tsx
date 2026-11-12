@@ -5,7 +5,7 @@ import {
   Container, Row, Col, Table, Form, InputGroup,
   Spinner, Badge, Button, Pagination,
 } from 'react-bootstrap';
-import { FaHospital, FaHeartbeat, FaClipboard, FaPrescription, FaSignOutAlt } from 'react-icons/fa';
+import { FaHospital, FaHeartbeat, FaClipboard, FaPrescription, FaSignOutAlt, FaBed } from 'react-icons/fa';
 import { Modal, Alert } from 'react-bootstrap';
 import ConstantesVitalesModal from './ConstantesVitalesModal';
 import ExamenHospitModalInfirmier from './ExamenHospitModalInfirmier';
@@ -28,6 +28,8 @@ interface Hospit {
   ObservationHospitalisation?: string; // Observation
   Designationtypeacte?: string; // Type d'acte d'hospitalisation
   hospitalisationId?: string;  // ID de l'hospitalisation liée
+  litId?: { _id: string; numero: string } | string; // Lit attribué (populé)
+  IDCHAMBRE?: { _id: string; numero: string; type?: string } | string; // Chambre populée
   // Champs peuplés depuis les populations
   patientInfo?: {
     Nom?: string;
@@ -59,6 +61,12 @@ export default function PatientsHospitalises() {
     heureSortie: new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' }),
     observations: '',
   });
+  const [showLitModal, setShowLitModal] = useState(false);
+  const [litLoading, setLitLoading] = useState(false);
+  const [litError, setLitError] = useState('');
+  const [chambres, setChambres] = useState<any[]>([]);
+  const [litsDisponibles, setLitsDisponibles] = useState<any[]>([]);
+  const [litForm, setLitForm] = useState({ chambreId: '', litId: '' });
 
   useEffect(() => {
     const fetchHospits = async () => {
@@ -118,6 +126,65 @@ export default function PatientsHospitalises() {
       setSortieError(err instanceof Error ? err.message : 'Erreur lors de la sortie');
     } finally {
       setSortieLoading(false);
+    }
+  };
+
+  const openLitModal = async (h: Hospit) => {
+    setSelectedHospit(h);
+    setLitError('');
+    const chambreActuelle = h.IDCHAMBRE && typeof h.IDCHAMBRE === 'object' ? h.IDCHAMBRE._id : '';
+    const litActuel = h.litId && typeof h.litId === 'object' ? h.litId._id : '';
+    setLitForm({ chambreId: chambreActuelle || '', litId: litActuel || '' });
+    setLitsDisponibles([]);
+    setShowLitModal(true);
+    try {
+      const res = await fetch('/api/chambres');
+      if (res.ok) {
+        const data = await res.json();
+        setChambres(Array.isArray(data) ? data : []);
+      }
+    } catch {
+      setChambres([]);
+    }
+    if (chambreActuelle) await loadLits(chambreActuelle, litActuel);
+  };
+
+  const loadLits = async (chambreId: string, litActuelId?: string) => {
+    try {
+      const res = await fetch(`/api/lits?chambreId=${chambreId}&etat=libre`);
+      const lits = res.ok ? await res.json() : [];
+      const liste = Array.isArray(lits) ? [...lits] : [];
+      // Garder le lit actuellement occupé par ce patient dans la liste
+      if (litActuelId && !liste.some((l: any) => l._id === litActuelId) && selectedHospit?.litId && typeof selectedHospit.litId === 'object') {
+        liste.unshift(selectedHospit.litId);
+      }
+      setLitsDisponibles(liste);
+    } catch {
+      setLitsDisponibles([]);
+    }
+  };
+
+  const handleSaveLit = async () => {
+    if (!selectedHospit?._id || !litForm.litId) {
+      setLitError('Sélectionnez un lit');
+      return;
+    }
+    setLitLoading(true);
+    setLitError('');
+    try {
+      const res = await fetch(`/api/hospitalisations/${selectedHospit._id}/lit`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ litId: litForm.litId, chambreId: litForm.chambreId || undefined }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Échec de l\'affectation du lit');
+      setShowLitModal(false);
+      await fetchHospits();
+    } catch (err) {
+      setLitError(err instanceof Error ? err.message : 'Erreur lors de l\'affectation');
+    } finally {
+      setLitLoading(false);
     }
   };
 
@@ -211,7 +278,15 @@ export default function PatientsHospitalises() {
                         onClick={() => { setSelectedHospit(h); setShowPrescriptions(true); }}
                       >{patientName}</td>
                       <td><Badge bg="secondary">{h.CodePrestation || '—'}</Badge></td>
-                      <td><Badge bg="success">{h.Chambre || '—'}</Badge></td>
+                      <td>
+                        <Badge bg="success">
+                          {h.Chambre || (h.IDCHAMBRE && typeof h.IDCHAMBRE === 'object' ? h.IDCHAMBRE.numero : '—')}
+                          {h.litId && typeof h.litId === 'object' && h.litId.numero ? ` / Lit ${h.litId.numero}` : ''}
+                        </Badge>
+                        {!(h.litId && typeof h.litId === 'object' && h.litId.numero) && (
+                          <Badge bg="warning" text="dark" className="ms-1">sans lit</Badge>
+                        )}
+                      </td>
                       <td>{formatDate(h.Entrele)}</td>
                       <td>
                         <Badge bg="warning" text="dark">{h.nombreDeJours}</Badge>
@@ -253,6 +328,16 @@ export default function PatientsHospitalises() {
                           onClick={() => { setSelectedHospit(h); setShowPharmacie(true); }}
                         >
                           <FaPrescription />
+                        </Button>
+                        {/* Attribuer ou changer le lit du séjour */}
+                        <Button
+                          variant="outline-warning"
+                          size="sm"
+                          className="me-1"
+                          title="Attribuer ou changer le lit"
+                          onClick={() => openLitModal(h)}
+                        >
+                          <FaBed />
                         </Button>
                         {h._id && (
                           <Button
@@ -346,6 +431,62 @@ export default function PatientsHospitalises() {
           </Modal.Body>
         </Modal>
       )}
+      {/* Modal d'affectation / changement de lit */}
+      <Modal show={showLitModal} onHide={() => setShowLitModal(false)} centered backdrop="static" keyboard={false}>
+        <Modal.Header closeButton className="bg-warning">
+          <Modal.Title>
+            <FaBed className="me-2" />
+            Lit du patient — {selectedHospit?.PatientP || selectedHospit?.patientInfo?.Nom || ''}
+          </Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {litError && <Alert variant="danger">{litError}</Alert>}
+          <Form.Group className="mb-3">
+            <Form.Label className="fw-semibold">Chambre</Form.Label>
+            <Form.Select
+              value={litForm.chambreId}
+              onChange={async (e) => {
+                const chambreId = e.target.value;
+                setLitForm({ chambreId, litId: '' });
+                setLitsDisponibles([]);
+                if (chambreId) await loadLits(chambreId);
+              }}
+            >
+              <option value="">— Choisir une chambre —</option>
+              {chambres.map((c: any) => (
+                <option key={c._id} value={c._id}>
+                  {c.numero}{c.type ? ` (${c.type})` : ''}
+                </option>
+              ))}
+            </Form.Select>
+          </Form.Group>
+          <Form.Group>
+            <Form.Label className="fw-semibold">Lit</Form.Label>
+            <Form.Select
+              value={litForm.litId}
+              disabled={!litForm.chambreId}
+              onChange={(e) => setLitForm((prev) => ({ ...prev, litId: e.target.value }))}
+            >
+              <option value="">— Choisir un lit —</option>
+              {litsDisponibles.map((l: any) => (
+                <option key={l._id} value={l._id}>Lit {l.numero}</option>
+              ))}
+            </Form.Select>
+            {litForm.chambreId && litsDisponibles.length === 0 && (
+              <div className="text-danger mt-1" style={{ fontSize: '13px' }}>Aucun lit libre dans cette chambre.</div>
+            )}
+          </Form.Group>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button variant="secondary" onClick={() => setShowLitModal(false)} disabled={litLoading}>
+            Annuler
+          </Button>
+          <Button variant="warning" onClick={handleSaveLit} disabled={litLoading || !litForm.litId}>
+            {litLoading ? 'Enregistrement...' : 'Enregistrer le lit'}
+          </Button>
+        </Modal.Footer>
+      </Modal>
+
       {/* Modal de confirmation de sortie */}
       <Modal show={showSortieModal} onHide={() => setShowSortieModal(false)} centered backdrop="static" keyboard={false}>
         <Modal.Header closeButton className="bg-danger text-white">

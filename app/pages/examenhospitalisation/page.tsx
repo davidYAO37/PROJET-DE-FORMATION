@@ -279,7 +279,7 @@ export default function HospitalisationPage() {
                                                             },
                                                             // Médecin executant
                                                             medecinId: data.NummedecinExécutant || prev.medecinId,
-                                                            medecinPrescripteur: data.Medecin || prev.medecinPrescripteur,
+                                                            medecinPrescripteur: data.NomMed || data.Medecin || prev.medecinPrescripteur,
                                                             // Renseignement clinique
                                                             Rclinique: data.Rclinique || prev.Rclinique,
                                                             // Société patient
@@ -336,6 +336,8 @@ export default function HospitalisationPage() {
                                                                 forfaitclinique: 0,
                                                                 ordonnancementAffichage: Number(l.ordonnancementAffichage ?? 0),
                                                                 Action: "",
+                                                                litId: data.litId ? String(data.litId) : undefined,
+                                                                chambreId: data.IDCHAMBRE ? String(data.IDCHAMBRE) : undefined,
                                                             }));
 
                                                             setPresetLines(mappedLines);

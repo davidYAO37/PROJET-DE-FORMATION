@@ -21,11 +21,13 @@ import { usePagination } from "@/components/usePagination";
 import Pagination from "@/components/Pagination";
 import { Approvisionnement } from "@/types/Approvisionnement";
 import Inventaire from "./Inventaire";
+import GestionMedicaments from "./GestionMedicaments";
 import LicenceModuleGuard from "@/components/licence/LicenceModuleGuard";
 
 const VUES: Record<string, { titre: string; icon: React.ReactNode }> = {
     dashboard:         { titre: "Tableau de bord",          icon: <FaTachometerAlt className="text-primary" /> },
     stock:             { titre: "Gestion du stock",          icon: <FaCapsules className="text-success" /> },
+    medicaments:       { titre: "Gestion des médicaments",   icon: <FaCapsules className="text-primary" /> },
     approvisionnement: { titre: "Approvisionnements",        icon: <FaShoppingCart className="text-warning" /> },
     commandes:         { titre: "Commandes en cours",        icon: <FaBox className="text-primary" />   },
     fournisseurs:      { titre: "Fournisseurs",              icon: <FaTruck className="text-warning" /> },
@@ -130,6 +132,8 @@ function PageContent() {
             {vue === "dashboard" && <TableauBordStock />}
 
             {vue === "stock" && <GestionStockMedicaments />}
+
+            {vue === "medicaments" && <GestionMedicaments />}
 
             {vue === "approvisionnement" && (
                 <>

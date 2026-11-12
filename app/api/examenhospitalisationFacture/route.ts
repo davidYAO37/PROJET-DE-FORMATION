@@ -10,6 +10,7 @@ import { IApporteur } from "@/models/Apporteur";
 import { Entreprise, IEntreprise } from "@/models/entreprise";
 import { withTenant } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
+import { affecterLitDepuisLignes, LitServiceError } from "@/lib/litService";
 
 const READ_ROLES = ["admin", "medecin", "accueil", "caisse", "comptable", "biologiste", "infirmier"];
 const WRITE_ROLES = ["admin", "medecin", "biologiste", "infirmier", "caisse"];
@@ -224,6 +225,15 @@ export async function POST(req: NextRequest) {
 
             hospId = saved._id;
 
+            // Une ligne dont l'acte est lié à une chambre transforme l'enregistrement
+            // en véritable admission : le lit est requis et réservé sur le séjour.
+            await affecterLitDepuisLignes(context.connection, {
+                lignes,
+                hospitalisationId: String(hospId),
+                chambreId: header.chambreId,
+                auteurId: context.userObjectId,
+            });
+
             // Construire facturation à partir du header (noms conformes au schéma Facturation) Medecin et PatientP sont obligatoires
             const factData: any = {
                 CodePrestation: header.CodePrestation || "",
@@ -278,6 +288,12 @@ export async function POST(req: NextRequest) {
             const createdFact = await Facturation.create(factData);
             factureSaved = createdFact;
         } catch (err) {
+            if (err instanceof LitServiceError) {
+                return NextResponse.json(
+                    { error: "Lit", message: err.message },
+                    { status: err.status }
+                );
+            }
             return NextResponse.json(
                 { error: "Erreur création facture", message: String(err) },
                 { status: 500 }

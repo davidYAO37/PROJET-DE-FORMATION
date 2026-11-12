@@ -28,7 +28,24 @@ type Props = {
 
     const labelConditionnement = (form.ConditionnementAchat || "conditionnement").toLowerCase();
     const [loading, setLoading] = useState(false);
+    const [generating, setGenerating] = useState(false);
     const [error, setError] = useState("");
+
+    const genererReference = async () => {
+        setGenerating(true);
+        setError("");
+        try {
+            const res = await fetch("/api/medicaments/next-reference");
+            if (!res.ok) throw new Error("Impossible de générer la référence");
+            const data = await res.json();
+            if (!data?.reference) throw new Error("Impossible de générer la référence");
+            setForm((prev) => ({ ...prev, Reference: data.reference }));
+        } catch (err: any) {
+            setError(err.message);
+        } finally {
+            setGenerating(false);
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
@@ -97,7 +114,20 @@ type Props = {
                             <Col md={4}>
                                 <Form.Group>
                                     <Form.Label className="small fw-medium text-muted">Référence</Form.Label>
-                                    <Form.Control name="Reference" value={form.Reference} onChange={handleChange} required className="shadow-sm" />
+                                    <div className="d-flex gap-2">
+                                        <Form.Control name="Reference" value={form.Reference} onChange={handleChange} required className="shadow-sm" />
+                                        <Button
+                                            type="button"
+                                            variant="outline-secondary"
+                                            size="sm"
+                                            onClick={genererReference}
+                                            disabled={generating || loading}
+                                            title="Générer automatiquement la référence"
+                                            style={{ whiteSpace: "nowrap" }}
+                                        >
+                                            {generating ? "..." : "Générer"}
+                                        </Button>
+                                    </div>
                                 </Form.Group>
                             </Col>
                         </Row>

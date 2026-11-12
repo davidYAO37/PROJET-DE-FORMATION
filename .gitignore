@@ -12,6 +12,7 @@
 
 # testing
 /coverage
+/.tmp-admission-db/
 
 # next.js
 /.next/

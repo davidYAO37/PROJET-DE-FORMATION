@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { withTenant } from "@/lib/withTenant";
+import { accesCatalogueMedicaments } from "@/lib/medicamentsAccess";
 import { getTenantModel } from "@/lib/tenantModels";
 import { IPharmacie } from "@/models/Pharmacie";
 import mongoose from "mongoose";
@@ -46,7 +47,7 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { context, response } = await withTenant(req, ROLES, { actions: ["parametrage_pharmacie"] });
+    const { context, response } = await accesCatalogueMedicaments(req, ROLES);
     if (!context) return response;
     const Pharmacie = getTenantModel<IPharmacie>(context.connection, "Pharmacie");
     const body = await req.json();
