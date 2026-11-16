@@ -532,7 +532,31 @@ export function texte(
         return "";
     }
 
-    return String(valeur);
+    const entites: Record<string, string> = {
+        amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " ",
+        eacute: "é", egrave: "è", ecirc: "ê", agrave: "à", ccedil: "ç",
+        ugrave: "ù", ucirc: "û", ocirc: "ô", icirc: "î", iuml: "ï",
+        Eacute: "É", deg: "°", micro: "µ", sup2: "²", sup3: "³",
+        le: "≤", ge: "≥", times: "×", ndash: "–", mdash: "—",
+    };
+
+    return String(valeur)
+        .replace(/<(script|style)\b[^>]*>[\s\S]*?<\/\1\s*>/gi, "")
+        .replace(/<br\b[^>]*>/gi, "\n")
+        .replace(/<\/(?:div|p|li|tr|h[1-6])\s*>/gi, "\n")
+        .replace(/<[^>]*>/g, "")
+        .replace(/&(#x[0-9a-f]+|#\d+|[a-z][a-z0-9]+);/gi, (entite, code: string) => {
+            if (!code.startsWith("#")) return entites[code] ?? entite;
+            const valeur = code[1].toLowerCase() === "x"
+                ? parseInt(code.slice(2), 16)
+                : parseInt(code.slice(1), 10);
+            return valeur > 0 && valeur <= 0x10ffff && !(valeur >= 0xd800 && valeur <= 0xdfff)
+                ? String.fromCodePoint(valeur)
+                : entite;
+        })
+        .replace(/[ \t]+\n/g, "\n")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
 
 }
 
