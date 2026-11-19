@@ -7,11 +7,22 @@ import { ILignePrestation } from '@/models/lignePrestation';
 import { IMedecin } from '@/models/medecin';
 import { IHonoraireMed } from '@/models/HonoraireMed';
 import { ILigneHonoraireMed } from '@/models/LigneHonoraireMed';
+import { Entreprise } from '@/models/entreprise';
 import mongoose from 'mongoose';
 
 const ROLES = ['admin', 'medecin', 'accueil', 'infirmier', 'comptable', 'facturation'];
 
 const TAUX_TAXE = 7.5;
+
+// Retenue 7,5 % sur les honoraires médecins : le tenant peut la désactiver
+// dans ses paramètres. Absence du champ (anciennes données) = taxe appliquée.
+async function tauxTaxeHonoraire(entrepriseId?: string): Promise<number> {
+  if (!entrepriseId) return TAUX_TAXE;
+  const entreprise = await Entreprise.findById(entrepriseId)
+    .select('appliquerTaxeHonoraireMedecin')
+    .lean<{ appliquerTaxeHonoraireMedecin?: boolean } | null>();
+  return entreprise?.appliquerTaxeHonoraireMedecin === false ? 0 : TAUX_TAXE;
+}
 
 const arrondi = (n: number) => Math.round(n || 0);
 
@@ -57,6 +68,8 @@ export async function GET(request: NextRequest) {
 
     const medecinNomComplet = `${medecin.nom || ''} ${medecin.prenoms || ''}`.trim();
 
+    const tauxTaxe = await tauxTaxeHonoraire(context.entrepriseId);
+
     const debut = new Date(dateDebut);
     const fin = new Date(dateFin);
     fin.setHours(23, 59, 59, 999);
@@ -75,7 +88,7 @@ export async function GET(request: NextRequest) {
     for (const c of consultations) {
       const totalActe = arrondi((c.Prix_Assurance || 0) + (c.ReliquatPatient || 0));
       const totalMedecin = arrondi(totalActe * ((medecin.TauxHonoraire || 0) / 100));
-      const taxe = arrondi((totalMedecin * TAUX_TAXE) / 100);
+      const taxe = arrondi((totalMedecin * tauxTaxe) / 100);
       const netAPayer = arrondi(totalMedecin - taxe);
       actes.push({
         idActe: String(c._id),
@@ -127,7 +140,7 @@ export async function GET(request: NextRequest) {
         const montantTotal = arrondi(lignes.reduce((s, l) => s + (l.prixTotal || 0) * (1 - tauxRemise / 100), 0));
         if (montantTotal > 0) {
           const totalMedecin = arrondi(montantTotal * ((medecin.TauxPrescription || 0) / 100));
-          const taxe = arrondi((totalMedecin * TAUX_TAXE) / 100);
+          const taxe = arrondi((totalMedecin * tauxTaxe) / 100);
           actes.push({
             idActe: String(f._id),
             date: f.DatePres ? new Date(f.DatePres).toISOString() : '',
@@ -151,7 +164,7 @@ export async function GET(request: NextRequest) {
           l.statutExecutant !== '1'
         ) {
           const totalMedecin = arrondi(montantNetLigne * ((medecin.TauxExecution || 0) / 100));
-          const taxe = arrondi((totalMedecin * TAUX_TAXE) / 100);
+          const taxe = arrondi((totalMedecin * tauxTaxe) / 100);
           actes.push({
             idActe: String(l._id),
             date: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString() : (f.DatePres ? new Date(f.DatePres).toISOString() : ''),
@@ -171,7 +184,7 @@ export async function GET(request: NextRequest) {
           (l.AideOperatoirePaye || 0) !== 1
         ) {
           const totalMedecin = arrondi(montantNetLigne * ((medecin.TauxAideOperatoire || 0) / 100));
-          const taxe = arrondi((totalMedecin * TAUX_TAXE) / 100);
+          const taxe = arrondi((totalMedecin * tauxTaxe) / 100);
           actes.push({
             idActe: String(l._id),
             date: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString() : (f.DatePres ? new Date(f.DatePres).toISOString() : ''),
@@ -191,7 +204,7 @@ export async function GET(request: NextRequest) {
           (l.AnesthesistePaye || 0) !== 1
         ) {
           const totalMedecin = arrondi(montantNetLigne * ((medecin.TauxAnesthesiste || 0) / 100));
-          const taxe = arrondi((totalMedecin * TAUX_TAXE) / 100);
+          const taxe = arrondi((totalMedecin * tauxTaxe) / 100);
           actes.push({
             idActe: String(l._id),
             date: l.dateLignePrestation ? new Date(l.dateLignePrestation).toISOString() : (f.DatePres ? new Date(f.DatePres).toISOString() : ''),
@@ -209,7 +222,7 @@ export async function GET(request: NextRequest) {
 
     actes.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    return NextResponse.json({ success: true, data: actes, medecin });
+    return NextResponse.json({ success: true, data: actes, medecin, appliquerTaxe: tauxTaxe > 0, tauxTaxe });
   } catch (error) {
     console.error('Erreur GET bordereau honoraire:', error);
     return NextResponse.json(
@@ -286,6 +299,15 @@ export async function POST(request: NextRequest) {
     const partAnest = arrondi(actes
       .filter(a => a.type === 'HONORAIRE ANESTHESISTE')
       .reduce((s, a) => s + a.totalMedecin, 0));
+
+    // La taxe et le net à payer sont recalculés côté serveur selon le réglage
+    // du tenant (retenue 7,5 % activée ou non), jamais depuis les valeurs envoyées.
+    const tauxTaxe = await tauxTaxeHonoraire(context.entrepriseId);
+
+    for (const a of actes) {
+      a.taxe = arrondi((a.totalMedecin * tauxTaxe) / 100);
+      a.netAPayer = arrondi(a.totalMedecin - a.taxe);
+    }
 
     for (const a of actes) {
       totalActe += a.totalActe;

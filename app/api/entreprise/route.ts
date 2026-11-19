@@ -43,6 +43,8 @@ export async function POST(req: NextRequest) {
     const licencePrice = licencePriceRaw ? parseFloat(licencePriceRaw) || 0 : 0;
     const maintenanceAccepted = formData.get("maintenanceAccepted") === "true";
     const travailleAvecApporteur = formData.get("travailleAvecApporteur") === "true";
+    // Absence du champ = comportement historique : la taxe est appliquée
+    const appliquerTaxeHonoraireMedecin = formData.get("appliquerTaxeHonoraireMedecin") !== "false";
     // Choix à la création : l'entreprise décide si ses patients peuvent
     // utiliser le portail patient. `modules: []` signifie "tous les modules",
     // donc pour le refuser on stocke la liste explicite sans "portail_patient".
@@ -119,6 +121,7 @@ export async function POST(req: NextRequest) {
       licencePrice,
       maintenanceAccepted,
       travailleAvecApporteur,
+      appliquerTaxeHonoraireMedecin,
       modules,
       dbName,
       mongoUri,

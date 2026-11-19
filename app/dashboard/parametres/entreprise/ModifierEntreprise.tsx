@@ -28,6 +28,7 @@ export default function ModifierEntreprise({
   const [licencePrice, setLicencePrice] = useState<number | string>(0);
   const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
   const [travailleAvecApporteur, setTravailleAvecApporteur] = useState(false);
+  const [appliquerTaxeHonoraireMedecin, setAppliquerTaxeHonoraireMedecin] = useState(true);
   const [loading, setLoading] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,6 +55,7 @@ export default function ModifierEntreprise({
       setLicencePrice(entreprise?.licencePrice ?? 0);
       setMaintenanceAccepted(!!entreprise?.maintenanceAccepted);
       setTravailleAvecApporteur(!!entreprise?.travailleAvecApporteur);
+      setAppliquerTaxeHonoraireMedecin(entreprise?.appliquerTaxeHonoraireMedecin !== false);
 
       // Configurer le preview du logo existant
       if (entreprise.LogoE) {
@@ -89,6 +91,7 @@ export default function ModifierEntreprise({
       formData.append("licencePrice", String(licencePrice ?? 0));
       formData.append("maintenanceAccepted", String(maintenanceAccepted));
       formData.append("travailleAvecApporteur", String(travailleAvecApporteur));
+      formData.append("appliquerTaxeHonoraireMedecin", String(appliquerTaxeHonoraireMedecin));
 
       // Ajouter le fichier seulement si un nouveau fichier est sélectionné
       if (LogoEFile) {
@@ -222,6 +225,21 @@ export default function ModifierEntreprise({
                         />
                         <Form.Text className="text-muted">
                           Active la gestion des apporteurs et de leurs honoraires pour cette entreprise.
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="appliquer-taxe-honoraire-switch-edit"
+                          label="Appliquer la taxe (-7,5%) sur les honoraires médecins"
+                          checked={appliquerTaxeHonoraireMedecin}
+                          onChange={(e) => setAppliquerTaxeHonoraireMedecin(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Activé = une retenue de 7,5% est déduite sur les bordereaux d&apos;honoraires médecins.
+                          Désactivé = la part médecin est payée sans retenue.
                         </Form.Text>
                       </Form.Group>
                     </Col>

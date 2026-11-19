@@ -8,6 +8,7 @@ interface EntrepriseInfo {
   NomSociete?: string;
   NCC?: string;
   travailleAvecApporteur?: boolean;
+  appliquerTaxeHonoraireMedecin?: boolean;
 }
 
 export const useEntreprise = () => {

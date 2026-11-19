@@ -95,6 +95,7 @@ export default function HonorairesPage() {
   const [ongletActif, setOngletActif] = useState<'actes' | 'historique'>('actes');
   const [historique, setHistorique] = useState<HonoraireHistorique[]>([]);
   const [loadingHistorique, setLoadingHistorique] = useState(false);
+  const [appliquerTaxe, setAppliquerTaxe] = useState(true);
 
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const toggleExpand = (id: string) => setExpandedRows(prev => {
@@ -231,6 +232,7 @@ export default function HonorairesPage() {
       if (!res.ok) throw new Error('Erreur chargement');
       const json = await res.json();
       const data = json.data || [];
+      setAppliquerTaxe(json.appliquerTaxe !== false);
       setActes(data);
       setSelected(new Set(data.map((a: Acte) => a.idActe + '|' + a.type)));
     } catch (error) {
@@ -556,7 +558,9 @@ export default function HonorairesPage() {
         ? `${medecinObj.prenoms || ''} ${medecinObj.nom || ''}`.trim()
         : 'Médecin';
 
-      const TAX_RATE = 0.075;
+      // Taux de retenue déduit des montants enregistrés du bordereau :
+      // 7,5 % si la taxe était appliquée, 0 sinon (réglage de l'entreprise).
+      const tauxRetenue = (h.MontantJour || 0) > 0 ? (h.Totalretenue || 0) / (h.MontantJour || 1) : 0;
 
       const debut = h.DEBUTD ? new Date(h.DEBUTD).toLocaleDateString('fr-FR') : '-';
       const fin = h.FIND ? new Date(h.FIND).toLocaleDateString('fr-FR') : '-';
@@ -600,7 +604,7 @@ export default function HonorairesPage() {
       ].filter(row => row.taux > 0 || row.part > 0);
 
       const lignesTableHTML = allLignes.map(row => {
-        const taxe = Math.round(row.part * TAX_RATE);
+        const taxe = Math.round(row.part * tauxRetenue);
         const net = row.part - taxe;
         return `
           <tr>
@@ -617,7 +621,7 @@ export default function HonorairesPage() {
 
       const totauxHTML = [
         { label: 'TOTAL BRUT HONORAIRE', val: h.MontantJour || 0, bold: false },
-        { label: 'RETENUE (7,5%)',        val: h.Totalretenue || 0, bold: false },
+        { label: `RETENUE${tauxRetenue > 0 ? ` (${(tauxRetenue * 100).toFixed(1).replace('.', ',')}%)` : ''}`, val: h.Totalretenue || 0, bold: false },
         { label: 'NET À PAYER',           val: h.Totalnetapayer || 0, bold: true, bg: '#f5f5f5' },
         { label: 'MONTANT PAYÉ',          val: h.MontantPayé || 0, bold: false },
         { label: 'RESTE À PAYER',         val: h.Restapayer || 0, bold: false },
@@ -827,7 +831,7 @@ export default function HonorairesPage() {
             <Table bordered className="mb-0" style={{ fontSize: '0.73rem', borderCollapse: 'collapse' }}>
               <thead>
                 <tr style={{ position: 'sticky', top: 0, zIndex: 1 }}>
-                  {['Date Prestation', 'Type', 'ACTE', 'Total acte', 'Total Médecin', 'Taxe (-7.5%)', 'Net à payer', 'Patient', 'A payer'].map((h, hi) => (
+                  {['Date Prestation', 'Type', 'ACTE', 'Total acte', 'Total Médecin', `Taxe${appliquerTaxe ? ' (-7.5%)' : ''}`, 'Net à payer', 'Patient', 'A payer'].map((h, hi) => (
                     <th key={hi} style={{ background: '#cfd8dc', color: '#37474f', padding: '6px 8px', fontWeight: 700, whiteSpace: 'nowrap', textAlign: [3, 4, 5, 6].includes(hi) ? 'right' : 'center', borderRight: '1px solid #b0bec5' }}>{h}</th>
                   ))}
                 </tr>

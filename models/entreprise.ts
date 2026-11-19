@@ -25,6 +25,8 @@ export interface IEntreprise extends Document {
   statut?: EntrepriseStatut;
   isActive?: boolean;
   travailleAvecApporteur?: boolean;
+  // Applique la retenue de 7,5 % sur les honoraires médecins (bordereaux)
+  appliquerTaxeHonoraireMedecin?: boolean;
 
   // Licence
   licenceType?: LicenceType;
@@ -71,6 +73,8 @@ const EntrepriseSchema = new Schema<IEntreprise>(
     },
     isActive: { type: Boolean, default: true },
     travailleAvecApporteur: { type: Boolean, default: false },
+    // Activé par défaut pour préserver le comportement des tenants existants
+    appliquerTaxeHonoraireMedecin: { type: Boolean, default: true },
 
     // Licence
     licenceType: {

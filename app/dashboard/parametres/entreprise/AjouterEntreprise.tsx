@@ -30,6 +30,7 @@ export default function AjouterEntreprise({
   const [licencePrice, setLicencePrice] = useState<number | string>(0);
   const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
   const [travailleAvecApporteur, setTravailleAvecApporteur] = useState(false);
+  const [appliquerTaxeHonoraireMedecin, setAppliquerTaxeHonoraireMedecin] = useState(true);
   const [portailPatient, setPortailPatient] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -68,6 +69,7 @@ export default function AjouterEntreprise({
       formData.append("licencePrice", String(licencePrice ?? 0));
       formData.append("maintenanceAccepted", String(maintenanceAccepted));
       formData.append("travailleAvecApporteur", String(travailleAvecApporteur));
+      formData.append("appliquerTaxeHonoraireMedecin", String(appliquerTaxeHonoraireMedecin));
       formData.append("portailPatient", String(portailPatient));
 
       if (LogoEFile) {
@@ -95,6 +97,7 @@ export default function AjouterEntreprise({
         setLicencePrice(0);
         setMaintenanceAccepted(false);
         setTravailleAvecApporteur(false);
+        setAppliquerTaxeHonoraireMedecin(true);
         setPortailPatient(false);
         onHide();
       }
@@ -234,6 +237,21 @@ export default function AjouterEntreprise({
                         />
                         <Form.Text className="text-muted">
                           Active la gestion des apporteurs et de leurs honoraires pour cette entreprise.
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="appliquer-taxe-honoraire-switch"
+                          label="Appliquer la taxe (-7,5%) sur les honoraires médecins"
+                          checked={appliquerTaxeHonoraireMedecin}
+                          onChange={(e) => setAppliquerTaxeHonoraireMedecin(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Activé = une retenue de 7,5% est déduite sur les bordereaux d&apos;honoraires médecins.
+                          Désactivé = la part médecin est payée sans retenue.
                         </Form.Text>
                       </Form.Group>
                     </Col>

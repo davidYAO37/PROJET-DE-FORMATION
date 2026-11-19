@@ -19,6 +19,7 @@ export interface Entreprise {
   statut?: EntrepriseStatut;
   isActive?: boolean;
   travailleAvecApporteur?: boolean;
+  appliquerTaxeHonoraireMedecin?: boolean;
 
   // Licence
   licenceType?: LicenceType;
