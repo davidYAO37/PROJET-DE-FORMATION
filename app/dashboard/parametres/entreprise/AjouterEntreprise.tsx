@@ -31,6 +31,7 @@ export default function AjouterEntreprise({
   const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
   const [travailleAvecApporteur, setTravailleAvecApporteur] = useState(false);
   const [appliquerTaxeHonoraireMedecin, setAppliquerTaxeHonoraireMedecin] = useState(true);
+  const [appliquerTaxeHonoraireApporteur, setAppliquerTaxeHonoraireApporteur] = useState(false);
   const [portailPatient, setPortailPatient] = useState(false);
   const [loading, setLoading] = useState(false);
 
@@ -70,6 +71,7 @@ export default function AjouterEntreprise({
       formData.append("maintenanceAccepted", String(maintenanceAccepted));
       formData.append("travailleAvecApporteur", String(travailleAvecApporteur));
       formData.append("appliquerTaxeHonoraireMedecin", String(appliquerTaxeHonoraireMedecin));
+      formData.append("appliquerTaxeHonoraireApporteur", String(appliquerTaxeHonoraireApporteur));
       formData.append("portailPatient", String(portailPatient));
 
       if (LogoEFile) {
@@ -252,6 +254,21 @@ export default function AjouterEntreprise({
                         <Form.Text className="text-muted">
                           Activé = une retenue de 7,5% est déduite sur les bordereaux d&apos;honoraires médecins.
                           Désactivé = la part médecin est payée sans retenue.
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="appliquer-taxe-apporteur-switch"
+                          label="Appliquer la taxe (-7,5%) sur les honoraires apporteurs"
+                          checked={appliquerTaxeHonoraireApporteur}
+                          onChange={(e) => setAppliquerTaxeHonoraireApporteur(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Activé = une retenue de 7,5% est déduite sur les bordereaux d&apos;honoraires apporteurs.
+                          Désactivé = la part apporteur est payée sans retenue.
                         </Form.Text>
                       </Form.Group>
                     </Col>

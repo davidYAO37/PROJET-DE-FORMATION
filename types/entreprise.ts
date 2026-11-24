@@ -20,6 +20,7 @@ export interface Entreprise {
   isActive?: boolean;
   travailleAvecApporteur?: boolean;
   appliquerTaxeHonoraireMedecin?: boolean;
+  appliquerTaxeHonoraireApporteur?: boolean;
 
   // Licence
   licenceType?: LicenceType;
@@ -37,4 +38,5 @@ export interface Entreprise {
   lastAlertShownAt?: string;
   maintenancePrice?: number;
   licencePrice?: number;
+  cleConnect?: string;
 }

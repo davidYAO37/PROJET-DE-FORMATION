@@ -9,6 +9,7 @@ interface EntrepriseInfo {
   NCC?: string;
   travailleAvecApporteur?: boolean;
   appliquerTaxeHonoraireMedecin?: boolean;
+  appliquerTaxeHonoraireApporteur?: boolean;
 }
 
 export const useEntreprise = () => {

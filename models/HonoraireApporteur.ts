@@ -8,6 +8,7 @@ export interface IHonoraireApporteur {
     nombreActes: number;
     montantTotalActes: number;
     taux: number;
+    totalTaxe?: number;
     totalNetAPayer: number;
     montantPaye: number;
     resteAPayer: number;
@@ -23,6 +24,7 @@ const HonoraireApporteurSchema = new Schema<IHonoraireApporteur>({
     nombreActes: { type: Number, default: 0 },
     montantTotalActes: { type: Number, default: 0 },
     taux: { type: Number, default: 0 },
+    totalTaxe: { type: Number, default: 0 },
     totalNetAPayer: { type: Number, default: 0 },
     montantPaye: { type: Number, default: 0 },
     resteAPayer: { type: Number, default: 0 },

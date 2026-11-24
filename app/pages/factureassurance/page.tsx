@@ -295,22 +295,18 @@ export default function FactureAssurancePage() {
   };
 
   const handleImprimerFacture = (f: FactureAssurHistorique) => {
-    const ref = encodeURIComponent(f.Reference);
-    const debut = encodeURIComponent(f.DebutF || '');
-    const fin = encodeURIComponent(f.FinF || '');
-    const assur = encodeURIComponent(f.Assurance || '');
     const garant = optionImpression === 2 ? '1' : '0';
     const id = encodeURIComponent(f._id);
     let url = '';
     switch (choixImpression) {
       case 1:
-        url = `/pages/MesImpressions/impression-bordereau/consultation?numfacture=${ref}&debutF=${debut}&finF=${fin}&assurance=${assur}&parGarant=${garant}`;
+        url = `/pages/MesImpressions/impression-bordereau/consultation?idFactureAssur=${id}&parGarant=${garant}`;
         break;
       case 2:
         url = `/pages/MesImpressions/impression-bordereau/soins-examens?idFactureAssur=${id}&parGarant=${garant}`;
         break;
       case 3:
-        url = `/pages/MesImpressions/impression-bordereau/pharmacies?numfacture=${ref}&debutF=${debut}&finF=${fin}&assurance=${assur}&parGarant=${garant}`;
+        url = `/pages/MesImpressions/impression-bordereau/pharmacies?idFactureAssur=${id}&parGarant=${garant}`;
         break;
       case 4:
         url = `/pages/MesImpressions/impression-bordereau/consultations-soins-examens?idFactureAssur=${id}&parGarant=${garant}`;

@@ -29,6 +29,8 @@ export default function ModifierEntreprise({
   const [maintenanceAccepted, setMaintenanceAccepted] = useState(false);
   const [travailleAvecApporteur, setTravailleAvecApporteur] = useState(false);
   const [appliquerTaxeHonoraireMedecin, setAppliquerTaxeHonoraireMedecin] = useState(true);
+  const [appliquerTaxeHonoraireApporteur, setAppliquerTaxeHonoraireApporteur] = useState(false);
+  const [cleConnect, setCleConnect] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -56,6 +58,8 @@ export default function ModifierEntreprise({
       setMaintenanceAccepted(!!entreprise?.maintenanceAccepted);
       setTravailleAvecApporteur(!!entreprise?.travailleAvecApporteur);
       setAppliquerTaxeHonoraireMedecin(entreprise?.appliquerTaxeHonoraireMedecin !== false);
+      setAppliquerTaxeHonoraireApporteur(entreprise?.appliquerTaxeHonoraireApporteur === true);
+      setCleConnect(entreprise?.cleConnect ?? "");
 
       // Configurer le preview du logo existant
       if (entreprise.LogoE) {
@@ -92,6 +96,8 @@ export default function ModifierEntreprise({
       formData.append("maintenanceAccepted", String(maintenanceAccepted));
       formData.append("travailleAvecApporteur", String(travailleAvecApporteur));
       formData.append("appliquerTaxeHonoraireMedecin", String(appliquerTaxeHonoraireMedecin));
+      formData.append("appliquerTaxeHonoraireApporteur", String(appliquerTaxeHonoraireApporteur));
+      formData.append("cleConnect", cleConnect);
 
       // Ajouter le fichier seulement si un nouveau fichier est sélectionné
       if (LogoEFile) {
@@ -240,6 +246,50 @@ export default function ModifierEntreprise({
                         <Form.Text className="text-muted">
                           Activé = une retenue de 7,5% est déduite sur les bordereaux d&apos;honoraires médecins.
                           Désactivé = la part médecin est payée sans retenue.
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Check
+                          type="switch"
+                          id="appliquer-taxe-apporteur-switch-edit"
+                          label="Appliquer la taxe (-7,5%) sur les honoraires apporteurs"
+                          checked={appliquerTaxeHonoraireApporteur}
+                          onChange={(e) => setAppliquerTaxeHonoraireApporteur(e.target.checked)}
+                        />
+                        <Form.Text className="text-muted">
+                          Activé = une retenue de 7,5% est déduite sur les bordereaux d&apos;honoraires apporteurs.
+                          Désactivé = la part apporteur est payée sans retenue.
+                        </Form.Text>
+                      </Form.Group>
+                    </Col>
+                    <Col md={12}>
+                      <Form.Group className="mb-3">
+                        <Form.Label className="fw-semibold text-secondary">
+                          Clé API CONNECT (automates)
+                        </Form.Label>
+                        <div className="d-flex gap-2">
+                          <Form.Control
+                            value={cleConnect}
+                            onChange={(e) => setCleConnect(e.target.value)}
+                            placeholder="Clé secrète partagée avec la passerelle CONNECT"
+                            className="shadow-sm font-monospace"
+                          />
+                          <Button
+                            variant="outline-secondary"
+                            type="button"
+                            onClick={() => setCleConnect(crypto.randomUUID())}
+                            title="Générer une nouvelle clé"
+                          >
+                            <i className="bi bi-arrow-clockwise"></i>
+                          </Button>
+                        </div>
+                        <Form.Text className="text-muted">
+                          À copier dans CONNECT → Paramètres → « Clé API automate ».
+                          L&apos;ID entreprise à renseigner dans CONNECT est :{" "}
+                          <code>{entreprise?._id}</code>. Laissez vide pour désactiver
+                          la réception push des automates.
                         </Form.Text>
                       </Form.Group>
                     </Col>

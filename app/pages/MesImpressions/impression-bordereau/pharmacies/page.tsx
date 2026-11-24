@@ -50,29 +50,32 @@ const tdS = 'padding:3px 6px;border:1px solid #ddd';
 
 export default function ImpressionPharmaciesPage() {
   const searchParams = useSearchParams();
-  const numfacture = searchParams.get('numfacture') || '';
-  const debutF = searchParams.get('debutF') || '';
-  const finF = searchParams.get('finF') || '';
-  const assurance = searchParams.get('assurance') || '';
+  const idFactureAssur = searchParams.get('idFactureAssur') || '';
   const parGarant = searchParams.get('parGarant') === '1';
 
   const { entreprise } = useEntreprise();
   const [lignes, setLignes] = useState<Ligne[]>([]);
   const [totaux, setTotaux] = useState<Totaux>({ Montanttotal: 0, PartAssuranceP: 0, Partassure: 0 });
+  const [facture, setFacture] = useState({ reference: '', assurance: '', debutF: '', finF: '' });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  const numfacture = facture.reference;
+  const debutF = facture.debutF;
+  const finF = facture.finF;
+  const assurance = facture.assurance;
+
   useEffect(() => {
-    if (!numfacture) { setError('Référence facture manquante'); setLoading(false); return; }
-    fetch(`/api/comptabilite/impression-bordereau/pharmacies?numfacture=${encodeURIComponent(numfacture)}`)
+    if (!idFactureAssur) { setError('Bordereau manquant'); setLoading(false); return; }
+    fetch(`/api/comptabilite/impression-bordereau/pharmacies?idFactureAssur=${encodeURIComponent(idFactureAssur)}`)
       .then(r => r.json())
       .then(data => {
-        if (data.success) { setLignes(data.lignes); setTotaux(data.totaux); }
+        if (data.success) { setLignes(data.lignes); setTotaux(data.totaux); if (data.facture) setFacture(data.facture); }
         else setError(data.message || 'Erreur');
         setLoading(false);
       })
       .catch(() => { setError('Erreur réseau'); setLoading(false); });
-  }, [numfacture]);
+  }, [idFactureAssur]);
 
   const handlePrint = () => {
     const el = document.getElementById('print-content');

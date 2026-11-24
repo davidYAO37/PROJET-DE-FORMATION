@@ -19,10 +19,20 @@ const patientName = (ligne: any) => {
     return nomComplet || ligne.nomPatient || ligne.patient || "-";
 };
 
+const TAUX_TAXE = 7.5;
+
 async function checkApporteurActif(entrepriseId?: string) {
     if (!entrepriseId) return true;
     const entreprise = await Entreprise.findById(entrepriseId).lean<IEntreprise | null>();
     return !!entreprise?.travailleAvecApporteur;
+}
+
+// Retourne le taux de retenue sur les honoraires apporteurs :
+// appliquerTaxeHonoraireApporteur === true → 7.5, sinon 0 (historique sans retenue)
+async function tauxTaxeApporteur(entrepriseId?: string) {
+    if (!entrepriseId) return 0;
+    const entreprise = await Entreprise.findById(entrepriseId).lean<IEntreprise | null>();
+    return entreprise?.appliquerTaxeHonoraireApporteur === true ? TAUX_TAXE : 0;
 }
 
 export async function GET(request: NextRequest) {
@@ -56,10 +66,16 @@ export async function GET(request: NextRequest) {
             _id: { $nin: dejaInclus },
             ...getTenantFilter(context),
         }).populate("IdPatient", "Nom Prenoms").sort({ datePaiementCaisse: 1 }).lean();
-        return NextResponse.json({ success: true, data: lignes.map(l => ({
-            id: String(l._id), date: l.datePaiementCaisse || l.dateLignePrestation, acte: l.prestation,
-            patient: patientName(l), montantActe: toInt(l.prixTotal), taux: Number(l.tauxApporteur || 0), netAPayer: toInt(l.montantApporteur),
-        })) });
+        const tauxTaxe = await tauxTaxeApporteur(context.entrepriseId);
+        return NextResponse.json({ success: true, tauxTaxe, data: lignes.map(l => {
+            const brut = toInt(l.montantApporteur);
+            const taxe = toInt(brut * tauxTaxe / 100);
+            return {
+                id: String(l._id), date: l.datePaiementCaisse || l.dateLignePrestation, acte: l.prestation,
+                patient: patientName(l), montantActe: toInt(l.prixTotal), taux: Number(l.tauxApporteur || 0),
+                taxe, netAPayer: brut - taxe,
+            };
+        }) });
     }
 
     const filtre: Record<string, unknown> = { annule: { $ne: true }, ...getTenantFilter(context) };
@@ -75,9 +91,10 @@ export async function GET(request: NextRequest) {
         ...h,
         montantTotalActes: toInt(h.montantTotalActes),
         totalNetAPayer: toInt(h.totalNetAPayer),
+        totalTaxe: toInt(h.totalTaxe),
         montantPaye: toInt(h.montantPaye),
         resteAPayer: toInt(h.resteAPayer),
-        lignes: lignes.filter(l => String(l.HonoraireApporteur) === String(h._id)).map(l => ({ ...l, montantActe: toInt(l.montantActe), netAPayer: toInt(l.netAPayer), patient: patientName(l) })),
+        lignes: lignes.filter(l => String(l.HonoraireApporteur) === String(h._id)).map(l => ({ ...l, montantActe: toInt(l.montantActe), taxe: toInt(l.taxe), netAPayer: toInt(l.netAPayer), patient: patientName(l) })),
         paiements: paiements.filter(p => String(p.HonoraireApporteur) === String(h._id)).map(p => ({ ...p, montant: toInt(p.montant), resteAPayer: toInt(p.resteAPayer) })),
     })) });
 }
@@ -98,11 +115,17 @@ export async function POST(request: NextRequest) {
     const dejaInclus = await LigneHonoraire.find({ LignePrestation: { $in: ligneIds } }).distinct("LignePrestation");
     const lignes = await LignePrestation.find({ _id: { $in: ligneIds, $nin: dejaInclus }, idApporteur: apporteurId, acteApporteur: "OUI", actePayeCaisse: "Payé" }).populate("IdPatient", "Nom Prenoms").lean();
     if (!lignes.length) return NextResponse.json({ success: false, message: "Aucun acte disponible" }, { status: 400 });
+    const tauxTaxe = await tauxTaxeApporteur(context.entrepriseId);
     const montantTotalActes = toInt(lignes.reduce((s, l) => s + Number(l.prixTotal || 0), 0));
-    const totalNetAPayer = toInt(lignes.reduce((s, l) => s + Number(l.montantApporteur || 0), 0));
-    const honoraire = await Honoraire.create({ Apporteur: apporteurId, debut: new Date(dateDebut), fin: toEndDate(dateFin), nombreActes: lignes.length, montantTotalActes, taux: apporteur.taux, totalNetAPayer, montantPaye: 0, resteAPayer: totalNetAPayer, entrepriseId: context.entrepriseId });
+    const totalTaxe = toInt(lignes.reduce((s, l) => s + toInt(l.montantApporteur) * tauxTaxe / 100, 0));
+    const totalNetAPayer = toInt(lignes.reduce((s, l) => s + (toInt(l.montantApporteur) - toInt(toInt(l.montantApporteur) * tauxTaxe / 100)), 0));
+    const honoraire = await Honoraire.create({ Apporteur: apporteurId, debut: new Date(dateDebut), fin: toEndDate(dateFin), nombreActes: lignes.length, montantTotalActes, taux: apporteur.taux, totalTaxe, totalNetAPayer, montantPaye: 0, resteAPayer: totalNetAPayer, entrepriseId: context.entrepriseId });
     try {
-        await LigneHonoraire.insertMany(lignes.map(l => ({ HonoraireApporteur: honoraire._id, LignePrestation: l._id, date: l.datePaiementCaisse || l.dateLignePrestation || new Date(), prestation: l.prestation, patient: patientName(l), montantActe: toInt(l.prixTotal), taux: l.tauxApporteur || apporteur.taux, netAPayer: toInt(l.montantApporteur), entrepriseId: context.entrepriseId })));
+        await LigneHonoraire.insertMany(lignes.map(l => {
+            const brut = toInt(l.montantApporteur);
+            const taxe = toInt(brut * tauxTaxe / 100);
+            return { HonoraireApporteur: honoraire._id, LignePrestation: l._id, date: l.datePaiementCaisse || l.dateLignePrestation || new Date(), prestation: l.prestation, patient: patientName(l), montantActe: toInt(l.prixTotal), taux: l.tauxApporteur || apporteur.taux, taxe, netAPayer: brut - taxe, entrepriseId: context.entrepriseId };
+        }));
         return NextResponse.json({ success: true, id: String(honoraire._id) });
     } catch (error) {
         await Promise.all([

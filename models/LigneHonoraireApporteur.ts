@@ -8,6 +8,7 @@ export interface ILigneHonoraireApporteur {
     patient?: string;
     montantActe: number;
     taux: number;
+    taxe?: number;
     netAPayer: number;
     entrepriseId?: string;
 }
@@ -20,6 +21,7 @@ const LigneHonoraireApporteurSchema = new Schema<ILigneHonoraireApporteur>({
     patient: { type: String },
     montantActe: { type: Number, default: 0 },
     taux: { type: Number, default: 0 },
+    taxe: { type: Number, default: 0 },
     netAPayer: { type: Number, default: 0 },
     entrepriseId: { type: String },
 }, { timestamps: true });

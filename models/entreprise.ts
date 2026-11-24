@@ -22,11 +22,15 @@ export interface IEntreprise extends Document {
   email?: string;
   mongoUri?: string;
   dbName?: string;
+  // Clé API partagée pour la passerelle EASY-MEDICAL CONNECT (mode push)
+  cleConnect?: string;
   statut?: EntrepriseStatut;
   isActive?: boolean;
   travailleAvecApporteur?: boolean;
   // Applique la retenue de 7,5 % sur les honoraires médecins (bordereaux)
   appliquerTaxeHonoraireMedecin?: boolean;
+  // Applique la retenue de 7,5 % sur les honoraires apporteurs (bordereaux)
+  appliquerTaxeHonoraireApporteur?: boolean;
 
   // Licence
   licenceType?: LicenceType;
@@ -66,6 +70,7 @@ const EntrepriseSchema = new Schema<IEntreprise>(
     email: { type: String, maxlength: 200, lowercase: true },
     mongoUri: { type: String, maxlength: 1000 },
     dbName: { type: String, maxlength: 200, unique: true, sparse: true },
+    cleConnect: { type: String, maxlength: 200 },
     statut: {
       type: String,
       enum: ["active", "suspendue", "resiliee"],
@@ -75,6 +80,8 @@ const EntrepriseSchema = new Schema<IEntreprise>(
     travailleAvecApporteur: { type: Boolean, default: false },
     // Activé par défaut pour préserver le comportement des tenants existants
     appliquerTaxeHonoraireMedecin: { type: Boolean, default: true },
+    // Désactivé par défaut : les bordereaux apporteurs historiques n'avaient pas de retenue
+    appliquerTaxeHonoraireApporteur: { type: Boolean, default: false },
 
     // Licence
     licenceType: {

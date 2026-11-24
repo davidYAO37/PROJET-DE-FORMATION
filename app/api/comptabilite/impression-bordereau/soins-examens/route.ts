@@ -26,13 +26,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Bordereau introuvable' }, { status: 404 });
     }
 
-    const EXCLUS = ['PHARMACIE', 'HOSPITALISATION MEDICALE', 'HOSPITALISATION CHIRURGICALE'];
+    // Tout sauf consultations, pharmacie et hospitalisation — le flag
+    // AHospitalisation est fiable (+ exclusion par nom pour les lignes
+    // historiques qui n'auraient pas le flag)
+    const EXCLUS = ['HOSPITALISATION MEDICALE', 'HOSPITALISATION CHIRURGICALE'];
 
     const lignesRaw = await LigneFacture.find({
       FactureAssur: new mongoose.Types.ObjectId(idFactureAssur),
-      TYPEACTE: 'EXAMEN ET AUTRES PRESTATIONS',
+      TYPEACTE: { $nin: ['CONSULTATION', 'PHARMACIE'] },
+      AHospitalisation: { $ne: 1 },
       ACTEF: { $nin: EXCLUS },
-    }).lean() as any[];
+    })
+      .sort({ SOCIETE_PATIENT: 1, DateFacture: 1, TYPEACTE: 1 })
+      .lean() as any[];
 
     const lignes = lignesRaw.map((l: any) => ({
       date: l.DateFacture ? new Date(l.DateFacture).toLocaleDateString('fr-FR') : '',

@@ -61,6 +61,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       const travailleAvecApporteur = travailleAvecApporteurRaw !== null ? travailleAvecApporteurRaw === "true" : undefined;
       const appliquerTaxeHonoraireMedecinRaw = formData.get("appliquerTaxeHonoraireMedecin") as string | null;
       const appliquerTaxeHonoraireMedecin = appliquerTaxeHonoraireMedecinRaw !== null ? appliquerTaxeHonoraireMedecinRaw === "true" : undefined;
+      const appliquerTaxeHonoraireApporteurRaw = formData.get("appliquerTaxeHonoraireApporteur") as string | null;
+      const appliquerTaxeHonoraireApporteur = appliquerTaxeHonoraireApporteurRaw !== null ? appliquerTaxeHonoraireApporteurRaw === "true" : undefined;
+      const cleConnectRaw = formData.get("cleConnect") as string | null;
       const logoFile = formData.get("logoFile") as File | null;
 
       let logoPath = LogoE; // Par défaut, garde le chemin existant
@@ -96,6 +99,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       if (typeof maintenanceAccepted !== "undefined") updateData.maintenanceAccepted = maintenanceAccepted;
       if (typeof travailleAvecApporteur !== "undefined") updateData.travailleAvecApporteur = travailleAvecApporteur;
       if (typeof appliquerTaxeHonoraireMedecin !== "undefined") updateData.appliquerTaxeHonoraireMedecin = appliquerTaxeHonoraireMedecin;
+      if (typeof appliquerTaxeHonoraireApporteur !== "undefined") updateData.appliquerTaxeHonoraireApporteur = appliquerTaxeHonoraireApporteur;
+      if (cleConnectRaw !== null) updateData.cleConnect = cleConnectRaw.trim() || null;
     } else {
       // Gérer JSON (ancien format)
       const body = await req.json();

@@ -26,10 +26,13 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Bordereau introuvable' }, { status: 404 });
     }
 
+    // Tout sauf hospitalisation : flag fiable + exclusion par nom
+    // (filet pour les anciennes lignes sans AHospitalisation)
     const EXCLUS = ['HOSPITALISATION MEDICALE', 'HOSPITALISATION CHIRURGICALE'];
 
     const lignesRaw = await LigneFacture.find({
       FactureAssur: new mongoose.Types.ObjectId(idFactureAssur),
+      AHospitalisation: { $ne: 1 },
       ACTEF: { $nin: EXCLUS },
     })
       .sort({ SOCIETE_PATIENT: 1, DateFacture: 1, TYPEACTE: 1 })

@@ -45,6 +45,8 @@ export async function POST(req: NextRequest) {
     const travailleAvecApporteur = formData.get("travailleAvecApporteur") === "true";
     // Absence du champ = comportement historique : la taxe est appliquée
     const appliquerTaxeHonoraireMedecin = formData.get("appliquerTaxeHonoraireMedecin") !== "false";
+    // Absence du champ = comportement historique : pas de retenue sur les apporteurs
+    const appliquerTaxeHonoraireApporteur = formData.get("appliquerTaxeHonoraireApporteur") === "true";
     // Choix à la création : l'entreprise décide si ses patients peuvent
     // utiliser le portail patient. `modules: []` signifie "tous les modules",
     // donc pour le refuser on stocke la liste explicite sans "portail_patient".
@@ -110,7 +112,9 @@ export async function POST(req: NextRequest) {
       hasLogoFile: !!logoFile
     });
 
-    // Créer l'objet entreprise
+    // Créer l'objet entreprise — cleConnect auto-générée : la passerelle CONNECT
+    // du labo s'authentifie avec sur POST /api/automates/connect (modifiable dans
+    // Modifier l'entreprise, vide = push désactivé)
     const entrepriseData = {
       NomSociete,
       EnteteSociete,
@@ -122,9 +126,11 @@ export async function POST(req: NextRequest) {
       maintenanceAccepted,
       travailleAvecApporteur,
       appliquerTaxeHonoraireMedecin,
+      appliquerTaxeHonoraireApporteur,
       modules,
       dbName,
       mongoUri,
+      cleConnect: crypto.randomUUID(),
     };
 
     const newEntreprise = await Entreprise.create(entrepriseData);
