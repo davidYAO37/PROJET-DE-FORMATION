@@ -44,3 +44,6 @@ scripts/import_windev/*.log
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# fichier parasite Windows (nom reserve)
+nul

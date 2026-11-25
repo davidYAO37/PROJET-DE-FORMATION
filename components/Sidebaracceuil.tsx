@@ -26,6 +26,7 @@ const menu = [
   { label: 'Planning Médecin', path: '#', isModal: true, icon: <i className="bi bi-calendar-fill me-2 text-primary"></i> },
   { label: 'Disponibilité Médecin', path: '#', isModal: true, icon: <i className="bi bi-calendar2-check-fill me-2 text-success"></i> },
   { label: 'Statistiques RDV', path: '/pages/statistiques-rendezvous', icon: <i className="bi bi-calendar-event-fill me-2 text-info"></i> },
+  { label: 'Stats actes additionnels', path: '/pages/statistiques-actes-additionnels', icon: <i className="bi bi-clipboard2-data me-2 text-warning"></i> },
  // { label: 'Gestion Rendez-Vous', path: '/rendez-vous', icon: <i className="bi bi-clock-fill me-2 text-info"></i> },
   { label: 'Point de saisie', path: '#', isModal: true, icon: <i className="bi bi-pencil-square me-2 text-secondary"></i> },
   { label: 'Guide d\'utilisation', path: '/pages/serviceaccueil/guide', icon: <i className="bi bi-book-half me-2 text-primary"></i> },

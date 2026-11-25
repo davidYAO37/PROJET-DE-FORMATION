@@ -82,6 +82,12 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
     const totalPaye = Number(consultation.Montantencaisse ?? consultation.montantEncaisse ?? consultation.MontantRecu ?? 0);
     const resteAPayer = Number(consultation.Restapayer ?? consultation.resteAPayer ?? consultation.restapayer ?? Math.max(0, totalAPayer - totalPaye));
 
+    // Actes supplémentaires facturés avec la consultation
+    const actesSupp: any[] = Array.isArray(consultation.actesSupplementaires) ? consultation.actesSupplementaires : [];
+    const totalActesClinique = actesSupp.reduce((s, a) => s + (Number(a.prixClinique) || 0) * (Number(a.qte) || 1), 0);
+    const totalActesPatient = actesSupp.reduce((s, a) => s + (Number(a.partAssure) || 0) + (Number(a.surplus) || 0), 0);
+    const totalActesPartAssurance = actesSupp.reduce((s, a) => s + (Number(a.partAssurance) || 0), 0);
+
     const getContent = () => {
         const printContent = document.getElementById('print-content');
         if (!printContent) return "";
@@ -189,10 +195,18 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
                 <tbody>
                     <tr>
                         <td>{consultation.designationC || '-'}</td>
-                        <td className="text-center">{(consultation.PrixClinique || 0).toLocaleString()}</td>
-                        <td className="text-center">{(consultation.montantapayer || 0).toLocaleString()}</td>
-                        <td className="text-center">{(consultation.PartAssurance || 0).toLocaleString()}</td>
+                        <td className="text-center">{Math.max(0, (consultation.PrixClinique || 0) - totalActesClinique).toLocaleString()}</td>
+                        <td className="text-center">{Math.max(0, (consultation.montantapayer || 0) - totalActesPatient).toLocaleString()}</td>
+                        <td className="text-center">{Math.max(0, (consultation.PartAssurance || 0) - totalActesPartAssurance).toLocaleString()}</td>
                     </tr>
+                    {actesSupp.map((a: any, i: number) => (
+                        <tr key={a.idActe || i}>
+                            <td>{a.designation || '-'}{a.qte > 1 ? ` x${a.qte}` : ''}</td>
+                            <td className="text-center">{((a.prixClinique || 0) * (a.qte || 1)).toLocaleString()}</td>
+                            <td className="text-center">{((a.partAssure || 0) + (a.surplus || 0)).toLocaleString()}</td>
+                            <td className="text-center">{(a.partAssurance || 0).toLocaleString()}</td>
+                        </tr>
+                    ))}
                     <tr style={{ fontWeight: 'bold', background: '#f0f0f0' }}>
                         <td className="text-center">Totaux</td>
                         <td className="text-center">{(consultation.PrixClinique || 0).toLocaleString()}</td>
@@ -247,6 +261,12 @@ const RecuConsultationPrint = forwardRef<HTMLDivElement, RecuConsultationPrintPr
             <div className="thermal-row"><span>Matricule</span><span>{matricule}</span></div>
             <div className="thermal-separator"></div>
             <div className="thermal-row"><span>Acte</span><span>{consultation.designationC || 'CONSULTATION'}</span></div>
+            {actesSupp.map((a: any, i: number) => (
+                <div className="thermal-row" key={a.idActe || i}>
+                    <span>+ {a.designation || '-'}{a.qte > 1 ? ` x${a.qte}` : ''}</span>
+                    <span>{((a.prixClinique || 0) * (a.qte || 1)).toLocaleString()}</span>
+                </div>
+            ))}
             <div className="thermal-row"><span>Total acte</span><span>{Number(consultation.PrixClinique || 0).toLocaleString()}</span></div>
             <div className="thermal-row"><span>Part assurance</span><span>{Number(consultation.PartAssurance || 0).toLocaleString()}</span></div>
             <div className="thermal-row"><span>Part patient</span><span>{totalPatientAvantRemise.toLocaleString()}</span></div>

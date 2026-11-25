@@ -87,6 +87,22 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
             Partassure = montantCouvert - partAssurance;
             surplus = Math.max(0, montantClinique - montantCouvert);
         }
+
+        // Actes supplémentaires déjà enregistrés sur la consultation : montants stockés
+        const actesSupp = Array.isArray((consultation as any).actesSupplementaires)
+            ? (consultation as any).actesSupplementaires
+            : [];
+        const addClinique = actesSupp.reduce((s: number, a: any) => s + (Number(a.prixClinique) || 0) * (Number(a.qte) || 1), 0);
+        const addCouvert = data.assure === "non"
+            ? 0
+            : actesSupp.reduce((s: number, a: any) => s + (Number(a.montantAssurance) || 0) * (Number(a.qte) || 1), 0);
+        const addPartAssur = actesSupp.reduce((s: number, a: any) => s + (Number(a.partAssurance) || 0), 0);
+        const addPartAssure = actesSupp.reduce((s: number, a: any) => s + (Number(a.partAssure) || 0), 0);
+        const addSurplus = actesSupp.reduce((s: number, a: any) => s + (Number(a.surplus) || 0), 0);
+        partAssurance += addPartAssur;
+        Partassure += addPartAssure;
+        surplus += addSurplus;
+
         const totalPatientBase = Partassure + surplus;
         const montantRegle = Math.max(0, totalPatientBase - reduction);
         const montantEncaisse = Math.min(Number(data.Montantencaisse) || 0, montantRegle);
@@ -101,8 +117,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.IdPatient = patient?._id ? new mongoose.Types.ObjectId(String(patient._id)) : undefined;
         consultation.IDMEDECIN = medecin?._id ? new mongoose.Types.ObjectId(String(medecin._id)) : undefined;
 
-        consultation.Prix_Assurance = data.assure === "non" ? 0 : (montantAssurance || montantClinique);
-        consultation.PrixClinique = montantClinique;
+        consultation.Prix_Assurance = data.assure === "non" ? 0 : (montantAssurance || montantClinique) + addCouvert;
+        consultation.PrixClinique = montantClinique + addClinique;
 
         consultation.montantapayer = totalPatientBase;
         consultation.ReliquatPatient = surplus;

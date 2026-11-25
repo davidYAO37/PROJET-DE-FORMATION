@@ -24,6 +24,7 @@ const getMenu = (apporteurActif: boolean): MenuItem[] => [
   { label: 'Honoraires Médecins', path: `${BASE}/honoraires`, icon: 'bi-person-badge-fill', color: 'text-warning' },
   ...(apporteurActif ? [{ label: 'Honoraires Apporteurs', path: `${BASE}/honoraires-apporteurs`, icon: 'bi-people-fill', color: 'text-info' }] : []),
   { label: 'Facturation assurances', path: `${BASE}/factureassurance`, icon: 'bi-shield-fill-check', color: 'text-danger' },
+  { label: 'Stats actes additionnels', path: '/pages/statistiques-actes-additionnels', icon: 'bi-clipboard2-data', color: 'text-warning' },
   { label: 'Guide d\'utilisation', path: `${BASE}/guide`, icon: 'bi-book-half', color: 'text-primary' },
   { label: 'Mot de passe', path: '#', icon: 'bi-key-fill', color: 'text-secondary', isMdp: true },
 ];

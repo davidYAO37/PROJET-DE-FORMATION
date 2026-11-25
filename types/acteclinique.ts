@@ -20,6 +20,8 @@ export interface ActeClinique {
     Interpretation?: string;
     ORdonnacementAffichage?: number;
     ActeNonFacturable?: boolean;
+    acteAdditionnel?: boolean;
+    montantAdditionnel?: number;
     // Champs ajoutés par MongoDB
     createdAt?: string;
     updatedAt?: string;

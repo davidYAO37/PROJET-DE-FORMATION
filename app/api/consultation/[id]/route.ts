@@ -114,6 +114,17 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
         partAssurance = (tauxNum * montantActe) / 100;
         Partassure = montantActe - partAssurance;
+
+        // Actes supplémentaires enregistrés sur la consultation : montants stockés
+        const actesSupp = Array.isArray((consultation as any).actesSupplementaires)
+            ? (consultation as any).actesSupplementaires
+            : [];
+        const addClinique = actesSupp.reduce((s: number, a: any) => s + (Number(a.prixClinique) || 0) * (Number(a.qte) || 1), 0);
+        const addCouvert = actesSupp.reduce((s: number, a: any) => s + (Number(a.montantAssurance) || 0) * (Number(a.qte) || 1), 0);
+        partAssurance += actesSupp.reduce((s: number, a: any) => s + (Number(a.partAssurance) || 0), 0);
+        Partassure += actesSupp.reduce((s: number, a: any) => s + (Number(a.partAssure) || 0), 0);
+        surplus += actesSupp.reduce((s: number, a: any) => s + (Number(a.surplus) || 0), 0);
+
         const totalPatient = Partassure + surplus;
 
         // Mise à jour consultation
@@ -125,8 +136,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
         consultation.IdPatient = patient?._id ? new mongoose.Types.ObjectId(String(patient._id)) : undefined;
         consultation.IDMEDECIN = medecin?._id ? new mongoose.Types.ObjectId(String(medecin._id)) : undefined;
 
-        consultation.Prix_Assurance = montantActe;
-        consultation.PrixClinique = data.montantClinique || 0;
+        consultation.Prix_Assurance = montantActe + addCouvert;
+        consultation.PrixClinique = (data.montantClinique || 0) + addClinique;
         consultation.Restapayer = totalPatient;
         consultation.montantapayer = totalPatient; // Partassure + surplus = tiket_moderateur + ReliquatPatient
         consultation.ReliquatPatient = surplus;

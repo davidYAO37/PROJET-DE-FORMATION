@@ -6,6 +6,7 @@ import { Assurance } from "@/types/assurance";
 import { Medecin } from "@/types/medecin";
 import InfosPatient from "./InfosPatient";
 import BlocActe from "./BlocActe";
+import BlocActesSupplementaires, { ActeSupplementaireInput } from "./BlocActesSupplementaires";
 import BlocAssurance from "./BlocAssurance";
 import ResumeMontants from "./ResumeMontants";
 
@@ -36,6 +37,8 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
 
     const [souscripteur, setSouscripteur] = useState("");
     const [societePatient, setSocietePatient] = useState("");
+
+    const [actesSupplementaires, setActesSupplementaires] = useState<ActeSupplementaireInput[]>([]);
 
     const [surplus, setSurplus] = useState<number>(0);
     const [partAssurance, setPartAssurance] = useState<number>(0);
@@ -192,11 +195,18 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
             surplusCalc = effectiveMontantClinique - montantAssur;
         }
 
+        // Contribution des actes supplémentaires : montants intégralement
+        // à la charge du patient (pas de part assurance, pas de surplus)
+        const addPartAssure = actesSupplementaires.reduce(
+            (s, a) => s + (Number(a.prixClinique) || 0) * (Number(a.qte) || 1),
+            0
+        );
+
         setSurplus(surplusCalc);
         setPartAssurance(partAssur);
-        setPartassure(partPat);
-        setTotalPatient(partPat + surplusCalc);
-    }, [montantClinique, montantAssurance, taux, accepteSurplus]);
+        setPartassure(partPat + addPartAssure);
+        setTotalPatient(partPat + surplusCalc + addPartAssure);
+    }, [montantClinique, montantAssurance, taux, accepteSurplus, actesSupplementaires]);
 
     const handleSave = async () => {
         setError("");
@@ -229,6 +239,7 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                     Recupar: recuPar,
                     IdPatient: patient._id || "",
                     selectedActeDesignation,
+                    actesSupplementaires,
 
                 }),
             });
@@ -276,6 +287,11 @@ export default function FicheConsultation({ patient, onClose }: FicheConsultatio
                 setMedecinExterne={setMedecinExterne}
                 assure={assure}
                 patient={patient}
+            />
+
+            <BlocActesSupplementaires
+                actePrincipalId={selectedActe}
+                onChange={setActesSupplementaires}
             />
 
             <BlocAssurance

@@ -35,6 +35,14 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
 
     if (!consultation) return null;
 
+    const actesSupp: any[] = Array.isArray(consultation.actesSupplementaires) ? consultation.actesSupplementaires : [];
+    const totalActesClinique = actesSupp.reduce((s, a) => s + (Number(a.prixClinique) || 0) * (Number(a.qte) || 1), 0);
+    const totalActesPartAssurance = actesSupp.reduce((s, a) => s + (Number(a.partAssurance) || 0), 0);
+    const totalActesTicket = actesSupp.reduce((s, a) => s + (Number(a.partAssure) || 0), 0);
+    const dateFacture = consultation.DateFacturation ? new Date(consultation.DateFacturation).toLocaleDateString('fr-FR') : '---';
+    const cellStyle = { border: '1px solid #333333', padding: '10px 8px' };
+    const cellRight = { ...cellStyle, textAlign: 'right' as const };
+
     return (
         <>
             {/* ===== BOUTONS (non imprimés) ===== */}
@@ -280,7 +288,7 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                     fontWeight: '600',
                                     background: '#f5f5f5'
                                 }}>
-                                    {consultation.DateFacturation ? new Date(consultation.DateFacturation).toLocaleDateString('fr-FR') : '---'}
+                                    {dateFacture}
                                 </td>
                                 <td style={{ 
                                     border: '1px solid #333333', 
@@ -294,7 +302,7 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                     textAlign: 'right',
                                     fontWeight: '600'
                                 }}>
-                                    {(consultation.PrixClinique || 0).toLocaleString()} FCFA
+                                    {Math.max(0, (consultation.PrixClinique || 0) - totalActesClinique).toLocaleString()} FCFA
                                 </td>
                                 <td style={{ 
                                     border: '1px solid #333333', 
@@ -303,7 +311,7 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                     color: '#333333',
                                     fontWeight: '600'
                                 }}>
-                                    {(consultation.PartAssurance || 0).toLocaleString()} FCFA
+                                    {Math.max(0, (consultation.PartAssurance || 0) - totalActesPartAssurance).toLocaleString()} FCFA
                                 </td>
                                 <td style={{ 
                                     border: '1px solid #333333', 
@@ -312,9 +320,18 @@ const printFactureConsultationPatient = forwardRef<HTMLDivElement, PrintFactureC
                                     color: '#333333',
                                     fontWeight: '600'
                                 }}>
-                                    {(consultation.tiket_moderateur || 0).toLocaleString()} FCFA
+                                    {Math.max(0, (consultation.tiket_moderateur || 0) - totalActesTicket).toLocaleString()} FCFA
                                 </td>
                             </tr>
+                            {actesSupp.map((a: any, i: number) => (
+                                <tr key={a.idActe || i}>
+                                    <td style={cellStyle}>{dateFacture}</td>
+                                    <td style={cellStyle}>{a.designation || '---'}{a.qte > 1 ? ` x${a.qte}` : ''}</td>
+                                    <td style={cellRight}>{((a.prixClinique || 0) * (a.qte || 1)).toLocaleString()} FCFA</td>
+                                    <td style={cellRight}>{(a.partAssurance || 0).toLocaleString()} FCFA</td>
+                                    <td style={cellRight}>{(a.partAssure || 0).toLocaleString()} FCFA</td>
+                                </tr>
+                            ))}
                         </tbody>
                     </table>
                 </div>

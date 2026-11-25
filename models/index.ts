@@ -169,3 +169,14 @@ import './hospitalisation/EvolutionMedicaleHospitalisation';
 import './hospitalisation/DocumentHospitalisation';
 import './hospitalisation/MouvementHospitalisation';
 import './hospitalisation/FactureHospitalisation';
+
+// --- Modèles du module Intrants laboratoire ---
+export * from './intrants/Intrant';
+export * from './intrants/LotIntrant';
+export * from './intrants/MouvementIntrant';
+export * from './intrants/RegleComparaisonIntrant';
+
+import './intrants/Intrant';
+import './intrants/LotIntrant';
+import './intrants/MouvementIntrant';
+import './intrants/RegleComparaisonIntrant';

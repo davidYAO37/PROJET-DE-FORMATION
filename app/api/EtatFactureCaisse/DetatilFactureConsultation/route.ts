@@ -53,6 +53,7 @@ export async function GET(req: NextRequest) {
             Montantencaisse: consultation.Montantencaisse,
             Toutencaisse: consultation.Toutencaisse,
             DateFacturation: consultation.DateFacturation,
+            actesSupplementaires: consultation.actesSupplementaires || [],
 
             // Données patient (peuplées via populate)
             Nom: consultation.PatientP,
@@ -118,6 +119,7 @@ export async function POST(req: NextRequest) {
             Montantencaisse: consultation.Montantencaisse,
             Toutencaisse: consultation.Toutencaisse,
             DateFacturation: consultation.DateFacturation,
+            actesSupplementaires: consultation.actesSupplementaires || [],
 
             // Données patient (peuplées via populate)
             Nom: consultation.PatientP,

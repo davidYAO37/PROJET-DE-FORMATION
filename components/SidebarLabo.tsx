@@ -15,6 +15,7 @@ import SidebarBlockOverlay from '@/components/licence/SidebarBlockOverlay';
 const menu = [
     { label: 'Tableau de bord', path: '/pages/servicelaboratoire/tlaboratoire', icon: <i className="bi bi-speedometer2 me-2 text-primary"></i> },
     { label: 'Statistiques', path: '/pages/servicelaboratoire/statistiques', icon: <i className="bi bi-bar-chart-fill me-2 text-primary"></i> },
+    { label: 'Intrants', path: '/pages/servicelaboratoire/intrants', icon: <i className="bi bi-eyedropper me-2 text-primary"></i> },
     { label: 'Accueil Patient', path: '/pages/servicelaboratoire/patientLabo', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
     { label: 'Liste Resultat Retour', path: '/pages/servicelaboratoire/components/ListeResultatRetour', icon: <i className="bi bi-arrow-right-circle-fill me-2 text-info"></i> },
     { label: 'Resultats Validés', path: '#', isModal: true, icon: <i className="bi bi-people-fill me-2 text-warning"></i> },

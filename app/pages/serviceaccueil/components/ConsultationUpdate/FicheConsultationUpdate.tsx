@@ -52,6 +52,7 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
     const [recuPar, setRecuPar] = useState("");
     const [CodePrestation, setCodePrestation] = useState("");
     const [acteWarning, setActeWarning] = useState<string | null>(null);
+    const [actesSupplementaires, setActesSupplementaires] = useState<any[]>([]);
 
     useEffect(() => {
         const nom = localStorage.getItem("nom_utilisateur");
@@ -106,8 +107,16 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
                 setSelectedMedecin(idMedecin);
                 setMedecinExterne("");
             }
-            setMontantClinique(Math.round(currentConsultation.PrixClinique || 0));
-            setMontantAssurance(Math.round(currentConsultation.Prix_Assurance || 0));
+            // Actes supplémentaires : leurs montants sont inclus dans PrixClinique/Prix_Assurance
+            const actesSupp = Array.isArray((currentConsultation as any).actesSupplementaires)
+                ? (currentConsultation as any).actesSupplementaires
+                : [];
+            setActesSupplementaires(actesSupp);
+            const addClinique = actesSupp.reduce((s: number, a: any) => s + (Number(a.prixClinique) || 0) * (Number(a.qte) || 1), 0);
+            const addCouvert = actesSupp.reduce((s: number, a: any) => s + (Number(a.montantAssurance) || 0) * (Number(a.qte) || 1), 0);
+
+            setMontantClinique(Math.round((currentConsultation.PrixClinique || 0) - addClinique));
+            setMontantAssurance(Math.round((currentConsultation.Prix_Assurance || 0) - addCouvert));
 
             // Remplir les champs d'assurance - Convertir ObjectId en string
             const idAssurance = currentConsultation.IDASSURANCE ? String(currentConsultation.IDASSURANCE) : "";
@@ -268,11 +277,16 @@ export default function FicheConsultationUpdate({ patient, onClose, consultation
             surplusCalc = effectiveMontantClinique - montantAssur;
         }
 
-        setSurplus(surplusCalc);
-        setPartAssurance(partAssur);
-        setPartassure(partPat);
-        setTotalPatient(partPat + surplusCalc);
-    }, [montantClinique, montantAssurance, taux, accepteSurplus]);
+        // Contribution des actes supplémentaires (montants déjà calculés à la création)
+        const addPartAssur = actesSupplementaires.reduce((s, a: any) => s + (Number(a.partAssurance) || 0), 0);
+        const addPartAssure = actesSupplementaires.reduce((s, a: any) => s + (Number(a.partAssure) || 0), 0);
+        const addSurplus = actesSupplementaires.reduce((s, a: any) => s + (Number(a.surplus) || 0), 0);
+
+        setSurplus(surplusCalc + addSurplus);
+        setPartAssurance(partAssur + addPartAssur);
+        setPartassure(partPat + addPartAssure);
+        setTotalPatient(partPat + surplusCalc + addPartAssure + addSurplus);
+    }, [montantClinique, montantAssurance, taux, accepteSurplus, actesSupplementaires]);
 
     // Validation de la sélection de l'acte (même logique que BlocActe dans ConsultationAdd)
     const handleActeChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {

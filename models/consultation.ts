@@ -1,5 +1,16 @@
 import mongoose, { Schema, Document, Model } from "mongoose";
 
+export interface IActeSupplementaire {
+  idActe: string;
+  designation: string;
+  qte: number;
+  prixClinique: number;      // montant clinique unitaire
+  montantAssurance: number;  // tarif assurance/société unitaire
+  partAssurance: number;     // part assurance pour la ligne (qte comprise)
+  partAssure: number;        // part patient pour la ligne
+  surplus: number;           // surplus patient pour la ligne
+}
+
 export interface IConsultation extends Document {
   designationC: string;
   assurance: string;
@@ -32,6 +43,7 @@ export interface IConsultation extends Document {
 
   Recupar: string;
   IDACTE: string;
+  actesSupplementaires?: IActeSupplementaire[];
 
   IdPatient?: mongoose.Types.ObjectId;
   Souscripteur?: string;
@@ -124,6 +136,21 @@ const ConsultationSchema: Schema<IConsultation> = new Schema(
 
     Recupar: { type: String, required: true },
     IDACTE: { type: String, required: true },
+    actesSupplementaires: {
+      type: [
+        {
+          idActe: { type: String, required: true },
+          designation: { type: String, required: true },
+          qte: { type: Number, default: 1 },
+          prixClinique: { type: Number, default: 0 },
+          montantAssurance: { type: Number, default: 0 },
+          partAssurance: { type: Number, default: 0 },
+          partAssure: { type: Number, default: 0 },
+          surplus: { type: Number, default: 0 },
+        },
+      ],
+      default: [],
+    },
 
     IdPatient: { type: Schema.Types.ObjectId, ref: "Patient" },
     Souscripteur: { type: String },

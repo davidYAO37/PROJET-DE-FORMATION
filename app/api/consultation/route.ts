@@ -103,6 +103,37 @@ export async function POST(req: NextRequest) {
         const Partassure = montantCouvert - partAssurance;
         const totalPatient = Partassure + surplus;
 
+        // ✅ Actes supplémentaires (facturés avec la consultation)
+        // Leur montant s'applique intégralement à la part patient :
+        // pas de couverture assurance, pas de surplus.
+        const actesSupplementaires = (Array.isArray(data.actesSupplementaires) ? data.actesSupplementaires : [])
+            .map((a: any) => {
+                const qte = Math.max(1, Math.round(Number(a.qte) || 1));
+                const prixUnit = Math.round(Number(a.prixClinique) || 0);
+                return {
+                    idActe: String(a.idActe || ""),
+                    designation: String(a.designation || ""),
+                    qte,
+                    prixClinique: prixUnit,
+                    montantAssurance: 0,
+                    partAssurance: 0,
+                    partAssure: prixUnit * qte,
+                    surplus: 0,
+                };
+            })
+            .filter((a: any) => a.idActe && a.designation);
+
+        const totalActesClinique = actesSupplementaires.reduce((s: number, a: any) => s + a.prixClinique * a.qte, 0);
+        const totalActesCouvert = actesSupplementaires.reduce((s: number, a: any) => s + a.montantAssurance * a.qte, 0);
+        const totalActesPartAssurance = actesSupplementaires.reduce((s: number, a: any) => s + a.partAssurance, 0);
+        const totalActesPartAssure = actesSupplementaires.reduce((s: number, a: any) => s + a.partAssure, 0);
+        const totalActesSurplus = actesSupplementaires.reduce((s: number, a: any) => s + a.surplus, 0);
+
+        const totalCliniqueGlobal = montantClinique + totalActesClinique;
+        const partAssuranceGlobale = partAssurance + totalActesPartAssurance;
+        const surplusGlobal = surplus + totalActesSurplus;
+        const totalPatientGlobal = totalPatient + totalActesPartAssure + totalActesSurplus;
+
         // Correction des champs obligatoires
         if (!patient || !patient.Code_dossier) {
             return NextResponse.json({ error: "Impossible de trouver le code dossier du patient." }, { status: 400 });
@@ -118,12 +149,13 @@ export async function POST(req: NextRequest) {
             IDASSURANCE: assurance?._id,
 
 
-            Prix_Assurance: Math.round(montantAssur),
-            PrixClinique: Math.round(montantClinique),
-            Restapayer: Math.round(totalPatient),
-            montantapayer: Math.round(Partassure + surplus),
-            ReliquatPatient: Math.round(surplus),
+            Prix_Assurance: Math.round(montantAssur + totalActesCouvert),
+            PrixClinique: Math.round(totalCliniqueGlobal),
+            Restapayer: Math.round(totalPatientGlobal),
+            montantapayer: Math.round(totalPatientGlobal),
+            ReliquatPatient: Math.round(surplusGlobal),
             accepteSurplus,
+            actesSupplementaires,
             IDSOCIETEASSURANCE: data.idSocieteAssurance || patient?.IDSOCIETEASSURANCE || data.selectedAssurance,
 
             Code_dossier: patient.Code_dossier, // Toujours le code dossier du patient
@@ -131,13 +163,13 @@ export async function POST(req: NextRequest) {
             Date_consultation: data.Date_consultation || new Date(),
             Heure_Consultation: data.Heure_Consultation || new Date().toLocaleTimeString(),
 
-            StatutC: data.montantClinique === 0 ? true : false,
-            StatutPaiement: data.montantClinique === 0 ? "Pas facturé" : "En cours de Paiement",
-            Toutencaisse: data.montantClinique === 0 ? true : false,
+            StatutC: totalCliniqueGlobal === 0 ? true : false,
+            StatutPaiement: totalCliniqueGlobal === 0 ? "Pas facturé" : "En cours de Paiement",
+            Toutencaisse: totalCliniqueGlobal === 0 ? true : false,
 
             tauxAssurance: tauxNum,
-            PartAssurance: Math.round(partAssurance),
-            tiket_moderateur: Math.round(Partassure),
+            PartAssurance: Math.round(partAssuranceGlobale),
+            tiket_moderateur: Math.round(Partassure + totalActesPartAssure),
             numero_carte: data.matricule,
             NumBon: data.NumBon,
 

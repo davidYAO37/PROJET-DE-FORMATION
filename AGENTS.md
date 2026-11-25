@@ -140,6 +140,16 @@ Le super-admin peut valider la commande
 
 Le simulateur ne nécessite aucune clé Wave et permet de tester le flux complet.
 
+## Intrants laboratoire (module autonome)
+
+- Modèles : `models/intrants/` (`Intrant`, `LotIntrant`, `MouvementIntrant`, `RegleComparaisonIntrant`). Toute la logique stock passe par `lib/intrantsService.ts` (`appliquerMouvement`, `annulerMouvement`, `preleverSurLots` FEFO).
+- API : `app/api/intrants/` — catalogue, `mouvements` (entree/utilisation/perte/ajustement), `lots`, `stock` (alertes), `statistiques`, `comparaison`, `regles`.
+- Sorties = **quantités effectivement utilisées** ; les pertes sont un type distinct. Aucun examen/résultat ne déclenche de mouvement.
+- Comparaison labo (`GET /api/intrants/comparaison`) : lecture seule ; l'activité = `LignePrestation` `lettreCle: "B"`, ciblée par les règles (`prestation`, `idActe` ou `familleActe`).
+- Rôles : lecture `ROLES_INTRANTS_LECTURE` (+ comptable/facturation), mouvements `ROLES_INTRANTS_MOUVEMENT` (admin, biologiste, technicienlabo), paramétrage `ROLES_INTRANTS_PARAMETRAGE` (admin, biologiste).
+- UI : `components/intrants/` partagés ; pages `/pages/servicelaboratoire/intrants` et `/pages/servicebiologiste/intrants`.
+- Pas de transaction Mongo : décrément atomique sur `Intrant.qteEnStock` + rattrapage manuel (même convention que `stockService`).
+
 ## Admissions hospitalières : vérification serveur
 
 - `POST /api/hospitalisations` utilise une transaction MongoDB : Atlas ou replica set requis, sans repli non transactionnel. Les admissions des tenants sur la connexion partagée sont refusées, car chambres/lits ne portent pas de champ tenant.

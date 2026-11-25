@@ -35,6 +35,7 @@ const menu: MenuItem[] = [
       { label: 'Accueil Patient', path: '/pages/serviceaccueil/patient', icon: <i className="bi bi-house-door-fill me-2 text-success"></i> },
       { label: 'Statistiques', path: '/pages/serviceaccueil/statistiques', icon: <i className="bi bi-bar-chart-fill me-2 text-info"></i> },
       { label: 'Statistiques RDV', path: '/pages/statistiques-rendezvous', icon: <i className="bi bi-calendar-event-fill me-2 text-info"></i> },
+      { label: 'Stats actes additionnels', path: '/pages/statistiques-actes-additionnels', icon: <i className="bi bi-clipboard2-data me-2 text-warning"></i> },
     ],
   },
   {

@@ -57,6 +57,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
     const [numBon, setNumBon] = useState("");
     const [recuPar, setRecuPar] = useState("");
     const [CodePrestation, setCodePrestation] = useState("");
+    const [actesSupplementaires, setActesSupplementaires] = useState<any[]>([]);
 
     // Nouveaux champs facturation
     const [montantEncaisse, setMontantEncaisse] = useState<number>(0);
@@ -125,8 +126,14 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                 setSelectedMedecin(String(currentConsultation.IDMEDECIN || ""));
                 setMedecinExterne("");
             }
-            setMontantClinique(Math.round(currentConsultation.PrixClinique || 0));
-            setMontantAssurance(Math.round(currentConsultation.Prix_Assurance || 0));
+            // PrixClinique/Prix_Assurance incluent les actes supplémentaires : isoler l'acte principal
+            const actesSupp = Array.isArray((currentConsultation as any).actesSupplementaires)
+                ? (currentConsultation as any).actesSupplementaires
+                : [];
+            const addClinique = actesSupp.reduce((s: number, a: any) => s + (Number(a.prixClinique) || 0) * (Number(a.qte) || 1), 0);
+            const addCouvert = actesSupp.reduce((s: number, a: any) => s + (Number(a.montantAssurance) || 0) * (Number(a.qte) || 1), 0);
+            setMontantClinique(Math.round((currentConsultation.PrixClinique || 0) - addClinique));
+            setMontantAssurance(Math.round((currentConsultation.Prix_Assurance || 0) - addCouvert));
 
             // Mettre à jour les champs d'assurance en fonction de l'état assure
             if (nouvelAssure !== "non") {
@@ -145,6 +152,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                 setSocietePatient("");
             }
 
+            setActesSupplementaires(Array.isArray((currentConsultation as any).actesSupplementaires) ? (currentConsultation as any).actesSupplementaires : []);
             setAccepteSurplus((currentConsultation as any).accepteSurplus ?? true);
             setIdSocieteAssurance(currentConsultation.IDSOCIETEASSURANCE || "");
             setReduction(Number(currentConsultation.reduction ?? 0));
@@ -303,12 +311,17 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
             surplusCalc = effectiveMontantClinique - montantAssur;
         }
 
-        const baseTotalPatient = Math.max(0, partPat + surplusCalc);
-        setSurplus(surplusCalc);
-        setPartAssurance(partAssur);
-        setPartassure(partPat);
+        // Contribution des actes supplémentaires (montants déjà calculés à la création)
+        const addPartAssur = actesSupplementaires.reduce((s, a: any) => s + (Number(a.partAssurance) || 0), 0);
+        const addPartAssure = actesSupplementaires.reduce((s, a: any) => s + (Number(a.partAssure) || 0), 0);
+        const addSurplus = actesSupplementaires.reduce((s, a: any) => s + (Number(a.surplus) || 0), 0);
+
+        const baseTotalPatient = Math.max(0, partPat + surplusCalc + addPartAssure + addSurplus);
+        setSurplus(surplusCalc + addSurplus);
+        setPartAssurance(partAssur + addPartAssur);
+        setPartassure(partPat + addPartAssure);
         setTotalPatient(baseTotalPatient);
-    }, [montantClinique, montantAssurance, taux, accepteSurplus]);
+    }, [montantClinique, montantAssurance, taux, accepteSurplus, actesSupplementaires]);
 
     useEffect(() => {
         const montantRegle = Math.max(0, totalPatient - reduction);
@@ -503,6 +516,33 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                         )}
                     </Col>
                 </Row>
+                {actesSupplementaires.length > 0 && (
+                    <div className="mt-3">
+                        <h6 className="text-secondary mb-2">
+                            <i className="bi bi-list-check me-2"></i>Actes supplémentaires ({actesSupplementaires.length})
+                        </h6>
+                        <table className="table table-sm table-bordered mb-0">
+                            <thead className="table-light">
+                                <tr>
+                                    <th>Acte</th>
+                                    <th className="text-center" style={{ width: 70 }}>Qté</th>
+                                    <th className="text-end">Montant</th>
+                                    <th className="text-end">Part patient</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {actesSupplementaires.map((a: any, i: number) => (
+                                    <tr key={a.idActe || i}>
+                                        <td>{a.designation}</td>
+                                        <td className="text-center">{a.qte || 1}</td>
+                                        <td className="text-end">{((a.prixClinique || 0) * (a.qte || 1)).toLocaleString()} FCFA</td>
+                                        <td className="text-end">{((Number(a.partAssure) || 0) + (Number(a.surplus) || 0)).toLocaleString()} FCFA</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                )}
             </Card>
 
             <BlocAssuranceUpdateCaisse
@@ -610,7 +650,7 @@ export default function FicheConsultationUpdateCaisse({ patient, onClose, consul
                                         : "NON ASSURE",
                                     tauxAssurance: Number(taux) || 0,
                                     numero_carte: matricule,
-                                    PrixClinique: montantClinique,
+                                    PrixClinique: montantClinique + actesSupplementaires.reduce((s, a: any) => s + (Number(a.prixClinique) || 0) * (Number(a.qte) || 1), 0),
                                     montantapayer: totalPatient,
                                     reduction,
                                     MotifRemise: motifRemise,

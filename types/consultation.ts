@@ -19,6 +19,16 @@ export interface ConsultationType {
     ReliquatPatient: number;
     Recupar: string;
     IDACTE: string;
+    actesSupplementaires?: {
+        idActe: string;
+        designation: string;
+        qte: number;
+        prixClinique: number;
+        montantAssurance: number;
+        partAssurance: number;
+        partAssure: number;
+        surplus: number;
+    }[];
     tauxAssurance: number;
     PartAssurance: number;
     tiket_moderateur: number;
