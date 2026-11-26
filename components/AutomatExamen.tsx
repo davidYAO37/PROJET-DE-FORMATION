@@ -1,26 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import {
-    Container,
-    Row,
-    Col,
-    Card,
-    Button,
-    ProgressBar,
-    Spinner,
-    Modal,
-    Table,
-    Nav
-} from 'react-bootstrap';
-
-import {
-    ArrowClockwise,
-    ClockHistory,
-    Trash,
-    Link45deg
-} from 'react-bootstrap-icons';
-
+import { Container, Row, Col, Card, Button, ProgressBar, Spinner, Modal, Table, Nav} from 'react-bootstrap';
+import { ArrowClockwise, ClockHistory, Trash, Link45deg} from 'react-bootstrap-icons';
 import GestionLienAutomate from './GestionLienAutomate';
 
 type HistoriqueKey = 'nfs' | 'hormones' | 'vs' | 'biochimie';
@@ -85,52 +67,21 @@ const TITRES: Record<HistoriqueKey, string> = {
 };
 
 export default function AutomatExamen() {
-
-    const [loadingGlobal, setLoadingGlobal] =
-        useState(false);
-
-    const [loadingNfs, setLoadingNfs] =
-        useState(false);
-
-    const [loadingHormone, setLoadingHormone] =
-        useState(false);
-
-    const [loadingVs, setLoadingVs] =
-        useState(false);
-
-    const [loadingBiochimie, setLoadingBiochimie] =
-        useState(false);
-
-    const [nfsProgress, setNfsProgress] =
-        useState(0);
-
-    const [hormoneProgress, setHormoneProgress] =
-        useState(0);
-
-    const [vsProgress, setVsProgress] =
-        useState(0);
-
-    const [biochimieProgress, setBiochimieProgress] =
-        useState(0);
-
-    const [showHistorique, setShowHistorique] =
-        useState(false);
-
-    const [showLiens, setShowLiens] =
-        useState(false);
-
-    const [historique, setHistorique] =
-        useState<Record<HistoriqueKey, HistoriqueSection>>(HISTORIQUE_VIDE);
-
-    const [ongletHistorique, setOngletHistorique] =
-        useState<HistoriqueKey>('nfs');
-
-    const [loadingHistorique, setLoadingHistorique] =
-        useState(false);
-
-    const [vidageHistorique, setVidageHistorique] =
-        useState(false);
-
+    const [loadingGlobal, setLoadingGlobal] = useState(false);
+    const [loadingNfs, setLoadingNfs] = useState(false);
+    const [loadingHormone, setLoadingHormone] = useState(false);
+    const [loadingVs, setLoadingVs] = useState(false);
+    const [loadingBiochimie, setLoadingBiochimie] = useState(false);
+    const [nfsProgress, setNfsProgress] = useState(0);
+    const [hormoneProgress, setHormoneProgress] = useState(0);
+    const [vsProgress, setVsProgress] = useState(0);
+    const [biochimieProgress, setBiochimieProgress] = useState(0);
+    const [showHistorique, setShowHistorique] = useState(false);
+    const [showLiens, setShowLiens] = useState(false);
+    const [historique, setHistorique] = useState<Record<HistoriqueKey, HistoriqueSection>>(HISTORIQUE_VIDE);
+    const [ongletHistorique, setOngletHistorique] = useState<HistoriqueKey>('nfs');
+    const [loadingHistorique, setLoadingHistorique] = useState(false);
+    const [vidageHistorique, setVidageHistorique] = useState(false);
     const chargerHistorique = async () => {
         try {
             setLoadingHistorique(true);
@@ -208,8 +159,10 @@ export default function AutomatExamen() {
             }
 
             setNfsProgress(
-                data.progression || 100
+                data.progression ?? 0
             );
+
+            await chargerHistorique();
 
             alert(
                 data.message
@@ -260,8 +213,10 @@ export default function AutomatExamen() {
             }
 
             setHormoneProgress(
-                data.progression || 100
+                data.progression ?? 0
             );
+
+            await chargerHistorique();
 
             alert(
                 data.message
@@ -312,8 +267,10 @@ export default function AutomatExamen() {
             }
 
             setVsProgress(
-                data.progression || 100
+                data.progression ?? 0
             );
+
+            await chargerHistorique();
 
             alert(
                 data.message
@@ -364,8 +321,10 @@ export default function AutomatExamen() {
             }
 
             setBiochimieProgress(
-                data.progression || 100
+                data.progression ?? 0
             );
+
+            await chargerHistorique();
 
             alert(
                 data.message
@@ -390,6 +349,7 @@ export default function AutomatExamen() {
     const actualiserTout =
         async () => {
 
+        if (loadingGlobal || loadingNfs || loadingHormone || loadingVs || loadingBiochimie) return;
         if (!confirm(
             'Voulez-vous actualiser tous les résultats ?'
         )) return;
@@ -398,17 +358,16 @@ export default function AutomatExamen() {
 
             setLoadingGlobal(true);
 
-            await actualiserNFS();
-
-            await actualiserHormones();
-
-            await actualiserVS();
-
-            await actualiserBiochimie();
-
-            alert(
-                'Tous les automates ont été actualisés'
-            );
+            const response = await fetch('/api/automates/actualiser-tout', { method: 'POST' });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Erreur d’actualisation');
+            const bilan = data.resultat || {};
+            setNfsProgress(bilan.nfs?.success ? bilan.nfs.progression ?? 0 : 0);
+            setHormoneProgress(bilan.hormones?.success ? bilan.hormones.progression ?? 0 : 0);
+            setVsProgress(bilan.vs?.success ? bilan.vs.progression ?? 0 : 0);
+            setBiochimieProgress(bilan.biochimie?.success ? bilan.biochimie.progression ?? 0 : 0);
+            await chargerHistorique();
+            alert([data.message, ...(Object.keys(TITRES) as HistoriqueKey[]).map((key) => `${TITRES[key]} : ${bilan[key]?.message || 'Réponse absente'}`)].join('\n'));
 
         } catch (error: any) {
 
@@ -531,7 +490,7 @@ export default function AutomatExamen() {
 
                     <ActionButton
                         label="RESULTAT NFS"
-                        loading={loadingNfs}
+                        loading={loadingNfs || loadingGlobal}
                         onClick={
                             actualiserNFS
                         }
@@ -540,7 +499,7 @@ export default function AutomatExamen() {
                     <ActionButton
                         label="RESULTAT HORMONES"
                         loading={
-                            loadingHormone
+                            loadingHormone || loadingGlobal
                         }
                         onClick={
                             actualiserHormones
@@ -549,7 +508,7 @@ export default function AutomatExamen() {
 
                     <ActionButton
                         label="RESULTAT VS"
-                        loading={loadingVs}
+                        loading={loadingVs || loadingGlobal}
                         onClick={
                             actualiserVS
                         }
@@ -558,7 +517,7 @@ export default function AutomatExamen() {
                     <ActionButton
                         label="BIOCHIMIE"
                         loading={
-                            loadingBiochimie
+                            loadingBiochimie || loadingGlobal
                         }
                         onClick={
                             actualiserBiochimie

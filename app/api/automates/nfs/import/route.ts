@@ -1,182 +1,45 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { withTenant, getTenantFilter } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
-import { IActeClinique } from "@/models/acteclinique";
-import { IParametreNfs } from "@/models/parametreNfs";
-import { INfsTraitement } from "@/models/nfsTraitement";
 import { ILienAutomate } from "@/models/lienAutomate";
+import { importerNfs, NfsImportError } from "@/lib/nfsImportService";
 
 const WRITE_ROLES = ["admin", "biologiste", "technicienlabo"];
 
 export async function POST(req: NextRequest) {
     const { context, response } = await withTenant(req, WRITE_ROLES, { actions: ["parametrage_actes_biologie"] });
     if (!context) return response;
-    const ActeClinique = getTenantModel<IActeClinique>(context.connection, "ActeClinique");
-    const ParametreNfs = getTenantModel<IParametreNfs>(context.connection, "ParametreNfs");
-    const NfsTraitement = getTenantModel<INfsTraitement>(context.connection, "NfsTraitement");
-    const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
-
+    if (!context.entrepriseId) return NextResponse.json({ success: false, message: "Entreprise requise" }, { status: 403 });
     try {
-
-        const automate = await LienAutomate.findOne().sort({ createdAt: -1 });
-
-        if (
-            !automate?.nLienNFS
-        ) {
-
-            return NextResponse.json(
-                {
-                    success: false,
-                    message:
-                        "Lien automate NFS introuvable"
-                },
-                {
-                    status: 404
-                }
-            );
+        const filter = getTenantFilter(context);
+        const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
+        const automate = await LienAutomate.findOne(filter).sort({ createdAt: -1 });
+        if (!automate?.nLienNFS) {
+            return NextResponse.json({ success: false, message: "Lien automate NFS introuvable" }, { status: 404 });
         }
-
-        const controllerNfs = new AbortController();
-        const timeoutNfs = setTimeout(() => controllerNfs.abort(), 8000);
-        let response: Response;
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        let contenu: string;
         try {
-            response = await fetch(automate.nLienNFS, { signal: controllerNfs.signal });
-        } catch (fetchErr: any) {
-            clearTimeout(timeoutNfs);
-            const isTimeout = fetchErr?.name === "AbortError";
-            return NextResponse.json(
-                { success: false, message: isTimeout ? "Timeout : l'automate NFS ne répond pas (>8s)" : `Impossible de joindre l'automate NFS : ${fetchErr.message}` },
-                { status: 503 }
-            );
+            const result = await fetch(automate.nLienNFS, { signal: controller.signal, cache: "no-store" });
+            if (!result.ok) return NextResponse.json({ success: false, message: `Erreur Easy Connect NFS (HTTP ${result.status})` }, { status: 502 });
+            contenu = await result.text();
+        } catch (error) {
+            return NextResponse.json({ success: false, message: (error as Error).name === "AbortError" ? "Timeout : l'automate NFS ne répond pas (>8s)" : "Impossible de joindre l'automate NFS" }, { status: 503 });
+        } finally {
+            clearTimeout(timeout);
         }
-        clearTimeout(timeoutNfs);
-
-        const contenu = await response.text();
-
-        if (!contenu || contenu.trim() === "") {
-
-            return NextResponse.json({
-                success: true,
-                progression: 0,
-                total: 0,
-                message: "Aucun résultat disponible"
-            });
-        }
-
-        let tableNfs: any[];
+        let lignes: unknown = [];
         try {
-            tableNfs = JSON.parse(contenu);
+            if (contenu.trim()) lignes = JSON.parse(contenu);
         } catch {
-            return NextResponse.json(
-                { success: false, message: "Réponse de l'automate NFS invalide (JSON attendu)" },
-                { status: 502 }
-            );
+            return NextResponse.json({ success: false, message: "Réponse de l'automate NFS invalide (JSON attendu)" }, { status: 502 });
         }
-
-        const acteNfs = await ActeClinique.findOne({
-            designationacte: "NUMERATION FORMULE SANGUINE (NFS)"
-        });
-
-        const familleId = acteNfs?.IDFAMILLE_ACTE_BIOLOGIE;
-
-        const parametres = await ParametreNfs.find();
-
-        await NfsTraitement.deleteMany({});
-
-        let compteur = 0;
-
-        const total = tableNfs.length;
-
-        for (const param of parametres) {
-
-            for (const ligne of tableNfs) {
-
-                if (ligne.parametres !== param.PARAMETRE) {
-                    continue;
-                }
-
-                const plage = String(ligne.plageRef || "");
-
-                const morceaux = plage.split("-");
-
-                await NfsTraitement.create({
-
-                    Patient_Nom: ligne.nom,
-
-                    Patient_prenom: ligne.prenom,
-
-                    PatientP: `${ligne.nom} ${ligne.prenom}`,
-
-                    Patient_ages: ligne.ages,
-
-                    Patient_Sexe: ligne.sexe,
-
-                    Patient_numDossier: ligne.numDossier,
-
-                    NumNFs: ligne.idNfs,
-
-                    NFS_dateAnalyse: ligne.dateAnalyse,
-
-                    NFS_service: ligne.service,
-
-                    NFS_idEchantillon: ligne.idEchantillon,
-
-                    diagnostiQ: ligne.diagnostic,
-
-                    NFS_status: ligne.status,
-
-                    NFS_unite: ligne.unite,
-
-                    NFS_resultat: ligne.resultat,
-
-                    NFS_plageRef: ligne.plageRef,
-
-                    NFS_id: ligne.id,
-
-                    IDFAMILLE_ACTE_BIOLOGIE: familleId,
-
-                    CodePrestation: ligne.idEchantillon,
-
-                    ValeurMinNormale: Number(morceaux[0]) || 0,
-
-                    ValeurMaxNormale: Number(morceaux[1]) || 0,
-
-                    NFS_parametres: param.DESCRIPTION
-                });
-
-                compteur++;
-            }
-        }
-
-        return NextResponse.json({
-
-            success: true,
-
-            total,
-
-            importes:
-                compteur,
-
-            progression:
-                100,
-
-            message:
-                "Import NFS terminé"
-        });
-
+        const bilan = await importerNfs(context.connection, context.entrepriseId, filter, lignes);
+        return NextResponse.json({ success: true, ...bilan });
     } catch (error) {
-
-        console.error(error);
-
-        return NextResponse.json(
-            {
-                success: false,
-                message:
-                    "Erreur import NFS"
-            },
-            {
-                status: 500
-            }
-        );
+        if (error instanceof NfsImportError) return NextResponse.json({ success: false, message: error.message }, { status: error.status });
+        console.error("Erreur import NFS:", error);
+        return NextResponse.json({ success: false, message: "Erreur import NFS ; une nouvelle tentative peut reprendre sans réimporter les résultats déjà reçus" }, { status: 500 });
     }
 }

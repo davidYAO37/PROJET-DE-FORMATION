@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { withTenant, getTenantFilter } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { INfsTraitement } from "@/models/nfsTraitement";
 import { IVitesseTraitement } from "@/models/VitesseTraitement";
@@ -14,6 +14,7 @@ export async function POST(req: NextRequest) {
     const { context, response: tenantErrorResponse } = await withTenant(req, ROLES);
     if (!context) return tenantErrorResponse;
     const { connection } = context;
+    const filter = getTenantFilter(context);
     const NfsTraitement = getTenantModel<INfsTraitement>(connection, "NfsTraitement");
     const VitesseTraitement = getTenantModel<IVitesseTraitement>(connection, "VitesseTraitement");
     const BiochimieTraitement = getTenantModel<IBiochimieTraitement>(connection, "BiochimieTraitement");
@@ -30,6 +31,7 @@ export async function POST(req: NextRequest) {
         // 1. Vérifier NFS (NUMERATION FORMULE SANGUINE)
         if (prestation === "NUMERATION FORMULE SANGUINE (NFS)") {
             const nfsTraitements = await NfsTraitement.find({
+                ...filter,
                 $or: [
                     { CodePrestation: prestation },
                     { CodePrestation: idHospitalisation }
@@ -56,6 +58,7 @@ export async function POST(req: NextRequest) {
         // 2. Vérifier VITESSE DE SEDIMENTATION
         if (prestation === "VITESSE DE SEDIMENTATION") {
             const vitesseTraitements = await VitesseTraitement.find({
+                ...filter,
                 $or: [
                     { CodePrestation: prestation },
                     { CodePrestation: idHospitalisation }
@@ -82,6 +85,7 @@ export async function POST(req: NextRequest) {
         // 3. RESULTAT_HORMONES
         if (parametres.length === 0) {
             const hormoneTraitements = await HormoneTraitement.find({
+                ...filter,
                 $or: [
                     { CodePrestation: prestation },
                     { CodePrestation: idHospitalisation }
@@ -166,6 +170,7 @@ export async function POST(req: NextRequest) {
 
             for (const acteParam of acteParamsBiochimie) {
                 const biochimieTraitements = await BiochimieTraitement.find({
+                    ...filter,
                     $or: [
                         { id_patient: prestation },
                         { id_patient: idHospitalisation }

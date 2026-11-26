@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { withTenant } from "@/lib/withTenant";
+import { withTenant, getTenantFilter } from "@/lib/withTenant";
 import { getTenantModel } from "@/lib/tenantModels";
 import { ILienAutomate } from "@/models/lienAutomate";
 
@@ -10,7 +10,7 @@ export async function GET(req: NextRequest) {
     if (!context) return response;
     const LienAutomate = getTenantModel<ILienAutomate>(context.connection, "LienAutomate");
     try {
-        const lien = await LienAutomate.findOne().sort({ createdAt: -1 });
+        const lien = await LienAutomate.findOne(getTenantFilter(context)).sort({ createdAt: -1 });
         return NextResponse.json({ success: true, data: lien || {} });
     } catch (error) {
         console.error("Erreur GET LienAutomate:", error);
@@ -26,7 +26,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json();
         const { nLienNFS, LienHormone, LienVS, LienBiochimie } = body;
 
-        const existing = await LienAutomate.findOne().sort({ createdAt: -1 });
+        const existing = await LienAutomate.findOne(getTenantFilter(context)).sort({ createdAt: -1 });
         if (existing) {
             existing.nLienNFS = nLienNFS;
             existing.LienHormone = LienHormone;
@@ -36,7 +36,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, data: existing, message: "Liens mis à jour" });
         }
 
-        const nouveau = await LienAutomate.create({ nLienNFS, LienHormone, LienVS, LienBiochimie });
+        const nouveau = await LienAutomate.create({ ...getTenantFilter(context), nLienNFS, LienHormone, LienVS, LienBiochimie });
         return NextResponse.json({ success: true, data: nouveau, message: "Liens créés" }, { status: 201 });
     } catch (error) {
         console.error("Erreur POST LienAutomate:", error);

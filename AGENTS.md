@@ -150,6 +150,17 @@ Le simulateur ne nécessite aucune clé Wave et permet de tester le flux complet
 - UI : `components/intrants/` partagés ; pages `/pages/servicelaboratoire/intrants` et `/pages/servicebiologiste/intrants`.
 - Pas de transaction Mongo : décrément atomique sur `Intrant.qteEnStock` + rattrapage manuel (même convention que `stockService`).
 
+## Réception des automates / Easy Connect
+
+- Les réceptions push/pull NFS utilisent `lib/nfsImportService.ts`. Hormones, VS et biochimie utilisent `lib/automateImportService.ts` ; leurs routes pull passent par `lib/automatePull.ts`. Le push `/api/automates/connect` délègue au même service que le pull pour chaque famille.
+- Identité de réception : famille + entreprise + identifiant du résultat Easy Connect + code paramètre normalisé (identifiant numérique pour la NFS, chaîne pour les autres automates). L’ObjectId déterministe protège les nouveaux imports concurrents via l’index `_id` existant ; les retransmissions ne modifient ni les valeurs ni `DejaUtilise`.
+- Biochimie : accepte `idBiochimie` ou `id`, refuse deux identifiants contradictoires ; le repli sur le code brut en l’absence de correspondance est conservé. VS : un code inconnu refuse le lot sans import partiel silencieux.
+- Historique et consultation des résultats laboratoire appliquent `getTenantFilter` sur les quatre collections. `BiochimieTraitement` porte désormais `entrepriseId` ; redémarrer le serveur après changement de schéma pour ne pas conserver les modèles Mongoose en cache.
+- Les identifiants Easy Connect doivent rester stables et ne pas être recyclés pour d’autres analyses. La suppression des résultats via « Vider l’historique » supprime aussi leur mémoire anti-réimport ; les anciennes lignes sans entreprise sur une base partagée ne sont pas réattribuées automatiquement.
+- Tests : `node scripts/test-nfs.cjs`. Nécessite `mongod` dans le PATH (ou `NFS_TEST_MONGOD`). Le script démarre son propre MongoDB sur un port libre, dans un répertoire temporaire, ainsi qu’un serveur HTTP Easy Connect simulé. Il utilise les vrais modèles et opérations MongoDB ; authentification, résolution des connexions tenant et registre des entreprises sont simulés. Aucun secret applicatif chargé ; les données de test sont conservées.
+
+- Test UI isolé : `node scripts/test-automates-ui.cjs` compile le vrai composant et démarre un serveur local sur un port libre. Utiliser ensuite le navigateur de test avec `--script scripts/test-automates-ui.cjs` sur l’URL affichée ; les API sont simulées dans le navigateur, sans connexion aux données applicatives.
+
 ## Admissions hospitalières : vérification serveur
 
 - `POST /api/hospitalisations` utilise une transaction MongoDB : Atlas ou replica set requis, sans repli non transactionnel. Les admissions des tenants sur la connexion partagée sont refusées, car chambres/lits ne portent pas de champ tenant.

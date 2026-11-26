@@ -106,12 +106,13 @@ export async function POST(req: NextRequest) {
             };
         }
 
+        const success = Object.values(resultat).every((bilan) => bilan?.success === true);
         return NextResponse.json({
 
-            success: true,
+            success,
 
             message:
-                "Tous les automates ont été actualisés",
+                success ? "Tous les automates ont été actualisés" : "Actualisation incomplète : certains automates ont échoué",
 
             resultat
         });

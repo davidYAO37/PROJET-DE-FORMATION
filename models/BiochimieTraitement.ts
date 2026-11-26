@@ -19,6 +19,7 @@ export interface IBiochimieTraitement extends Document {
     data: string;
     id_biochimie: string;
     CodePrestation: string;
+    entrepriseId?: string;
 }
 
 const BiochimieTraitementSchema = new Schema<IBiochimieTraitement>({
@@ -40,6 +41,7 @@ const BiochimieTraitementSchema = new Schema<IBiochimieTraitement>({
     data: String,
     id_biochimie: String,
     CodePrestation: String,
+    entrepriseId: String,
 }, { timestamps: true });
 
 export const BiochimieTraitement: Model<IBiochimieTraitement> = mongoose.models.BiochimieTraitement || model<IBiochimieTraitement>("BiochimieTraitement", BiochimieTraitementSchema); 
